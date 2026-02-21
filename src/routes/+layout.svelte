@@ -41,7 +41,9 @@
 					class="hover:text-resin-forest transition-colors">Support</a
 				>
 				<a
-					href="/#download"
+					href="https://testflight.apple.com/join/yV53qa1z"
+					target="_blank"
+					rel="noopener noreferrer"
 					class="px-5 py-2.5 bg-resin-charcoal text-white rounded-full hover:bg-resin-forest transition-colors shadow-md hover:shadow-lg"
 				>
 					Get the App

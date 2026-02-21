@@ -11,22 +11,32 @@
 <div
 	class="min-h-screen flex flex-col font-sans relative overflow-x-hidden bg-resin-bg text-resin-forest"
 >
-	<!-- Soft gradient glow to give organic feel across the app -->
-	<div
-		class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-resin-amber/5 blur-[120px] rounded-full point-events-none -z-10 mt-10"
-	></div>
+	<!-- Premium background elements -->
+	<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+		<div
+			class="absolute top-[-10%] left-[20%] w-[70%] h-[70%] bg-resin-amber/5 blur-[120px] rounded-full animate-pulse"
+		></div>
+		<div
+			class="absolute bottom-[-10%] right-[10%] w-[50%] h-[50%] bg-resin-forest/5 blur-[100px] rounded-full"
+		></div>
+	</div>
 
 	<!-- Navigation Bar -->
 	<header
-		class="w-full py-4 px-6 border-b border-resin-earth/10 sticky top-0 z-50 bg-resin-bg/80 backdrop-blur-md"
+		class="w-full py-4 px-6 fixed top-0 z-50 bg-resin-bg/60 backdrop-blur-xl border-b border-resin-forest/5"
 	>
 		<div class="max-w-6xl mx-auto flex items-center justify-between">
-			<a href="/" class="flex items-center gap-3 group">
-				<img
-					src="/logo.png"
-					alt="Resin Logo"
-					class="w-10 h-10 rounded-xl shadow-sm border border-resin-earth/20 group-hover:shadow-md transition-shadow"
-				/>
+			<a href="/" class="flex items-center gap-2.5 group">
+				<div class="relative">
+					<img
+						src="/logo.png"
+						alt="Resin Logo"
+						class="w-10 h-10 rounded-[10px] shadow-sm border border-resin-forest/10 group-hover:shadow-md transition-all duration-500 group-hover:scale-105"
+					/>
+					<div
+						class="absolute inset-0 rounded-[10px] ring-1 ring-inset ring-black/5"
+					></div>
+				</div>
 				<span
 					class="text-xl font-bold font-serif text-resin-charcoal tracking-tight"
 					>Resin</span
@@ -34,19 +44,35 @@
 			</a>
 
 			<nav
-				class="hidden sm:flex items-center gap-6 text-sm font-medium text-resin-earth"
+				class="hidden sm:flex items-center gap-8 text-sm font-medium text-resin-earth/80"
 			>
 				<a
 					href="/support"
-					class="hover:text-resin-forest transition-colors">Support</a
+					class="hover:text-resin-forest transition-colors relative group"
 				>
+					Support
+					<span
+						class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+					></span>
+				</a>
 				<a
 					href="https://testflight.apple.com/join/yV53qa1z"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="px-5 py-2.5 bg-resin-charcoal text-white rounded-full hover:bg-resin-forest transition-colors shadow-md hover:shadow-lg"
+					class="px-5 py-2 bg-resin-charcoal text-white rounded-full hover:bg-resin-forest transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
 				>
 					Get the App
+					<svg
+						class="w-4 h-4"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+							clip-rule="evenodd"
+						/>
+					</svg>
 				</a>
 			</nav>
 

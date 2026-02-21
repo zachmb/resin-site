@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-resin-bg: #F8F5EE;
+  --color-resin-amber: #E89A3C;
+  --color-resin-forest: #2B4634;
+  --color-resin-earth: #5C4B3C;
+  --color-resin-charcoal: #222222;
+
+	--font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+	--font-serif: 'PT Serif', Georgia, serif;
+}
+
+@layer base {
+	body {
+		@apply bg-resin-bg text-resin-forest antialiased;
+	}
+}

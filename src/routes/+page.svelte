@@ -9,7 +9,7 @@
             class="text-5xl md:text-8xl font-bold text-resin-charcoal font-serif mb-8 tracking-tight leading-[1.1] text-balance"
         >
             Notes that <br />
-            <span class="text-resin-forest italic serif">actually happe.</span>
+            <span class="text-resin-forest italic serif">actually happen.</span>
         </h1>
 
         <p

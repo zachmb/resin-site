@@ -30,7 +30,7 @@
                 rel="noopener noreferrer"
                 class="group relative inline-flex items-center justify-center px-10 py-4.5 bg-resin-charcoal text-white rounded-full font-semibold text-lg hover:bg-resin-forest transition-all duration-500 shadow-premium hover:shadow-2xl hover:-translate-y-1 w-full sm:w-auto"
             >
-                Take your first note
+                Get started today
                 <svg
                     class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform"
                     viewBox="0 0 20 20"

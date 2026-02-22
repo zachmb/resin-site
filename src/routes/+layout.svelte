@@ -1,6 +1,7 @@
 <script lang="ts">
 	import "./layout.css";
-	let { children } = $props();
+	let { children, data } = $props();
+	let { session } = $derived(data);
 </script>
 
 <svelte:head>
@@ -55,6 +56,30 @@
 						class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 					></span>
 				</a>
+
+				{#if session}
+					<form method="POST" action="/logout">
+						<button
+							class="hover:text-resin-forest transition-colors relative group"
+						>
+							Logout
+							<span
+								class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+							></span>
+						</button>
+					</form>
+				{:else}
+					<a
+						href="/login"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Login
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+				{/if}
+
 				<a
 					href="https://testflight.apple.com/join/yV53qa1z"
 					target="_blank"

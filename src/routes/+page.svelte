@@ -8,10 +8,8 @@
         <h1
             class="text-5xl md:text-8xl font-bold text-resin-charcoal font-serif mb-8 tracking-tight leading-[1.1] text-balance"
         >
-            Your ideas, <br />
-            <span class="text-resin-forest italic serif"
-                >actually happening.</span
-            >
+            Notes that <br />
+            <span class="text-resin-forest italic serif">actually happe.</span>
         </h1>
 
         <p

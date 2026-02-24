@@ -48,6 +48,16 @@
 				class="hidden sm:flex items-center gap-8 text-sm font-medium text-resin-earth/80"
 			>
 				<a
+					href="/architecture"
+					class="hover:text-resin-forest transition-colors relative group"
+				>
+					Architecture
+					<span
+						class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+					></span>
+				</a>
+
+				<a
 					href="/support"
 					class="hover:text-resin-forest transition-colors relative group"
 				>
@@ -58,6 +68,15 @@
 				</a>
 
 				{#if session}
+					<a
+						href="/account"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Account
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
 					<form method="POST" action="/logout">
 						<button
 							class="hover:text-resin-forest transition-colors relative group"

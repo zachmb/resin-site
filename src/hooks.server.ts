@@ -22,16 +22,15 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
         },
     })
 
-    /**
-     * a helper function to get the session from the server client.
-     * this is useful in load functions and actions.
-     */
     event.locals.getSession = async () => {
         const {
             data: { session },
         } = await event.locals.supabase.auth.getSession()
         return session
     }
+
+    // Refresh the session on every request to ensure cookies are synced
+    await event.locals.getSession()
 
     return resolve(event, {
         filterSerializedResponseHeaders(name) {

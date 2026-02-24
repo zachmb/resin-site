@@ -279,39 +279,7 @@
                             </div>
                         </div>
 
-                        <div class="space-y-6">
-                            <div class="group space-y-2">
-                                <label
-                                    for="openclaw_url"
-                                    class="text-[10px] font-bold text-resin-forest uppercase tracking-widest ml-4"
-                                    >OpenCLAW Instance</label
-                                >
-                                <input
-                                    type="url"
-                                    id="openclaw_url"
-                                    name="openclaw_url"
-                                    value={profile?.openclaw_url ?? ""}
-                                    placeholder="https://"
-                                    class="w-full px-6 py-4 bg-resin-bg/50 border border-resin-forest/5 rounded-2xl focus:outline-none focus:ring-4 focus:ring-resin-forest/5 focus:bg-white transition-all text-resin-charcoal"
-                                />
-                            </div>
-
-                            <div class="group space-y-2">
-                                <label
-                                    for="openclaw_api_key"
-                                    class="text-[10px] font-bold text-resin-forest uppercase tracking-widest ml-4"
-                                    >Access Token</label
-                                >
-                                <input
-                                    type="password"
-                                    id="openclaw_api_key"
-                                    name="openclaw_api_key"
-                                    value={profile?.openclaw_api_key ?? ""}
-                                    placeholder="••••••••••••••••"
-                                    class="w-full px-6 py-4 bg-resin-bg/50 border border-resin-forest/5 rounded-2xl focus:outline-none focus:ring-4 focus:ring-resin-forest/5 focus:bg-white transition-all text-resin-charcoal"
-                                />
-                            </div>
-                        </div>
+                        <!-- Removed OpenCLAW fields from here to dedicated cards -->
 
                         <div class="pt-4 flex items-center justify-between">
                             <div class="h-6">
@@ -369,6 +337,142 @@
                             </button>
                         </div>
                     </form>
+                </section>
+
+                <!-- Integrations & APIs Header -->
+                <div class="pt-8 px-4 flex items-center justify-between">
+                    <h2
+                        class="text-3xl font-bold text-resin-charcoal tracking-tight"
+                    >
+                        Integrations & API
+                    </h2>
+                </div>
+
+                <!-- OpenCLAW Card -->
+                <section
+                    class="glass-card rounded-[2.5rem] p-8 md:p-12 border border-resin-forest/5 shadow-premium relative overflow-hidden group"
+                >
+                    <div
+                        class="absolute -right-20 -top-20 w-80 h-80 bg-resin-charcoal/5 rounded-full blur-3xl group-hover:bg-resin-charcoal/10 transition-all duration-1000"
+                    ></div>
+                    <div class="relative z-10 space-y-8">
+                        <div class="flex items-start justify-between">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="w-12 h-12 rounded-2xl bg-resin-charcoal text-white flex items-center justify-center font-bold text-xl font-serif"
+                                    >
+                                        C
+                                    </div>
+                                    <h3
+                                        class="text-2xl font-bold text-resin-charcoal"
+                                    >
+                                        OpenCLAW Connection
+                                    </h3>
+                                </div>
+                                <p
+                                    class="text-resin-earth/80 font-light mt-2 max-w-lg"
+                                >
+                                    Send your active focus sessions directly to
+                                    OpenCLAW to stay accountable to the
+                                    community.
+                                </p>
+                            </div>
+                        </div>
+                        <form
+                            method="POST"
+                            action="?/updateProfile"
+                            use:enhance={handleSubmit}
+                            class="space-y-6"
+                        >
+                            <div class="group space-y-2 relative z-20">
+                                <label
+                                    for="openclaw_url_new"
+                                    class="text-[10px] font-bold text-resin-charcoal uppercase tracking-widest ml-4"
+                                    >OpenCLAW Instance URL</label
+                                >
+                                <input
+                                    type="url"
+                                    id="openclaw_url_new"
+                                    name="openclaw_url"
+                                    value={profile?.openclaw_url ?? ""}
+                                    placeholder="https://api.openclaw.com"
+                                    class="w-full px-6 py-4 bg-white/50 border border-resin-forest/10 rounded-2xl focus:outline-none focus:ring-4 focus:ring-resin-charcoal/5 focus:bg-white transition-all text-resin-charcoal"
+                                />
+                            </div>
+                            <div class="flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    class="px-8 py-3 bg-white border border-resin-forest/10 rounded-full font-bold text-resin-charcoal hover:bg-resin-charcoal hover:text-white transition-all shadow-sm hover:shadow-md disabled:opacity-50 text-sm"
+                                    >Save Connection</button
+                                >
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Developer Tools Card -->
+                <section
+                    class="glass-card rounded-[2.5rem] p-8 md:p-12 border border-resin-amber/20 shadow-premium relative overflow-hidden group"
+                >
+                    <div class="relative z-10 space-y-8">
+                        <div>
+                            <h3 class="text-2xl font-bold text-resin-amber">
+                                Developer Tools
+                            </h3>
+                            <p
+                                class="text-resin-earth/80 font-light mt-2 max-w-lg"
+                            >
+                                Generate a Personal Access Token (PAT) to
+                                authorize external applications or your own
+                                scripts to read your schedule via API.
+                            </p>
+                        </div>
+                        <div
+                            class="bg-white/50 border border-resin-amber/20 rounded-2xl p-6 font-mono text-sm text-resin-charcoal break-all relative"
+                        >
+                            {#if profile?.openclaw_api_key}
+                                {profile.openclaw_api_key}
+                            {:else}
+                                <span class="text-resin-earth/40 italic"
+                                    >No token generated yet.</span
+                                >
+                            {/if}
+                        </div>
+                        <form
+                            method="POST"
+                            action="?/generateToken"
+                            use:enhance={() => {
+                                loading = true;
+                                return async ({ result, update }) => {
+                                    loading = false;
+                                    await update();
+                                };
+                            }}
+                            class="flex justify-start"
+                        >
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                class="px-8 py-3 bg-resin-amber text-white rounded-full font-bold hover:bg-resin-amber/90 transition-all shadow-sm hover:shadow-md disabled:opacity-50 text-sm flex items-center gap-2"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    ><path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                    ></path></svg
+                                >
+                                Generate New Token
+                            </button>
+                        </form>
+                    </div>
                 </section>
             </div>
 

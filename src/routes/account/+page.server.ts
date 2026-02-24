@@ -79,4 +79,27 @@ export const actions: Actions = {
             throw redirect(303, data.url)
         }
     },
+    generateToken: async ({ locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) {
+            throw error(401, { message: 'Unauthorized' });
+        }
+
+        const newKey = crypto.randomUUID();
+
+        const updates = {
+            id: session.user.id,
+            openclaw_api_key: newKey, // Using this existing field as the PAT for simplicity
+            updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await supabase.from('profiles').upsert(updates);
+
+        if (updateError) {
+            console.error('Error generating token:', updateError);
+            return { success: false, error: 'Failed to generate token' };
+        }
+
+        return { success: true, token: newKey };
+    }
 };

@@ -1,7 +1,25 @@
 <script lang="ts">
+	import { invalidate } from "$app/navigation";
+	import { onMount } from "svelte";
+	import type { Session } from "@supabase/supabase-js";
 	import "./layout.css";
+
 	let { children, data } = $props();
-	let { session } = $derived(data);
+	let { supabase, session } = $derived(data);
+
+	onMount(() => {
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange(
+			(event: string, _session: Session | null) => {
+				if (_session?.expires_at !== session?.expires_at) {
+					invalidate("supabase:auth");
+				}
+			},
+		);
+
+		return () => subscription.unsubscribe();
+	});
 </script>
 
 <svelte:head>
@@ -48,16 +66,6 @@
 				class="hidden sm:flex items-center gap-8 text-sm font-medium text-resin-earth/80"
 			>
 				<a
-					href="/architecture"
-					class="hover:text-resin-forest transition-colors relative group"
-				>
-					Architecture
-					<span
-						class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
-					></span>
-				</a>
-
-				<a
 					href="/support"
 					class="hover:text-resin-forest transition-colors relative group"
 				>
@@ -76,6 +84,25 @@
 						<span
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
+					</a>
+					<a
+						href="/notes"
+						class="px-5 py-2 bg-resin-forest text-white rounded-full hover:bg-resin-charcoal transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2 font-medium"
+					>
+						My Notes
+						<svg
+							class="w-4 h-4"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 5l7 7-7 7"
+							></path>
+						</svg>
 					</a>
 					<form method="POST" action="/logout">
 						<button
@@ -177,6 +204,11 @@
 					href="/support"
 					class="hover:underline underline-offset-4 decoration-resin-amber/50"
 					>Support</a
+				>
+				<a
+					href="/architecture"
+					class="hover:underline underline-offset-4 decoration-resin-amber/50"
+					>Architecture</a
 				>
 			</nav>
 		</div>

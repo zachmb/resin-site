@@ -7,7 +7,7 @@
     </h1>
 
     <div class="prose prose-resin max-w-none text-resin-earth/90 space-y-6">
-        <p><strong>Last Updated:</strong> {new Date().toLocaleDateString()}</p>
+        <p><strong>Last Updated:</strong> February 25, 2026</p>
 
         <p>
             This Privacy Policy explains how "Resin" ("we," "us," or "our")

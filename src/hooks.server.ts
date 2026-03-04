@@ -2,7 +2,9 @@ import { createServerClient } from '@supabase/ssr';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
-const PUBLIC_ROUTES = ['/login', '/auth'];
+// Routes that don't require a session cookie.
+// /api/* uses Bearer token auth — validated inside each handler.
+const PUBLIC_ROUTES = ['/login', '/auth', '/api'];
 
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {

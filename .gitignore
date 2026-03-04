@@ -1,0 +1,16 @@
+# SvelteKit
+.svelte-kit/
+build/
+
+# Env files — NEVER commit secrets
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Misc
+.DS_Store
+*.log
+dist/

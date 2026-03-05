@@ -38,8 +38,14 @@
             });
             // Update title locally based on the first line
             const lines = content.split("\n");
-            if (lines[0] && lines[0].startsWith("# ")) {
-                activeNote.title = lines[0].replace("# ", "").trim();
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed) {
+                    activeNote.title = trimmed
+                        .replace(/^#+\s*/, "")
+                        .substring(0, 60);
+                    break;
+                }
             }
         }, 1000);
     };
@@ -86,9 +92,11 @@
                             {note.title ||
                                 (note.content
                                     ? note.content
-                                          .split("\n")[0]
-                                          .replace("#", "")
-                                          .trim()
+                                          .split("\n")
+                                          .map((l: string) => l.trim())
+                                          .find((l: string) => l)
+                                          ?.replace(/^#+\s*/, "")
+                                          .substring(0, 60)
                                     : "Untitled Note")}
                         </h3>
                         <div class="flex justify-between items-center mt-1">

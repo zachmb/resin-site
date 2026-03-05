@@ -1,5 +1,18 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { runActivationPipeline } from '$lib/amber_service';
+
+const extractTitle = (content: string) => {
+    if (!content) return 'Untitled Note';
+    const lines = content.split('\n');
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed) {
+            return trimmed.replace(/^#+\s*/, '').substring(0, 60);
+        }
+    }
+    return 'Untitled Note';
+};
 
 const normalizeNote = (note: any) => ({
     ...note,
@@ -106,11 +119,7 @@ export const actions: Actions = {
 
         if (id === 'mock') return { success: false, error: 'Cannot autosave a mock note' };
 
-        let title = 'Untitled Note';
-        const lines = content.split('\n');
-        if (lines[0] && lines[0].startsWith('# ')) {
-            title = lines[0].replace('# ', '').trim();
-        }
+        const title = extractTitle(content);
 
         const { error } = await updateNoteRow(supabase, {
             id,
@@ -134,11 +143,7 @@ export const actions: Actions = {
         const id = data.get('id') as string;
         const content = data.get('content') as string;
 
-        let title = 'Untitled Note';
-        const lines = content.split('\n');
-        if (lines[0] && lines[0].startsWith('# ')) {
-            title = lines[0].replace('# ', '').trim();
-        }
+        const title = extractTitle(content);
 
         if (id === 'mock' || !id) {
             // It's a new note
@@ -202,17 +207,37 @@ export const actions: Actions = {
 
         if (!content || !content.trim()) return fail(400, { error: 'Note content cannot be empty' });
 
-        const { data: credentials } = await supabase
-            .from('user_credentials')
-            .select('google_refresh_token')
-            .eq('id', session.user.id)
-            .single();
+        // Save the note first to ensure we have a session record
+        const title = extractTitle(content);
+        let sessionId = data.get('id') as string;
 
-        if (!credentials?.google_refresh_token) {
-            return fail(400, { error: 'Google Calendar access not configured. Please sign in with Google again.' });
+        if (!sessionId || sessionId === 'mock') {
+            const { data: newNote, error } = await insertNote(supabase, {
+                user_id: session.user.id,
+                title,
+                content,
+                created_at: new Date().toISOString()
+            });
+            if (error || !newNote) return fail(500, { error: 'Could not save note before activation' });
+            sessionId = newNote.id;
+        } else {
+            // Update existing
+            await updateNoteRow(supabase, {
+                id: sessionId,
+                user_id: session.user.id,
+                title,
+                content
+            });
         }
 
-        // ... simplified for brevity, logic remains the same as in root actions ...
-        return { success: true, message: 'DeepSeek activated! Plan generated and scheduled.' };
+        try {
+            await runActivationPipeline(session.user.id, sessionId, content, {
+                timezone: 'America/Chicago' // Default or get from profile/request
+            });
+            return { success: true, message: 'DeepSeek activated! Plan generated and scheduled.' };
+        } catch (err: any) {
+            console.error('[notes] Activation failed:', err);
+            return fail(500, { error: err.message || 'Activation failed' });
+        }
     }
 };

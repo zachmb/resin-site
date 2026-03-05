@@ -9,10 +9,18 @@ export const load: LayoutLoad = async ({ fetch, data, depends }) => {
     const supabase = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
         global: {
             fetch,
+            headers: {
+                'apikey': PUBLIC_SUPABASE_ANON_KEY,
+                'X-Client-Info': 'resin-site-web'
+            }
         }
     })
 
-    // getSession ensures it's fresh if in browser, otherwise fallback to server data
+    if (isBrowser()) {
+        console.log('[Layout] Supabase client initialized. URL:', PUBLIC_SUPABASE_URL);
+        if (!PUBLIC_SUPABASE_ANON_KEY) console.error('[Layout] PUBLIC_SUPABASE_ANON_KEY IS MISSING!');
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
 
     return { ...data, supabase, session }

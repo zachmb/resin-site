@@ -27,6 +27,9 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
         return session
     }
 
+    // Refresh the session if it exists to ensure cookies are synchronized
+    await event.locals.getSession()
+
     return resolve(event, {
         filterSerializedResponseHeaders(name) {
             return name === 'content-range'

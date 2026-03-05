@@ -3,15 +3,16 @@ import type { Actions, PageServerLoad } from './$types';
 import { runActivationPipeline } from '$lib/amber_service';
 
 const extractTitle = (content: string) => {
-    if (!content) return 'Untitled Note';
+    if (!content || !content.trim()) return null;
     const lines = content.split('\n');
     for (const line of lines) {
         const trimmed = line.trim();
-        if (trimmed) {
+        if (trimmed && trimmed !== '#') {
+            // Strip markdown headers and limit length
             return trimmed.replace(/^#+\s*/, '').substring(0, 60);
         }
     }
-    return 'Untitled Note';
+    return null;
 };
 
 const normalizeNote = (note: any) => ({
@@ -93,7 +94,7 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
-        const title = 'Untitled Draft ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        const title = 'Untitled Draft ' + new Date().getTime();
         const { error } = await insertNote(supabase, {
             user_id: session.user.id,
             title,
@@ -119,7 +120,7 @@ export const actions: Actions = {
 
         if (id === 'mock') return { success: false, error: 'Cannot autosave a mock note' };
 
-        const title = extractTitle(content);
+        const title = extractTitle(content) || '';
 
         const { error } = await updateNoteRow(supabase, {
             id,
@@ -149,7 +150,7 @@ export const actions: Actions = {
             // It's a new note
             const { data: newNote, error } = await insertNote(supabase, {
                 user_id: session.user.id,
-                title,
+                title: title || '',
                 content,
                 created_at: new Date().toISOString()
             });
@@ -165,7 +166,7 @@ export const actions: Actions = {
             const { data: updatedNote, error } = await updateNoteRow(supabase, {
                 id,
                 user_id: session.user.id,
-                title,
+                title: title || '',
                 content
             });
 
@@ -214,7 +215,7 @@ export const actions: Actions = {
         if (!sessionId || sessionId === 'mock') {
             const { data: newNote, error } = await insertNote(supabase, {
                 user_id: session.user.id,
-                title,
+                title: title || '',
                 content,
                 created_at: new Date().toISOString()
             });
@@ -225,7 +226,7 @@ export const actions: Actions = {
             await updateNoteRow(supabase, {
                 id: sessionId,
                 user_id: session.user.id,
-                title,
+                title: title || '',
                 content
             });
         }

@@ -89,15 +89,17 @@
                         <h3
                             class="font-semibold text-sm text-resin-charcoal truncate pr-2"
                         >
-                            {note.title ||
-                                (note.content
+                            {!note.title ||
+                            note.title.toLowerCase().startsWith("untitled")
+                                ? note.content
                                     ? note.content
                                           .split("\n")
                                           .map((l: string) => l.trim())
-                                          .find((l: string) => l)
+                                          .find((l: string) => l && l !== "#")
                                           ?.replace(/^#+\s*/, "")
-                                          .substring(0, 60)
-                                    : "Untitled Note")}
+                                          .substring(0, 60) || "Untitled Note"
+                                    : "Untitled Note"
+                                : note.title}
                         </h3>
                         <div class="flex justify-between items-center mt-1">
                             <p

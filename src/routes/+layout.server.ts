@@ -27,9 +27,14 @@ export const load = async ({ locals: { supabase, getSession } }) => {
         .eq('id', session.user.id)
         .single();
 
+    const normalizedProfile = profile ? {
+        ...profile,
+        sync_notes: profile.sync_notes ?? true
+    } : null;
+
     return {
         session,
         notes: normalizedNotes,
-        profile: profile || null,
+        profile: normalizedProfile,
     }
 }

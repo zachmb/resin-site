@@ -241,7 +241,7 @@
                                     type="checkbox"
                                     name="sync_notes"
                                     class="peer sr-only"
-                                    checked={profile?.sync_notes ?? false}
+                                    checked={profile?.sync_notes ?? true}
                                 />
                                 <div
                                     class="w-11 h-6 bg-resin-earth/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-resin-forest shadow-inner"

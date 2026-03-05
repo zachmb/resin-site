@@ -35,15 +35,27 @@ export const GET = async ({ request }: RequestEvent) => {
     }
 
     // 2. Fetch the user's latest focus notes to return as the schedule context
-    const { data: notes, error: notesError } = await supabaseAdmin
-        .from('amber_sessions')
-        .select('id, title, created_at')
-        .eq('user_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+    // Default sync_notes to true if not set
+    const syncEnabled = profile.sync_notes ?? true;
 
-    if (notesError) {
-        return json({ error: 'Failed to retrieve schedule' }, { status: 500 });
+    let recentSessions: any[] = [];
+    if (syncEnabled) {
+        const { data: notes, error: notesError } = await supabaseAdmin
+            .from('amber_sessions')
+            .select('*')
+            .eq('user_id', profile.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (notesError) {
+            return json({ error: 'Failed to retrieve schedule' }, { status: 500 });
+        }
+        recentSessions = (notes || []).map((note: any) => ({
+            id: note.id,
+            title: note.display_title ?? 'Untitled',
+            content: note.raw_text ?? '',
+            created_at: note.created_at
+        }));
     }
 
     // 3. Return the user's focus schedule for OpenCLAW integration
@@ -57,6 +69,7 @@ export const GET = async ({ request }: RequestEvent) => {
             }
         },
         openclaw_integrated: true,
-        recent_focus_sessions: notes
+        sync_enabled: syncEnabled,
+        recent_focus_sessions: recentSessions
     });
 };

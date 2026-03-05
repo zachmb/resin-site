@@ -1,5 +1,30 @@
-import { fail } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import { fail, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
+    const session = await getSession();
+    if (!session) throw redirect(303, '/login');
+
+    const [notesResponse, edgesResponse] = await Promise.all([
+        supabase
+            .from('amber_sessions')
+            .select('*')
+            .eq('user_id', session.user.id),
+        supabase
+            .from('mind_map_edges')
+            .select('*')
+            .eq('user_id', session.user.id)
+    ]);
+
+    return {
+        notes: (notesResponse.data || []).map((n: any) => ({
+            ...n,
+            title: n.display_title || n.title || 'Untitled Note',
+            content: n.raw_text || n.content || ''
+        })),
+        edges: edgesResponse.data || []
+    };
+};
 
 export const actions: Actions = {
     updateNodePosition: async ({ request, locals: { supabase, getSession } }) => {

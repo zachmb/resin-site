@@ -25,6 +25,10 @@
     let isSidebarOpen = $state(true); // default to true on mobile so they see list first
     let saveTimeout: ReturnType<typeof setTimeout>;
 
+    const toggleSidebar = () => {
+        isSidebarOpen = !isSidebarOpen;
+    };
+
     const autoSave = (content: string) => {
         if (!activeNote || activeNote.id === "mock") return;
         clearTimeout(saveTimeout);
@@ -59,11 +63,35 @@
     <div
         class="flex-1 flex gap-6 relative overflow-hidden transition-all duration-500"
     >
+        <!-- Toggle Button (Desktop only) -->
+        <button
+            onclick={toggleSidebar}
+            class="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-30 w-8 h-12 bg-white/80 backdrop-blur-sm border border-resin-forest/10 rounded-r-xl shadow-sm items-center justify-center text-resin-earth hover:text-resin-amber transition-all shadow-premium {isSidebarOpen
+                ? 'translate-x-80'
+                : 'translate-x-0'}"
+            title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+        >
+            <svg
+                class="w-4 h-4 transition-transform duration-300 {isSidebarOpen
+                    ? 'rotate-180'
+                    : ''}"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                ><path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                    d="M9 5l7 7-7 7"
+                ></path></svg
+            >
+        </button>
+
         <!-- Sidebar Navigation Drawer -->
         <div
             class="h-full flex-shrink-0 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] {isSidebarOpen
                 ? 'w-full sm:w-80 opacity-100 translate-x-0 sm:relative absolute z-20'
-                : 'w-0 opacity-0 -translate-x-12 pointer-events-none absolute sm:w-80 sm:relative sm:opacity-100 sm:translate-x-0 sm:pointer-events-auto'}"
+                : 'w-0 opacity-0 -translate-x-12 pointer-events-none absolute sm:w-0 sm:relative sm:opacity-0 sm:-translate-x-12'}"
         >
             <div
                 class="p-4 border-b border-resin-forest/5 font-serif font-bold text-resin-charcoal flex justify-between items-center bg-white/40"

@@ -10,15 +10,13 @@
     import { onMount, untrack } from "svelte";
     import { fade } from "svelte/transition";
 
-    let {
-        notes = [],
-        initialEdges = [],
-        setActiveNote,
-    } = $props<{
-        notes: any[];
-        initialEdges: any[];
-        setActiveNote: (note: any) => void;
-    }>();
+    interface Props {
+        notes?: any[];
+        initialEdges?: any[];
+        onNoteDropped?: () => void;
+    }
+
+    let { notes = [], initialEdges = [], onNoteDropped }: Props = $props();
 
     // Convert notes to Svelte Flow nodes
     let nodes = $state<any[]>([]);
@@ -64,7 +62,7 @@
             formData.append("position_y", node.position.y.toString());
 
             try {
-                await fetch("?/updateNodePosition", {
+                await fetch("/map?/updateNodePosition", {
                     method: "POST",
                     body: formData,
                 });
@@ -72,6 +70,61 @@
                 console.error("Failed to save node position:", error);
             }
         }, 500);
+    };
+
+    let wrapper: HTMLElement;
+
+    const onDragOver = (event: DragEvent) => {
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = "move";
+        }
+    };
+
+    const onDrop = async (event: DragEvent) => {
+        event.preventDefault();
+
+        // Ensure we only process drops containing our SvelteFlow type
+        const noteId = event.dataTransfer?.getData("application/svelteflow");
+        if (!noteId || !wrapper) return;
+
+        // Calculate drop position relative to the flow view
+        const reactFlowBounds = wrapper.getBoundingClientRect();
+        // SvelteFlow doesn't currently expose `project` globally off the shelf without useSvelteFlow
+        // but since we are simple, we can visually offset it
+        const position_x = event.clientX - reactFlowBounds.left;
+        const position_y = event.clientY - reactFlowBounds.top;
+
+        // Optimistically add just so it feels fast
+        nodes = [
+            ...nodes,
+            {
+                id: noteId,
+                type: "default",
+                position: { x: position_x, y: position_y },
+                data: { label: "Loading..." }, // will get synced via invalidateAll quickly
+                style: "background: #FCF9F2; border: 1px solid rgba(43, 70, 52, 0.2); border-radius: 12px; padding: 10px; font-weight: bold; color: #2B4634; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);",
+            },
+        ];
+
+        // Save new position + is_on_map
+        const formData = new FormData();
+        formData.append("id", noteId);
+        formData.append("position_x", position_x.toString());
+        formData.append("position_y", position_y.toString());
+
+        try {
+            await fetch("/map?/updateNodePosition", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (onNoteDropped) {
+                onNoteDropped();
+            }
+        } catch (error) {
+            console.error("Failed to add note to map:", error);
+        }
     };
 
     const onConnect = async (params: any) => {
@@ -94,7 +147,7 @@
         formData.append("target_id", params.target);
 
         try {
-            const response = await fetch("?/createEdge", {
+            const response = await fetch("/map?/createEdge", {
                 method: "POST",
                 body: formData,
             });
@@ -110,12 +163,12 @@
         nodes: deletedNodes,
         edges: deletedEdges,
     }: any) => {
-        // Handle edge removal from keyboard deletes
+        // Handle edges
         for (const edge of deletedEdges) {
             const formData = new FormData();
             formData.append("id", edge.id);
             try {
-                await fetch("?/deleteEdge", {
+                await fetch("/map?/deleteEdge", {
                     method: "POST",
                     body: formData,
                 });
@@ -123,19 +176,40 @@
                 console.error("Failed to delete edge:", error);
             }
         }
+
+        // Handle nodes removed from map (put them back in sidebar)
+        for (const node of deletedNodes) {
+            const formData = new FormData();
+            formData.append("id", node.id);
+            try {
+                await fetch("/map?/removeFromMap", {
+                    method: "POST",
+                    body: formData,
+                });
+            } catch (error) {
+                console.error("Failed to remove node from map:", error);
+            }
+        }
+
+        if (deletedNodes.length > 0 && onNoteDropped) {
+            // Resync unmapped/mapped notes
+            setTimeout(() => onNoteDropped(), 100);
+        }
     };
 
     const onNodeClick = (...args: any[]) => {
-        const node = args[1] || args[0]?.detail?.node || args[0]?.node;
-        if (!node) return;
-        const fullNote = notes.find((n: any) => n.id === node.id);
-        if (fullNote) {
-            setActiveNote(fullNote);
-        }
+        // Can add click-to-open logic later if requested
     };
 </script>
 
-<div class="w-full h-screen pt-[80px]" in:fade={{ duration: 300 }}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+    bind:this={wrapper}
+    class="w-full h-full"
+    in:fade={{ duration: 300 }}
+    ondragover={onDragOver}
+    ondrop={onDrop}
+>
     <SvelteFlow
         {nodes}
         {edges}

@@ -1,0 +1,360 @@
+/**
+ * POST /api/activate
+ *
+ * Full server-side scheduling pipeline:
+ *   1. Authenticate the user via Bearer JWT
+ *   2. Get a fresh Google access token
+ *   3. Call DeepSeek to generate the plan
+ *   4. Create Google Calendar event(s) in free slots
+ *   5. Write results to Supabase (amber_sessions + amber_tasks)
+ *   6. Send APNs push notification to the user's device
+ *
+ * Request body (JSON):
+ * {
+ *   session_id:       string  (UUID — already saved to Supabase by the app)
+ *   raw_text:         string
+ *   intensity:        number  (0..1)
+ *   start_hour:       number  (preferred window start, e.g. 16)
+ *   end_hour:         number  (preferred window end,   e.g. 22)
+ *   user_preferences: string  (from PlanAdjustmentService.preferenceSummary(), may be empty)
+ *   timezone:         string  (IANA tz, e.g. "America/Chicago")
+ * }
+ *
+ * Response: { status: "scheduled", tasks: AmberTask[] }
+ */
+
+import { json } from '@sveltejs/kit'
+import { createClient } from '@supabase/supabase-js'
+import { PUBLIC_SUPABASE_URL } from '$env/static/public'
+import {
+    SUPABASE_SERVICE_ROLE_KEY,
+    DEEPSEEK_API_KEY,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+} from '$env/static/private'
+import { sendPush } from '$lib/apns'
+import type { RequestEvent } from '@sveltejs/kit'
+
+const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false }
+})
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface DeepSeekTask {
+    type: 'action' | 'intention' | 'habit'
+    display_title: string
+    original_note: string
+    ai_plan: string[]
+    scheduling: { start_time: string; end_time: string; duration_minutes: number }
+    blocking_active: boolean
+    requires_verification?: boolean
+    notification_copy: string
+}
+
+// ── Google Calendar helpers ────────────────────────────────────────────────────
+
+/** Refresh Google access token using stored refresh token from user_credentials table. */
+async function getGoogleAccessToken(userId: string): Promise<string> {
+    const { data: creds } = await admin
+        .from('user_credentials')
+        .select('google_refresh_token')
+        .eq('id', userId)
+        .single()
+
+    if (!creds?.google_refresh_token) throw new Error('No Google refresh token stored for user')
+
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: GOOGLE_CLIENT_ID,
+            client_secret: GOOGLE_CLIENT_SECRET,
+            grant_type: 'refresh_token',
+            refresh_token: creds.google_refresh_token,
+        }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(`Google token refresh failed: ${JSON.stringify(data)}`)
+    return data.access_token as string
+}
+
+/** Fetch free/busy from Google Calendar for the next 48 hours. */
+async function getFreeBusy(accessToken: string, timezone: string): Promise<string> {
+    const now = new Date()
+    const end = new Date(now.getTime() + 48 * 60 * 60 * 1000)
+    const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            timeMin: now.toISOString(),
+            timeMax: end.toISOString(),
+            timeZone: timezone,
+            items: [{ id: 'primary' }],
+        }),
+    })
+    if (!res.ok) return ''
+    const data = await res.json()
+    const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
+    if (busy.length === 0) return 'No busy blocks in the next 48 hours.'
+    return busy.map(b => `Busy: ${b.start} → ${b.end}`).join('\n')
+}
+
+/** Create a Google Calendar event and return its id. */
+async function createCalendarEvent(
+    accessToken: string,
+    task: DeepSeekTask,
+    title: string,
+    timezone: string
+): Promise<string | null> {
+    const body = {
+        summary: title,
+        description: task.ai_plan.join('\n'),
+        start: { dateTime: task.scheduling.start_time, timeZone: timezone },
+        end: { dateTime: task.scheduling.end_time, timeZone: timezone },
+    }
+    const res = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }
+    )
+    if (!res.ok) {
+        console.error('[activate] Calendar event creation failed:', await res.text())
+        return null
+    }
+    const ev = await res.json()
+    return ev.id ?? null
+}
+
+// ── DeepSeek helper ────────────────────────────────────────────────────────────
+
+async function callDeepSeek(
+    rawText: string,
+    freeBusy: string,
+    intensity: number,
+    startHour: number,
+    endHour: number,
+    timezone: string,
+    userPreferences: string
+): Promise<DeepSeekTask> {
+    const now = new Date().toLocaleString('en-US', { timeZone: timezone, hour12: false })
+    const pctLabel = Math.round(intensity * 100)
+
+    const prefsAppend = userPreferences.trim()
+        ? `\n\n# USER PREFERENCE SIGNALS\n${userPreferences.trim()}`
+        : ''
+
+    const systemPrompt = `# MISSION
+You are the brain of RESIN, a premium productivity agent. Convert vague thoughts into concrete, scheduled, protected actions.
+
+# OPERATIONAL PIPELINE
+1. CATEGORIZE: ACTION, INTENTION, or HABIT.
+2. PLAN: Generate a thorough, line-by-line action plan (AI PLAN QUALITY RULES below).
+3. ANALYZE CALENDAR: Follow CALENDAR ANALYSIS step by step.
+4. SCHEDULE: Place the task in the best free gap. Never double-book.
+5. ENFORCE: Set blocking_active appropriately.
+
+# AI PLAN QUALITY RULES
+- INTENTIONS: 4–6 numbered steps. ACTIONS: 2–3 minimum.
+- Each step must be a complete, actionable sentence — not a short label.
+- Calibrate depth and count to the INTENSITY LEVEL.
+
+# OUTPUT CONTRACT (STRICT JSON ONLY)
+{
+  "type": "action"|"intention"|"habit",
+  "display_title": "Short UI title",
+  "original_note": "string",
+  "ai_plan": ["Step 1 full sentence.", "Step 2 full sentence."],
+  "scheduling": { "start_time": "ISO8601", "end_time": "ISO8601", "duration_minutes": number },
+  "blocking_active": boolean,
+  "requires_verification": boolean,
+  "notification_copy": "One sentence summary."
+}
+
+# INTENSITY LEVEL: ${pctLabel}%
+- 0–25% Gentle: blocking_active=false, requires_verification=false, 2–3 steps.
+- 25–50% Moderate: blocking for focus tasks, no camera, 3–4 steps.
+- 50–75% Firm: blocking + camera for physical/tangible tasks, 4–5 steps.
+- 75–100% Maximum: always blocking, always camera except pure digital, 5–6 steps.
+
+# CALENDAR ANALYSIS — follow exactly
+PREFERRED WINDOW: ${startHour}:00–${endHour}:00
+CURRENT TIME: ${now} (timezone: ${timezone})
+
+Step A — List every Busy block chronologically.
+Step B — List every Free gap inside preferred window with start time and length.
+Step C — Choose EARLIEST Free gap ≥ estimated duration:
+          • Deep-work: prefer before 12:00 if available.
+          • Errands/social: prefer later.
+          • Skip gaps starting within 15 min of now.
+Step D — If no gap today, advance to tomorrow and repeat.
+Step E — Output start_time/end_time in ${timezone} ISO8601 with offset.
+
+FREE/BUSY CALENDAR DATA:
+${freeBusy}${prefsAppend}
+
+OUTPUT ONLY VALID JSON. NO MARKDOWN. NO CODE BLOCKS.`
+
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: rawText },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.2,
+            max_tokens: 1024,
+        }),
+    })
+
+    if (!res.ok) throw new Error(`DeepSeek error ${res.status}: ${await res.text()}`)
+    const completion = await res.json()
+    const raw = completion.choices?.[0]?.message?.content ?? ''
+    return JSON.parse(raw) as DeepSeekTask
+}
+
+// ── Main handler ───────────────────────────────────────────────────────────────
+
+export const POST = async ({ request }: RequestEvent) => {
+    // 1. Auth
+    const authHeader = request.headers.get('authorization') ?? ''
+    const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!jwt) return json({ error: 'Missing Authorization header' }, { status: 401 })
+
+    const { data: { user }, error: userError } = await admin.auth.getUser(jwt)
+    if (userError || !user) return json({ error: 'Invalid token' }, { status: 401 })
+
+    // 2. Parse body
+    let body: {
+        session_id: string
+        raw_text: string
+        intensity?: number
+        start_hour?: number
+        end_hour?: number
+        user_preferences?: string
+        timezone?: string
+    }
+    try {
+        body = await request.json()
+    } catch {
+        return json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const {
+        session_id,
+        raw_text,
+        intensity = 0.5,
+        start_hour = 16,
+        end_hour = 22,
+        user_preferences = '',
+        timezone = 'UTC',
+    } = body
+
+    if (!session_id || !raw_text) {
+        return json({ error: 'session_id and raw_text are required' }, { status: 400 })
+    }
+
+    // Mark session as processing
+    await admin.from('amber_sessions')
+        .update({ status: 'processing' })
+        .eq('id', session_id)
+        .eq('user_id', user.id)
+
+    try {
+        // 3. Get Google access token & free/busy
+        const gToken = await getGoogleAccessToken(user.id)
+        const freeBusy = await getFreeBusy(gToken, timezone)
+
+        // 4. Call DeepSeek
+        const plan = await callDeepSeek(raw_text, freeBusy, intensity, start_hour, end_hour, timezone, user_preferences)
+
+        // 5. Create Google Calendar event
+        const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone)
+
+        // 6. Upsert amber_session with scheduled status
+        await admin.from('amber_sessions').upsert({
+            id: session_id,
+            user_id: user.id,
+            raw_text,
+            display_title: plan.display_title,
+            status: 'scheduled',
+            intensity: intensity.toFixed(2),
+        })
+
+        // 7. Upsert the generated task(s)
+        const taskRow = {
+            id: crypto.randomUUID(),
+            session_id,
+            title: plan.display_title,
+            description: plan.ai_plan.join('\n'),
+            estimated_minutes: plan.scheduling.duration_minutes,
+            sequence_order: 1,
+            start_time: plan.scheduling.start_time,
+            end_time: plan.scheduling.end_time,
+            calendar_event_id: calEventId,
+            requires_focus: plan.blocking_active,
+            requires_camera_verification: plan.requires_verification ?? false,
+        }
+        await admin.from('amber_tasks').upsert(taskRow)
+
+        // 8. Send APNs push to all registered devices for this user
+        const { data: tokens } = await admin
+            .from('device_tokens')
+            .select('device_token')
+            .eq('user_id', user.id)
+            .eq('platform', 'apns')
+
+        if (tokens && tokens.length > 0) {
+            const startStr = new Date(plan.scheduling.start_time)
+                .toLocaleTimeString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' })
+
+            await Promise.all(tokens.map(({ device_token }) =>
+                sendPush(device_token, {
+                    title: `${plan.display_title} scheduled`,
+                    body: `Starting at ${startStr} · ${plan.scheduling.duration_minutes} min`,
+                    data: { amber_session_id: session_id },
+                })
+            ))
+        }
+
+        // 9. Return the full result to the caller (app may still be in foreground)
+        return json({
+            status: 'scheduled',
+            task: {
+                id: taskRow.id,
+                title: plan.display_title,
+                description: taskRow.description,
+                ai_plan: plan.ai_plan,
+                start_time: plan.scheduling.start_time,
+                end_time: plan.scheduling.end_time,
+                duration_minutes: plan.scheduling.duration_minutes,
+                calendar_event_id: calEventId,
+                requires_focus: plan.blocking_active,
+                requires_camera_verification: plan.requires_verification ?? false,
+                notification_copy: plan.notification_copy,
+            }
+        })
+
+    } catch (err) {
+        console.error('[activate] Pipeline error:', err)
+        // Mark session as failed so app can retry
+        await admin.from('amber_sessions')
+            .update({ status: 'failed' })
+            .eq('id', session_id)
+        return json({ error: String(err) }, { status: 500 })
+    }
+}
+
+export const OPTIONS = async () => new Response(null, {
+    headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    }
+})

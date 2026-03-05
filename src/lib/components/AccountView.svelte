@@ -230,6 +230,41 @@
                         </div>
                     </div>
 
+                    <div class="border-t border-resin-forest/5 pt-6 mt-6">
+                        <label
+                            class="flex items-start gap-4 cursor-pointer group"
+                        >
+                            <div
+                                class="relative flex items-center justify-center pt-1"
+                            >
+                                <input
+                                    type="checkbox"
+                                    name="sync_notes"
+                                    class="peer sr-only"
+                                    checked={profile?.sync_notes ?? false}
+                                />
+                                <div
+                                    class="w-11 h-6 bg-resin-earth/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-resin-forest shadow-inner"
+                                ></div>
+                            </div>
+                            <div class="space-y-1 flex-1">
+                                <div
+                                    class="text-sm font-bold text-resin-charcoal group-hover:text-resin-forest transition-colors"
+                                >
+                                    Sync Notes to Mobile App
+                                </div>
+                                <p
+                                    class="text-xs text-resin-earth/70 font-light leading-relaxed"
+                                >
+                                    Allow the Resin mobile app to securely read
+                                    and edit your saved notes. If disabled,
+                                    notes only live in the web database and
+                                    won't appear on your phone.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
                     <div class="flex items-center justify-between">
                         <div class="h-6">
                             {#if successMessage}

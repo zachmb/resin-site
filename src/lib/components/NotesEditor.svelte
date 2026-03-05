@@ -5,16 +5,20 @@
     let {
         activeNote,
         notes = [],
+        profile = null,
         showToast,
         updateActiveNoteContent,
+        onBack,
     } = $props<{
         activeNote: any;
         notes: any[];
+        profile?: any;
         showToast: (msg: string) => void;
         updateActiveNoteContent: (content: string) => void;
+        onBack: () => void;
     }>();
 
-    let isSidebarOpen = $state(false);
+    let isSidebarOpen = $state(true); // default to true on mobile so they see list first
     let saveTimeout: ReturnType<typeof setTimeout>;
 
     const autoSave = (content: string) => {
@@ -39,62 +43,8 @@
 
 <!-- ── Main Canvas ── -->
 <main
-    class="w-full h-full min-h-screen pt-24 pb-12 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto"
+    class="w-full h-screen pt-20 pb-4 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto overflow-hidden"
 >
-    <!-- Top Bar Control -->
-    <div class="flex items-center justify-between mb-4 w-full">
-        <button
-            class="flex items-center gap-2 text-resin-earth hover:text-resin-charcoal transition-colors font-medium px-4 py-2 rounded-xl hover:bg-white/50"
-            onclick={() => (isSidebarOpen = !isSidebarOpen)}
-        >
-            <svg
-                class="w-5 h-5 flex-shrink-0 transition-transform duration-300 {isSidebarOpen
-                    ? 'rotate-180'
-                    : ''}"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6h16M4 12h16M4 18h7"
-                />
-            </svg>
-            <span class="hidden sm:inline"
-                >{isSidebarOpen ? "Hide Notes" : "View Saved Notes"}</span
-            >
-        </button>
-        <button
-            class="px-4 py-2 bg-resin-forest text-white rounded-xl text-sm font-semibold hover:bg-resin-forest/90 transition shadow-sm flex items-center gap-2"
-            onclick={() => {
-                // Trigger empty state creation
-                activeNote = {
-                    id: "new",
-                    title: "",
-                    content: "",
-                    created_at: new Date().toISOString(),
-                };
-                if (!isSidebarOpen) isSidebarOpen = true;
-            }}
-        >
-            <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                ><path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4v16m8-8H4"
-                /></svg
-            >
-            New Note
-        </button>
-    </div>
-
     <!-- Active Area Split View -->
     <div
         class="flex-1 flex gap-6 relative overflow-hidden transition-all duration-500"
@@ -102,8 +52,8 @@
         <!-- Sidebar Navigation Drawer -->
         <div
             class="h-full flex-shrink-0 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] {isSidebarOpen
-                ? 'w-full sm:w-80 opacity-100 translate-x-0'
-                : 'w-0 opacity-0 -translate-x-12 pointer-events-none absolute sm:relative'}"
+                ? 'w-full sm:w-80 opacity-100 translate-x-0 sm:relative absolute z-20'
+                : 'w-0 opacity-0 -translate-x-12 pointer-events-none absolute sm:w-80 sm:relative sm:opacity-100 sm:translate-x-0 sm:pointer-events-auto'}"
         >
             <div
                 class="p-4 border-b border-resin-forest/5 font-serif font-bold text-resin-charcoal flex justify-between items-center bg-white/40"
@@ -179,13 +129,76 @@
                     </div>
                 {/if}
             </div>
+
+            <!-- Sync Prompt -->
+            {#if profile && !profile.sync_notes}
+                <div
+                    class="mt-auto p-4 border-t border-resin-forest/5 bg-gradient-to-tr from-resin-ember/10 to-transparent"
+                >
+                    <a
+                        href="/account"
+                        class="block w-full text-left bg-white/60 hover:bg-white p-3 rounded-xl border border-resin-forest/10 shadow-sm transition-all group"
+                    >
+                        <div class="flex items-center justify-between mb-1">
+                            <span
+                                class="text-xs font-bold text-resin-amber tracking-wider uppercase"
+                                >Sync Disabled</span
+                            >
+                            <svg
+                                class="w-4 h-4 text-resin-earth/50 group-hover:text-resin-amber transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                ><path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                                ></path></svg
+                            >
+                        </div>
+                        <p class="text-[11px] text-resin-earth/80">
+                            Connect to the Resin app to read & write notes
+                            securely anywhere.
+                        </p>
+                    </a>
+                </div>
+            {/if}
         </div>
 
         <!-- Editor Block -->
         <div
-            class="flex-1 flex flex-col w-full bg-white/60 backdrop-blur-md rounded-2xl shadow-premium relative group transition-all duration-300 min-w-0 {isSidebarOpen &&
-                'hidden sm:flex'}"
+            class="flex-1 flex flex-col w-full bg-white/60 backdrop-blur-md rounded-2xl shadow-premium relative group transition-all duration-300 min-w-0 {isSidebarOpen
+                ? 'hidden sm:flex'
+                : 'flex'}"
         >
+            <!-- Mobile Back Button -->
+            <div
+                class="sm:hidden px-4 py-3 border-b border-resin-forest/5 bg-white/40"
+            >
+                <button
+                    onclick={() => {
+                        isSidebarOpen = true;
+                        onBack();
+                    }}
+                    class="flex items-center gap-2 text-resin-earth/70 hover:text-resin-charcoal font-medium text-sm transition-colors"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        ><path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 19l-7-7 7-7"
+                        ></path></svg
+                    >
+                    Back to Archive
+                </button>
+            </div>
+
             <!-- svelte-ignore a11y_autofocus -->
             <textarea
                 autofocus

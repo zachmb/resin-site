@@ -25,3 +25,4 @@ vite.config.ts.timestamp-*
 # Reference files
 resin_ref/
 image.png
+.env*.local

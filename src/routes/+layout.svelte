@@ -6,6 +6,7 @@
 
 	let { children, data } = $props();
 	let { supabase, session } = $derived(data);
+	let isMobileMenuOpen = $state(false);
 
 	onMount(() => {
 		const {
@@ -62,22 +63,40 @@
 				>
 			</a>
 
+			<!-- Desktop nav -->
 			<nav
 				class="hidden sm:flex items-center gap-8 text-sm font-medium text-resin-earth/80"
 			>
-				<a
-					href="/support"
-					class="hover:text-resin-forest transition-colors relative group"
-				>
-					Support
-					<span
-						class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
-					></span>
-				</a>
-
 				{#if session}
 					<a
-						href="/account"
+						href="/?tab=notes"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Saved Notes
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+					<a
+						href="/?tab=map"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Map
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+					<a
+						href="/?tab=amber"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Amber
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+					<a
+						href="/?tab=account"
 						class="hover:text-resin-forest transition-colors relative group"
 					>
 						Account
@@ -85,36 +104,16 @@
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
 					</a>
-					<a
-						href="/notes"
-						class="px-5 py-2 bg-resin-forest text-white rounded-full hover:bg-resin-charcoal transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2 font-medium"
-					>
-						My Notes
-						<svg
-							class="w-4 h-4"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 5l7 7-7 7"
-							></path>
-						</svg>
-					</a>
-					<form method="POST" action="/logout">
-						<button
-							class="hover:text-resin-forest transition-colors relative group"
-						>
-							Logout
-							<span
-								class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
-							></span>
-						</button>
-					</form>
 				{:else}
+					<a
+						href="/support"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Support
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
 					<a
 						href="/login"
 						class="hover:text-resin-forest transition-colors relative group"
@@ -124,32 +123,32 @@
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
 					</a>
-				{/if}
-
-				<a
-					href="https://testflight.apple.com/join/yV53qa1z"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="px-5 py-2 bg-resin-charcoal text-white rounded-full hover:bg-resin-forest transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
-				>
-					Get the App
-					<svg
-						class="w-4 h-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
+					<a
+						href="https://testflight.apple.com/join/yV53qa1z"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="px-5 py-2 bg-resin-charcoal text-white rounded-full hover:bg-resin-forest transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
 					>
-						<path
-							fill-rule="evenodd"
-							d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</a>
+						Get the App
+						<svg
+							class="w-4 h-4"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</a>
+				{/if}
 			</nav>
 
-			<!-- Mobile menu button (visual only for now) -->
+			<!-- Mobile hamburger -->
 			<button
-				class="sm:hidden text-resin-earth hover:text-resin-forest"
+				class="sm:hidden text-resin-earth hover:text-resin-forest transition-colors"
+				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
 				aria-label="Toggle mobile menu"
 			>
 				<svg
@@ -158,7 +157,9 @@
 					viewBox="0 0 24 24"
 					stroke-width="1.5"
 					stroke="currentColor"
-					class="w-6 h-6"
+					class="w-6 h-6 transition-transform duration-300 {isMobileMenuOpen
+						? 'rotate-90'
+						: ''}"
 				>
 					<path
 						stroke-linecap="round"
@@ -169,6 +170,54 @@
 			</button>
 		</div>
 	</header>
+
+	<!-- Mobile Menu Dropdown -->
+	{#if isMobileMenuOpen}
+		<div
+			class="sm:hidden fixed top-[72px] left-0 w-full bg-[#FCF9F2]/98 backdrop-blur-xl z-40 border-b border-resin-earth/10 flex flex-col px-6 py-6 gap-6 shadow-premium"
+		>
+			{#if session}
+				<a
+					href="/?tab=notes"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Saved Notes</a
+				>
+				<a
+					href="/?tab=map"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Map</a
+				>
+				<a
+					href="/?tab=amber"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Amber</a
+				>
+				<a
+					href="/?tab=account"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Account</a
+				>
+			{:else}
+				<a
+					href="/support"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Support</a
+				>
+				<a
+					href="/login"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Login</a
+				>
+				<a
+					href="https://testflight.apple.com/join/yV53qa1z"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-xl font-bold font-serif text-resin-forest"
+					onclick={() => (isMobileMenuOpen = false)}>Get the App</a
+				>
+			{/if}
+		</div>
+	{/if}
 
 	{@render children()}
 

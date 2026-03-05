@@ -34,8 +34,8 @@ export const GET = async ({ url, locals: { supabase } }) => {
 
             // Capture and store the refresh_token separately in user_credentials
             // This is critical for background token refresh.
-            if (session.provider_refresh_token) {
-                console.log('[Auth Callback] Provider refresh token captured for user:', session.user.id);
+            if (session.provider_refresh_token || session.provider_token) {
+                console.log('[Auth Callback] Provider tokens captured for user:', session.user.id);
                 try {
                     const { createClient } = await import('@supabase/supabase-js')
                     const { PUBLIC_SUPABASE_URL } = await import('$env/static/public')
@@ -45,22 +45,30 @@ export const GET = async ({ url, locals: { supabase } }) => {
                         auth: { persistSession: false }
                     })
 
-                    const { error: upsertError } = await admin.from('user_credentials').upsert({
+                    const updateData: any = {
                         id: session.user.id,
-                        google_refresh_token: session.provider_refresh_token,
                         updated_at: new Date().toISOString()
-                    })
+                    };
+
+                    if (session.provider_refresh_token) {
+                        updateData.google_refresh_token = session.provider_refresh_token;
+                    }
+                    if (session.provider_token) {
+                        updateData.google_access_token = session.provider_token;
+                    }
+
+                    const { error: upsertError } = await admin.from('user_credentials').upsert(updateData)
 
                     if (upsertError) {
-                        console.error('[Auth Callback] Error storing refresh token:', upsertError);
+                        console.error('[Auth Callback] Error storing provider tokens:', upsertError);
                     } else {
-                        console.log('[Auth Callback] Refresh token stored successfully');
+                        console.log('[Auth Callback] Provider tokens stored successfully');
                     }
                 } catch (err) {
                     console.error('[Auth Callback] Unexpected error during token storage:', err);
                 }
             } else {
-                console.warn('[Auth Callback] No provider_refresh_token found in session. Ensure offline_access and prompt=consent were used.');
+                console.warn('[Auth Callback] No provider tokens found in session. Ensure offline_access and prompt=consent were used.');
             }
 
             // Safer redirect logic

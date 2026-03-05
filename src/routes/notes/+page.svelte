@@ -41,8 +41,29 @@
         if (rawActiveNote) {
             rawActiveNote.content = content;
         } else if (notes.length > 0) {
-            rawActiveNote = notes[0];
+            rawActiveNote = { ...notes[0] };
             rawActiveNote.content = content;
+        } else {
+            rawActiveNote = {
+                id: "mock",
+                title: "Untitled Note",
+                content: content,
+                created_at: new Date().toISOString(),
+            };
+        }
+    };
+
+    import { invalidateAll } from "$app/navigation";
+    const handleSaveSuccess = async ({
+        note,
+        isNew,
+    }: {
+        note: any;
+        isNew: boolean;
+    }) => {
+        rawActiveNote = note;
+        if (isNew) {
+            await invalidateAll(); // Refresh the notes list to include the new note
         }
     };
 </script>
@@ -54,6 +75,7 @@
     {showToast}
     {updateActiveNoteContent}
     onBack={() => (rawActiveNote = null)}
+    onSaveSuccess={handleSaveSuccess}
 />
 
 {#if toastMessage}

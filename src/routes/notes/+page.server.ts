@@ -42,6 +42,8 @@ export const actions: Actions = {
         const id = data.get('id') as string;
         const content = data.get('content') as string;
 
+        if (id === 'mock') return { success: false, error: 'Cannot autosave a mock note' };
+
         let title = 'Untitled Note';
         const lines = content.split('\n');
         if (lines[0] && lines[0].startsWith('# ')) {
@@ -56,6 +58,59 @@ export const actions: Actions = {
 
         if (error) return fail(500, { error: 'Could not automatically save note' });
         return { success: true, id, title, content };
+    },
+
+    saveNote: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const id = data.get('id') as string;
+        const content = data.get('content') as string;
+
+        let title = 'Untitled Note';
+        const lines = content.split('\n');
+        if (lines[0] && lines[0].startsWith('# ')) {
+            title = lines[0].replace('# ', '').trim();
+        }
+
+        if (id === 'mock' || !id) {
+            // It's a new note
+            const { data: newNote, error } = await supabase
+                .from('amber_sessions')
+                .insert({
+                    user_id: session.user.id,
+                    title,
+                    content,
+                    raw_text: content,
+                    status: 'draft',
+                    created_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error creating note:', error);
+                return fail(500, { error: 'Could not create note' });
+            }
+
+            return { success: true, note: newNote, isNew: true };
+        } else {
+            // Existing note
+            const { data: updatedNote, error } = await supabase
+                .from('amber_sessions')
+                .update({ content, raw_text: content, title })
+                .eq('id', id)
+                .eq('user_id', session.user.id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error updating note:', error);
+                return fail(500, { error: 'Could not save note' });
+            }
+            return { success: true, note: updatedNote, isNew: false };
+        }
     },
 
     deleteNote: async ({ request, locals: { supabase, getSession } }) => {

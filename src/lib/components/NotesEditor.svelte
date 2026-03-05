@@ -9,6 +9,7 @@
         showToast,
         updateActiveNoteContent,
         onBack,
+        onSaveSuccess,
     } = $props<{
         activeNote: any;
         notes: any[];
@@ -16,6 +17,7 @@
         showToast: (msg: string) => void;
         updateActiveNoteContent: (content: string) => void;
         onBack: () => void;
+        onSaveSuccess: (result: { note: any; isNew: boolean }) => void;
     }>();
 
     let isSidebarOpen = $state(true); // default to true on mobile so they see list first
@@ -231,27 +233,55 @@
                 class="w-full px-4 sm:px-8 pb-6 pt-4 border-t border-[#5C4B3C]/10 bg-white/40 rounded-b-2xl"
             >
                 <div class="flex flex-col sm:flex-row items-center gap-3">
-                    <button
-                        class="flex-1 w-full py-3.5 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all
-                        border border-[#2B4634]/30 text-[#2B4634] bg-[#2B4634]/5 hover:bg-[#2B4634]/15
-                        disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-[#2B4634]/5"
-                        disabled={!(activeNote?.content || "").trim()}
-                        onclick={() => showToast("Note saved")}
+                    <form
+                        method="POST"
+                        action="?/saveNote"
+                        class="flex-1 w-full"
+                        use:enhance={() => {
+                            return async ({ result, update }) => {
+                                if (
+                                    result.type === "success" &&
+                                    result.data?.success
+                                ) {
+                                    showToast("Note saved!");
+                                    onSaveSuccess({
+                                        note: result.data.note,
+                                        isNew: result.data.isNew,
+                                    });
+                                } else {
+                                    showToast("Failed to save note.");
+                                }
+                                await update({ reset: false });
+                            };
+                        }}
                     >
-                        <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            stroke-width="2.5"
-                            ><path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                            ></path></svg
+                        <input type="hidden" name="id" value={activeNote?.id} />
+                        <input
+                            type="hidden"
+                            name="content"
+                            value={activeNote?.content}
+                        />
+                        <button
+                            class="w-full py-3.5 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all
+                            border border-[#2B4634]/30 text-[#2B4634] bg-[#2B4634]/5 hover:bg-[#2B4634]/15
+                            disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-[#2B4634]/5"
+                            disabled={!(activeNote?.content || "").trim()}
                         >
-                        Save Note
-                    </button>
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                stroke-width="2.5"
+                                ><path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                ></path></svg
+                            >
+                            Save Note
+                        </button>
+                    </form>
 
                     <form
                         method="POST"

@@ -10,6 +10,7 @@
         updateActiveNoteContent,
         onBack,
         onSaveSuccess,
+        onSelectNote,
     } = $props<{
         activeNote: any;
         notes: any[];
@@ -18,6 +19,7 @@
         updateActiveNoteContent: (content: string) => void;
         onBack: () => void;
         onSaveSuccess: (result: { note: any; isNew: boolean }) => void;
+        onSelectNote: (note: any) => void;
     }>();
 
     let isSidebarOpen = $state(true); // default to true on mobile so they see list first
@@ -75,7 +77,7 @@
                             : 'hover:bg-black/5'}"
                         onclick={() => {
                             if (window.innerWidth < 640) isSidebarOpen = false; // Auto-close on mobile
-                            activeNote = note;
+                            onSelectNote(note);
                         }}
                     >
                         <h3
@@ -248,8 +250,20 @@
                                         note: result.data.note,
                                         isNew: result.data.isNew,
                                     });
-                                } else {
-                                    showToast("Failed to save note.");
+                                } else if (
+                                    result.type === "failure" ||
+                                    result.type === "success"
+                                ) {
+                                    // success type can still have success: false in some cases if not using fail()
+                                    showToast(
+                                        result.data?.error ||
+                                            "Failed to save note.",
+                                    );
+                                } else if (result.type === "error") {
+                                    showToast(
+                                        result.error?.message ||
+                                            "An error occurred.",
+                                    );
                                 }
                                 await update({ reset: false });
                             };
@@ -262,6 +276,7 @@
                             value={activeNote?.content}
                         />
                         <button
+                            type="submit"
                             class="w-full py-3.5 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all
                             border border-[#2B4634]/30 text-[#2B4634] bg-[#2B4634]/5 hover:bg-[#2B4634]/15
                             disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-[#2B4634]/5"

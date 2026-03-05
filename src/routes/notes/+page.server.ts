@@ -1,6 +1,74 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
+const normalizeNote = (note: any) => ({
+    ...note,
+    title: note.display_title ?? note.title ?? '',
+    content: note.raw_text ?? note.content ?? ''
+});
+
+
+const isMissingColumnError = (error: any) => {
+    if (!error) return false;
+    return error.code === 'PGRST204' || String(error.message || '').includes("Could not find");
+};
+
+const insertNote = async (supabase: any, row: { user_id: string; title: string; content: string; created_at: string }) => {
+    // Attempt the preferred schema (raw_text, display_title, status)
+    const result = await supabase
+        .from('amber_sessions')
+        .insert({
+            user_id: row.user_id,
+            raw_text: row.content,
+            display_title: row.title,
+            status: 'draft',
+            created_at: row.created_at
+        })
+        .select()
+        .single();
+
+    if (!result.error) return result;
+    if (!isMissingColumnError(result.error)) return result;
+
+    // Fallback for older schema (content, title, status)
+    console.warn('[notes] Preferred schema insert failed, trying fallback...', result.error.message);
+    return await supabase
+        .from('amber_sessions')
+        .insert({
+            user_id: row.user_id,
+            content: row.content,
+            title: row.title,
+            status: 'draft',
+            created_at: row.created_at
+        })
+        .select()
+        .single();
+};
+
+const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; title: string; content: string }) => {
+    // Attempt the preferred schema (raw_text, display_title)
+    const result = await supabase
+        .from('amber_sessions')
+        .update({ raw_text: row.content, display_title: row.title })
+        .eq('id', row.id)
+        .eq('user_id', row.user_id)
+        .select()
+        .single();
+
+    if (!result.error) return result;
+    if (!isMissingColumnError(result.error)) return result;
+
+    // Fallback for older schema (content, title)
+    console.warn('[notes] Preferred schema update failed, trying fallback...', result.error.message);
+    return await supabase
+        .from('amber_sessions')
+        .update({ content: row.content, title: row.title })
+        .eq('id', row.id)
+        .eq('user_id', row.user_id)
+        .select()
+        .single();
+};
+
 export const load: PageServerLoad = async ({ locals: { getSession } }) => {
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
@@ -13,18 +81,12 @@ export const actions: Actions = {
         if (!session) return fail(401, { error: 'Unauthorized' });
 
         const title = 'Untitled Draft ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        const { data, error } = await supabase
-            .from('amber_sessions')
-            .insert({
-                user_id: session.user.id,
-                title,
-                content: '# ' + title + '\n\n',
-                raw_text: '# ' + title + '\n\n',
-                status: 'draft',
-                created_at: new Date().toISOString()
-            })
-            .select()
-            .single();
+        const { error } = await insertNote(supabase, {
+            user_id: session.user.id,
+            title,
+            content: '# ' + title + '\n\n',
+            created_at: new Date().toISOString()
+        });
 
         if (error) {
             console.error('Error creating note:', error);
@@ -50,13 +112,17 @@ export const actions: Actions = {
             title = lines[0].replace('# ', '').trim();
         }
 
-        const { error } = await supabase
-            .from('amber_sessions')
-            .update({ content, raw_text: content, title })
-            .eq('id', id)
-            .eq('user_id', session.user.id);
+        const { error } = await updateNoteRow(supabase, {
+            id,
+            user_id: session.user.id,
+            title,
+            content
+        });
 
-        if (error) return fail(500, { error: 'Could not automatically save note' });
+        if (error) {
+            console.error('[notes] updateNote failed:', error);
+            return fail(500, { error: `Could not save note: ${error.message}` });
+        }
         return { success: true, id, title, content };
     },
 
@@ -76,40 +142,37 @@ export const actions: Actions = {
 
         if (id === 'mock' || !id) {
             // It's a new note
-            const { data: newNote, error } = await supabase
-                .from('amber_sessions')
-                .insert({
-                    user_id: session.user.id,
-                    title,
-                    content,
-                    raw_text: content,
-                    status: 'draft',
-                    created_at: new Date().toISOString()
-                })
-                .select()
-                .single();
+            const { data: newNote, error } = await insertNote(supabase, {
+                user_id: session.user.id,
+                title,
+                content,
+                created_at: new Date().toISOString()
+            });
 
             if (error) {
-                console.error('Error creating note:', error);
-                return fail(500, { error: 'Could not create note' });
+                console.error('[notes] saveNote (insert) failed:', error);
+                return fail(500, { error: `Could not create note: ${error.message}` });
             }
 
-            return { success: true, note: newNote, isNew: true };
+            return { success: true, note: normalizeNote(newNote), isNew: true };
         } else {
             // Existing note
-            const { data: updatedNote, error } = await supabase
-                .from('amber_sessions')
-                .update({ content, raw_text: content, title })
-                .eq('id', id)
-                .eq('user_id', session.user.id)
-                .select()
-                .single();
+            const { data: updatedNote, error } = await updateNoteRow(supabase, {
+                id,
+                user_id: session.user.id,
+                title,
+                content
+            });
 
             if (error) {
-                console.error('Error updating note:', error);
-                return fail(500, { error: 'Could not save note' });
+                console.error('[notes] saveNote (update) failed:', error);
+                return fail(500, {
+                    error: `Could not save note: ${error.message}`,
+                    code: error.code,
+                    details: error.details
+                });
             }
-            return { success: true, note: updatedNote, isNew: false };
+            return { success: true, note: normalizeNote(updatedNote), isNew: false };
         }
     },
 

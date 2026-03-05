@@ -13,8 +13,13 @@ export const load = async ({ locals: { supabase, getSession } }) => {
         .from('amber_sessions')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('status', 'draft')
         .order('created_at', { ascending: false });
+
+    const normalizedNotes = (notes || []).map((note: any) => ({
+        ...note,
+        title: note.display_title ?? note.title ?? '',
+        content: note.raw_text ?? note.content ?? ''
+    }));
 
     const { data: profile } = await supabase
         .from('profiles')
@@ -24,7 +29,7 @@ export const load = async ({ locals: { supabase, getSession } }) => {
 
     return {
         session,
-        notes: notes || [],
+        notes: normalizedNotes,
         profile: profile || null,
     }
 }

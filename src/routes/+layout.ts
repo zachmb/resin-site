@@ -13,7 +13,7 @@ export const load: LayoutLoad = async ({ fetch, data, depends }) => {
     })
 
     // getSession ensures it's fresh if in browser, otherwise fallback to server data
-    const session = isBrowser() ? (await supabase.auth.getSession()).data.session : data.session;
+    const { data: { session } } = await supabase.auth.getSession();
 
-    return { supabase, session }
+    return { ...data, supabase, session }
 }

@@ -13,7 +13,8 @@
         setTimeout(() => (toastMessage = ""), 3000);
     };
 
-    let rawActiveNote = $state<any>(null);
+    let selectedNoteId = $state<string | null>(null);
+    let localDrafts = $state<Record<string, string>>({});
 
     // Reset view if the user clicks the "Notes" link in the header explicitly
     $effect(() => {
@@ -21,36 +22,29 @@
             $page.url.pathname === "/notes" &&
             $page.url.searchParams.has("reset")
         ) {
-            rawActiveNote = null;
+            selectedNoteId = notes[0]?.id || "mock";
+            localDrafts = {};
         }
     });
 
-    let activeNote = $derived(
-        rawActiveNote ||
-            (notes.length > 0
-                ? notes[0]
-                : {
-                      id: "mock",
-                      title: "Project Phoenix",
-                      content: "# Project Phoenix\n\nStarting a new project...",
-                      created_at: new Date().toISOString(),
-                  }),
-    );
+    let activeNote = $derived.by(() => {
+        const id = selectedNoteId || (notes.length > 0 ? notes[0].id : "mock");
+        const baseNote = notes.find((n: any) => n.id === id) || {
+            id: "mock",
+            title: "Project Phoenix",
+            content: "# Project Phoenix\n\nStarting a new project...",
+            created_at: new Date().toISOString(),
+        };
+
+        return {
+            ...baseNote,
+            content: localDrafts[id] ?? baseNote.content,
+        };
+    });
 
     const updateActiveNoteContent = (content: string) => {
-        if (rawActiveNote) {
-            rawActiveNote.content = content;
-        } else if (notes.length > 0) {
-            rawActiveNote = { ...notes[0] };
-            rawActiveNote.content = content;
-        } else {
-            rawActiveNote = {
-                id: "mock",
-                title: "Untitled Note",
-                content: content,
-                created_at: new Date().toISOString(),
-            };
-        }
+        const id = activeNote.id;
+        localDrafts[id] = content;
     };
 
     import { invalidateAll } from "$app/navigation";
@@ -61,10 +55,17 @@
         note: any;
         isNew: boolean;
     }) => {
-        rawActiveNote = note;
+        // Clear draft for the saved note
+        delete localDrafts[note.id];
+        selectedNoteId = note.id;
+        showToast("Note saved!");
         if (isNew) {
-            await invalidateAll(); // Refresh the notes list to include the new note
+            await invalidateAll();
         }
+    };
+
+    const handleSelectNote = (note: any) => {
+        selectedNoteId = note.id;
     };
 </script>
 
@@ -74,8 +75,9 @@
     {profile}
     {showToast}
     {updateActiveNoteContent}
-    onBack={() => (rawActiveNote = null)}
+    onBack={() => (selectedNoteId = null)}
     onSaveSuccess={handleSaveSuccess}
+    onSelectNote={handleSelectNote}
 />
 
 {#if toastMessage}

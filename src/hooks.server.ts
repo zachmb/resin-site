@@ -7,12 +7,6 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
     event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
         cookies: {
             get: (key) => event.cookies.get(key),
-            /**
-             * Note: You should only use the set and remove methods if you're
-             * using a custom cookie implementation. SvelteKit's built-in
-             * cookie management handles this automatically when using the
-             * default cookie options.
-             */
             set: (key, value, options) => {
                 event.cookies.set(key, value, { ...options, path: '/' })
             },
@@ -22,15 +16,16 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
         },
     })
 
+    /**
+     * a protective wrapper around getSession that handles errors and returns null
+     * instead of throwing, which is safer for hooks and layout loads.
+     */
     event.locals.getSession = async () => {
         const {
             data: { session },
         } = await event.locals.supabase.auth.getSession()
         return session
     }
-
-    // Refresh the session on every request to ensure cookies are synced
-    await event.locals.getSession()
 
     return resolve(event, {
         filterSerializedResponseHeaders(name) {

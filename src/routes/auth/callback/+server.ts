@@ -53,9 +53,6 @@ export const GET = async ({ url, locals: { supabase } }) => {
                     if (session.provider_refresh_token) {
                         updateData.google_refresh_token = session.provider_refresh_token;
                     }
-                    if (session.provider_token) {
-                        updateData.google_access_token = session.provider_token;
-                    }
 
                     const { error: upsertError } = await admin.from('user_credentials').upsert(updateData)
 

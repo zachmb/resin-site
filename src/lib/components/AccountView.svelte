@@ -152,7 +152,11 @@
                             </p>
                         </div>
 
-                        <form method="POST" action="?/signInWithGoogle">
+                        <form
+                            method="POST"
+                            action="?/signInWithGoogle"
+                            use:enhance
+                        >
                             <button
                                 class="group relative px-6 py-3 bg-white border border-resin-forest/10 rounded-xl font-bold text-sm text-resin-charcoal hover:bg-resin-charcoal hover:text-white transition-all shadow-sm flex items-center gap-2"
                             >

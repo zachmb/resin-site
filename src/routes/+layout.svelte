@@ -5,7 +5,7 @@
 	import "./layout.css";
 
 	let { children, data } = $props();
-	let { supabase, session } = $derived(data);
+	let { supabase, session, activeSession } = $derived(data);
 	let isMobileMenuOpen = $state(false);
 
 	onMount(() => {
@@ -68,6 +68,19 @@
 				class="hidden sm:flex items-center gap-6 text-sm font-medium text-resin-earth/80"
 			>
 				{#if session}
+					{#if activeSession}
+						<div
+							class="flex items-center gap-2 px-3 py-1.5 bg-resin-amber/10 border border-resin-amber/20 rounded-full animate-pulse"
+						>
+							<div
+								class="w-2 h-2 rounded-full bg-resin-amber"
+							></div>
+							<span
+								class="text-[10px] font-bold uppercase tracking-widest text-resin-amber"
+								>Focus Active</span
+							>
+						</div>
+					{/if}
 					<form
 						method="POST"
 						action="/notes?/createNote"
@@ -106,6 +119,15 @@
 						class="hover:text-resin-forest transition-colors relative group"
 					>
 						Map
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+					<a
+						href="/forest"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Forest
 						<span
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
@@ -219,6 +241,11 @@
 					href="/map"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
 					onclick={() => (isMobileMenuOpen = false)}>Map</a
+				>
+				<a
+					href="/forest"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Forest</a
 				>
 				<a
 					href="/amber"

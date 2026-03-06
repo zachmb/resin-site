@@ -1,7 +1,30 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
+    signInWithGoogle: async ({ locals: { supabase }, url }) => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${url.origin}/auth/callback?next=/account`,
+                scopes: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+            },
+        })
+
+        if (error) {
+            console.error(error)
+            return fail(500, { error: 'Could not authenticate with Google' })
+        }
+
+        if (data.url) {
+            throw redirect(303, data.url)
+        }
+    },
+
     updateProfile: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });

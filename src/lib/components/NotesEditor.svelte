@@ -344,17 +344,25 @@
                             return async ({ result, update }) => {
                                 if (result.type === "success") {
                                     showToast(
-                                        "DeepSeek activated! Plan generated and scheduled.",
+                                        result.data?.message ||
+                                            "DeepSeek activated! Plan generated and scheduled.",
                                     );
-                                } else {
+                                } else if (result.type === "failure") {
                                     showToast(
-                                        "Failed to activate. Please try again.",
+                                        result.data?.error ||
+                                            "Failed to activate. Please try again.",
+                                    );
+                                } else if (result.type === "error") {
+                                    showToast(
+                                        result.error?.message ||
+                                            "An error occurred.",
                                     );
                                 }
                                 await update();
                             };
                         }}
                     >
+                        <input type="hidden" name="id" value={activeNote?.id} />
                         <input
                             type="hidden"
                             name="noteContent"

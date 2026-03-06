@@ -51,22 +51,29 @@ export const GET = async ({ request }) => {
     try {
         const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = await import('$env/static/private')
 
+        const params: Record<string, string> = {
+            client_id: GOOGLE_CLIENT_ID,
+            client_secret: GOOGLE_CLIENT_SECRET,
+            grant_type: 'refresh_token',
+            refresh_token: credentials.google_refresh_token
+        }
+
+        // Google sometimes requires the original redirect_uri if it was provided during authorization.
+        const supabaseCallback = `${PUBLIC_SUPABASE_URL}/auth/v1/callback`
+        params.redirect_uri = supabaseCallback
+
         console.log('[Token API] Exchanging refresh token for access token...');
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                client_id: GOOGLE_CLIENT_ID,
-                client_secret: GOOGLE_CLIENT_SECRET,
-                grant_type: 'refresh_token',
-                refresh_token: credentials.google_refresh_token
-            })
+            body: new URLSearchParams(params)
         })
 
         const tokenData = await response.json()
 
         if (!response.ok) {
-            console.error('[Token API] Google token exchange failed:', tokenData);
+            console.error('[Token API] Google token exchange failed for user:', user.id, tokenData);
+            console.error('[Token API] Using Client ID:', GOOGLE_CLIENT_ID?.substring(0, 15) + '...');
             return json({ error: 'Failed to refresh Google token', details: tokenData }, { status: 400 })
         }
 

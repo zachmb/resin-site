@@ -64,18 +64,33 @@ async function getGoogleAccessToken(userId: string): Promise<string> {
 
     if (!creds?.google_refresh_token) throw new Error('No Google refresh token stored for user')
 
+    console.log(`[getGoogleAccessToken] Refreshing token for ${userId}.`);
+    console.log(`[getGoogleAccessToken] Config: ID len=${GOOGLE_CLIENT_ID?.length}, Secret len=${GOOGLE_CLIENT_SECRET?.length}`);
+    console.log(`[getGoogleAccessToken] ID prefix: ${GOOGLE_CLIENT_ID?.substring(0, 10)}...`);
+
+    const params: Record<string, string> = {
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: creds.google_refresh_token,
+    }
+
+    // Google sometimes requires the original redirect_uri if it was provided during authorization.
+    // For Supabase, this is the internal Supabase callback.
+    const supabaseCallback = `${PUBLIC_SUPABASE_URL}/auth/v1/callback`
+    params.redirect_uri = supabaseCallback
+
     const res = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            client_id: GOOGLE_CLIENT_ID,
-            client_secret: GOOGLE_CLIENT_SECRET,
-            grant_type: 'refresh_token',
-            refresh_token: creds.google_refresh_token,
-        }),
+        body: new URLSearchParams(params),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(`Google token refresh failed: ${JSON.stringify(data)}`)
+    if (!res.ok) {
+        console.error(`[getGoogleAccessToken] Google token refresh failed for user ${userId}. Status: ${res.status}. Data:`, JSON.stringify(data));
+        console.error(`[getGoogleAccessToken] Using Client ID: ${GOOGLE_CLIENT_ID?.substring(0, 15)}...`);
+        throw new Error(`Google token refresh failed: ${JSON.stringify(data)}`)
+    }
     return data.access_token as string
 }
 
@@ -100,7 +115,7 @@ async function getFreeBusy(accessToken: string, timezone: string): Promise<strin
     return busy.map(b => `Busy: ${b.start} → ${b.end}`).join('\n')
 }
 
-/** Create a Google Calendar event and return its id. */
+/** Create a Google Calendar event and return its id. Retries once on failure. */
 async function createCalendarEvent(
     accessToken: string,
     task: DeepSeekTask,
@@ -113,20 +128,26 @@ async function createCalendarEvent(
         start: { dateTime: task.scheduling.start_time, timeZone: timezone },
         end: { dateTime: task.scheduling.end_time, timeZone: timezone },
     }
-    const res = await fetch(
-        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-        {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const res = await fetch(
+            'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+            {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            }
+        )
+        if (res.ok) {
+            const ev = await res.json()
+            return ev.id ?? null
         }
-    )
-    if (!res.ok) {
-        console.error('[activate] Calendar event creation failed:', await res.text())
-        return null
+        const errText = await res.text()
+        console.error(`[activate] Calendar event creation failed (attempt ${attempt + 1}):`, errText)
+        if (attempt === 0) await new Promise(r => setTimeout(r, 500))
     }
-    const ev = await res.json()
-    return ev.id ?? null
+    console.warn('[activate] Calendar event creation failed after 2 attempts — task will be saved without calendar event')
+    return null
 }
 
 // ── DeepSeek helper ────────────────────────────────────────────────────────────
@@ -222,15 +243,11 @@ OUTPUT ONLY VALID JSON. NO MARKDOWN. NO CODE BLOCKS.`
 // ── Main handler ───────────────────────────────────────────────────────────────
 
 export const POST = async ({ request }: RequestEvent) => {
-    // 1. Auth
+    // 1. Auth: Try header first, then fallback to body
     const authHeader = request.headers.get('authorization') ?? ''
-    const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-    if (!jwt) return json({ error: 'Missing Authorization header' }, { status: 401 })
+    let jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
 
-    const { data: { user }, error: userError } = await admin.auth.getUser(jwt)
-    if (userError || !user) return json({ error: 'Invalid token' }, { status: 401 })
-
-    // 2. Parse body
+    // 2. Parse body (early so we can check for access_token)
     let body: {
         session_id: string
         raw_text: string
@@ -239,11 +256,39 @@ export const POST = async ({ request }: RequestEvent) => {
         end_hour?: number
         user_preferences?: string
         timezone?: string
+        access_token?: string
+        google_access_token?: string
     }
     try {
         body = await request.json()
     } catch {
         return json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    if (!jwt && body.access_token) {
+        jwt = body.access_token
+    }
+
+    if (!jwt) {
+        return json({
+            error: 'Authentication failed: No token found.',
+            debug: {
+                has_auth_header: !!authHeader,
+                auth_header_prefix: authHeader ? authHeader.slice(0, 10) + '...' : 'none',
+                has_body: !!body,
+                body_keys: body ? Object.keys(body) : [],
+                has_access_token_in_body: !!body?.access_token
+            }
+        }, { status: 401 })
+    }
+
+    const { data: { user }, error: userError } = await admin.auth.getUser(jwt)
+    if (userError || !user) {
+        return json({
+            error: 'Invalid token',
+            details: userError?.message || 'No user found for this token',
+            jwt_prefix: jwt.slice(0, 10) + '...'
+        }, { status: 401 })
     }
 
     const {
@@ -254,6 +299,7 @@ export const POST = async ({ request }: RequestEvent) => {
         end_hour = 22,
         user_preferences = '',
         timezone = 'UTC',
+        google_access_token = null,
     } = body
 
     if (!session_id || !raw_text) {
@@ -268,7 +314,14 @@ export const POST = async ({ request }: RequestEvent) => {
 
     try {
         // 3. Get Google access token & free/busy
-        const gToken = await getGoogleAccessToken(user.id)
+        let gToken: string
+        if (google_access_token) {
+            console.log(`[activate] Using provided google_access_token for user ${user.id}`)
+            gToken = google_access_token
+        } else {
+            gToken = await getGoogleAccessToken(user.id)
+        }
+
         const freeBusy = await getFreeBusy(gToken, timezone)
 
         // 4. Call DeepSeek

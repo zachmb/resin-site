@@ -10,6 +10,7 @@
         profile={data.profile}
         recentNotes={data.recentNotes}
         todayTasks={data.todayTasks}
+        weeklyStats={data.weeklyStats}
     />
 {:else}
     <LandingPage />

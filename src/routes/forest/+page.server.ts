@@ -15,12 +15,25 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         .eq('id', session.user.id)
         .single();
 
-    // 2. Fetch amber sessions for trees/stones
-    const { data: sessions } = await supabase
+    // 2. Fetch amber sessions for trees/stones, including tasks for total time
+    const { data: rawSessions } = await supabase
         .from('amber_sessions')
-        .select('*')
+        .select(`
+            *,
+            amber_tasks (
+                estimated_minutes
+            )
+        `)
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
+
+    const sessions = (rawSessions || []).map((s: any) => {
+        const focusMinutes = (s.amber_tasks || []).reduce((acc: number, t: any) => acc + (t.estimated_minutes || 0), 0);
+        return {
+            ...s,
+            focusMinutes
+        };
+    });
 
     return {
         profile,

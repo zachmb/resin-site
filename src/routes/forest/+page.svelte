@@ -184,6 +184,30 @@
                                 >
                                     {species?.icon || "🌿"}
                                 </div>
+                                <!-- Tooltip -->
+                                <div
+                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-[3.5rem] w-max bg-resin-charcoal text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 shadow-xl flex flex-col items-center gap-1"
+                                >
+                                    <span class="font-bold"
+                                        >{session.title ||
+                                            session.display_title ||
+                                            "Focus Session"}</span
+                                    >
+                                    <span class="text-[10px] text-white/70">
+                                        {new Date(
+                                            session.created_at,
+                                        ).toLocaleDateString([], {
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                        {#if session.focusMinutes > 0}
+                                            • {session.focusMinutes}m focus{/if}
+                                    </span>
+                                    <!-- Triangle -->
+                                    <div
+                                        class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-resin-charcoal"
+                                    ></div>
+                                </div>
                                 <!-- Shadow -->
                                 <div
                                     class="absolute inset-x-0 bottom-0 h-4 bg-resin-charcoal/5 rounded-full blur-md -z-10 scale-x-150"
@@ -198,6 +222,28 @@
                                     class="w-10 h-10 flex items-center justify-center text-2xl transform hover:scale-110 transition-transform duration-300"
                                 >
                                     🪨
+                                </div>
+                                <!-- Tooltip -->
+                                <div
+                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-max bg-resin-charcoal text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 shadow-xl flex flex-col items-center gap-1"
+                                >
+                                    <span class="font-bold"
+                                        >{session.title ||
+                                            session.display_title ||
+                                            "Untitled Note"}</span
+                                    >
+                                    <span class="text-[10px] text-white/70">
+                                        {new Date(
+                                            session.created_at,
+                                        ).toLocaleDateString([], {
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                    </span>
+                                    <!-- Triangle -->
+                                    <div
+                                        class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-resin-charcoal"
+                                    ></div>
                                 </div>
                                 <!-- Shadow -->
                                 <div
@@ -236,6 +282,79 @@
                                 {species.unlockCost} Stones
                             </div>
                         {/if}
+                    </div>
+                {/each}
+            </div>
+        </div>
+
+        <!-- Session History -->
+        <div class="w-full max-w-4xl space-y-6 mt-20">
+            <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                Session History
+            </h2>
+            <div class="grid gap-4">
+                {#each items as session, i}
+                    <div
+                        class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/20 hover:border-resin-amber/30 transition-all"
+                    >
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm border border-resin-forest/5"
+                            >
+                                {#if session.status === "scheduled" || session.status === "completed"}
+                                    {unlockedSpecies[i % unlockedSpecies.length]
+                                        ?.icon || "🌿"}
+                                {:else}
+                                    🪨
+                                {/if}
+                            </div>
+                            <div>
+                                <h3
+                                    class="font-bold text-resin-charcoal text-lg"
+                                >
+                                    {session.title ||
+                                        session.display_title ||
+                                        "Focus Session"}
+                                </h3>
+                                <p
+                                    class="text-xs font-bold text-resin-earth/50 uppercase tracking-wider mt-1"
+                                >
+                                    {new Date(
+                                        session.created_at,
+                                    ).toLocaleDateString("en-US", {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                    {#if session.focusMinutes > 0}
+                                        <span class="mx-2 text-resin-forest/30"
+                                            >•</span
+                                        >
+                                        <span class="text-resin-forest"
+                                            >{session.focusMinutes}m focused</span
+                                        >
+                                    {/if}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {#if session.status === "scheduled"}
+                                <span
+                                    class="px-3 py-1 bg-resin-amber/10 text-resin-amber text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Active Plan</span
+                                >
+                            {:else if session.status === "completed"}
+                                <span
+                                    class="px-3 py-1 bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Completed</span
+                                >
+                            {:else}
+                                <span
+                                    class="px-3 py-1 bg-resin-forest/5 text-resin-earth/50 text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Draft</span
+                                >
+                            {/if}
+                        </div>
                     </div>
                 {/each}
             </div>

@@ -1,5 +1,12 @@
 <script lang="ts">
-    import { fade } from "svelte/transition";
+    import { fade, slide } from "svelte/transition";
+    import { enhance } from "$app/forms";
+
+    let expandedSessionId = $state<string | null>(null);
+
+    const toggleExpand = (id: string) => {
+        expandedSessionId = expandedSessionId === id ? null : id;
+    };
 
     let { profile, recentSessions = [] } = $props<{
         profile: any;
@@ -112,48 +119,171 @@
         <div
             class="space-y-4 relative before:absolute before:inset-0 before:left-6 before:-ml-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-resin-amber/40 before:to-transparent"
         >
-            {#each recentSessions.slice(0, 5) as session}
+            {#each recentSessions as session}
                 <div class="relative flex items-start gap-6 group">
                     <div
-                        class="w-12 h-12 rounded-full border-4 border-[#FCF9F2] bg-white shadow-sm flex items-center justify-center z-10 shrink-0 mt-1 relative after:absolute after:inset-0 after:rounded-full after:ring-1 after:ring-resin-forest/10 group-hover:after:ring-resin-amber/40 transition-all"
+                        class="w-12 h-12 rounded-full border-4 border-[#FCF9F2] bg-white shadow-sm flex items-center justify-center z-10 shrink-0 mt-1 relative after:absolute after:inset-0 after:rounded-full after:ring-1 after:ring-resin-forest/10 group-hover:after:ring-resin-amber/40 transition-all {expandedSessionId ===
+                        session.id
+                            ? 'after:ring-resin-amber'
+                            : ''}"
                     >
-                        <svg
-                            class="w-5 h-5 text-resin-earth"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                            ></path>
-                        </svg>
-                    </div>
-                    <div
-                        class="glass-card rounded-2xl p-5 border border-resin-forest/5 group-hover:border-resin-amber/20 flex-1 shadow-sm transition-all pb-6"
-                    >
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="font-bold text-resin-charcoal">
-                                {session.title || "Focus Session"}
-                            </h3>
+                        {#if session.status === "scheduled"}
                             <span
-                                class="text-xs font-semibold text-resin-earth/70"
+                                class="w-3 h-3 rounded-full bg-resin-amber animate-pulse"
+                            ></span>
+                        {:else if session.status === "completed"}
+                            <span class="w-3 h-3 rounded-full bg-resin-forest"
+                            ></span>
+                        {:else}
+                            <span class="w-3 h-3 rounded-full bg-resin-earth/30"
+                            ></span>
+                        {/if}
+                    </div>
+
+                    <div
+                        class="glass-card rounded-2xl p-5 border text-left flex-1 shadow-sm transition-all pb-5 block cursor-pointer w-full {expandedSessionId ===
+                        session.id
+                            ? 'border-resin-amber shadow-md'
+                            : 'border-resin-forest/5 group-hover:border-resin-amber/20'}"
+                        role="button"
+                        tabindex="0"
+                        onclick={() => toggleExpand(session.id)}
+                        onkeydown={(e) => {
+                            if (e.key === "Enter" || e.key === " ")
+                                toggleExpand(session.id);
+                        }}
+                    >
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2"
+                        >
+                            <h3
+                                class="font-bold text-resin-charcoal group-hover:text-resin-amber transition-colors text-lg"
                             >
-                                {session.created_at
-                                    ? new Date(
-                                          session.created_at,
-                                      ).toLocaleTimeString([], {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                      })
-                                    : "Just now"}
-                            </span>
+                                {session.title ||
+                                    session.display_title ||
+                                    "Focus Session"}
+                            </h3>
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="text-xs font-semibold text-resin-earth/60"
+                                >
+                                    {session.created_at
+                                        ? new Date(
+                                              session.created_at,
+                                          ).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                          })
+                                        : "Just now"}
+                                </span>
+                                {#if session.status === "scheduled"}
+                                    <span
+                                        class="text-[10px] font-bold text-resin-amber uppercase tracking-widest px-2 py-0.5 rounded bg-resin-amber/10"
+                                        >Active</span
+                                    >
+                                {:else if session.status === "completed"}
+                                    <span
+                                        class="text-[10px] font-bold text-resin-forest uppercase tracking-widest px-2 py-0.5 rounded bg-resin-forest/10"
+                                        >Completed</span
+                                    >
+                                {:else}
+                                    <span
+                                        class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest px-2 py-0.5 rounded bg-resin-forest/5"
+                                        >Draft</span
+                                    >
+                                {/if}
+                            </div>
                         </div>
                         <p class="text-sm text-resin-earth/80 line-clamp-2">
-                            {session.content}
+                            {session.content || session.raw_text}
                         </p>
+
+                        {#if expandedSessionId === session.id}
+                            <div
+                                class="mt-6 pt-6 border-t border-resin-forest/10 cursor-default"
+                                in:slide={{ duration: 300 }}
+                                onclick={(e) => e.stopPropagation()}
+                            >
+                                <h4
+                                    class="text-xs font-bold text-resin-charcoal uppercase tracking-widest mb-4"
+                                >
+                                    Plan Steps
+                                </h4>
+                                {#if session.amber_tasks && session.amber_tasks.length > 0}
+                                    <div class="space-y-3">
+                                        {#each session.amber_tasks as task, i}
+                                            <div class="flex items-start gap-3">
+                                                <div
+                                                    class="w-5 h-5 rounded bg-resin-forest/5 flex items-center justify-center text-[10px] font-bold text-resin-earth/50 mt-0.5 shrink-0"
+                                                >
+                                                    {i + 1}
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div
+                                                        class="flex items-center justify-between"
+                                                    >
+                                                        <span
+                                                            class="text-sm font-semibold text-resin-charcoal"
+                                                            >{task.title}</span
+                                                        >
+                                                        <span
+                                                            class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-widest"
+                                                            >{task.estimated_minutes}m</span
+                                                        >
+                                                    </div>
+                                                    {#if task.requires_focus}
+                                                        <span
+                                                            class="inline-block mt-1 text-[9px] font-bold text-resin-amber uppercase tracking-widest px-1.5 py-0.5 rounded bg-resin-amber/5 border border-resin-amber/10"
+                                                            >Shield Active</span
+                                                        >
+                                                    {/if}
+                                                </div>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                {:else}
+                                    <p
+                                        class="text-sm text-resin-earth/60 italic"
+                                    >
+                                        No tasks generated for this session yet.
+                                    </p>
+                                {/if}
+
+                                {#if session.status !== "scheduled" && session.status !== "completed"}
+                                    <div class="mt-6 flex justify-end">
+                                        <form
+                                            method="POST"
+                                            action="?/activate"
+                                            use:enhance
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="sessionId"
+                                                value={session.id}
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="px-5 py-2.5 bg-resin-amber text-white font-bold rounded-xl shadow-lg shadow-resin-amber/20 hover:shadow-resin-amber/40 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+                                            >
+                                                <span>Activate Plan</span>
+                                                <svg
+                                                    class="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                    ><path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                                                    ></path></svg
+                                                >
+                                            </button>
+                                        </form>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
                     </div>
                 </div>
             {/each}

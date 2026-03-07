@@ -6,10 +6,12 @@
         profile,
         recentNotes = [],
         todayTasks = [],
+        weeklyStats = null,
     } = $props<{
         profile: any;
         recentNotes: any[];
         todayTasks: any[];
+        weeklyStats: any;
     }>();
 
     const formatTime = (dateString: string) => {
@@ -27,7 +29,32 @@
         });
     };
 
+    const feelingIcons: Record<string, string> = {
+        "Flow State": "⚡",
+        Proud: "⭐",
+        Relieved: "🍃",
+        Energized: "🔥",
+        Drained: "🪫",
+        Frustrated: "🌧️",
+    };
+
     let today = new Date();
+
+    function heatLevel(minutes: number): number {
+        if (minutes === 0) return 0;
+        if (minutes < 30) return 1;
+        if (minutes < 60) return 2;
+        if (minutes < 120) return 3;
+        return 4;
+    }
+
+    const heatColors = [
+        "bg-resin-forest/5",
+        "bg-resin-forest/15",
+        "bg-resin-forest/30",
+        "bg-resin-forest/50",
+        "bg-resin-forest/70",
+    ];
 </script>
 
 <main
@@ -41,13 +68,13 @@
             <div
                 class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
             >
-                Power User Dashboard
+                Command Center
             </div>
             <h1
                 class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
             >
                 Welcome back, <span class="text-resin-forest italic serif"
-                    >{profile.email.split("@")[0]}</span
+                    >{profile?.email?.split("@")[0] || "explorer"}</span
                 >
             </h1>
             <p class="text-resin-earth/60 font-medium mt-2">
@@ -55,33 +82,225 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-10">
-            <div class="text-center">
+        <div class="flex items-center gap-8">
+            <a href="/forest" class="text-center group">
                 <p
-                    class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1"
+                    class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1 group-hover:text-resin-amber transition-colors"
                 >
                     Stones
                 </p>
                 <p class="text-2xl font-bold text-resin-charcoal">
-                    {profile.stones || 0}
+                    {profile?.total_stones || profile?.stones || 0}
                 </p>
-            </div>
+            </a>
             <div class="w-px h-8 bg-resin-forest/10"></div>
-            <div class="text-center">
+            <a href="/forest" class="text-center group">
                 <p
-                    class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1"
+                    class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1 group-hover:text-resin-amber transition-colors"
                 >
                     Streak
                 </p>
-                <p class="text-2xl font-bold text-resin-charcoal">7 days</p>
-            </div>
+                <p class="text-2xl font-bold text-resin-charcoal">
+                    {profile?.current_streak || 0}d
+                </p>
+            </a>
+            {#if weeklyStats?.avgRating > 0}
+                <div class="w-px h-8 bg-resin-forest/10"></div>
+                <div class="text-center">
+                    <p
+                        class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1"
+                    >
+                        Avg Rating
+                    </p>
+                    <p class="text-2xl font-bold text-resin-amber">
+                        {weeklyStats.avgRating}/5
+                    </p>
+                </div>
+            {/if}
         </div>
     </div>
 
+    <!-- Weekly Activity Heatmap -->
+    {#if weeklyStats}
+        <section class="mb-8">
+            <div
+                class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-white/20 shadow-premium relative bg-gradient-to-br from-white/40 to-transparent"
+            >
+                <div class="flex items-center justify-between mb-6">
+                    <h3
+                        class="text-lg font-bold text-resin-charcoal flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-5 h-5 text-resin-forest"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                            />
+                        </svg>
+                        This Week
+                    </h3>
+                    <div class="flex items-center gap-6">
+                        <span
+                            class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest"
+                            >{weeklyStats.totalFocusMinutes}m focused</span
+                        >
+                        <span
+                            class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest"
+                            >{weeklyStats.totalSessions} sessions</span
+                        >
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-3">
+                    {#each weeklyStats.heatmap as day}
+                        <div class="flex flex-col items-center gap-2">
+                            <span
+                                class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-wider"
+                                >{day.day}</span
+                            >
+                            <div
+                                class="w-full aspect-square rounded-2xl {heatColors[
+                                    heatLevel(day.focusMinutes)
+                                ]} flex items-center justify-center transition-all hover:scale-105 cursor-default"
+                                title="{day.focusMinutes}m focused, {day.sessions} session(s)"
+                            >
+                                {#if day.focusMinutes > 0}
+                                    <span
+                                        class="text-sm font-bold {heatLevel(
+                                            day.focusMinutes,
+                                        ) >= 3
+                                            ? 'text-white'
+                                            : 'text-resin-forest/60'}"
+                                        >{day.focusMinutes}m</span
+                                    >
+                                {/if}
+                            </div>
+                            <span
+                                class="text-[9px] text-resin-earth/30 font-medium"
+                                >{day.sessions}
+                                {day.sessions === 1 ? "plan" : "plans"}</span
+                            >
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        </section>
+    {/if}
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Left: Focus & Timeline -->
+        <!-- Left: Focus, Taste, Timeline -->
         <div class="lg:col-span-7 space-y-8">
             <FocusControl />
+
+            <!-- Taste Insights Card -->
+            {#if weeklyStats && (weeklyStats.topFeeling || weeklyStats.enjoyedThings.length > 0)}
+                <section
+                    class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-amber/15 shadow-premium relative bg-gradient-to-br from-resin-amber/5 to-transparent overflow-hidden"
+                >
+                    <div
+                        class="absolute -right-16 -bottom-16 w-48 h-48 bg-resin-amber/5 rounded-full blur-3xl"
+                    ></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div
+                                class="w-10 h-10 rounded-2xl bg-resin-amber/10 flex items-center justify-center"
+                            >
+                                <span class="text-lg">✦</span>
+                            </div>
+                            <div>
+                                <h3
+                                    class="text-lg font-bold text-resin-charcoal"
+                                >
+                                    Taste Profile
+                                </h3>
+                                <p
+                                    class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-widest"
+                                >
+                                    What energizes you
+                                </p>
+                            </div>
+                        </div>
+
+                        {#if weeklyStats.topFeeling}
+                            <div
+                                class="flex items-center gap-3 mb-5 p-4 rounded-2xl bg-white/40"
+                            >
+                                <span class="text-2xl"
+                                    >{feelingIcons[
+                                        weeklyStats.topFeeling
+                                    ] || "✦"}</span
+                                >
+                                <div>
+                                    <p
+                                        class="text-xs font-bold text-resin-earth/50 uppercase tracking-wider"
+                                    >
+                                        Dominant feeling after sessions
+                                    </p>
+                                    <p
+                                        class="text-lg font-bold text-resin-charcoal"
+                                    >
+                                        {weeklyStats.topFeeling}
+                                    </p>
+                                </div>
+                            </div>
+                        {/if}
+
+                        {#if Object.keys(weeklyStats.feelingCounts).length > 1}
+                            <div class="flex flex-wrap gap-2 mb-5">
+                                {#each Object.entries(weeklyStats.feelingCounts) as [feeling, count]}
+                                    <div
+                                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/50 border border-resin-forest/5"
+                                    >
+                                        <span class="text-sm"
+                                            >{feelingIcons[feeling] ||
+                                                "·"}</span
+                                        >
+                                        <span
+                                            class="text-xs font-semibold text-resin-earth"
+                                            >{feeling}</span
+                                        >
+                                        <span
+                                            class="text-[10px] font-bold text-resin-earth/40"
+                                            >×{count}</span
+                                        >
+                                    </div>
+                                {/each}
+                            </div>
+                        {/if}
+
+                        {#if weeklyStats.enjoyedThings.length > 0}
+                            <div>
+                                <p
+                                    class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-widest mb-3"
+                                >
+                                    Things you've enjoyed
+                                </p>
+                                <div class="space-y-2">
+                                    {#each weeklyStats.enjoyedThings as thing}
+                                        <div
+                                            class="flex items-start gap-2 text-sm text-resin-earth/80"
+                                        >
+                                            <span
+                                                class="text-resin-amber mt-0.5"
+                                                >→</span
+                                            >
+                                            <span class="italic"
+                                                >"{thing}"</span
+                                            >
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+                </section>
+            {/if}
 
             <!-- Timeline -->
             <section
@@ -153,7 +372,7 @@
                                 </div>
                                 {#if task.description}
                                     <p
-                                        class="text-sm text-resin-earth/70 mt-1 line-clamp-1"
+                                        class="text-sm text-resin-earth/70 mt-2 leading-relaxed whitespace-pre-line line-clamp-3"
                                     >
                                         {task.description}
                                     </p>
@@ -184,16 +403,54 @@
                             Nothing scheduled yet
                         </p>
                         <p class="text-xs text-resin-earth/60 mt-1">
-                            Activate a note to see your day take shape.
+                            Activate a note from the app to see your day take
+                            shape.
                         </p>
                     </div>
                 {/if}
             </section>
         </div>
 
-        <!-- Right: Recent Notes -->
-        <div class="lg:col-span-5">
-            <div class="flex items-center justify-between mb-6">
+        <!-- Right: Quick Stats + Recent Notes -->
+        <div class="lg:col-span-5 space-y-8">
+            {#if weeklyStats}
+                <div class="grid grid-cols-2 gap-4">
+                    <a
+                        href="/forest"
+                        class="glass-card rounded-2xl p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
+                    >
+                        <p
+                            class="text-2xl font-bold text-resin-charcoal group-hover:text-resin-forest transition-colors"
+                        >
+                            {weeklyStats.scheduledPlans}
+                        </p>
+                        <p
+                            class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-widest mt-1"
+                        >
+                            Plans This Week
+                        </p>
+                    </a>
+                    <a
+                        href="/forest"
+                        class="glass-card rounded-2xl p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
+                    >
+                        <p
+                            class="text-2xl font-bold text-resin-charcoal group-hover:text-resin-forest transition-colors"
+                        >
+                            {Math.round(
+                                (weeklyStats.totalFocusMinutes / 60) * 10,
+                            ) / 10}h
+                        </p>
+                        <p
+                            class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-widest mt-1"
+                        >
+                            Focus Time
+                        </p>
+                    </a>
+                </div>
+            {/if}
+
+            <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-resin-charcoal font-serif">
                     Recent Dump Archive
                 </h3>

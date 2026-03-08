@@ -239,5 +239,28 @@ export const actions: Actions = {
             console.error('[notes] Activation failed:', err);
             return fail(500, { error: err.message || 'Activation failed' });
         }
+    },
+
+    cancelNote: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const sessionId = data.get('id') as string;
+
+        if (!sessionId) return fail(400, { error: 'Missing session ID' });
+
+        const { error } = await supabase
+            .from('amber_sessions')
+            .update({ status: 'canceled' })
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id);
+
+        if (error) {
+            console.error('[notes] Cancel failed:', error);
+            return fail(500, { error: 'Could not cancel note' });
+        }
+
+        return { success: true, message: 'Note canceled' };
     }
 };

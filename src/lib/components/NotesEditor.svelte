@@ -180,11 +180,22 @@
                             onSelectNote(note);
                         }}
                     >
-                        <h3
-                            class="font-semibold text-sm text-resin-charcoal truncate pr-2"
-                        >
-                            {noteTitle}
-                        </h3>
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <h3
+                                class="font-semibold text-sm text-resin-charcoal truncate flex-1"
+                            >
+                                {noteTitle}
+                            </h3>
+                            {#if note.status === 'scheduled'}
+                                <span class="text-[8px] font-bold text-white px-1.5 py-0.5 rounded bg-resin-amber flex-shrink-0">
+                                    ACTIVE
+                                </span>
+                            {:else if note.status === 'canceled'}
+                                <span class="text-[8px] font-bold text-red-600 px-1.5 py-0.5 rounded bg-red-300/30 flex-shrink-0">
+                                    ✕
+                                </span>
+                            {/if}
+                        </div>
                         <div class="flex justify-between items-center mt-1">
                             <p
                                 class="text-xs text-resin-earth/70 truncate mr-2 flex-1"
@@ -440,60 +451,135 @@
                         </button>
                     </form>
 
-                    <form
-                        method="POST"
-                        action="?/activateNote"
-                        class="flex-1 w-full"
-                        use:enhance={() => {
-                            return async ({ result, update }) => {
-                                if (result.type === "success") {
-                                    showToast(
-                                        result.data?.message ||
-                                            "DeepSeek activated! Plan generated and scheduled.",
-                                    );
-                                } else if (result.type === "failure") {
-                                    showToast(
-                                        result.data?.error ||
-                                            "Failed to activate. Please try again.",
-                                    );
-                                } else if (result.type === "error") {
-                                    showToast(
-                                        result.error?.message ||
-                                            "An error occurred.",
-                                    );
-                                }
-                                await update();
-                            };
-                        }}
-                    >
-                        <input type="hidden" name="id" value={activeNote?.id} />
-                        <input
-                            type="hidden"
-                            name="noteContent"
-                            value={activeNote?.content}
-                        />
-                        <button
-                            type="submit"
-                            class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
-                            bg-[#2B4634] text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center
-                            disabled:opacity-45 disabled:cursor-not-allowed"
-                            disabled={!(activeNote?.content || "").trim()}
+                    {#if activeNote?.status === 'scheduled'}
+                        <!-- Cancel Active Plan -->
+                        <form
+                            method="POST"
+                            action="?/cancelNote"
+                            class="flex-1 w-full"
+                            use:enhance={() => {
+                                return async ({ result, update }) => {
+                                    if (result.type === "success") {
+                                        showToast("Plan canceled");
+                                    } else if (result.type === "failure") {
+                                        showToast(
+                                            result.data?.error ||
+                                                "Failed to cancel. Please try again.",
+                                        );
+                                    } else if (result.type === "error") {
+                                        showToast(
+                                            result.error?.message ||
+                                                "An error occurred.",
+                                        );
+                                    }
+                                    await update();
+                                };
+                            }}
                         >
-                            <svg
-                                class="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                stroke-width="2.5"
+                            <input type="hidden" name="id" value={activeNote?.id} />
+                            <button
+                                type="submit"
+                                class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
+                                bg-red-400 text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2.5"
                                 ><path
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
-                                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    d="M6 18L18 6M6 6l12 12"
+                                ></path></svg
+                                >
+                                Cancel Plan
+                            </button>
+                        </form>
+                    {:else if activeNote?.status === 'completed'}
+                        <!-- Completed State -->
+                        <div class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 bg-resin-forest/10 text-resin-forest">
+                            <svg
+                                class="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                            ><path
+                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
                                 ></path></svg
                             >
-                            Activate
-                        </button>
-                    </form>
+                            Completed
+                        </div>
+                    {:else if activeNote?.status === 'canceled'}
+                        <!-- Canceled State -->
+                        <div class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 bg-red-300/20 text-red-600">
+                            <svg
+                                class="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                            ><path
+                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                                ></path></svg
+                            >
+                            Canceled
+                        </div>
+                    {:else}
+                        <!-- Activate (Draft/Default) -->
+                        <form
+                            method="POST"
+                            action="?/activateNote"
+                            class="flex-1 w-full"
+                            use:enhance={() => {
+                                return async ({ result, update }) => {
+                                    if (result.type === "success") {
+                                        showToast(
+                                            result.data?.message ||
+                                                "DeepSeek activated! Plan generated and scheduled.",
+                                        );
+                                    } else if (result.type === "failure") {
+                                        showToast(
+                                            result.data?.error ||
+                                                "Failed to activate. Please try again.",
+                                        );
+                                    } else if (result.type === "error") {
+                                        showToast(
+                                            result.error?.message ||
+                                                "An error occurred.",
+                                        );
+                                    }
+                                    await update();
+                                };
+                            }}
+                        >
+                            <input type="hidden" name="id" value={activeNote?.id} />
+                            <input
+                                type="hidden"
+                                name="noteContent"
+                                value={activeNote?.content}
+                            />
+                            <button
+                                type="submit"
+                                class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
+                                bg-[#2B4634] text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center
+                                disabled:opacity-45 disabled:cursor-not-allowed"
+                                disabled={!(activeNote?.content || "").trim()}
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2.5"
+                                ><path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                    ></path></svg
+                                >
+                                Activate
+                            </button>
+                        </form>
+                    {/if}
                 </div>
             </div>
         </div>

@@ -262,5 +262,28 @@ export const actions: Actions = {
         }
 
         return { success: true, message: 'Note canceled' };
+    },
+
+    completeNote: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const sessionId = data.get('id') as string;
+
+        if (!sessionId) return fail(400, { error: 'Missing session ID' });
+
+        const { error } = await supabase
+            .from('amber_sessions')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id);
+
+        if (error) {
+            console.error('[notes] Complete failed:', error);
+            return fail(500, { error: 'Could not mark note as completed' });
+        }
+
+        return { success: true, message: 'Note marked as completed' };
     }
 };

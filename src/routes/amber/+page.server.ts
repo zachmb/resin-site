@@ -83,5 +83,53 @@ export const actions: Actions = {
         }
 
         return { success: true };
+    },
+
+    complete: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+
+        if (!sessionId) return { success: false, error: 'Missing session ID' };
+
+        // Update session status to 'completed'
+        const { error } = await supabase
+            .from('amber_sessions')
+            .update({ status: 'completed', updated_at: new Date().toISOString() })
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id);
+
+        if (error) {
+            console.error('Error completing plan:', error);
+            return { success: false, error: 'Failed to complete plan' };
+        }
+
+        return { success: true };
+    },
+
+    cancel: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+
+        if (!sessionId) return { success: false, error: 'Missing session ID' };
+
+        // Update session status to 'canceled'
+        const { error } = await supabase
+            .from('amber_sessions')
+            .update({ status: 'canceled', updated_at: new Date().toISOString() })
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id);
+
+        if (error) {
+            console.error('Error canceling plan:', error);
+            return { success: false, error: 'Failed to cancel plan' };
+        }
+
+        return { success: true };
     }
 };

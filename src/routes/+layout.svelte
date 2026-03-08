@@ -81,30 +81,6 @@
 							>
 						</div>
 					{/if}
-					<form
-						method="POST"
-						action="/notes?/createNote"
-						class="flex items-center"
-					>
-						<button
-							type="submit"
-							class="px-4 py-2 bg-resin-forest text-white rounded-xl text-sm font-semibold hover:bg-resin-forest/90 transition shadow-sm flex items-center gap-2"
-						>
-							<svg
-								class="w-4 h-4"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-								><path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 4v16m8-8H4"
-								/></svg
-							>
-							New Note
-						</button>
-					</form>
 					<a
 						href="/notes?reset"
 						class="hover:text-resin-forest transition-colors relative group"
@@ -124,6 +100,15 @@
 						></span>
 					</a>
 					<a
+						href="/amber"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Amber
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+					<a
 						href="/forest"
 						class="hover:text-resin-forest transition-colors relative group"
 					>
@@ -133,10 +118,10 @@
 						></span>
 					</a>
 					<a
-						href="/amber"
+						href="/focus"
 						class="hover:text-resin-forest transition-colors relative group"
 					>
-						Amber
+						Focus
 						<span
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
@@ -223,15 +208,6 @@
 			class="sm:hidden fixed top-[72px] left-0 w-full bg-[#FCF9F2]/98 backdrop-blur-xl z-40 border-b border-resin-earth/10 flex flex-col px-6 py-6 gap-6 shadow-premium"
 		>
 			{#if session}
-				<form method="POST" action="/notes?/createNote" class="w-full">
-					<button
-						type="submit"
-						class="w-full text-left text-xl font-bold font-serif text-resin-forest"
-						onclick={() => (isMobileMenuOpen = false)}
-					>
-						+ New Note
-					</button>
-				</form>
 				<a
 					href="/notes?reset"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
@@ -243,15 +219,20 @@
 					onclick={() => (isMobileMenuOpen = false)}>Map</a
 				>
 				<a
-					href="/forest"
-					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
-					onclick={() => (isMobileMenuOpen = false)}>Forest</a
-				>
-				<a
 					href="/amber"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
 					onclick={() => (isMobileMenuOpen = false)}>Amber</a
 				>
+				<a
+					href="/forest"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Forest</a
+				>
+			<a
+				href="/focus"
+				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+				onclick={() => (isMobileMenuOpen = false)}>Focus</a
+			>
 				<a
 					href="/account"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"

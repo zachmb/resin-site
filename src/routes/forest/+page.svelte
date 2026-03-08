@@ -3,44 +3,51 @@
     import { fade, fly, scale } from "svelte/transition";
 
     let { data } = $props();
-    let { profile, sessions } = $derived(data);
+    let { profile, sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession } = $derived(data);
 
-    // Tree Species Logic (Mirrored from iOS App)
+    // Tree Species Logic (Synced with iOS App)
     const treeSpecies = [
         {
-            id: "willow",
-            name: "Weeping Willow",
+            id: "amber",
+            name: "Amber Plan",
             icon: "🌿",
             unlockCost: 0,
-            color: "#4A7856",
-        },
-        {
-            id: "oak",
-            name: "Ancient Oak",
-            icon: "🌳",
-            unlockCost: 10,
-            color: "#2B4633",
-        },
-        {
-            id: "pine",
-            name: "Silver Pine",
-            icon: "🌲",
-            unlockCost: 25,
-            color: "#5F7A61",
-        },
-        {
-            id: "maple",
-            name: "Amber Maple",
-            icon: "🍁",
-            unlockCost: 50,
             color: "#E89A3C",
         },
         {
-            id: "baobab",
-            name: "Grand Baobab",
+            id: "oak",
+            name: "Oak",
             icon: "🌳",
+            unlockCost: 20,
+            color: "#2B4633",
+        },
+        {
+            id: "cherry",
+            name: "Cherry Blossom",
+            icon: "🌸",
+            unlockCost: 40,
+            color: "#E8A0B5",
+        },
+        {
+            id: "lavender",
+            name: "Lavender",
+            icon: "💜",
+            unlockCost: 70,
+            color: "#9B8EC4",
+        },
+        {
+            id: "sunflower",
+            name: "Sunflower",
+            icon: "🌻",
             unlockCost: 100,
-            color: "#3D2B1F",
+            color: "#E8C840",
+        },
+        {
+            id: "starry",
+            name: "Starry Tree",
+            icon: "⭐",
+            unlockCost: 150,
+            color: "#6BA3C8",
         },
     ];
 
@@ -50,16 +57,35 @@
         treeSpecies.filter((s) => s.unlockCost <= totalStones),
     );
 
-    // Grid calculations
-    const columns = 5;
-    const items = $derived(sessions.slice(0, 25)); // Show last 25 sessions in the forest
+    // Time period filtering
+    let selectedPeriod = $state<"day" | "week" | "month" | "year">("week");
 
-    function getIsoPos(index: number) {
-        const row = Math.floor(index / columns);
-        const col = index % columns;
-        const x = (col - row) * 60;
-        const y = (col + row) * 30;
-        return { x, y };
+    const filteredSessions = $derived.by(() => {
+        const cutoff = { day: 1, week: 7, month: 30, year: 365 }[selectedPeriod];
+        const msAgo = Date.now() - cutoff * 86400000;
+        return sessions.filter((s: any) => new Date(s.created_at).getTime() >= msAgo);
+    });
+
+    const gridSessions = $derived(filteredSessions.slice(0, 16));
+    const overflow = $derived(Math.max(0, filteredSessions.length - 16));
+
+    // Helper: get icon based on session duration
+    function getSpeciesIcon(session: any): string {
+        if (!session) return "";
+        const mins = session.focusMinutes;
+        if (mins >= 120) return "⭐"; // starry (majestic)
+        if (mins >= 60) return "🌳"; // oak (large)
+        if (mins >= 20) return "🌿"; // amber (standard)
+        return "🌱"; // shrub
+    }
+
+    // Format minutes to hours/mins
+    function formatDuration(mins: number): string {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        if (h > 0 && m > 0) return `${h}h ${m}m`;
+        if (h > 0) return `${h}h`;
+        return `${m}m`;
     }
 </script>
 
@@ -111,7 +137,7 @@
                 >
                 <span
                     class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold"
-                    >Total Stones</span
+                    >Stones Earned</span
                 >
             </div>
 
@@ -128,7 +154,7 @@
                 >
                 <span
                     class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold"
-                    >Daily Consistency</span
+                    >Current</span
                 >
             </div>
 
@@ -136,124 +162,150 @@
                 class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-2 group hover:scale-[1.02] transition-transform duration-500"
             >
                 <div
-                    class="w-12 h-12 rounded-2xl bg-resin-amber/10 flex items-center justify-center text-resin-amber mb-2"
+                    class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2"
                 >
-                    <span class="text-2xl">🌲</span>
+                    <span class="text-xl">⏱</span>
                 </div>
                 <span class="text-3xl font-bold text-resin-charcoal"
-                    >{unlockedSpecies.length}</span
+                    >{formatDuration(totalFocusMinutes)}</span
                 >
                 <span
                     class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold"
-                    >Species Unlocked</span
+                    >Focus Time</span
                 >
             </div>
         </div>
 
-        <!-- Isometric Forest Grid -->
-        <div
-            class="relative w-full h-[600px] flex items-center justify-center pointer-events-none mb-32"
-        >
-            <!-- Radial Glow -->
-            <div
-                class="absolute inset-0 bg-radial-gradient from-resin-amber/5 via-transparent to-transparent"
-            ></div>
+        <!-- Time Period Selector -->
+        <div class="flex gap-1 p-1 bg-white/40 rounded-xl w-fit mx-auto mb-8">
+            {#each ["day", "week", "month", "year"] as period}
+                <button
+                    class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all {selectedPeriod === period
+                        ? "bg-resin-forest text-white"
+                        : "text-resin-earth/60 hover:text-resin-earth"}"
+                    onclick={() => (selectedPeriod = period as any)}
+                >
+                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                </button>
+            {/each}
+        </div>
 
-            <div class="relative transform scale-[0.8] md:scale-100">
-                {#each items as session, i}
-                    {@const pos = getIsoPos(i)}
-                    {@const isPlan =
-                        session.status === "scheduled" ||
-                        session.status === "completed"}
-                    {@const species = isPlan
-                        ? unlockedSpecies[i % unlockedSpecies.length]
-                        : null}
-
-                    <div
-                        class="absolute transition-all duration-1000 ease-out flex items-center justify-center"
-                        style="transform: translate({pos.x}px, {pos.y}px); z-index: {i};"
-                        in:scale={{ delay: i * 50, duration: 1000, start: 0 }}
-                    >
-                        {#if isPlan}
-                            <!-- Tree Visualization -->
+        <!-- Analytics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mb-12">
+            <!-- Focus Trends -->
+            <div class="glass-card rounded-2xl p-6">
+                <h3
+                    class="text-xs font-bold uppercase tracking-widest text-resin-earth/40 mb-4"
+                >
+                    Focus by Day of Week
+                </h3>
+                <div class="flex items-end gap-1 h-20">
+                    {#each ["M", "T", "W", "T", "F", "S", "S"] as day, i}
+                        {@const maxMin = Math.max(...minutesByDay, 1)}
+                        {@const h = (minutesByDay[i] / maxMin) * 100}
+                        <div class="flex-1 flex flex-col items-center gap-1">
                             <div
-                                class="relative group pointer-events-auto cursor-pointer"
+                                class="w-full rounded-sm bg-resin-forest/20 transition-all duration-700"
+                                style="height: {h}%; min-height: 4px; background-color: {h >
+                                60
+                                    ? "#2B4634"
+                                    : "#2B463460"};"
+                            ></div>
+                            <span class="text-[8px] text-resin-earth/40 font-bold"
+                                >{day}</span
                             >
-                                <div
-                                    class="w-16 h-16 flex items-center justify-center text-4xl transform -translate-y-8 hover:-translate-y-10 transition-transform duration-500"
+                        </div>
+                    {/each}
+                </div>
+            </div>
+
+            <!-- Session Breakdown -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                <h3
+                    class="text-xs font-bold uppercase tracking-widest text-resin-earth/40 mb-4"
+                >
+                    Session Breakdown
+                </h3>
+                <div class="space-y-2">
+                    {#each [
+                        { key: "completed", label: "Completed", color: "bg-resin-forest" },
+                        { key: "scheduled", label: "Active", color: "bg-resin-amber" },
+                        { key: "draft", label: "Draft", color: "bg-resin-earth/30" },
+                        { key: "canceled", label: "Canceled", color: "bg-red-300/60" },
+                    ] as stat}
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full {stat.color}"></div>
+                            <span class="text-xs text-resin-earth/60 flex-1"
+                                >{stat.label}</span
+                            >
+                            <span class="text-xs font-bold text-resin-charcoal"
+                                >{statusCounts[stat.key as keyof typeof statusCounts] || 0}</span
+                            >
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        </div>
+
+        <!-- 4x4 Forest Grid -->
+        <div class="w-full max-w-4xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-3">
+                <span
+                    class="text-xs font-bold uppercase tracking-widest text-resin-earth/40"
+                    >Your Grove</span
+                >
+                <span
+                    class="text-xs font-medium text-resin-forest/60"
+                    >{Math.min(filteredSessions.length, 16)} / 16 plots</span
+                >
+            </div>
+
+            <!-- 4x4 Grid -->
+            <div
+                class="grid grid-cols-4 gap-[1px] bg-resin-earth/8 rounded-2xl overflow-hidden mb-4"
+            >
+                {#each Array(16) as _, i}
+                    {@const session = gridSessions[i]}
+                    {@const isEven = (Math.floor(i / 4) + (i % 4)) % 2 === 0}
+                    <div
+                        class="flex items-center justify-center h-24 relative group cursor-pointer transition-opacity {isEven
+                            ? "bg-[#C8DCA8]/22"
+                            : "bg-[#B8CC98]/16"}"
+                        class:opacity-40={!session &&
+                            i === 0 &&
+                            filteredSessions.length === 0}
+                    >
+                        {#if session}
+                            <div class="flex flex-col items-center gap-1 text-center">
+                                <span class="text-4xl leading-none"
+                                    >{getSpeciesIcon(session)}</span
                                 >
-                                    {species?.icon || "🌿"}
-                                </div>
-                                <!-- Tooltip -->
-                                <div
-                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-[3.5rem] w-max bg-resin-charcoal text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 shadow-xl flex flex-col items-center gap-1"
+                                <span
+                                    class="text-[8px] font-medium text-resin-earth/40 px-1 hidden group-hover:block"
+                                    >{session.focusMinutes}m</span
                                 >
-                                    <span class="font-bold"
-                                        >{session.title ||
-                                            session.display_title ||
-                                            "Focus Session"}</span
-                                    >
-                                    <span class="text-[10px] text-white/70">
-                                        {new Date(
-                                            session.created_at,
-                                        ).toLocaleDateString([], {
-                                            month: "short",
-                                            day: "numeric",
-                                        })}
-                                        {#if session.focusMinutes > 0}
-                                            • {session.focusMinutes}m focus{/if}
-                                    </span>
-                                    <!-- Triangle -->
-                                    <div
-                                        class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-resin-charcoal"
-                                    ></div>
-                                </div>
-                                <!-- Shadow -->
-                                <div
-                                    class="absolute inset-x-0 bottom-0 h-4 bg-resin-charcoal/5 rounded-full blur-md -z-10 scale-x-150"
-                                ></div>
+                            </div>
+                            <!-- Tooltip -->
+                            <div
+                                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-resin-charcoal text-white text-[10px] rounded-lg py-1.5 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl"
+                            >
+                                {session.display_title || session.title || "Session"}
+                                •
+                                {session.focusMinutes}m
                             </div>
                         {:else}
-                            <!-- Stone Visualization -->
-                            <div
-                                class="relative group pointer-events-auto cursor-pointer"
-                            >
-                                <div
-                                    class="w-10 h-10 flex items-center justify-center text-2xl transform hover:scale-110 transition-transform duration-300"
-                                >
-                                    🪨
-                                </div>
-                                <!-- Tooltip -->
-                                <div
-                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-max bg-resin-charcoal text-white text-xs rounded-lg py-2 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 shadow-xl flex flex-col items-center gap-1"
-                                >
-                                    <span class="font-bold"
-                                        >{session.title ||
-                                            session.display_title ||
-                                            "Untitled Note"}</span
-                                    >
-                                    <span class="text-[10px] text-white/70">
-                                        {new Date(
-                                            session.created_at,
-                                        ).toLocaleDateString([], {
-                                            month: "short",
-                                            day: "numeric",
-                                        })}
-                                    </span>
-                                    <!-- Triangle -->
-                                    <div
-                                        class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-resin-charcoal"
-                                    ></div>
-                                </div>
-                                <!-- Shadow -->
-                                <div
-                                    class="absolute inset-x-0 bottom-0 h-2 bg-resin-charcoal/5 rounded-full blur-sm -z-10 scale-x-125"
-                                ></div>
-                            </div>
+                            <span class="text-resin-earth/10 text-2xl">○</span>
                         {/if}
                     </div>
                 {/each}
             </div>
+
+            {#if overflow > 0}
+                <p class="text-center text-xs text-resin-earth/40 font-medium">
+                    +{overflow} more this period
+                </p>
+            {/if}
         </div>
 
         <!-- Collection Showcase -->
@@ -289,11 +341,11 @@
 
         <!-- Session History -->
         <div class="w-full max-w-4xl space-y-6 mt-20">
-            <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+            <h2 class="text-lg font-serif font-bold text-resin-charcoal tracking-tight">
                 Session History
             </h2>
             <div class="grid gap-4">
-                {#each items as session, i}
+                {#each filteredSessions as session, i}
                     <div
                         class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/20 hover:border-resin-amber/30 transition-all"
                     >
@@ -302,8 +354,7 @@
                                 class="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm border border-resin-forest/5"
                             >
                                 {#if session.status === "scheduled" || session.status === "completed"}
-                                    {unlockedSpecies[i % unlockedSpecies.length]
-                                        ?.icon || "🌿"}
+                                    {getSpeciesIcon(session)}
                                 {:else}
                                     🪨
                                 {/if}
@@ -347,6 +398,11 @@
                                 <span
                                     class="px-3 py-1 bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-widest rounded-full"
                                     >Completed</span
+                                >
+                            {:else if session.status === "canceled"}
+                                <span
+                                    class="px-3 py-1 bg-resin-earth/10 text-resin-earth/60 text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Canceled</span
                                 >
                             {:else}
                                 <span

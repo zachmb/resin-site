@@ -35,8 +35,33 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         };
     });
 
+    // Analytics: session status breakdown
+    const statusCounts = { completed: 0, scheduled: 0, canceled: 0, draft: 0, failed: 0 };
+    sessions.forEach((s: any) => {
+        if (s.status in statusCounts) {
+            statusCounts[s.status as keyof typeof statusCounts]++;
+        }
+    });
+
+    // Analytics: focus minutes by day of week (0=Mon ... 6=Sun)
+    const minutesByDay = Array(7).fill(0);
+    sessions.forEach((s: any) => {
+        if (s.status === 'completed' || s.status === 'scheduled') {
+            const day = (new Date(s.created_at).getDay() + 6) % 7; // convert Sun=0 -> Mon=0
+            minutesByDay[day] += s.focusMinutes;
+        }
+    });
+
+    // Analytics: total focused time + longest session
+    const totalFocusMinutes = sessions.reduce((acc: number, s: any) => acc + s.focusMinutes, 0);
+    const longestSession = sessions.reduce((max: number, s: any) => s.focusMinutes > max ? s.focusMinutes : max, 0);
+
     return {
         profile,
-        sessions: sessions || []
+        sessions: sessions || [],
+        statusCounts,
+        minutesByDay,
+        totalFocusMinutes,
+        longestSession
     };
 };

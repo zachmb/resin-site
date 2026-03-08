@@ -1,6 +1,5 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
-    import { fade } from "svelte/transition";
 
     let {
         activeNote,
@@ -22,16 +21,43 @@
         onSelectNote: (note: any) => void;
     }>();
 
-    let isSidebarOpen = $state(true); // default to true on mobile so they see list first
+    let isSidebarOpen = $state(true);
+    let isRightPanelOpen = $state(false);
+    let searchQuery = $state('');
+    let activeTitle = $state<string>('');
+    let lastSaved = $state<Date | null>(null);
+    let isSaving = $state(false);
     let saveTimeout: ReturnType<typeof setTimeout>;
+
+    $effect(() => {
+        activeTitle = activeNote?.title || '';
+    });
 
     const toggleSidebar = () => {
         isSidebarOpen = !isSidebarOpen;
     };
 
+    const filteredNotes = $derived(
+        notes.filter((n: any) => {
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            return (n.title || '').toLowerCase().includes(q) ||
+                   (n.content || '').toLowerCase().includes(q);
+        })
+    );
+
+    const wordCount = $derived(
+        (activeNote?.content || '').trim().split(/\s+/).filter((w: string) => w).length
+    );
+
+    const charCount = $derived(
+        (activeNote?.content || '').length
+    );
+
     const autoSave = (content: string) => {
         if (!activeNote || activeNote.id === "mock") return;
         clearTimeout(saveTimeout);
+        isSaving = true;
         saveTimeout = setTimeout(async () => {
             const formData = new FormData();
             formData.append("id", activeNote.id);
@@ -40,7 +66,8 @@
                 method: "POST",
                 body: formData,
             });
-            // Update title locally based on the first line
+            lastSaved = new Date();
+            isSaving = false;
             const lines = content.split("\n");
             for (const line of lines) {
                 const trimmed = line.trim();
@@ -48,10 +75,21 @@
                     activeNote.title = trimmed
                         .replace(/^#+\s*/, "")
                         .substring(0, 60);
+                    activeTitle = activeNote.title;
                     break;
                 }
             }
         }, 1000);
+    };
+
+    const formatTimeSince = (date: Date | null): string => {
+        if (!date) return '';
+        const now = new Date();
+        const secs = Math.floor((now.getTime() - date.getTime()) / 1000);
+        if (secs < 60) return 'Just now';
+        if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+        if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+        return `${Math.floor(secs / 86400)}d ago`;
     };
 </script>
 
@@ -93,57 +131,82 @@
                 ? 'w-full sm:w-80 opacity-100 translate-x-0 sm:relative absolute z-20'
                 : 'w-0 opacity-0 -translate-x-12 pointer-events-none absolute sm:w-0 sm:relative sm:opacity-0 sm:-translate-x-12'}"
         >
+            <!-- Sidebar Header with Search & New Note -->
             <div
-                class="p-4 border-b border-resin-forest/5 font-serif font-bold text-resin-charcoal flex justify-between items-center bg-white/40"
+                class="p-4 border-b border-resin-forest/5 bg-white/40 space-y-3"
             >
-                <h2>Your Archive</h2>
-                <span
-                    class="text-xs font-sans text-resin-earth/60 font-medium px-2 py-1 bg-black/5 rounded-md"
-                    >{notes.length} saved</span
-                >
+                <div class="flex justify-between items-center">
+                    <h2 class="font-serif font-bold text-resin-charcoal">Archive</h2>
+                    <span
+                        class="text-xs font-sans text-resin-earth/60 font-medium px-2 py-1 bg-black/5 rounded-md"
+                        >{notes.length} saved</span
+                    >
+                </div>
+
+                <!-- Search Input -->
+                <input
+                    type="text"
+                    placeholder="Search notes..."
+                    bind:value={searchQuery}
+                    class="w-full px-3 py-2 rounded-lg border border-resin-forest/10 bg-white/70 text-sm text-resin-charcoal placeholder:text-resin-earth/40 focus:outline-none focus:border-resin-forest/30 focus:bg-white transition-all"
+                />
+
+                <!-- New Note Button -->
+                <form method="POST" action="?/createNote" class="w-full">
+                    <button
+                        type="submit"
+                        class="w-full px-3 py-2.5 rounded-lg bg-resin-forest/10 text-resin-forest font-semibold text-xs border border-resin-forest/20 hover:bg-resin-forest/15 transition-all flex items-center justify-center gap-2"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Note
+                    </button>
+                </form>
             </div>
+
+            <!-- Notes List -->
             <div class="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
-                {#each notes.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) as note (note.id)}
+                {#each filteredNotes.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) as note (note.id)}
+                    {@const noteTitle = !note.title || note.title.toLowerCase().startsWith("untitled") ? (note.content ? note.content.split("\n").map((l: string) => l.trim()).find((l: string) => l && l !== "#")?.replace(/^#+\s*/, "").substring(0, 60) : "Untitled Note") : note.title}
+                    {@const noteWords = (note.content || '').trim().split(/\s+/).filter((w: string) => w).length}
                     <button
                         class="w-full text-left p-3 rounded-xl transition-all duration-200 border border-transparent {activeNote?.id ===
                         note.id
                             ? 'bg-resin-forest/5 border-resin-forest/10 shadow-sm relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-8 before:bg-resin-forest before:rounded-r-md'
                             : 'hover:bg-black/5'}"
                         onclick={() => {
-                            if (window.innerWidth < 640) isSidebarOpen = false; // Auto-close on mobile
+                            if (window.innerWidth < 640) isSidebarOpen = false;
                             onSelectNote(note);
                         }}
                     >
                         <h3
                             class="font-semibold text-sm text-resin-charcoal truncate pr-2"
                         >
-                            {!note.title ||
-                            note.title.toLowerCase().startsWith("untitled")
-                                ? note.content
-                                    ? note.content
-                                          .split("\n")
-                                          .map((l: string) => l.trim())
-                                          .find((l: string) => l && l !== "#")
-                                          ?.replace(/^#+\s*/, "")
-                                          .substring(0, 60) || "Untitled Note"
-                                    : "Untitled Note"
-                                : note.title}
+                            {noteTitle}
                         </h3>
                         <div class="flex justify-between items-center mt-1">
                             <p
-                                class="text-xs text-resin-earth/70 truncate mr-2 w-3/4"
+                                class="text-xs text-resin-earth/70 truncate mr-2 flex-1"
                             >
                                 {note.content
                                     ? note.content.substring(0, 40)
-                                    : "..."}
+                                    : "No content"}
                             </p>
+                        </div>
+                        <div class="flex justify-between items-center mt-2 gap-2">
                             <span
-                                class="text-[10px] text-resin-earth/50 whitespace-nowrap bg-white/50 px-1.5 rounded"
+                                class="text-[10px] text-resin-earth/50 whitespace-nowrap"
                             >
                                 {new Date(note.created_at).toLocaleDateString(
                                     [],
                                     { month: "short", day: "numeric" },
                                 )}
+                            </span>
+                            <span
+                                class="text-[10px] text-resin-earth/40 font-medium bg-resin-earth/5 px-2 py-0.5 rounded"
+                            >
+                                {noteWords} w
                             </span>
                         </div>
                     </button>
@@ -214,37 +277,69 @@
                 ? 'hidden sm:flex'
                 : 'flex'}"
         >
-            <!-- Mobile Back Button -->
+            <!-- Editor Header: Mobile Back Button + Title + Right Panel Toggle -->
             <div
-                class="sm:hidden px-4 py-3 border-b border-resin-forest/5 bg-white/40"
+                class="flex-shrink-0 px-4 sm:px-8 py-4 border-b border-resin-forest/5 bg-white/40 space-y-3 sm:space-y-0"
             >
-                <button
-                    onclick={() => {
-                        isSidebarOpen = true;
-                        onBack();
-                    }}
-                    class="flex items-center gap-2 text-resin-earth/70 hover:text-resin-charcoal font-medium text-sm transition-colors"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        ><path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M15 19l-7-7 7-7"
-                        ></path></svg
+                <div class="flex items-center justify-between gap-4">
+                    <!-- Mobile Back Button -->
+                    <button
+                        onclick={() => {
+                            isSidebarOpen = true;
+                            onBack();
+                        }}
+                        class="sm:hidden flex items-center gap-2 text-resin-earth/70 hover:text-resin-charcoal font-medium text-sm transition-colors shrink-0"
                     >
-                    Back to Archive
-                </button>
+                        <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            ><path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 19l-7-7 7-7"
+                            ></path></svg
+                        >
+                        Back
+                    </button>
+
+                    <!-- Title Input -->
+                    <input
+                        type="text"
+                        placeholder="Untitled Note"
+                        bind:value={activeTitle}
+                        class="flex-1 text-2xl font-serif font-bold text-resin-charcoal bg-transparent focus:outline-none placeholder:text-resin-earth/30"
+                    />
+
+                    <!-- Right Panel Toggle -->
+                    <button
+                        onclick={() => isRightPanelOpen = !isRightPanelOpen}
+                        class="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg text-resin-earth/60 hover:text-resin-charcoal hover:bg-black/5 transition-all shrink-0"
+                        title="Toggle properties panel"
+                    >
+                        <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 4H5a2 2 0 00-2 2v14a2 2 0 002 2h4m0-16v16m0-16h10a2 2 0 012 2v14a2 2 0 01-2 2h-10"
+                            />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <!-- svelte-ignore a11y_autofocus -->
             <textarea
                 autofocus
-                class="flex-1 w-full bg-transparent resize-none font-sans text-[16px] leading-relaxed text-[#2B4634] focus:outline-none p-6 sm:p-10 placeholder:text-[#5C4B3C]/60"
+                class="flex-1 w-full bg-transparent resize-none font-sans text-[17px] leading-relaxed text-[#2B4634] focus:outline-none p-6 sm:p-10 placeholder:text-[#5C4B3C]/60"
                 placeholder="Dump your chaotic thoughts, code snippets, and scattered ideas here..."
                 value={activeNote?.content ===
                 "Dump your chaotic thoughts, code snippets, and scattered ideas here..."
@@ -257,18 +352,27 @@
                 }}
             ></textarea>
 
-            <!-- Character Count -->
+            <!-- Status Bar -->
             <div
-                class="absolute top-4 right-6 text-[12px] font-mono font-medium {(
-                    activeNote?.content || ''
-                ).length >= 10000
-                    ? 'text-red-500'
-                    : 'text-[#5C4B3C]/60'}"
+                class="flex-shrink-0 px-4 sm:px-8 py-3 border-t border-resin-forest/5 bg-white/30 flex items-center justify-between text-xs text-resin-earth/60 font-mono"
             >
-                {(activeNote?.content || "").length} / 10,000
+                <div class="flex items-center gap-4">
+                    <span>{wordCount} words</span>
+                    <span>·</span>
+                    <span>{charCount} chars</span>
+                </div>
+                <div class="text-right">
+                    {#if isSaving}
+                        <span class="text-resin-amber font-semibold">Saving...</span>
+                    {:else if lastSaved}
+                        <span>Last saved {formatTimeSince(lastSaved)}</span>
+                    {:else}
+                        <span class="text-resin-earth/40">Unsaved</span>
+                    {/if}
+                </div>
             </div>
 
-            <!-- ── Attached Bottom Bar ── -->
+            <!-- ── Action Bar ── -->
             <div
                 class="w-full px-4 sm:px-8 pb-6 pt-4 border-t border-[#5C4B3C]/10 bg-white/40 rounded-b-2xl"
             >
@@ -390,6 +494,86 @@
                             Activate
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel — Properties -->
+        <div
+            class="hidden lg:flex flex-col flex-shrink-0 w-60 bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 transition-all duration-300 {isRightPanelOpen
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 pointer-events-none translate-x-4'}"
+        >
+            <div
+                class="p-4 border-b border-resin-forest/5 bg-white/40 flex justify-between items-center"
+            >
+                <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Properties</h3>
+                <button
+                    onclick={() => isRightPanelOpen = false}
+                    class="text-resin-earth/60 hover:text-resin-charcoal transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 p-4 space-y-4 custom-scrollbar">
+                <!-- Created -->
+                <div class="text-xs space-y-1">
+                    <div class="text-resin-earth/40 font-semibold">Created</div>
+                    <div class="text-resin-charcoal/80">
+                        {activeNote?.created_at
+                            ? new Date(activeNote.created_at).toLocaleDateString([], {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                              })
+                            : '—'}
+                    </div>
+                </div>
+
+                <!-- Modified -->
+                <div class="text-xs space-y-1">
+                    <div class="text-resin-earth/40 font-semibold">Modified</div>
+                    <div class="text-resin-charcoal/80">
+                        {lastSaved
+                            ? new Date(lastSaved).toLocaleDateString([], {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                              })
+                            : '—'}
+                    </div>
+                </div>
+
+                <!-- Word Count -->
+                <div class="text-xs space-y-1">
+                    <div class="text-resin-earth/40 font-semibold">Words</div>
+                    <div class="text-resin-charcoal/80 font-mono">{wordCount}</div>
+                </div>
+
+                <!-- Character Count -->
+                <div class="text-xs space-y-1">
+                    <div class="text-resin-earth/40 font-semibold">Characters</div>
+                    <div class="text-resin-charcoal/80 font-mono">{charCount}</div>
+                </div>
+
+                <!-- Save Status -->
+                <div class="text-xs space-y-1">
+                    <div class="text-resin-earth/40 font-semibold">Status</div>
+                    <div class="flex items-center gap-2">
+                        {#if isSaving}
+                            <span class="w-2 h-2 rounded-full bg-resin-amber animate-pulse"></span>
+                            <span class="text-resin-amber">Saving</span>
+                        {:else if lastSaved}
+                            <span class="w-2 h-2 rounded-full bg-resin-forest"></span>
+                            <span class="text-resin-forest">Saved</span>
+                        {:else}
+                            <span class="w-2 h-2 rounded-full bg-resin-earth/30"></span>
+                            <span class="text-resin-earth/60">Unsaved</span>
+                        {/if}
+                    </div>
                 </div>
             </div>
         </div>

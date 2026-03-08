@@ -94,11 +94,10 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
-        const title = 'Untitled Draft ' + new Date().getTime();
         const { error } = await insertNote(supabase, {
             user_id: session.user.id,
-            title,
-            content: '# ' + title + '\n\n',
+            title: '',
+            content: '',
             created_at: new Date().toISOString()
         });
 

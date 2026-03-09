@@ -5,6 +5,7 @@
         activeNote,
         notes = [],
         profile = null,
+        friends = [],
         showToast,
         updateActiveNoteContent,
         onBack,
@@ -14,6 +15,7 @@
         activeNote: any;
         notes: any[];
         profile?: any;
+        friends?: any[];
         showToast: (msg: string) => void;
         updateActiveNoteContent: (content: string) => void;
         onBack: () => void;
@@ -28,6 +30,8 @@
     let lastSaved = $state<Date | null>(null);
     let isSaving = $state(false);
     let saveTimeout: ReturnType<typeof setTimeout>;
+    let showShareModal = $state(false);
+    let selectedShareFriend: any = $state(null);
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
@@ -661,7 +665,65 @@
                         {/if}
                     </div>
                 </div>
+
+                <!-- Share -->
+                {#if activeNote?.id && activeNote.id !== 'mock' && friends.length > 0}
+                    <div class="text-xs space-y-2 pt-4 border-t border-resin-earth/10">
+                        <div class="text-resin-earth/40 font-semibold">Share</div>
+                        <button
+                            onclick={() => showShareModal = true}
+                            class="w-full px-3 py-2 rounded-lg bg-resin-amber/10 text-resin-amber hover:bg-resin-amber/20 transition-all text-xs font-medium border border-resin-amber/20"
+                        >
+                            Share with Friend
+                        </button>
+                    </div>
+                {/if}
             </div>
         </div>
     </div>
 </main>
+
+<!-- Share Modal -->
+{#if showShareModal}
+    <div
+        class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+        onclick={() => showShareModal = false}
+        role="dialog"
+        aria-modal="true"
+    >
+        <div
+            class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
+            onclick={(e) => e.stopPropagation()}
+        >
+            <h3 class="text-lg font-bold text-resin-charcoal mb-4">Share Note</h3>
+            <p class="text-sm text-resin-earth/60 mb-4">
+                Share this note with a friend for collaborative editing.
+            </p>
+
+            <div class="space-y-2 mb-6">
+                {#each friends as friend (friend.id)}
+                    <form method="POST" action="?/shareNote" use:enhance={() => {
+                        showShareModal = false;
+                        showToast('Note shared!');
+                    }}>
+                        <input type="hidden" name="note_id" value={activeNote.id} />
+                        <input type="hidden" name="shared_with_id" value={friend.id} />
+                        <button
+                            type="submit"
+                            class="w-full text-left px-4 py-3 rounded-lg hover:bg-resin-forest/10 transition-all border border-resin-earth/10 text-resin-charcoal font-medium"
+                        >
+                            Share with Friend
+                        </button>
+                    </form>
+                {/each}
+            </div>
+
+            <button
+                onclick={() => showShareModal = false}
+                class="w-full px-4 py-2 rounded-lg border border-resin-earth/20 text-resin-charcoal font-medium hover:bg-black/5 transition-all"
+            >
+                Close
+            </button>
+        </div>
+    </div>
+{/if}

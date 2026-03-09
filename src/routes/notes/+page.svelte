@@ -73,6 +73,7 @@
     {activeNote}
     {notes}
     {profile}
+    friends={data.friends || []}
     {showToast}
     {updateActiveNoteContent}
     onBack={() => (selectedNoteId = null)}

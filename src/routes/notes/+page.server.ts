@@ -106,8 +106,33 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
         };
     });
 
+    // Fetch accepted friends
+    const { data: friendships } = await supabase
+        .from('friendships')
+        .select('id, requester_id, addressee_id, status')
+        .or(`requester_id.eq.${session.user.id},addressee_id.eq.${session.user.id}`)
+        .eq('status', 'accepted');
+
+    const friends = await Promise.all(
+        (friendships || []).map(async (friendship: any) => {
+            const otherId =
+                friendship.requester_id === session.user.id ? friendship.addressee_id : friendship.requester_id;
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', otherId)
+                .single();
+
+            return {
+                id: otherId,
+                friendship_id: friendship.id
+            };
+        })
+    );
+
     return {
-        sharedWithMe: normalizedSharedNotes
+        sharedWithMe: normalizedSharedNotes,
+        friends
     };
 };
 

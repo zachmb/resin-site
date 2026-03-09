@@ -1,8 +1,9 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
 
-    let { notes = [], setActiveNote } = $props<{
+    let { notes = [], sharedWithMe = [], setActiveNote } = $props<{
         notes: any[];
+        sharedWithMe?: any[];
         setActiveNote: (note: any) => void;
     }>();
 
@@ -13,6 +14,10 @@
             hour: "numeric",
             minute: "2-digit",
         });
+    };
+
+    const getInitial = (ownerEmail: string): string => {
+        return (ownerEmail.charAt(0) || 'U').toUpperCase();
     };
 </script>
 
@@ -57,7 +62,72 @@
         </form>
     </div>
 
-    {#if notes.length === 0}
+    {#if sharedWithMe && sharedWithMe.length > 0}
+        <div class="mb-12">
+            <h2 class="text-xl font-bold text-resin-charcoal mb-4 flex items-center gap-2">
+                <span class="text-resin-amber">⚡</span> Shared with Me
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {#each sharedWithMe as note (note.id)}
+                    <div class="group relative">
+                        <button
+                            onclick={() => setActiveNote(note)}
+                            class="w-full text-left glass-card rounded-2xl p-6 border border-resin-amber/20 hover:border-resin-amber/40 shadow-sm hover:shadow-md transition-all h-full flex flex-col group relative bg-resin-amber/5"
+                        >
+                            <div class="flex items-start gap-3 mb-3">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-resin-amber/20 text-resin-amber font-bold flex items-center justify-center text-sm flex-shrink-0"
+                                >
+                                    {getInitial(note.owner_email || 'U')}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h3
+                                        class="text-sm font-semibold text-resin-amber/80"
+                                    >
+                                        Shared by {note.owner_email?.split('@')[0] || 'Someone'}
+                                    </h3>
+                                </div>
+                            </div>
+                            <h4
+                                class="text-lg font-bold text-resin-charcoal mb-2 line-clamp-1"
+                            >
+                                {note.title || "Untitled"}
+                            </h4>
+                            <p
+                                class="text-resin-earth/80 text-sm line-clamp-3 mb-4 flex-1"
+                            >
+                                {note.content.substring(0, 150)}{note.content
+                                    .length > 150
+                                    ? "..."
+                                    : ""}
+                            </p>
+                            <div
+                                class="flex items-center justify-between mt-auto pt-4 border-t border-resin-amber/10"
+                            >
+                                <span
+                                    class="text-xs font-semibold text-resin-earth/60"
+                                    >{formatDate(note.created_at)}</span
+                                >
+                                {#if note.status}
+                                    <span
+                                        class="text-xs font-semibold px-2 py-1 rounded-full {note.status === 'scheduled'
+                                            ? 'bg-resin-amber/20 text-resin-amber'
+                                            : note.status === 'completed'
+                                                ? 'bg-resin-forest/20 text-resin-forest'
+                                                : 'bg-resin-earth/20 text-resin-earth'}"
+                                    >
+                                        {note.status}
+                                    </span>
+                                {/if}
+                            </div>
+                        </button>
+                    </div>
+                {/each}
+            </div>
+        </div>
+    {/if}
+
+    {#if notes.length === 0 && (!sharedWithMe || sharedWithMe.length === 0)}
         <div
             class="glass-card rounded-[2rem] p-12 text-center border border-resin-forest/5 flex flex-col items-center justify-center"
         >
@@ -83,7 +153,7 @@
             </h3>
             <p class="text-resin-earth/70 max-w-sm">
                 When you create a brain dump, it will be automatically saved
-                here.
+                here. You can also receive notes shared by your friends.
             </p>
             <form
                 method="POST"

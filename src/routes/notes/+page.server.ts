@@ -83,10 +83,32 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         .single();
 };
 
-export const load: PageServerLoad = async ({ locals: { getSession } }) => {
+export const load: PageServerLoad = async ({ locals: { getSession, supabase } }) => {
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
-    return {};
+
+    // Fetch notes shared with me
+    const { data: sharedNotes } = await supabase
+        .from('shared_notes')
+        .select('note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id)')
+        .eq('shared_with_id', session.user.id);
+
+    const normalizedSharedNotes = (sharedNotes || []).map((share: any) => {
+        const note = share.amber_sessions;
+        return {
+            id: note.id,
+            user_id: note.user_id,
+            title: note.display_title ?? '',
+            content: note.raw_text ?? '',
+            status: note.status,
+            owner_id: share.owner_id,
+            shared_note_id: share.id
+        };
+    });
+
+    return {
+        sharedWithMe: normalizedSharedNotes
+    };
 };
 
 export const actions: Actions = {
@@ -285,5 +307,68 @@ export const actions: Actions = {
         }
 
         return { success: true, message: 'Note marked as completed' };
+    },
+
+    shareNote: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const noteId = data.get('note_id') as string;
+        const sharedWithId = data.get('shared_with_id') as string;
+
+        if (!noteId || !sharedWithId) return fail(400, { error: 'Missing parameters' });
+
+        // Verify user owns this note
+        const { data: note, error: noteError } = await supabase
+            .from('amber_sessions')
+            .select('id')
+            .eq('id', noteId)
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (noteError || !note) {
+            return fail(403, { error: 'You do not own this note' });
+        }
+
+        const { error } = await supabase
+            .from('shared_notes')
+            .insert({
+                note_id: noteId,
+                owner_id: session.user.id,
+                shared_with_id: sharedWithId
+            });
+
+        if (error) {
+            console.error('[notes] Share failed:', error);
+            return fail(500, { error: 'Could not share note' });
+        }
+
+        return { success: true, message: 'Note shared' };
+    },
+
+    unshareNote: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const noteId = data.get('note_id') as string;
+        const sharedWithId = data.get('shared_with_id') as string;
+
+        if (!noteId || !sharedWithId) return fail(400, { error: 'Missing parameters' });
+
+        const { error } = await supabase
+            .from('shared_notes')
+            .delete()
+            .eq('note_id', noteId)
+            .eq('owner_id', session.user.id)
+            .eq('shared_with_id', sharedWithId);
+
+        if (error) {
+            console.error('[notes] Unshare failed:', error);
+            return fail(500, { error: 'Could not unshare note' });
+        }
+
+        return { success: true, message: 'Note unshared' };
     }
 };

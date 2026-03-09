@@ -61,10 +61,20 @@ export const load = async ({ locals: { supabase, getSession } }) => {
             ? { type: 'planned', ...plannedTasks[0] }
             : null;
 
+    // Get friend counts for nav badge
+    const { data: friendRequests } = await supabase
+        .from('friendships')
+        .select('id')
+        .eq('addressee_id', session.user.id)
+        .eq('status', 'pending');
+
+    const pendingFriendCount = (friendRequests || []).length;
+
     return {
         session,
         notes: normalizedNotes,
         profile: normalizedProfile,
-        activeSession
+        activeSession,
+        pendingFriendCount
     };
 }

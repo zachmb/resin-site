@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
@@ -29,8 +29,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         })
     }));
 
+    // Load joint amber plans
+    const { data: jointPlans } = await supabase
+        .from('joint_amber_plans')
+        .select('*')
+        .or(`initiator_id.eq.${session.user.id},collaborator_id.eq.${session.user.id}`)
+        .order('created_at', { ascending: false });
+
     return {
-        notes: normalizedNotes
+        notes: normalizedNotes,
+        jointPlans: jointPlans || []
     };
 };
 
@@ -128,6 +136,121 @@ export const actions: Actions = {
         if (error) {
             console.error('Error canceling plan:', error);
             return { success: false, error: 'Failed to cancel plan' };
+        }
+
+        return { success: true };
+    },
+
+    acceptJointPlan: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const planId = data.get('plan_id') as string;
+
+        if (!planId) return fail(400, { error: 'Missing plan ID' });
+
+        const { error } = await supabase
+            .from('joint_amber_plans')
+            .update({ status: 'accepted' })
+            .eq('id', planId)
+            .eq('collaborator_id', session.user.id);
+
+        if (error) {
+            console.error('Error accepting plan:', error);
+            return fail(500, { error: 'Failed to accept plan' });
+        }
+
+        return { success: true };
+    },
+
+    declineJointPlan: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const planId = data.get('plan_id') as string;
+
+        if (!planId) return fail(400, { error: 'Missing plan ID' });
+
+        const { error } = await supabase
+            .from('joint_amber_plans')
+            .update({ status: 'declined' })
+            .eq('id', planId)
+            .eq('collaborator_id', session.user.id);
+
+        if (error) {
+            console.error('Error declining plan:', error);
+            return fail(500, { error: 'Failed to decline plan' });
+        }
+
+        return { success: true };
+    },
+
+    activateJointPlan: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const planId = data.get('plan_id') as string;
+
+        if (!planId) return fail(400, { error: 'Missing plan ID' });
+
+        // Verify user is initiator
+        const { data: plan, error: planError } = await supabase
+            .from('joint_amber_plans')
+            .select('*')
+            .eq('id', planId)
+            .eq('initiator_id', session.user.id)
+            .single();
+
+        if (planError || !plan) {
+            return fail(403, { error: 'Only initiator can activate the plan' });
+        }
+
+        if (plan.status !== 'accepted') {
+            return fail(400, { error: 'Plan must be accepted by both users first' });
+        }
+
+        // Update status to processing
+        await supabase
+            .from('joint_amber_plans')
+            .update({ status: 'processing' })
+            .eq('id', planId);
+
+        // For now, just mark as scheduled (full pipeline requires DeepSeek integration)
+        // In a full implementation, this would call runJointActivationPipeline
+        const { error } = await supabase
+            .from('joint_amber_plans')
+            .update({ status: 'scheduled', updated_at: new Date().toISOString() })
+            .eq('id', planId);
+
+        if (error) {
+            console.error('Error activating joint plan:', error);
+            return fail(500, { error: 'Failed to activate plan' });
+        }
+
+        return { success: true };
+    },
+
+    cancelJointPlan: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const planId = data.get('plan_id') as string;
+
+        if (!planId) return fail(400, { error: 'Missing plan ID' });
+
+        const { error } = await supabase
+            .from('joint_amber_plans')
+            .update({ status: 'canceled', updated_at: new Date().toISOString() })
+            .eq('id', planId)
+            .or(`initiator_id.eq.${session.user.id},collaborator_id.eq.${session.user.id}`);
+
+        if (error) {
+            console.error('Error canceling joint plan:', error);
+            return fail(500, { error: 'Failed to cancel plan' });
         }
 
         return { success: true };

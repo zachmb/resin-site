@@ -1,8 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { getSession } from '$lib/supabase';
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
 async function getAdminClient() {
 	return createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -10,13 +10,12 @@ async function getAdminClient() {
 	});
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const session = await getSession(locals);
+export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
+	const session = await getSession();
 	if (!session) {
 		throw redirect(303, '/login?next=/friends');
 	}
 
-	const supabase = locals.supabase;
 	const userId = session.user.id;
 
 	// Get accepted friends
@@ -106,8 +105,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	searchUser: async ({ locals, request }) => {
-		const session = await getSession(locals);
+	searchUser: async ({ locals: { supabase, getSession }, request }) => {
+		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
@@ -141,7 +140,7 @@ export const actions: Actions = {
 			}
 
 			// Get user profile
-			const { data: profile } = await locals.supabase
+			const { data: profile } = await supabase
 				.from('profiles')
 				.select('id')
 				.eq('id', user.id)
@@ -152,7 +151,7 @@ export const actions: Actions = {
 			}
 
 			// Check if already friends or pending
-			const { data: existing } = await locals.supabase
+			const { data: existing } = await supabase
 				.from('friendships')
 				.select('status')
 				.or(
@@ -177,8 +176,8 @@ export const actions: Actions = {
 		}
 	},
 
-	sendRequest: async ({ locals, request }) => {
-		const session = await getSession(locals);
+	sendRequest: async ({ locals: { supabase, getSession }, request }) => {
+		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
@@ -190,7 +189,7 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid user' });
 		}
 
-		const { data, error } = await locals.supabase
+		const { data, error } = await supabase
 			.from('friendships')
 			.insert({
 				requester_id: session.user.id,
@@ -208,8 +207,8 @@ export const actions: Actions = {
 		return { success: true, friendship: data };
 	},
 
-	acceptRequest: async ({ locals, request }) => {
-		const session = await getSession(locals);
+	acceptRequest: async ({ locals: { supabase, getSession }, request }) => {
+		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
@@ -217,7 +216,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const friendshipId = formData.get('friendship_id') as string;
 
-		const { data, error } = await locals.supabase
+		const { data, error } = await supabase
 			.from('friendships')
 			.update({ status: 'accepted' })
 			.eq('id', friendshipId)
@@ -233,8 +232,8 @@ export const actions: Actions = {
 		return { success: true, friendship: data };
 	},
 
-	declineRequest: async ({ locals, request }) => {
-		const session = await getSession(locals);
+	declineRequest: async ({ locals: { supabase, getSession }, request }) => {
+		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
@@ -242,7 +241,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const friendshipId = formData.get('friendship_id') as string;
 
-		const { error } = await locals.supabase
+		const { error } = await supabase
 			.from('friendships')
 			.delete()
 			.eq('id', friendshipId)
@@ -256,8 +255,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	removeFriend: async ({ locals, request }) => {
-		const session = await getSession(locals);
+	removeFriend: async ({ locals: { supabase, getSession }, request }) => {
+		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
@@ -265,7 +264,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const friendshipId = formData.get('friendship_id') as string;
 
-		const { error } = await locals.supabase
+		const { error } = await supabase
 			.from('friendships')
 			.delete()
 			.eq('id', friendshipId)
@@ -279,8 +278,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	createJointPlan: async ({ locals, request }) => {
-		const session = await getSession(locals);
+	createJointPlan: async ({ locals: { supabase, getSession }, request }) => {
+		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
 		}
@@ -295,7 +294,7 @@ export const actions: Actions = {
 		}
 
 		// Verify they are friends
-		const { data: friendship } = await locals.supabase
+		const { data: friendship } = await supabase
 			.from('friendships')
 			.select('id')
 			.or(
@@ -308,7 +307,7 @@ export const actions: Actions = {
 			return fail(403, { error: 'Not friends with this user' });
 		}
 
-		const { data, error } = await locals.supabase
+		const { data, error } = await supabase
 			.from('joint_amber_plans')
 			.insert({
 				initiator_id: session.user.id,

@@ -7,6 +7,7 @@
 
 {#if data.session}
     <Dashboard
+        session={data.session}
         profile={data.profile}
         recentNotes={data.recentNotes}
         todayTasks={data.todayTasks}

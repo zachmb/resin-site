@@ -4,18 +4,25 @@
     import FocusControl from "./FocusControl.svelte";
 
     let {
+        session = null,
         profile,
         recentNotes = [],
         todayTasks = [],
         weeklyStats = null,
         automations = [],
     } = $props<{
+        session?: any;
         profile: any;
         recentNotes: any[];
         todayTasks: any[];
         weeklyStats: any;
         automations: any[];
     }>();
+
+    const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0]
+        || session?.user?.user_metadata?.name?.split(' ')[0]
+        || profile?.email?.split('@')[0]
+        || 'explorer';
 
     let composeText = $state('');
     let showAddAutomation = $state(false);
@@ -112,7 +119,7 @@
                 class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
             >
                 Welcome back, <span class="text-resin-forest italic serif"
-                    >{profile?.email?.split("@")[0] || "explorer"}</span
+                    >{firstName}</span
                 >
             </h1>
             <p class="text-resin-earth/60 font-medium mt-2">

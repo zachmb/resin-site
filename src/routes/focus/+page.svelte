@@ -20,7 +20,44 @@
     let automationDaysOfWeek = $state<string[]>(['Monday', 'Wednesday', 'Friday']);
     let automationTime = $state('09:00');
 
+    let editingSessionId = $state<string | null>(null);
+    let editSessionData = $state<{ [key: string]: any }>({});
+    let recurringSessionId = $state<string | null>(null);
+    let recurringDays = $state<Record<string, boolean>>({
+        'Mon': false,
+        'Tue': false,
+        'Wed': false,
+        'Thu': false,
+        'Fri': false,
+        'Sat': false,
+        'Sun': false,
+    });
+
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayOfWeekAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const startEditingSession = (session: any) => {
+        editingSessionId = session.id;
+        const startDate = new Date(session.start_time);
+        const hours = String(startDate.getHours()).padStart(2, '0');
+        const minutes = String(startDate.getMinutes()).padStart(2, '0');
+        const dateStr = startDate.toISOString().split('T')[0];
+        const duration = Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000);
+
+        editSessionData = {
+            [session.id]: {
+                title: session.title,
+                date: dateStr,
+                time: `${hours}:${minutes}`,
+                duration: duration
+            }
+        };
+    };
+
+    const cancelEditingSession = () => {
+        editingSessionId = null;
+        editSessionData = {};
+    };
 
     const formatTime = (isoString: string) => {
         return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -222,20 +259,203 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {#each scheduledSessions as session (session.id)}
                     <div class="glass-card rounded-2xl p-6 border border-resin-forest/20" transition:slide>
-                        <h3 class="font-bold text-resin-charcoal mb-1">{session.title}</h3>
-                        <p class="text-xs text-resin-earth/60 mb-4">
-                            {formatDateTime(session.start_time)} • {session.duration_minutes || Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000)} min
-                        </p>
-
-                        <form method="POST" action="?/cancelSession" use:enhance>
-                            <input type="hidden" name="sessionId" value={session.id} />
-                            <button
-                                type="submit"
-                                class="text-xs font-bold text-resin-earth/60 hover:text-red-500 transition-colors"
+                        {#if editingSessionId === session.id}
+                            <form
+                                method="POST"
+                                action="?/updateSession"
+                                use:enhance={() => {
+                                    return async ({ result }) => {
+                                        if (result.type === 'success') {
+                                            cancelEditingSession();
+                                        }
+                                    };
+                                }}
+                                class="space-y-4"
                             >
-                                Remove Schedule
-                            </button>
-                        </form>
+                                <input type="hidden" name="sessionId" value={session.id} />
+
+                                <div>
+                                    <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                        Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="title"
+                                        bind:value={editSessionData[session.id].title}
+                                        required
+                                        class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                    />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                            Date
+                                        </label>
+                                        <input
+                                            type="date"
+                                            name="date"
+                                            bind:value={editSessionData[session.id].date}
+                                            required
+                                            class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                            Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            name="time"
+                                            bind:value={editSessionData[session.id].time}
+                                            required
+                                            class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                        Duration: {editSessionData[session.id].duration} min
+                                    </label>
+                                    <input
+                                        type="range"
+                                        name="duration"
+                                        bind:value={editSessionData[session.id].duration}
+                                        min="15"
+                                        max="480"
+                                        step="15"
+                                        class="w-full"
+                                    />
+                                </div>
+
+                                <div class="flex gap-2 pt-2">
+                                    <button
+                                        type="submit"
+                                        class="flex-1 py-2 bg-resin-forest text-white rounded-lg text-xs font-bold hover:bg-resin-forest/80 transition-all"
+                                    >
+                                        Save Changes
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onclick={cancelEditingSession}
+                                        class="flex-1 py-2 bg-resin-earth/10 text-resin-earth rounded-lg text-xs font-bold hover:bg-resin-earth/20 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        {:else}
+                            <h3 class="font-bold text-resin-charcoal mb-1">{session.title}</h3>
+                            <p class="text-xs text-resin-earth/60 mb-4">
+                                {formatDateTime(session.start_time)} • {session.duration_minutes || Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000)} min
+                            </p>
+
+                            {#if recurringSessionId === session.id}
+                                <form
+                                    method="POST"
+                                    action="?/makeRecurring"
+                                    use:enhance={() => {
+                                        return async ({ result }) => {
+                                            if (result.type === 'success') {
+                                                recurringSessionId = null;
+                                                recurringDays = {
+                                                    'Mon': false,
+                                                    'Tue': false,
+                                                    'Wed': false,
+                                                    'Thu': false,
+                                                    'Fri': false,
+                                                    'Sat': false,
+                                                    'Sun': false,
+                                                };
+                                            }
+                                        };
+                                    }}
+                                    class="space-y-3 mb-4"
+                                >
+                                    <input type="hidden" name="sessionId" value={session.id} />
+                                    <input type="hidden" name="daysOfWeek" value={Object.entries(recurringDays).filter(([_, checked]) => checked).map(([day]) => day).join(',')} />
+                                    <div>
+                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                            Repeat On
+                                        </label>
+                                        <div class="flex flex-wrap gap-2">
+                                            {#each dayOfWeekAbbr as day}
+                                                <button
+                                                    type="button"
+                                                    onclick={() => recurringDays[day] = !recurringDays[day]}
+                                                    class="px-3 py-1 rounded-lg text-xs font-bold transition-all {recurringDays[day]
+                                                        ? 'bg-resin-forest text-white'
+                                                        : 'bg-resin-earth/10 text-resin-earth hover:bg-resin-earth/20'}"
+                                                >
+                                                    {day}
+                                                </button>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={Object.values(recurringDays).every(v => !v)}
+                                            class="flex-1 py-2 bg-resin-forest text-white rounded-lg text-xs font-bold hover:bg-resin-forest/80 transition-all disabled:opacity-50"
+                                        >
+                                            Create Routine
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onclick={() => recurringSessionId = null}
+                                            class="flex-1 py-2 bg-resin-earth/10 text-resin-earth rounded-lg text-xs font-bold hover:bg-resin-earth/20 transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            {/if}
+
+                            <div class="flex gap-2 {recurringSessionId === session.id ? 'opacity-50 pointer-events-none' : ''}">
+                                <button
+                                    type="button"
+                                    onclick={() => {
+                                        if (recurringSessionId === session.id) {
+                                            recurringSessionId = null;
+                                        } else {
+                                            recurringSessionId = session.id;
+                                            recurringDays = {
+                                                'Mon': false,
+                                                'Tue': false,
+                                                'Wed': false,
+                                                'Thu': false,
+                                                'Fri': false,
+                                                'Sat': false,
+                                                'Sun': false,
+                                            };
+                                        }
+                                    }}
+                                    class="flex-1 text-xs font-bold text-resin-amber hover:text-resin-amber/80 transition-colors"
+                                >
+                                    ↻ Make Recurring
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onclick={() => startEditingSession(session)}
+                                    class="flex-1 text-xs font-bold text-resin-forest hover:text-resin-forest/80 transition-colors"
+                                >
+                                    Edit
+                                </button>
+
+                                <form method="POST" action="?/cancelSession" use:enhance class="flex-1">
+                                    <input type="hidden" name="sessionId" value={session.id} />
+                                    <button
+                                        type="submit"
+                                        class="w-full text-xs font-bold text-resin-earth/60 hover:text-red-500 transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        {/if}
                     </div>
                 {/each}
             </div>

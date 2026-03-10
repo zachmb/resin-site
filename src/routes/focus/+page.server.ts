@@ -201,5 +201,137 @@ export const actions: Actions = {
             console.error('Error deleting automation:', err);
             return { success: false, error: String(err) };
         }
+    },
+
+    updateSession: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+        const title = data.get('title')?.toString() || '';
+        const date = data.get('date')?.toString() || '';
+        const time = data.get('time')?.toString() || '';
+        const duration = parseInt(data.get('duration')?.toString() || '30');
+
+        if (!sessionId || !title || !date || !time) {
+            return { success: false, error: 'Missing required fields' };
+        }
+
+        // Combine date and time into ISO string
+        const startTime = new Date(`${date}T${time}`);
+        const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+
+        try {
+            const { data: updatedSession, error } = await supabase
+                .from('blocking_sessions')
+                .update({
+                    title: title,
+                    start_time: startTime.toISOString(),
+                    end_time: endTime.toISOString()
+                })
+                .eq('id', sessionId)
+                .eq('user_id', session.user.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Send push notification to device
+            const { data: tokens } = await supabase
+                .from('device_tokens')
+                .select('device_token')
+                .eq('user_id', session.user.id)
+                .eq('platform', 'apns');
+
+            if (tokens && tokens.length > 0) {
+                await Promise.all(tokens.map(({ device_token }) =>
+                    sendPush(device_token, {
+                        title: 'Focus Session Updated',
+                        body: `"${title}" updated for ${startTime.toLocaleTimeString()}`,
+                        data: { type: 'sync_blocking' }
+                    })
+                ));
+            }
+
+            return { success: true, session: updatedSession };
+        } catch (err) {
+            console.error('Error updating session:', err);
+            return { success: false, error: String(err) };
+        }
+    },
+
+    makeRecurring: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+        const daysOfWeek = data.get('daysOfWeek')?.toString() || '';
+
+        if (!sessionId || !daysOfWeek) {
+            return { success: false, error: 'Missing required fields' };
+        }
+
+        try {
+            // Fetch the session to get its details
+            const { data: blockingSession, error: fetchError } = await supabase
+                .from('blocking_sessions')
+                .select('*')
+                .eq('id', sessionId)
+                .eq('user_id', session.user.id)
+                .single();
+
+            if (fetchError || !blockingSession) throw fetchError || new Error('Session not found');
+
+            // Extract time from start_time
+            const startDate = new Date(blockingSession.start_time);
+            const hours = String(startDate.getHours()).padStart(2, '0');
+            const minutes = String(startDate.getMinutes()).padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+
+            // Calculate duration in minutes
+            const durationMinutes = Math.round(
+                (new Date(blockingSession.end_time).getTime() - new Date(blockingSession.start_time).getTime()) / 60000
+            );
+
+            // Create automation
+            const { data: automation, error } = await supabase
+                .from('focus_automations')
+                .insert({
+                    user_id: session.user.id,
+                    title: blockingSession.title,
+                    time: timeStr,
+                    duration_minutes: durationMinutes,
+                    days_of_week: daysOfWeek,
+                    enabled: true
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Send push notification to device
+            const { data: tokens } = await supabase
+                .from('device_tokens')
+                .select('device_token')
+                .eq('user_id', session.user.id)
+                .eq('platform', 'apns');
+
+            if (tokens && tokens.length > 0) {
+                await Promise.all(tokens.map(({ device_token }) =>
+                    sendPush(device_token, {
+                        title: 'Focus Routine Created',
+                        body: `"${blockingSession.title}" will repeat on ${daysOfWeek.split(',').map(d => d.trim().slice(0, 3)).join(', ')}`,
+                        data: { type: 'sync_blocking' }
+                    })
+                ));
+            }
+
+            return { success: true, automation };
+        } catch (err) {
+            console.error('Error creating recurring session:', err);
+            return { success: false, error: String(err) };
+        }
     }
 };

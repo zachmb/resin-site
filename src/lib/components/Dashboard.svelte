@@ -3,6 +3,7 @@
     import { enhance } from "$app/forms";
     import { goto } from "$app/navigation";
     import FocusControl from "./FocusControl.svelte";
+    import ResinShieldCard from "./ResinShieldCard.svelte";
 
     let {
         session = null,
@@ -20,28 +21,29 @@
         automations: any[];
     }>();
 
-    const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0]
-        || session?.user?.user_metadata?.name?.split(' ')[0]
-        || profile?.email?.split('@')[0]
-        || 'explorer';
+    const firstName =
+        session?.user?.user_metadata?.full_name?.split(" ")[0] ||
+        session?.user?.user_metadata?.name?.split(" ")[0] ||
+        profile?.email?.split("@")[0] ||
+        "explorer";
 
-    let composeText = $state('');
+    let composeText = $state("");
     let showAddAutomation = $state(false);
-    let autoTitle = $state('');
-    let autoTime = $state('');
-    let autoDuration = $state('25');
+    let autoTitle = $state("");
+    let autoTime = $state("");
+    let autoDuration = $state("25");
     let savingNote = $state(false);
     let savingAmber = $state(false);
     let successNote = $state(false);
     let successAmber = $state(false);
     let autoDays = $state<Record<string, boolean>>({
-        'Mon': false,
-        'Tue': false,
-        'Wed': false,
-        'Thu': false,
-        'Fri': false,
-        'Sat': false,
-        'Sun': false,
+        Mon: false,
+        Tue: false,
+        Wed: false,
+        Thu: false,
+        Fri: false,
+        Sat: false,
+        Sun: false,
     });
 
     const formatTime = (dateString: string) => {
@@ -87,19 +89,27 @@
     ];
 
     const formatDaysOfWeek = (days: string): string => {
-        if (!days) return '';
+        if (!days) return "";
         const dayMap: Record<string, string> = {
-            'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu',
-            'Fri': 'Fri', 'Sat': 'Sat', 'Sun': 'Sun'
+            Mon: "Mon",
+            Tue: "Tue",
+            Wed: "Wed",
+            Thu: "Thu",
+            Fri: "Fri",
+            Sat: "Sat",
+            Sun: "Sun",
         };
-        return days.split(',').map(d => dayMap[d.trim()] || d.trim()).join(', ');
+        return days
+            .split(",")
+            .map((d) => dayMap[d.trim()] || d.trim())
+            .join(", ");
     };
 
     const getDaysForSubmit = (): string => {
         return Object.entries(autoDays)
             .filter(([_, checked]) => checked)
             .map(([day]) => day)
-            .join(',');
+            .join(",");
     };
 </script>
 
@@ -174,7 +184,9 @@
 
     <!-- Quick Compose Card -->
     <section class="mb-8">
-        <div class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent">
+        <div
+            class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
+        >
             <textarea
                 bind:value={composeText}
                 placeholder="What's on your mind? Start a note, a plan, anything..."
@@ -189,14 +201,14 @@
                         use:enhance={() => {
                             savingNote = true;
                             return async ({ result }) => {
-                                if (result.type === 'success') {
+                                if (result.type === "success") {
                                     successNote = true;
                                     setTimeout(() => {
                                         savingNote = false;
                                         successNote = false;
-                                        composeText = '';
+                                        composeText = "";
                                     }, 800);
-                                } else if (result.type === 'redirect') {
+                                } else if (result.type === "redirect") {
                                     successNote = true;
                                     setTimeout(() => {
                                         goto(result.location);
@@ -207,23 +219,53 @@
                             };
                         }}
                     >
-                        <input type="hidden" name="content" value={composeText}>
+                        <input
+                            type="hidden"
+                            name="content"
+                            value={composeText}
+                        />
                         <button
                             type="submit"
                             disabled={savingNote}
                             class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
                         >
                             {#if savingNote}
-                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <svg
+                                    class="w-4 h-4 animate-spin"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        class="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        stroke-width="4"
+                                    />
+                                    <path
+                                        class="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
                                 </svg>
                             {:else if successNote}
-                                <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                <svg
+                                    class="w-4 h-4 animate-bounce"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M5 13l4 4L19 7"
+                                    />
                                 </svg>
                             {/if}
-                            {successNote ? 'Saving...' : 'Save Note'}
+                            {successNote ? "Saving..." : "Save Note"}
                         </button>
                     </form>
                     <form
@@ -232,14 +274,14 @@
                         use:enhance={() => {
                             savingAmber = true;
                             return async ({ result }) => {
-                                if (result.type === 'success') {
+                                if (result.type === "success") {
                                     successAmber = true;
                                     setTimeout(() => {
                                         savingAmber = false;
                                         successAmber = false;
-                                        composeText = '';
+                                        composeText = "";
                                     }, 800);
-                                } else if (result.type === 'redirect') {
+                                } else if (result.type === "redirect") {
                                     successAmber = true;
                                     setTimeout(() => {
                                         goto(result.location);
@@ -250,23 +292,55 @@
                             };
                         }}
                     >
-                        <input type="hidden" name="content" value={composeText}>
+                        <input
+                            type="hidden"
+                            name="content"
+                            value={composeText}
+                        />
                         <button
                             type="submit"
                             disabled={savingAmber}
                             class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[160px] justify-center"
                         >
                             {#if savingAmber}
-                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <svg
+                                    class="w-4 h-4 animate-spin"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        class="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        stroke-width="4"
+                                    />
+                                    <path
+                                        class="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
                                 </svg>
                             {:else if successAmber}
-                                <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                <svg
+                                    class="w-4 h-4 animate-bounce"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M5 13l4 4L19 7"
+                                    />
                                 </svg>
                             {/if}
-                            {successAmber ? 'Scheduling...' : 'Schedule Amber →'}
+                            {successAmber
+                                ? "Scheduling..."
+                                : "Schedule Amber →"}
                         </button>
                     </form>
                 {:else}
@@ -363,6 +437,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Left: Focus, Taste, Timeline -->
         <div class="lg:col-span-7 space-y-8">
+            <ResinShieldCard />
             <FocusControl />
 
             <!-- Taste Insights Card -->
@@ -399,9 +474,8 @@
                                 class="flex items-center gap-3 mb-5 p-4 rounded-2xl bg-white/40"
                             >
                                 <span class="text-2xl"
-                                    >{feelingIcons[
-                                        weeklyStats.topFeeling
-                                    ] || "✦"}</span
+                                    >{feelingIcons[weeklyStats.topFeeling] ||
+                                        "✦"}</span
                                 >
                                 <div>
                                     <p
@@ -457,8 +531,7 @@
                                                 class="text-resin-amber mt-0.5"
                                                 >→</span
                                             >
-                                            <span class="italic"
-                                                >"{thing}"</span
+                                            <span class="italic">"{thing}"</span
                                             >
                                         </div>
                                     {/each}
@@ -581,51 +654,108 @@
         <!-- Right: Daily Routines + Quick Stats + Recent Notes -->
         <div class="lg:col-span-5 space-y-8">
             <!-- Forest & Rewards Card -->
-            <a href="/forest" class="glass-card rounded-[2.5rem] p-8 border border-resin-forest/20 shadow-premium bg-gradient-to-br from-resin-forest/10 to-transparent hover:shadow-lg transition-all group block">
+            <a
+                href="/forest"
+                class="glass-card rounded-[2.5rem] p-8 border border-resin-forest/20 shadow-premium bg-gradient-to-br from-resin-forest/10 to-transparent hover:shadow-lg transition-all group block"
+            >
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-bold text-resin-charcoal flex items-center gap-2">
-                        <svg class="w-5 h-5 text-resin-forest group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                    <h3
+                        class="text-lg font-bold text-resin-charcoal flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-5 h-5 text-resin-forest group-hover:scale-110 transition-transform"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                            />
                         </svg>
                         Forest & Rewards
                     </h3>
-                    <svg class="w-5 h-5 text-resin-earth/40 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    <svg
+                        class="w-5 h-5 text-resin-earth/40 group-hover:translate-x-1 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5l7 7-7 7"
+                        />
                     </svg>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
+                    <div
+                        class="p-4 rounded-xl bg-white/40 border border-white/20 text-center"
+                    >
                         <p class="text-xs text-resin-earth/60 mb-1">Stones</p>
-                        <p class="text-2xl font-bold text-resin-forest">{profile?.total_stones || profile?.stones || 0}</p>
+                        <p class="text-2xl font-bold text-resin-forest">
+                            {profile?.total_stones || profile?.stones || 0}
+                        </p>
                     </div>
-                    <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
+                    <div
+                        class="p-4 rounded-xl bg-white/40 border border-white/20 text-center"
+                    >
                         <p class="text-xs text-resin-earth/60 mb-1">Streak</p>
-                        <p class="text-2xl font-bold text-resin-amber">{profile?.current_streak || 0}d</p>
+                        <p class="text-2xl font-bold text-resin-amber">
+                            {profile?.current_streak || 0}d
+                        </p>
                     </div>
                     {#if weeklyStats?.avgRating > 0}
-                        <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
-                            <p class="text-xs text-resin-earth/60 mb-1">Avg Rating</p>
-                            <p class="text-2xl font-bold text-resin-amber">{weeklyStats.avgRating}/5</p>
+                        <div
+                            class="p-4 rounded-xl bg-white/40 border border-white/20 text-center"
+                        >
+                            <p class="text-xs text-resin-earth/60 mb-1">
+                                Avg Rating
+                            </p>
+                            <p class="text-2xl font-bold text-resin-amber">
+                                {weeklyStats.avgRating}/5
+                            </p>
                         </div>
                     {/if}
-                    <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
-                        <p class="text-xs text-resin-earth/60 mb-1">This Week</p>
-                        <p class="text-2xl font-bold text-resin-charcoal">{weeklyStats?.totalFocusMinutes || 0}m</p>
+                    <div
+                        class="p-4 rounded-xl bg-white/40 border border-white/20 text-center"
+                    >
+                        <p class="text-xs text-resin-earth/60 mb-1">
+                            This Week
+                        </p>
+                        <p class="text-2xl font-bold text-resin-charcoal">
+                            {weeklyStats?.totalFocusMinutes || 0}m
+                        </p>
                     </div>
                 </div>
 
-                <p class="text-xs text-resin-forest font-semibold mt-4 flex items-center gap-1">
+                <p
+                    class="text-xs text-resin-forest font-semibold mt-4 flex items-center gap-1"
+                >
                     View your forest →
                 </p>
             </a>
 
             <!-- Daily Routines Card -->
-            <section class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent">
+            <section
+                class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
+            >
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-bold text-resin-charcoal flex items-center gap-2">
-                        <svg class="w-5 h-5 text-resin-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <h3
+                        class="text-lg font-bold text-resin-charcoal flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-5 h-5 text-resin-forest"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                         </svg>
                         Daily Routines
                     </h3>
@@ -634,13 +764,32 @@
                 {#if automations.length > 0}
                     <div class="space-y-3 mb-6">
                         {#each automations as automation}
-                            <div class="flex items-center justify-between p-4 rounded-xl bg-white/40 border border-white/20">
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/40 border border-white/20"
+                            >
                                 <div>
-                                    <p class="font-semibold text-resin-charcoal">{automation.title}</p>
-                                    <p class="text-xs text-resin-earth/60">{automation.time} • {automation.duration_minutes}m • {formatDaysOfWeek(automation.days_of_week)}</p>
+                                    <p
+                                        class="font-semibold text-resin-charcoal"
+                                    >
+                                        {automation.title}
+                                    </p>
+                                    <p class="text-xs text-resin-earth/60">
+                                        {automation.time} • {automation.duration_minutes}m
+                                        • {formatDaysOfWeek(
+                                            automation.days_of_week,
+                                        )}
+                                    </p>
                                 </div>
-                                <form method="POST" action="?/deleteAutomation" class="inline">
-                                    <input type="hidden" name="automationId" value={automation.id}>
+                                <form
+                                    method="POST"
+                                    action="?/deleteAutomation"
+                                    class="inline"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="automationId"
+                                        value={automation.id}
+                                    />
                                     <button
                                         type="submit"
                                         class="w-6 h-6 rounded-full hover:bg-red-500/20 text-resin-earth/50 hover:text-red-600 transition-all flex items-center justify-center"
@@ -654,7 +803,9 @@
                 {/if}
 
                 <button
-                    on:click={() => { showAddAutomation = !showAddAutomation; }}
+                    on:click={() => {
+                        showAddAutomation = !showAddAutomation;
+                    }}
                     class="w-full px-4 py-3 rounded-xl text-sm font-bold text-resin-forest hover:bg-resin-forest/10 transition-colors text-center"
                 >
                     + Add Routine
@@ -668,10 +819,12 @@
                             const daysString = getDaysForSubmit();
                             if (!daysString) {
                                 e.preventDefault();
-                                alert('Select at least one day');
+                                alert("Select at least one day");
                                 return;
                             }
-                            const input = e.currentTarget.querySelector('input[name="daysOfWeek"]') as HTMLInputElement;
+                            const input = e.currentTarget.querySelector(
+                                'input[name="daysOfWeek"]',
+                            ) as HTMLInputElement;
                             if (input) input.value = daysString;
                         }}
                         class="mt-6 p-4 rounded-xl bg-resin-forest/5 border border-resin-forest/10 space-y-4"
@@ -704,7 +857,9 @@
                         </select>
                         <div class="grid grid-cols-4 gap-2">
                             {#each Object.keys(autoDays) as day}
-                                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                <label
+                                    class="flex items-center gap-2 text-xs cursor-pointer"
+                                >
                                     <input
                                         type="checkbox"
                                         bind:checked={autoDays[day]}
@@ -714,7 +869,7 @@
                                 </label>
                             {/each}
                         </div>
-                        <input type="hidden" name="daysOfWeek" value="">
+                        <input type="hidden" name="daysOfWeek" value="" />
                         <div class="flex gap-2">
                             <button
                                 type="submit"
@@ -724,7 +879,9 @@
                             </button>
                             <button
                                 type="button"
-                                on:click={() => { showAddAutomation = false; }}
+                                on:click={() => {
+                                    showAddAutomation = false;
+                                }}
                                 class="flex-1 px-4 py-2 rounded-lg bg-white border border-white/20 text-resin-charcoal font-bold text-sm hover:bg-resin-earth/5 transition-colors"
                             >
                                 Cancel

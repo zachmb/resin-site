@@ -2,12 +2,18 @@
     import { enhance } from "$app/forms";
     import { fade } from "svelte/transition";
 
-    let { session, profile, tasteData } = $props<{ session: any; profile: any; tasteData?: any }>();
+    let { session, profile, tasteData } = $props<{
+        session: any;
+        profile: any;
+        tasteData?: any;
+    }>();
 
     let loading = $state(false);
     let successMessage = $state("");
     let showDocs = $state(false);
-    let activeCategory = $state<'profile' | 'preferences' | 'integrations' | 'api' | 'privacy' | 'taste'>('profile');
+    let activeCategory = $state<
+        "profile" | "preferences" | "integrations" | "api" | "privacy" | "taste"
+    >("profile");
 
     const handleSubmit = () => {
         loading = true;
@@ -34,12 +40,12 @@
     };
 
     const categories = [
-        { id: 'profile', label: 'Profile', icon: '👤' },
-        { id: 'preferences', label: 'Preferences', icon: '⚙️' },
-        { id: 'integrations', label: 'Integrations', icon: '🔗' },
-        { id: 'taste', label: 'Taste Profile', icon: '✦' },
-        { id: 'api', label: 'API', icon: '🔑' },
-        { id: 'privacy', label: 'Privacy', icon: '🔒' }
+        { id: "profile", label: "Profile", icon: "👤" },
+        { id: "preferences", label: "Preferences", icon: "⚙️" },
+        { id: "integrations", label: "Integrations", icon: "🔗" },
+        { id: "taste", label: "Taste Profile", icon: "✦" },
+        { id: "api", label: "API", icon: "🔑" },
+        { id: "privacy", label: "Privacy", icon: "🔒" },
     ] as const;
 
     const feelingIcons: Record<string, string> = {
@@ -53,8 +59,10 @@
 
     const topFeelings = $derived(
         tasteData?.feelingCounts
-            ? Object.entries(tasteData.feelingCounts).sort((a, b) => b[1] - a[1])
-            : []
+            ? Object.entries(tasteData.feelingCounts).sort(
+                  (a, b) => b[1] - a[1],
+              )
+            : [],
     );
 
     const totalRatings = $derived(tasteData?.ratingHistory?.length || 0);
@@ -68,7 +76,7 @@
                       totalRatings) *
                       10,
               ) / 10
-            : 0
+            : 0,
     );
 </script>
 
@@ -81,7 +89,9 @@
             <h1 class="text-3xl font-serif font-bold text-resin-charcoal">
                 Account Settings
             </h1>
-            <p class="text-resin-earth/70 mt-1">Manage your profile and preferences</p>
+            <p class="text-resin-earth/70 mt-1">
+                Manage your profile and preferences
+            </p>
         </div>
     </div>
 
@@ -92,7 +102,9 @@
             class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
         >
             <!-- Profile Card at Top -->
-            <div class="p-6 border-b border-resin-forest/5 bg-white/40 space-y-4">
+            <div
+                class="p-6 border-b border-resin-forest/5 bg-white/40 space-y-4"
+            >
                 <div class="flex items-center gap-4">
                     <div
                         class="w-14 h-14 rounded-xl bg-resin-charcoal text-white flex items-center justify-center text-xl font-bold shadow-sm"
@@ -114,14 +126,17 @@
             <div class="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
                 {#each categories as category (category.id)}
                     <button
-                        onclick={() => activeCategory = category.id}
-                        class="w-full text-left p-4 rounded-lg transition-all duration-200 border border-transparent {activeCategory === category.id
+                        onclick={() => (activeCategory = category.id)}
+                        class="w-full text-left p-4 rounded-lg transition-all duration-200 border border-transparent {activeCategory ===
+                        category.id
                             ? 'bg-resin-forest/5 border-resin-forest/10 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-8 before:bg-resin-forest before:rounded-r-md'
                             : 'hover:bg-black/5'}"
                     >
                         <div class="flex items-center gap-3">
                             <span class="text-lg">{category.icon}</span>
-                            <span class="font-semibold text-sm text-resin-charcoal">
+                            <span
+                                class="font-semibold text-sm text-resin-charcoal"
+                            >
                                 {category.label}
                             </span>
                         </div>
@@ -158,10 +173,14 @@
         <div
             class="flex-1 hidden sm:flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
         >
-            {#if activeCategory === 'profile'}
+            {#if activeCategory === "profile"}
                 <!-- Profile Content -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
-                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
                         Your Profile
                     </h2>
                     <p class="text-sm text-resin-earth/60">
@@ -169,23 +188,40 @@
                     </p>
                 </div>
 
-                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
                     <!-- Email Section -->
                     <section>
-                        <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3">
+                        <h3
+                            class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3"
+                        >
                             Account
                         </h3>
-                        <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 space-y-3">
+                        <div
+                            class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 space-y-3"
+                        >
                             <div>
-                                <label class="text-xs text-resin-earth/60 font-semibold">Email Address</label>
-                                <div class="text-sm font-mono text-resin-charcoal mt-1">
+                                <label
+                                    class="text-xs text-resin-earth/60 font-semibold"
+                                    >Email Address</label
+                                >
+                                <div
+                                    class="text-sm font-mono text-resin-charcoal mt-1"
+                                >
                                     {session?.user.email ?? "—"}
                                 </div>
                             </div>
                             <div class="border-t border-resin-forest/5 pt-3">
-                                <label class="text-xs text-resin-earth/60 font-semibold">Member Since</label>
+                                <label
+                                    class="text-xs text-resin-earth/60 font-semibold"
+                                    >Member Since</label
+                                >
                                 <div class="text-sm text-resin-charcoal mt-1">
-                                    {formatDate(profile?.created_at, session?.user.created_at)}
+                                    {formatDate(
+                                        profile?.created_at,
+                                        session?.user.created_at,
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -193,21 +229,30 @@
 
                     <!-- Storage Info -->
                     <section>
-                        <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3">
+                        <h3
+                            class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3"
+                        >
                             Storage
                         </h3>
-                        <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5">
+                        <div
+                            class="bg-white/50 rounded-xl p-4 border border-resin-forest/5"
+                        >
                             <p class="text-sm text-resin-charcoal/80">
-                                All your notes and sessions are securely stored in your personal Supabase instance. We cannot access your data.
+                                All your notes and sessions are securely stored
+                                in your personal Supabase instance. We cannot
+                                access your data.
                             </p>
                         </div>
                     </section>
                 </div>
-
-            {:else if activeCategory === 'preferences'}
+            {:else if activeCategory === "preferences"}
                 <!-- Preferences Content -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
-                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
                         Work Preferences
                     </h2>
                     <p class="text-sm text-resin-earth/60">
@@ -224,7 +269,9 @@
                     >
                         <!-- Focus Window -->
                         <section>
-                            <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4">
+                            <h3
+                                class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4"
+                            >
                                 Daily Focus Window
                             </h3>
                             <div class="space-y-4">
@@ -239,7 +286,8 @@
                                         type="time"
                                         id="availability_start"
                                         name="availability_start"
-                                        value={profile?.availability_start ?? "09:00"}
+                                        value={profile?.availability_start ??
+                                            "09:00"}
                                         class="w-full px-4 py-3 bg-white/70 border border-resin-forest/10 rounded-xl focus:outline-none focus:border-resin-forest/30 focus:bg-white transition-all text-resin-charcoal font-medium"
                                     />
                                 </div>
@@ -254,7 +302,8 @@
                                         type="time"
                                         id="availability_end"
                                         name="availability_end"
-                                        value={profile?.availability_end ?? "17:00"}
+                                        value={profile?.availability_end ??
+                                            "17:00"}
                                         class="w-full px-4 py-3 bg-white/70 border border-resin-forest/10 rounded-xl focus:outline-none focus:border-resin-forest/30 focus:bg-white transition-all text-resin-charcoal font-medium"
                                     />
                                 </div>
@@ -263,11 +312,17 @@
 
                         <!-- Sync Settings -->
                         <section class="border-t border-resin-forest/5 pt-6">
-                            <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4">
+                            <h3
+                                class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4"
+                            >
                                 Sync Settings
                             </h3>
-                            <label class="flex items-start gap-4 cursor-pointer group">
-                                <div class="relative flex items-center justify-center pt-1">
+                            <label
+                                class="flex items-start gap-4 cursor-pointer group"
+                            >
+                                <div
+                                    class="relative flex items-center justify-center pt-1"
+                                >
                                     <input
                                         type="checkbox"
                                         name="sync_notes"
@@ -279,18 +334,26 @@
                                     ></div>
                                 </div>
                                 <div class="space-y-1 flex-1">
-                                    <div class="text-sm font-semibold text-resin-charcoal group-hover:text-resin-forest transition-colors">
+                                    <div
+                                        class="text-sm font-semibold text-resin-charcoal group-hover:text-resin-forest transition-colors"
+                                    >
                                         Sync Notes to Mobile App
                                     </div>
-                                    <p class="text-xs text-resin-earth/70 font-light leading-relaxed">
-                                        Allow the Resin app to read and edit your notes. If disabled, notes only exist on the web.
+                                    <p
+                                        class="text-xs text-resin-earth/70 font-light leading-relaxed"
+                                    >
+                                        Allow the Resin app to read and edit
+                                        your notes. If disabled, notes only
+                                        exist on the web.
                                     </p>
                                 </div>
                             </label>
                         </section>
 
                         <!-- Save Button -->
-                        <div class="border-t border-resin-forest/5 pt-6 flex items-center justify-between gap-4">
+                        <div
+                            class="border-t border-resin-forest/5 pt-6 flex items-center justify-between gap-4"
+                        >
                             <div class="h-6">
                                 {#if successMessage}
                                     <span
@@ -320,9 +383,24 @@
                                 class="px-6 py-2.5 bg-resin-forest text-white rounded-xl font-bold text-sm hover:bg-resin-charcoal transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
                             >
                                 {#if loading}
-                                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    <svg
+                                        class="animate-spin h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
                                     </svg>
                                 {/if}
                                 Save Changes
@@ -330,11 +408,14 @@
                         </div>
                     </form>
                 </div>
-
-            {:else if activeCategory === 'integrations'}
+            {:else if activeCategory === "integrations"}
                 <!-- Integrations Content -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
-                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
                         Integrations
                     </h2>
                     <p class="text-sm text-resin-earth/60">
@@ -342,11 +423,17 @@
                     </p>
                 </div>
 
-                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
                     <!-- Google Calendar -->
-                    <section class="bg-white/50 rounded-xl p-6 border border-resin-forest/5">
+                    <section
+                        class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                    >
                         <div class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-white border border-resin-forest/5 shadow-sm flex items-center justify-center flex-shrink-0">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-white border border-resin-forest/5 shadow-sm flex items-center justify-center flex-shrink-0"
+                            >
                                 <svg class="w-6 h-6" viewBox="0 0 24 24">
                                     <path
                                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -367,13 +454,19 @@
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="font-semibold text-resin-charcoal mb-1">
+                                <h3
+                                    class="font-semibold text-resin-charcoal mb-1"
+                                >
                                     Google Calendar
                                 </h3>
                                 <p class="text-sm text-resin-earth/70 mb-4">
                                     Find perfect focus windows in your calendar
                                 </p>
-                                <form method="POST" action="?/signInWithGoogle" use:enhance>
+                                <form
+                                    method="POST"
+                                    action="?/signInWithGoogle"
+                                    use:enhance
+                                >
                                     <button
                                         type="submit"
                                         class="px-4 py-2 bg-resin-charcoal text-white rounded-lg text-sm font-bold hover:bg-resin-forest transition-all"
@@ -384,12 +477,122 @@
                             </div>
                         </div>
                     </section>
-                </div>
 
-            {:else if activeCategory === 'api'}
+                    <!-- Resin Shield Extension -->
+                    <section
+                        class="bg-resin-charcoal text-white rounded-xl p-6 shadow-xl relative overflow-hidden group"
+                    >
+                        <div
+                            class="absolute -right-12 -bottom-12 w-48 h-48 bg-resin-amber/5 rounded-full blur-3xl group-hover:bg-resin-amber/10 transition-all duration-1000"
+                        ></div>
+
+                        <div class="relative z-10">
+                            <div class="flex items-start gap-4 mb-6">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center flex-shrink-0"
+                                >
+                                    <img
+                                        src="/resinext-logo.png"
+                                        alt="Resin Shield"
+                                        class="w-7 h-7 object-contain"
+                                    />
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg mb-1">
+                                        Resin Shield Extension
+                                    </h3>
+                                    <p class="text-sm text-white/60">
+                                        Enforce focus across your browser and
+                                        sync sessions.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4 mb-8">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-5 h-5 rounded-full bg-resin-amber text-white text-[10px] font-bold flex items-center justify-center"
+                                    >
+                                        1
+                                    </div>
+                                    <p class="text-xs text-white/80">
+                                        <span class="font-bold"
+                                            >Clone repo:</span
+                                        > zachmb/resinext
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-5 h-5 rounded-full bg-resin-amber text-white text-[10px] font-bold flex items-center justify-center"
+                                    >
+                                        2
+                                    </div>
+                                    <p class="text-xs text-white/80">
+                                        <span class="font-bold">Build:</span> npm
+                                        install && npm run build
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-5 h-5 rounded-full bg-resin-amber text-white text-[10px] font-bold flex items-center justify-center"
+                                    >
+                                        3
+                                    </div>
+                                    <p class="text-xs text-white/80">
+                                        <span class="font-bold">Load:</span> Use
+                                        "Load Unpacked" on the /dist folder
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white/5 rounded-xl p-4 mb-6">
+                                <p
+                                    class="text-[10px] font-bold text-resin-amber uppercase tracking-widest mb-2"
+                                >
+                                    OAuth Redirect URI
+                                </p>
+                                <div class="flex items-center gap-2">
+                                    <code
+                                        class="flex-1 text-[10px] font-mono text-white/60 truncate"
+                                        >https://your-supabase-project.supabase.co/auth/v1/callback</code
+                                    >
+                                    <button
+                                        onclick={() =>
+                                            navigator.clipboard.writeText(
+                                                "https://your-supabase-project.supabase.co/auth/v1/callback",
+                                            )}
+                                        class="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                                <p class="text-[9px] text-white/40 mt-2 italic">
+                                    Add this to your Supabase "Allowed Redirect
+                                    URLs" for Google Sign-In.
+                                </p>
+                            </div>
+
+                            <button
+                                onclick={() =>
+                                    window.open(
+                                        "https://github.com/zachmb/resinext",
+                                        "_blank",
+                                    )}
+                                class="w-full py-3 bg-white text-resin-charcoal rounded-xl font-bold text-sm hover:bg-resin-amber hover:text-white transition-all shadow-lg active:scale-95"
+                            >
+                                View Repository →
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            {:else if activeCategory === "api"}
                 <!-- API Content -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
-                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
                         Developer API
                     </h2>
                     <p class="text-sm text-resin-earth/60">
@@ -397,17 +600,26 @@
                     </p>
                 </div>
 
-                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
                     <!-- API Badge -->
                     <section>
                         <div class="flex items-center gap-2 mb-4">
-                            <h3 class="text-xs font-bold text-resin-forest uppercase tracking-widest">Pro Feature</h3>
-                            <span class="px-2 py-1 bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-wider rounded-full">
+                            <h3
+                                class="text-xs font-bold text-resin-forest uppercase tracking-widest"
+                            >
+                                Pro Feature
+                            </h3>
+                            <span
+                                class="px-2 py-1 bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-wider rounded-full"
+                            >
                                 Available
                             </span>
                         </div>
                         <p class="text-sm text-resin-earth/80 mb-6">
-                            Generate a Personal Access Token to authorize external applications to read your schedule via API.
+                            Generate a Personal Access Token to authorize
+                            external applications to read your schedule via API.
                         </p>
                     </section>
 
@@ -425,20 +637,41 @@
                                 transition:fade={{ duration: 200 }}
                                 class="bg-white/50 rounded-xl p-6 border border-resin-forest/10 mt-4"
                             >
-                                <h4 class="font-bold text-resin-charcoal mb-4 flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-resin-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                <h4
+                                    class="font-bold text-resin-charcoal mb-4 flex items-center gap-2"
+                                >
+                                    <svg
+                                        class="w-4 h-4 text-resin-forest"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                                        ></path>
                                     </svg>
                                     API Documentation
                                 </h4>
                                 <div class="space-y-4 text-sm">
                                     <div>
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <span class="px-2 py-0.5 bg-resin-charcoal text-white font-bold rounded text-[10px] uppercase">GET</span>
-                                            <code class="font-mono text-resin-forest font-semibold">/api/schedule</code>
+                                        <div
+                                            class="flex items-center gap-2 mb-2"
+                                        >
+                                            <span
+                                                class="px-2 py-0.5 bg-resin-charcoal text-white font-bold rounded text-[10px] uppercase"
+                                                >GET</span
+                                            >
+                                            <code
+                                                class="font-mono text-resin-forest font-semibold"
+                                                >/api/schedule</code
+                                            >
                                         </div>
                                         <p class="text-resin-earth/80">
-                                            Retrieve your active Amber Session blocks as JSON.
+                                            Retrieve your active Amber Session
+                                            blocks as JSON.
                                         </p>
                                     </div>
                                 </div>
@@ -448,14 +681,20 @@
 
                     <!-- Token Display -->
                     <section>
-                        <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3">
+                        <h3
+                            class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3"
+                        >
                             Personal Access Token
                         </h3>
-                        <div class="bg-white/50 border border-resin-amber/20 rounded-xl p-4 font-mono text-sm text-resin-charcoal/80 mb-4 break-all max-h-24 overflow-y-auto">
+                        <div
+                            class="bg-white/50 border border-resin-amber/20 rounded-xl p-4 font-mono text-sm text-resin-charcoal/80 mb-4 break-all max-h-24 overflow-y-auto"
+                        >
                             {#if profile?.openclaw_api_key}
                                 {profile.openclaw_api_key}
                             {:else}
-                                <span class="text-resin-earth/40 italic">No token generated yet.</span>
+                                <span class="text-resin-earth/40 italic"
+                                    >No token generated yet.</span
+                                >
                             {/if}
                         </div>
                         <form
@@ -475,21 +714,41 @@
                                 class="px-6 py-2.5 bg-resin-amber text-white rounded-xl font-bold text-sm hover:bg-resin-amber/90 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
                             >
                                 {#if loading}
-                                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    <svg
+                                        class="animate-spin h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
                                     </svg>
                                 {/if}
-                                {loading ? "Generating..." : "Generate New Token"}
+                                {loading
+                                    ? "Generating..."
+                                    : "Generate New Token"}
                             </button>
                         </form>
                     </section>
                 </div>
-
-            {:else if activeCategory === 'privacy'}
+            {:else if activeCategory === "privacy"}
                 <!-- Privacy Content -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
-                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
                         Privacy & Security
                     </h2>
                     <p class="text-sm text-resin-earth/60">
@@ -497,23 +756,40 @@
                     </p>
                 </div>
 
-                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
                     <!-- Encryption Info -->
                     <section>
-                        <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3">
+                        <h3
+                            class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3"
+                        >
                             Data Protection
                         </h3>
-                        <div class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 space-y-4">
+                        <div
+                            class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 space-y-4"
+                        >
                             <div>
-                                <h4 class="font-semibold text-resin-charcoal mb-2">End-to-End Encryption</h4>
+                                <h4
+                                    class="font-semibold text-resin-charcoal mb-2"
+                                >
+                                    End-to-End Encryption
+                                </h4>
                                 <p class="text-sm text-resin-earth/80">
-                                    Your notes and session data are stored in your personal encrypted space in Supabase. We cannot read your private content.
+                                    Your notes and session data are stored in
+                                    your personal encrypted space in Supabase.
+                                    We cannot read your private content.
                                 </p>
                             </div>
                             <div class="border-t border-resin-forest/5 pt-4">
-                                <h4 class="font-semibold text-resin-charcoal mb-2">No Selling Data</h4>
+                                <h4
+                                    class="font-semibold text-resin-charcoal mb-2"
+                                >
+                                    No Selling Data
+                                </h4>
                                 <p class="text-sm text-resin-earth/80">
-                                    We never sell or share your personal information with third parties.
+                                    We never sell or share your personal
+                                    information with third parties.
                                 </p>
                             </div>
                         </div>
@@ -521,26 +797,49 @@
 
                     <!-- Links -->
                     <section>
-                        <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3">
+                        <h3
+                            class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3"
+                        >
                             Documentation
                         </h3>
                         <div class="space-y-2">
-                            <a href="/privacy" class="block p-4 bg-white/50 rounded-xl border border-resin-forest/5 hover:border-resin-forest/20 transition-all">
-                                <div class="font-semibold text-resin-charcoal mb-1">Privacy Policy</div>
-                                <p class="text-xs text-resin-earth/60">Learn how we use and protect your data</p>
+                            <a
+                                href="/privacy"
+                                class="block p-4 bg-white/50 rounded-xl border border-resin-forest/5 hover:border-resin-forest/20 transition-all"
+                            >
+                                <div
+                                    class="font-semibold text-resin-charcoal mb-1"
+                                >
+                                    Privacy Policy
+                                </div>
+                                <p class="text-xs text-resin-earth/60">
+                                    Learn how we use and protect your data
+                                </p>
                             </a>
-                            <a href="/terms" class="block p-4 bg-white/50 rounded-xl border border-resin-forest/5 hover:border-resin-forest/20 transition-all">
-                                <div class="font-semibold text-resin-charcoal mb-1">Terms of Service</div>
-                                <p class="text-xs text-resin-earth/60">Our terms and conditions</p>
+                            <a
+                                href="/terms"
+                                class="block p-4 bg-white/50 rounded-xl border border-resin-forest/5 hover:border-resin-forest/20 transition-all"
+                            >
+                                <div
+                                    class="font-semibold text-resin-charcoal mb-1"
+                                >
+                                    Terms of Service
+                                </div>
+                                <p class="text-xs text-resin-earth/60">
+                                    Our terms and conditions
+                                </p>
                             </a>
                         </div>
                     </section>
                 </div>
-
-            {:else if activeCategory === 'taste'}
+            {:else if activeCategory === "taste"}
                 <!-- Taste Profile Content -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
-                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
                         Taste Profile
                     </h2>
                     <p class="text-sm text-resin-earth/60">
@@ -548,18 +847,40 @@
                     </p>
                 </div>
 
-                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
                     <!-- Stats -->
                     {#if totalRatings > 0 || topFeelings.length > 0}
                         <section class="grid grid-cols-2 gap-4 mb-4">
-                            <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5">
-                                <p class="text-xs text-resin-earth/40 font-semibold uppercase tracking-widest mb-2">Feedback Logs</p>
-                                <p class="text-2xl font-bold text-resin-charcoal">{totalRatings}</p>
+                            <div
+                                class="bg-white/50 rounded-xl p-4 border border-resin-forest/5"
+                            >
+                                <p
+                                    class="text-xs text-resin-earth/40 font-semibold uppercase tracking-widest mb-2"
+                                >
+                                    Feedback Logs
+                                </p>
+                                <p
+                                    class="text-2xl font-bold text-resin-charcoal"
+                                >
+                                    {totalRatings}
+                                </p>
                             </div>
                             {#if totalRatings > 0}
-                                <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5">
-                                    <p class="text-xs text-resin-earth/40 font-semibold uppercase tracking-widest mb-2">Avg Rating</p>
-                                    <p class="text-2xl font-bold text-resin-amber">{avgRating > 0 ? `${avgRating}/5` : "-"}</p>
+                                <div
+                                    class="bg-white/50 rounded-xl p-4 border border-resin-forest/5"
+                                >
+                                    <p
+                                        class="text-xs text-resin-earth/40 font-semibold uppercase tracking-widest mb-2"
+                                    >
+                                        Avg Rating
+                                    </p>
+                                    <p
+                                        class="text-2xl font-bold text-resin-amber"
+                                    >
+                                        {avgRating > 0 ? `${avgRating}/5` : "-"}
+                                    </p>
                                 </div>
                             {/if}
                         </section>
@@ -567,26 +888,44 @@
 
                     <!-- Top Feelings -->
                     {#if topFeelings.length > 0}
-                        <section class="bg-white/50 rounded-xl p-6 border border-resin-forest/5">
-                            <h3 class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2">
+                        <section
+                            class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                        >
+                            <h3
+                                class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2"
+                            >
                                 <span class="text-lg">✦</span>
                                 Top Feelings
                             </h3>
                             <div class="space-y-3">
                                 {#each topFeelings as [feeling, count]}
                                     <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-lg">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-lg"
+                                        >
                                             {feelingIcons[feeling] || "·"}
                                         </div>
                                         <div class="flex-1">
-                                            <div class="flex justify-between items-center mb-1">
-                                                <span class="font-bold text-sm text-resin-charcoal">{feeling}</span>
-                                                <span class="text-xs text-resin-earth/50">{count}</span>
+                                            <div
+                                                class="flex justify-between items-center mb-1"
+                                            >
+                                                <span
+                                                    class="font-bold text-sm text-resin-charcoal"
+                                                    >{feeling}</span
+                                                >
+                                                <span
+                                                    class="text-xs text-resin-earth/50"
+                                                    >{count}</span
+                                                >
                                             </div>
-                                            <div class="w-full bg-resin-forest/10 rounded-full h-1.5 overflow-hidden">
+                                            <div
+                                                class="w-full bg-resin-forest/10 rounded-full h-1.5 overflow-hidden"
+                                            >
                                                 <div
                                                     class="bg-gradient-to-r from-resin-amber to-resin-forest h-1.5"
-                                                    style="width: {(count / topFeelings[0][1]) * 100}%"
+                                                    style="width: {(count /
+                                                        topFeelings[0][1]) *
+                                                        100}%"
                                                 ></div>
                                             </div>
                                         </div>
@@ -595,21 +934,40 @@
                             </div>
                         </section>
                     {:else}
-                        <div class="bg-white/50 rounded-xl p-6 border border-dashed border-resin-forest/10 text-center">
-                            <p class="text-sm text-resin-charcoal font-medium">No feelings logged yet</p>
-                            <p class="text-xs text-resin-earth/60 mt-1">Reflect on a plan to see your landscape grow.</p>
+                        <div
+                            class="bg-white/50 rounded-xl p-6 border border-dashed border-resin-forest/10 text-center"
+                        >
+                            <p class="text-sm text-resin-charcoal font-medium">
+                                No feelings logged yet
+                            </p>
+                            <p class="text-xs text-resin-earth/60 mt-1">
+                                Reflect on a plan to see your landscape grow.
+                            </p>
                         </div>
                     {/if}
 
                     <!-- Enjoyed Things -->
                     {#if tasteData?.enjoyedThings && tasteData.enjoyedThings.length > 0}
-                        <section class="bg-white/50 rounded-xl p-6 border border-resin-forest/5">
-                            <h3 class="font-semibold text-resin-charcoal mb-4">A History of Joy</h3>
+                        <section
+                            class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                        >
+                            <h3 class="font-semibold text-resin-charcoal mb-4">
+                                A History of Joy
+                            </h3>
                             <div class="space-y-3 max-h-64 overflow-y-auto">
                                 {#each tasteData.enjoyedThings as item}
-                                    <div class="bg-white/50 rounded-lg p-3 border border-resin-forest/5">
-                                        <p class="text-sm text-resin-charcoal italic mb-2">"{item.text}"</p>
-                                        <span class="text-xs text-resin-earth/50">{item.date}</span>
+                                    <div
+                                        class="bg-white/50 rounded-lg p-3 border border-resin-forest/5"
+                                    >
+                                        <p
+                                            class="text-sm text-resin-charcoal italic mb-2"
+                                        >
+                                            "{item.text}"
+                                        </p>
+                                        <span
+                                            class="text-xs text-resin-earth/50"
+                                            >{item.date}</span
+                                        >
                                     </div>
                                 {/each}
                             </div>

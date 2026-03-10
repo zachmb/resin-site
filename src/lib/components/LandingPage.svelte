@@ -1,5 +1,38 @@
 <script lang="ts">
     import { Lightbulb, Zap, Lock, BarChart3, Brain, Shield, Cpu, Calendar, Check, Smartphone, Globe, Chrome, Apple } from 'lucide-svelte';
+    import { onMount } from 'svelte';
+
+    let sectionRefs: { [key: string]: HTMLElement | null } = {};
+    let animatedSections = $state<{ [key: string]: boolean }>({});
+    let elementRefs: { [key: string]: HTMLElement | null } = {};
+    let animatedElements = $state<{ [key: string]: boolean }>({});
+
+    onMount(() => {
+        // Create intersection observer to trigger animations on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const key = entry.target.getAttribute('data-section');
+                    const elementKey = entry.target.getAttribute('data-element');
+
+                    if (key) animatedSections[key] = true;
+                    if (elementKey) animatedElements[elementKey] = true;
+
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Observe all sections and elements
+        Object.values(sectionRefs).forEach((ref) => {
+            if (ref) observer.observe(ref);
+        });
+        Object.values(elementRefs).forEach((ref) => {
+            if (ref) observer.observe(ref);
+        });
+
+        return () => observer.disconnect();
+    });
 </script>
 
 <!-- Main Content -->
@@ -583,16 +616,84 @@
         </div>
     </section>
 
-    <!-- Forest & Community Section -->
+    <!-- Complete Productivity System Section -->
     <section class="max-w-6xl mx-auto mb-32">
         <div class="text-center mb-16">
-            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">Grow your forest. Build together.</h2>
-            <p class="text-resin-earth/70 max-w-2xl mx-auto">Watch your progress bloom into something beautiful</p>
+            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">A complete system, not just blocking</h2>
+            <p class="text-resin-earth/70 max-w-2xl mx-auto">Built-in note-taking, smart scheduling, and integrations that supercharge your entire workflow</p>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- Feature: Petrified Forest -->
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Feature: Note-Taking -->
+            <div class="group glass-card rounded-2xl p-8 hover:border-resin-amber/30 transition-all duration-500">
+                <div class="mb-6">
+                    <div class="w-14 h-14 rounded-xl bg-resin-amber/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <Brain class="w-7 h-7 text-resin-amber" />
+                    </div>
+                    <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Capture & Connect</h3>
+                </div>
+                <p class="text-resin-earth/70 font-light mb-6">
+                    Built-in note-taking keeps all your thoughts, research, and references in one place. Connect notes to your plans and reflect with full context at your fingertips.
+                </p>
+                <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
+                    <div>✓ Encrypted note storage</div>
+                    <div>✓ Link notes to plans</div>
+                    <div>✓ Full-text search</div>
+                </div>
+            </div>
+
+            <!-- Feature: Smart Scheduling -->
             <div class="group glass-card rounded-2xl p-8 hover:border-resin-forest/30 transition-all duration-500">
+                <div class="mb-6">
+                    <div class="w-14 h-14 rounded-xl bg-resin-forest/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <Calendar class="w-7 h-7 text-resin-forest" />
+                    </div>
+                    <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Intelligent Scheduling</h3>
+                </div>
+                <p class="text-resin-earth/70 font-light mb-6">
+                    Schedule focus sessions that sync to your calendar. Resin coordinates with your existing commitments so blocking doesn't conflict with important meetings.
+                </p>
+                <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
+                    <div>✓ Calendar sync</div>
+                    <div>✓ Smart time detection</div>
+                    <div>✓ Recurring sessions</div>
+                </div>
+            </div>
+
+            <!-- Feature: Integrations -->
+            <div class="group glass-card rounded-2xl p-8 hover:border-resin-charcoal/30 transition-all duration-500">
+                <div class="mb-6">
+                    <div class="w-14 h-14 rounded-xl bg-resin-charcoal/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <Cpu class="w-7 h-7 text-resin-charcoal" />
+                    </div>
+                    <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Supercharge with Integrations</h3>
+                </div>
+                <p class="text-resin-earth/70 font-light mb-6">
+                    Connect to OpenClaw, Zapier, and other serious tools. Feed your focus sessions into custom workflows. Build the exact productivity system you need.
+                </p>
+                <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
+                    <div>✓ OpenClaw integration</div>
+                    <div>✓ Webhook support</div>
+                    <div>✓ Custom automation</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Forest & Community Section -->
+    <section
+        bind:this={sectionRefs['forest']}
+        data-section="forest"
+        class="max-w-6xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['forest'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
+    >
+        <div class="text-center mb-8 md:mb-16">
+            <h2 class="text-3xl md:text-5xl font-bold text-resin-charcoal font-serif mb-3 md:mb-4">Grow your forest. Build together.</h2>
+            <p class="text-sm md:text-base text-resin-earth/70 max-w-2xl mx-auto">Watch your progress bloom into something beautiful</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 md:gap-8">
+            <!-- Feature: Petrified Forest -->
+            <div class="group glass-card rounded-2xl p-6 md:p-8 hover:border-resin-forest/30 transition-all duration-500 md:transform md:hover:scale-105">
                 <div class="mb-6">
                     <div class="w-14 h-14 rounded-xl bg-resin-forest/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Smartphone class="w-7 h-7 text-resin-forest" />
@@ -602,6 +703,31 @@
                 <p class="text-resin-earth/70 font-light mb-6">
                     Every focused session grows your forest. Each completed task turns your tree to stone, claiming your amber rewards. Watch your productivity transform into a visual masterpiece that proves what you've actually accomplished.
                 </p>
+
+                <!-- Forest Visualization -->
+                <div class="mb-6 p-4 bg-gradient-to-b from-resin-forest/5 to-resin-amber/5 rounded-xl border border-resin-forest/10 flex items-end justify-center gap-3 h-32">
+                    <!-- Young tree -->
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="text-2xl">🌱</div>
+                        <div class="text-[9px] text-resin-earth/50 font-semibold">Day 1</div>
+                    </div>
+                    <!-- Growing tree -->
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="text-3xl">🌲</div>
+                        <div class="text-[9px] text-resin-earth/50 font-semibold">Week 2</div>
+                    </div>
+                    <!-- Strong tree -->
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="text-4xl">🌳</div>
+                        <div class="text-[9px] text-resin-earth/50 font-semibold">Month 1</div>
+                    </div>
+                    <!-- Petrified tree (with amber glow) -->
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="text-4xl drop-shadow-lg" style="filter: drop-shadow(0 0 6px rgba(212, 147, 58, 0.6));">🪨</div>
+                        <div class="text-[9px] text-resin-amber font-bold">Petrified</div>
+                    </div>
+                </div>
+
                 <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
                     <div>✓ Trees grow with each session</div>
                     <div>✓ Earn amber as you focus</div>
@@ -610,7 +736,7 @@
             </div>
 
             <!-- Feature: Study Together -->
-            <div class="group glass-card rounded-2xl p-8 hover:border-resin-amber/30 transition-all duration-500">
+            <div class="group glass-card rounded-2xl p-6 md:p-8 hover:border-resin-amber/30 transition-all duration-500 md:transform md:hover:scale-105">
                 <div class="mb-6">
                     <div class="w-14 h-14 rounded-xl bg-resin-amber/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Zap class="w-7 h-7 text-resin-amber" />
@@ -630,40 +756,48 @@
     </section>
 
     <!-- Ecosystem Section -->
-    <section class="max-w-6xl mx-auto mb-32">
-        <div class="text-center mb-16">
-            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">Everywhere you are</h2>
-            <p class="text-resin-earth/70 max-w-2xl mx-auto">Resin works on iPhone, iPad, Mac, and the web. Blocking syncs across all devices.</p>
+    <section
+        bind:this={sectionRefs['ecosystem']}
+        data-section="ecosystem"
+        class="max-w-6xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['ecosystem'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
+    >
+        <div class="text-center mb-8 md:mb-16">
+            <h2 class="text-3xl md:text-5xl font-bold text-resin-charcoal font-serif mb-3 md:mb-4">Everywhere you are</h2>
+            <p class="text-sm md:text-base text-resin-earth/70 max-w-2xl mx-auto">Resin works on iPhone, iPad, Mac, and the web. Blocking syncs across all devices.</p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="glass-card rounded-2xl p-8 text-center">
+        <div class="grid md:grid-cols-3 gap-4 md:gap-8">
+            <div class="glass-card rounded-2xl p-6 md:p-8 text-center transition-all duration-500 hover:border-resin-forest/30 md:transform md:hover:scale-105">
                 <div class="flex justify-center mb-4">
-                    <Smartphone class="w-10 h-10 text-resin-forest" />
+                    <Smartphone class="w-8 md:w-10 h-8 md:h-10 text-resin-forest" />
                 </div>
-                <h3 class="font-bold text-resin-charcoal mb-2 text-lg">iPhone & iPad</h3>
-                <p class="text-sm text-resin-earth/70 font-light">Full app with Screen Time integration. Apps actually get blocked.</p>
+                <h3 class="font-bold text-resin-charcoal mb-2 text-base md:text-lg">iPhone & iPad</h3>
+                <p class="text-xs md:text-sm text-resin-earth/70 font-light">Full app with Screen Time integration. Apps actually get blocked.</p>
             </div>
-            <div class="glass-card rounded-2xl p-8 text-center border border-resin-forest/20">
+            <div class="glass-card rounded-2xl p-6 md:p-8 text-center border border-resin-forest/20 transition-all duration-500 hover:border-resin-amber/30 md:transform md:hover:scale-105">
                 <div class="flex justify-center mb-4">
-                    <Globe class="w-10 h-10 text-resin-amber" />
+                    <Globe class="w-8 md:w-10 h-8 md:h-10 text-resin-amber" />
                 </div>
-                <h3 class="font-bold text-resin-charcoal mb-2 text-lg">Mac & Web</h3>
-                <p class="text-sm text-resin-earth/70 font-light">Plan on the web. Mac blocking coming soon.</p>
+                <h3 class="font-bold text-resin-charcoal mb-2 text-base md:text-lg">Mac & Web</h3>
+                <p class="text-xs md:text-sm text-resin-earth/70 font-light">Plan on the web. Mac blocking coming soon.</p>
             </div>
-            <div class="glass-card rounded-2xl p-8 text-center">
+            <div class="glass-card rounded-2xl p-6 md:p-8 text-center transition-all duration-500 hover:border-resin-forest/30 md:transform md:hover:scale-105">
                 <div class="flex justify-center mb-4">
-                    <Chrome class="w-10 h-10 text-resin-charcoal" />
+                    <Chrome class="w-8 md:w-10 h-8 md:h-10 text-resin-charcoal" />
                 </div>
-                <h3 class="font-bold text-resin-charcoal mb-2 text-lg">Chrome Extension</h3>
-                <p class="text-sm text-resin-earth/70 font-light">Blocks social sites during focus sessions. Always in sync.</p>
+                <h3 class="font-bold text-resin-charcoal mb-2 text-base md:text-lg">Chrome Extension</h3>
+                <p class="text-xs md:text-sm text-resin-earth/70 font-light">Blocks social sites during focus sessions. Always in sync.</p>
             </div>
         </div>
     </section>
 
     <!-- Why Resin Section -->
-    <section class="max-w-5xl mx-auto mb-32">
-        <div class="glass-card rounded-3xl p-12 bg-gradient-to-br from-resin-amber/5 to-resin-forest/5 border-resin-forest/10">
+    <section
+        bind:this={sectionRefs['why']}
+        data-section="why"
+        class="max-w-5xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['why'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
+    >
+        <div class="glass-card rounded-3xl p-6 md:p-12 bg-gradient-to-br from-resin-amber/5 to-resin-forest/5 border-resin-forest/10 hover:border-resin-forest/30 transition-all duration-500">
             <div class="text-center space-y-8">
                 <div>
                     <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">For anyone ready to reclaim their focus</h2>
@@ -671,15 +805,29 @@
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-8 pt-8 border-t border-resin-forest/10">
-                    <div class="space-y-2">
+                    <div
+                        bind:this={elementRefs['stat1']}
+                        data-element="stat1"
+                        class="space-y-2 transition-all duration-700 {animatedElements['stat1'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
+                    >
                         <div class="text-3xl font-bold text-resin-forest">2.5k+</div>
                         <p class="text-sm text-resin-earth/70">Active users getting things done</p>
                     </div>
-                    <div class="space-y-2">
+                    <div
+                        bind:this={elementRefs['stat2']}
+                        data-element="stat2"
+                        class="space-y-2 transition-all duration-700 {animatedElements['stat2'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
+                        style="transition-delay: 100ms"
+                    >
                         <div class="text-3xl font-bold text-resin-amber">10k+</div>
                         <p class="text-sm text-resin-earth/70">Focus sessions completed</p>
                     </div>
-                    <div class="space-y-2">
+                    <div
+                        bind:this={elementRefs['stat3']}
+                        data-element="stat3"
+                        class="space-y-2 transition-all duration-700 {animatedElements['stat3'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
+                        style="transition-delay: 200ms"
+                    >
                         <div class="text-3xl font-bold text-resin-charcoal">92%</div>
                         <p class="text-sm text-resin-earth/70">Complete their plans</p>
                     </div>
@@ -689,8 +837,12 @@
     </section>
 
     <!-- Privacy Section -->
-    <section class="max-w-5xl mx-auto mb-32">
-        <div class="glass-card rounded-3xl p-12 border border-resin-forest/20">
+    <section
+        bind:this={sectionRefs['privacy']}
+        data-section="privacy"
+        class="max-w-5xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['privacy'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
+    >
+        <div class="glass-card rounded-3xl p-6 md:p-12 border border-resin-forest/20 hover:border-resin-forest/40 transition-all duration-500">
             <div class="text-center space-y-8">
                 <div>
                     <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">Your thoughts, completely private</h2>
@@ -698,27 +850,41 @@
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-8 pt-8 border-t border-resin-forest/10">
-                    <div class="space-y-4">
+                    <div
+                        bind:this={elementRefs['privacy1']}
+                        data-element="privacy1"
+                        class="space-y-4 transition-all duration-700 hover:scale-105 {animatedElements['privacy1'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
+                    >
                         <div class="flex justify-center">
-                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Lock class="w-6 h-6 text-resin-forest" />
                             </div>
                         </div>
                         <h3 class="font-bold text-resin-charcoal">End-to-End Encrypted</h3>
                         <p class="text-sm text-resin-earth/70">All your notes, plans, and reflections are encrypted on your device. We can't see them, even if we wanted to.</p>
                     </div>
-                    <div class="space-y-4">
+                    <div
+                        bind:this={elementRefs['privacy2']}
+                        data-element="privacy2"
+                        class="space-y-4 transition-all duration-700 hover:scale-105 {animatedElements['privacy2'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
+                        style="transition-delay: 100ms"
+                    >
                         <div class="flex justify-center">
-                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Shield class="w-6 h-6 text-resin-forest" />
                             </div>
                         </div>
                         <h3 class="font-bold text-resin-charcoal">No Tracking. No Selling.</h3>
                         <p class="text-sm text-resin-earth/70">We never sell your data or use it for ad targeting. Your thoughts belong to you, not to advertisers.</p>
                     </div>
-                    <div class="space-y-4">
+                    <div
+                        bind:this={elementRefs['privacy3']}
+                        data-element="privacy3"
+                        class="space-y-4 transition-all duration-700 hover:scale-105 {animatedElements['privacy3'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
+                        style="transition-delay: 200ms"
+                    >
                         <div class="flex justify-center">
-                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Smartphone class="w-6 h-6 text-resin-forest" />
                             </div>
                         </div>
@@ -731,13 +897,17 @@
     </section>
 
     <!-- Final CTA -->
-    <section class="mt-32 mb-20 text-center space-y-10">
+    <section
+        bind:this={sectionRefs['cta']}
+        data-section="cta"
+        class="mt-16 md:mt-32 mb-16 md:mb-20 px-4 md:px-0 text-center space-y-6 md:space-y-10 transition-all duration-700 {animatedSections['cta'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
+    >
         <h2
-            class="text-5xl md:text-6xl font-bold text-resin-charcoal font-serif max-w-2xl mx-auto text-balance"
+            class="text-3xl md:text-6xl font-bold text-resin-charcoal font-serif max-w-2xl mx-auto text-balance"
         >
             What matters deserves your focus.
         </h2>
-        <p class="text-lg text-resin-earth/70 max-w-xl mx-auto">Stop letting distractions win. Start actually finishing what you know needs to be done. Try Resin for free today.</p>
+        <p class="text-base md:text-lg text-resin-earth/70 max-w-xl mx-auto">Stop letting distractions win. Start actually finishing what you know needs to be done. Try Resin for free today.</p>
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a

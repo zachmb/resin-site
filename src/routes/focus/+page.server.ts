@@ -9,6 +9,87 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         throw redirect(303, '/login?next=/focus');
     }
 
+    // Expand focus automations into blocking sessions for next 7 days
+    // This ensures coverage whether user opened the app or not
+    const expandPromise = (async () => {
+        try {
+            // Fetch enabled automations
+            const { data: automations } = await supabase
+                .from('focus_automations')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .eq('enabled', true);
+
+            if (!automations || automations.length === 0) return;
+
+            const now = new Date();
+            const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            const sessionsToCreate: any[] = [];
+
+            for (const automation of automations) {
+                const [hours, minutes] = automation.time.split(':').map(Number);
+                const dayMap: { [key: string]: number } = {
+                    'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4,
+                    'Friday': 5, 'Saturday': 6, 'Sunday': 0
+                };
+
+                const targetDays = automation.days_of_week
+                    .split(',')
+                    .map((day: string) => dayMap[day.trim()])
+                    .filter((d: number) => d !== undefined);
+
+                let currentDate = new Date(now);
+                currentDate.setHours(0, 0, 0, 0);
+
+                while (currentDate <= sevenDaysLater) {
+                    const dayOfWeek = currentDate.getDay();
+
+                    if (targetDays.includes(dayOfWeek)) {
+                        const startTime = new Date(currentDate);
+                        startTime.setHours(hours, minutes, 0, 0);
+
+                        if (startTime > now) {
+                            const endTime = new Date(startTime.getTime() + automation.duration_minutes * 60 * 1000);
+
+                            // Check for existing session
+                            const { data: existing } = await supabase
+                                .from('blocking_sessions')
+                                .select('id')
+                                .eq('user_id', session.user.id)
+                                .eq('title', automation.title)
+                                .gte('start_time', startTime.toISOString())
+                                .lt('start_time', new Date(startTime.getTime() + 60 * 1000).toISOString())
+                                .single();
+
+                            if (!existing) {
+                                sessionsToCreate.push({
+                                    user_id: session.user.id,
+                                    title: automation.title,
+                                    start_time: startTime.toISOString(),
+                                    end_time: endTime.toISOString(),
+                                    device_scheduled: false
+                                });
+                            }
+                        }
+                    }
+
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+
+            if (sessionsToCreate.length > 0) {
+                await supabase.from('blocking_sessions').insert(sessionsToCreate);
+            }
+        } catch (err) {
+            console.warn('Error expanding automations:', err);
+            // Don't fail the page load if this fails
+        }
+    })();
+
+    // Run expansion in background
+    expandPromise.catch(() => {});
+
     // Fetch active sessions (started but not ended)
     const now = new Date().toISOString();
     const { data: activeSessions } = await supabase
@@ -351,6 +432,51 @@ export const actions: Actions = {
                 .single();
 
             if (error) throw error;
+
+            // Expand automation into blocking_sessions for next 7 days
+            const now = new Date();
+            const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            const dayMap: { [key: string]: number } = {
+                'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4,
+                'Friday': 5, 'Saturday': 6, 'Sunday': 0
+            };
+
+            const targetDays = daysOfWeek
+                .split(',')
+                .map((day: string) => dayMap[day.trim()])
+                .filter((d: number) => d !== undefined);
+
+            const sessionsToCreate: any[] = [];
+            let currentDate = new Date(now);
+            currentDate.setHours(0, 0, 0, 0);
+
+            while (currentDate <= sevenDaysLater) {
+                const dayOfWeek = currentDate.getDay();
+
+                if (targetDays.includes(dayOfWeek)) {
+                    const startTime = new Date(currentDate);
+                    const [h, m] = timeStr.split(':').map(Number);
+                    startTime.setHours(h, m, 0, 0);
+
+                    if (startTime > now) {
+                        const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+                        sessionsToCreate.push({
+                            user_id: session.user.id,
+                            title: blockingSession.title,
+                            start_time: startTime.toISOString(),
+                            end_time: endTime.toISOString(),
+                            device_scheduled: false
+                        });
+                    }
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            if (sessionsToCreate.length > 0) {
+                await supabase.from('blocking_sessions').insert(sessionsToCreate);
+            }
 
             // Send push notification to device
             const { data: tokens } = await supabase

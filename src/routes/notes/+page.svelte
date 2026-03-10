@@ -6,6 +6,7 @@
     let { data } = $props();
     let notes = $derived($page.data.notes || []);
     let profile = $derived($page.data.profile || null);
+    let connections = $derived(data.connections || {});
 
     let toastMessage = $state("");
     const showToast = (msg: string) => {
@@ -16,14 +17,16 @@
     let selectedNoteId = $state<string | null>(null);
     let localDrafts = $state<Record<string, string>>({});
 
-    // Reset view if the user clicks the "Notes" link in the header explicitly
+    // Open specific note by ID from URL, or reset to first note
     $effect(() => {
-        if (
-            $page.url.pathname === "/notes" &&
-            $page.url.searchParams.has("reset")
-        ) {
-            selectedNoteId = notes[0]?.id || "mock";
-            localDrafts = {};
+        if ($page.url.pathname === "/notes") {
+            const idParam = $page.url.searchParams.get("id");
+            if (idParam) {
+                selectedNoteId = idParam;
+            } else if ($page.url.searchParams.has("reset")) {
+                selectedNoteId = notes[0]?.id || "mock";
+                localDrafts = {};
+            }
         }
     });
 
@@ -73,6 +76,7 @@
     {activeNote}
     {notes}
     {profile}
+    {connections}
     friends={data.friends || []}
     {showToast}
     {updateActiveNoteContent}

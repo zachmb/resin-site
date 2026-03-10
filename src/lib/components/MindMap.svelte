@@ -116,23 +116,57 @@
 
         // Calculate drop position relative to the flow view
         const reactFlowBounds = wrapper.getBoundingClientRect();
-        // SvelteFlow doesn't currently expose `project` globally off the shelf without useSvelteFlow
-        // but since we are simple, we can visually offset it
         const position_x = event.clientX - reactFlowBounds.left;
         const position_y = event.clientY - reactFlowBounds.top;
 
-        // Optimistically add just so it feels fast
-        nodes = [
-            ...nodes,
+        // Find all edges involving this note
+        const relatedEdges = initialEdges.filter((edge: any) =>
+            edge.source_id === noteId || edge.target_id === noteId
+        );
+
+        // Collect all connected note IDs (other endpoints)
+        const connectedNoteIds = new Set<string>();
+        for (const edge of relatedEdges) {
+            if (edge.source_id === noteId) connectedNoteIds.add(edge.target_id);
+            if (edge.target_id === noteId) connectedNoteIds.add(edge.source_id);
+        }
+
+        // Optimistically add the dropped note
+        const newNodes = [
             {
                 id: noteId,
                 type: "mapNode",
                 position: { x: position_x, y: position_y },
-                data: { label: "Loading...", onDelete: handleNodeDelete }, // will get synced via invalidateAll quickly
+                data: { label: "Loading...", onDelete: handleNodeDelete },
             },
         ];
 
-        // Save new position + is_on_map
+        // Optimistically add connected notes
+        let minX = position_x;
+        for (const connectedId of connectedNoteIds) {
+            if (!nodes.some((n: any) => n.id === connectedId)) {
+                minX -= 150;
+                newNodes.push({
+                    id: connectedId,
+                    type: "mapNode",
+                    position: { x: minX, y: position_y },
+                    data: { label: "Loading...", onDelete: handleNodeDelete },
+                });
+            }
+        }
+        nodes = [...nodes, ...newNodes];
+
+        // Add the related edges
+        const newEdges = relatedEdges.map((edge: any) => ({
+            id: edge.id,
+            source: edge.source_id,
+            target: edge.target_id,
+            style: "stroke: #2B4634; stroke-width: 2px;",
+            animated: true,
+        }));
+        edges = [...edges, ...newEdges];
+
+        // Save positions to DB
         const formData = new FormData();
         formData.append("id", noteId);
         formData.append("position_x", position_x.toString());
@@ -143,6 +177,22 @@
                 method: "POST",
                 body: formData,
             });
+
+            // Also add connected notes to map
+            minX = position_x;
+            for (const connectedId of connectedNoteIds) {
+                if (newNodes.some((n: any) => n.id === connectedId)) {
+                    minX -= 150;
+                    const formData2 = new FormData();
+                    formData2.append("id", connectedId);
+                    formData2.append("position_x", minX.toString());
+                    formData2.append("position_y", position_y.toString());
+                    await fetch("/map?/updateNodePosition", {
+                        method: "POST",
+                        body: formData2,
+                    });
+                }
+            }
 
             if (onNoteDropped) {
                 onNoteDropped();
@@ -239,13 +289,23 @@
     ondragover={onDragOver}
     ondrop={onDrop}
 >
-    <!-- Connect Notes Button -->
-    <button
-        onclick={() => (showConnectPanel = true)}
-        class="absolute top-6 right-6 z-10 px-4 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-resin-forest/20 text-resin-forest font-medium text-sm hover:bg-white hover:shadow-lg transition-all"
-    >
-        + Connect Notes
-    </button>
+    <!-- Action Buttons -->
+    <div class="absolute top-6 right-6 z-10 flex gap-2 items-center">
+        <form method="POST" action="/map?/clearMap" class="inline">
+            <button
+                type="submit"
+                class="px-4 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-red-200/50 text-red-600 font-medium text-sm hover:bg-white hover:shadow-lg transition-all"
+            >
+                Clear
+            </button>
+        </form>
+        <button
+            onclick={() => (showConnectPanel = true)}
+            class="px-4 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-resin-forest/20 text-resin-forest font-medium text-sm hover:bg-white hover:shadow-lg transition-all"
+        >
+            + Connect Notes
+        </button>
+    </div>
 
     <!-- Connect Panel -->
     {#if showConnectPanel}

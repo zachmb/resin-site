@@ -3,6 +3,8 @@
     import { page } from "$app/stores";
     import { invalidateAll } from "$app/navigation";
     import { enhance } from "$app/forms";
+    import { fade } from "svelte/transition";
+    import { onMount } from "svelte";
 
     let { data } = $props();
     let notes = $derived($page.data.notes || []);
@@ -10,6 +12,15 @@
 
     let mappedNotes = $derived(notes.filter((n: any) => n.is_on_map));
     let unmappedNotes = $derived(notes.filter((n: any) => !n.is_on_map));
+
+    let showAutoSaveHint = $state(true);
+
+    onMount(() => {
+        // Auto-dismiss the hint after 4 seconds
+        setTimeout(() => {
+            showAutoSaveHint = false;
+        }, 4000);
+    });
 
     const onDragStart = (e: DragEvent, note: any) => {
         if (e.dataTransfer) {
@@ -88,5 +99,18 @@
             initialEdges={edges}
             onNoteDropped={handleDropAction}
         />
+
+        <!-- Auto-save Indicator Toast -->
+        {#if showAutoSaveHint}
+            <div
+                transition:fade={{ duration: 200 }}
+                class="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-resin-forest text-white rounded-full shadow-lg z-20 text-sm font-medium flex items-center gap-2"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Saves are automatic
+            </div>
+        {/if}
     </div>
 </div>

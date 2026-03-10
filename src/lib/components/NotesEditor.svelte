@@ -1,11 +1,14 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
 
+    import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
+
     let {
         activeNote,
         notes = [],
         profile = null,
         friends = [],
+        connections = {},
         showToast,
         updateActiveNoteContent,
         onBack,
@@ -16,6 +19,7 @@
         notes: any[];
         profile?: any;
         friends?: any[];
+        connections?: Record<string, any>;
         showToast: (msg: string) => void;
         updateActiveNoteContent: (content: string) => void;
         onBack: () => void;
@@ -35,6 +39,10 @@
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
+        // Update lastSaved to show the actual creation time of the active note
+        if (activeNote?.created_at) {
+            lastSaved = new Date(activeNote.created_at);
+        }
     });
 
     const toggleSidebar = () => {
@@ -366,6 +374,17 @@
                     autoSave(newVal);
                 }}
             ></textarea>
+
+            <!-- Connected Notes Section -->
+            {#if activeNote?.id && connections[activeNote.id]}
+                <div class="px-6 sm:px-10 py-4 border-t border-resin-forest/5 bg-white/20">
+                    <ConnectedNotesSection
+                        outgoing={connections[activeNote.id]?.outgoing || []}
+                        incoming={connections[activeNote.id]?.incoming || []}
+                        onNavigateToNote={(noteId) => onSelectNote(notes.find((n: any) => n.id === noteId))}
+                    />
+                </div>
+            {/if}
 
             <!-- Status Bar -->
             <div

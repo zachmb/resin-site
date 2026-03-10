@@ -59,13 +59,43 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
             .eq('user_id', session.user.id)
     ]);
 
+    // Fetch connections with titles for each note
+    const notes = (notesResponse.data || []).map((n: any) => ({
+        ...n,
+        title: n.display_title || n.title || 'Untitled Note',
+        content: n.raw_text || n.content || ''
+    }));
+
+    const edges = edgesResponse.data || [];
+
+    // Build connection metadata for each note
+    const connections: Record<string, any> = {};
+    const noteMap = new Map(notes.map(n => [n.id, n]));
+
+    for (const note of notes) {
+        const outgoing = edges
+            .filter(e => e.source_id === note.id)
+            .map(e => ({
+                ...e,
+                targetTitle: noteMap.get(e.target_id)?.title || 'Untitled',
+                type: 'outgoing'
+            }));
+
+        const incoming = edges
+            .filter(e => e.target_id === note.id)
+            .map(e => ({
+                ...e,
+                sourceTitle: noteMap.get(e.source_id)?.title || 'Untitled',
+                type: 'incoming'
+            }));
+
+        connections[note.id] = { outgoing, incoming };
+    }
+
     return {
-        notes: (notesResponse.data || []).map((n: any) => ({
-            ...n,
-            title: n.display_title || n.title || 'Untitled Note',
-            content: n.raw_text || n.content || ''
-        })),
-        edges: edgesResponse.data || []
+        notes,
+        edges,
+        connections
     };
 };
 
@@ -121,13 +151,15 @@ export const actions: Actions = {
         const data = await request.formData();
         const source_id = data.get('source_id') as string;
         const target_id = data.get('target_id') as string;
+        const connection_type = (data.get('connection_type') as string) || 'relates_to';
 
         const { data: edge, error } = await supabase
             .from('mind_map_edges')
             .insert({
                 user_id: session.user.id,
                 source_id,
-                target_id
+                target_id,
+                connection_type
             })
             .select()
             .single();

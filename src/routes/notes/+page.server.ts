@@ -130,9 +130,49 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
         })
     );
 
+    // Fetch mind map edges (connections) for all user notes
+    const { data: edges } = await supabase
+        .from('mind_map_edges')
+        .select('*')
+        .eq('user_id', session.user.id);
+
+    // Fetch user's own notes for building connection metadata
+    const { data: userNotes } = await supabase
+        .from('amber_sessions')
+        .select('id, display_title, title, raw_text, content')
+        .eq('user_id', session.user.id);
+
+    const allNotes = (userNotes || []).map((n: any) => ({
+        id: n.id,
+        title: n.display_title || n.title || 'Untitled'
+    }));
+
+    // Build connection metadata
+    const connections: Record<string, any> = {};
+    const noteMap = new Map(allNotes.map(n => [n.id, n]));
+
+    for (const note of allNotes) {
+        const outgoing = (edges || [])
+            .filter(e => e.source_id === note.id)
+            .map(e => ({
+                ...e,
+                targetTitle: noteMap.get(e.target_id)?.title || 'Untitled'
+            }));
+
+        const incoming = (edges || [])
+            .filter(e => e.target_id === note.id)
+            .map(e => ({
+                ...e,
+                sourceTitle: noteMap.get(e.source_id)?.title || 'Untitled'
+            }));
+
+        connections[note.id] = { outgoing, incoming };
+    }
+
     return {
         sharedWithMe: normalizedSharedNotes,
-        friends
+        friends,
+        connections
     };
 };
 

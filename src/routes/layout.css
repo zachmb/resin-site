@@ -27,7 +27,7 @@
     .glass-card {
         @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass;
     }
-    
+
     .text-balance {
         text-wrap: balance;
     }
@@ -36,8 +36,36 @@
         animation: fadeIn 0.8s ease-out forwards;
     }
 
+    .streak-glow {
+        animation: streakGlow 2s ease-in-out infinite;
+    }
+
+    .streak-nav-glow {
+        animation: streakNavGlow 2s ease-in-out infinite;
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes streakGlow {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(232, 154, 60, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 8px rgba(232, 154, 60, 0);
+        }
+    }
+
+    @keyframes streakNavGlow {
+        0%, 100% {
+            color: inherit;
+            text-shadow: none;
+        }
+        50% {
+            color: #E89A3C;
+            text-shadow: 0 0 8px rgba(232, 154, 60, 0.6);
+        }
     }
 }

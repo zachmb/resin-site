@@ -178,9 +178,8 @@ export const load: PageServerLoad = async ({ locals }) => {
         feedbackCount: (feedback || []).length,
     };
 
-    // Detect new user - account created in last 5 minutes
-    const createdAt = new Date(session.user.created_at);
-    const isNewUser = (Date.now() - createdAt.getTime()) < 5 * 60 * 1000;
+    // Check if user has visited the web app before
+    const isNewUser = !profile?.web_onboarded;
 
     return {
         session,
@@ -306,6 +305,24 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Error deleting automation:', err);
+            return fail(500, { error: String(err) });
+        }
+    },
+
+    markWebOnboarded: async ({ locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ web_onboarded: true })
+                .eq('id', session.user.id);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (err) {
+            console.error('Error marking web onboarded:', err);
             return fail(500, { error: String(err) });
         }
     }

@@ -18,12 +18,12 @@
 
 {#if isOpen}
     <div
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
         transition:fade={{ duration: 200 }}
         onclick={close}
     >
         <div
-            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
             onclick={(e) => e.stopPropagation()}
             transition:slide={{ duration: 300 }}
         >

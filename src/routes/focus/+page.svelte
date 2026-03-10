@@ -2,6 +2,7 @@
     import { enhance } from '$app/forms';
     import { fade, slide } from 'svelte/transition';
     import FocusControl from '$lib/components/FocusControl.svelte';
+    import { Circle, Calendar, Users, Clock, Trash2 } from 'lucide-svelte';
 
     let { data } = $props();
 
@@ -119,9 +120,7 @@
     {#if activeSessions.length > 0}
         <section class="mb-12" transition:fade>
             <h2 class="text-2xl font-bold text-resin-charcoal mb-6 flex items-center gap-3">
-                <svg class="w-6 h-6 text-resin-amber" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9a1 1 0 112 0 1 1 0 01-2 0z" />
-                </svg>
+                <Circle class="w-6 h-6 text-resin-amber fill-current" />
                 Active Now ({activeSessions.length})
             </h2>
 
@@ -187,9 +186,7 @@
     <section class="mb-12">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-resin-charcoal flex items-center gap-3">
-                <svg class="w-6 h-6 text-resin-forest" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v2h16V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5H4v9a2 2 0 002 2h12a2 2 0 002-2V7h-2v1a1 1 0 11-2 0V7H9v1a1 1 0 11-2 0V7H6v1a1 1 0 11-2 0V7z" />
-                </svg>
+                <Calendar class="w-6 h-6 text-resin-forest" />
                 Scheduled Sessions
             </h2>
             <button
@@ -518,9 +515,7 @@
     <section class="mb-12">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-resin-charcoal flex items-center gap-3">
-                <svg class="w-6 h-6 text-resin-amber" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM2 8a2 2 0 11-4 0 2 2 0 014 0zM6 15a4 4 0 00-8 0v2h8v-2z" />
-                </svg>
+                <Users class="w-6 h-6 text-resin-amber" />
                 Focus with Friends
             </h2>
             {#if friends.length > 0}
@@ -655,9 +650,7 @@
                             <div class="flex items-start justify-between mb-3">
                                 <div>
                                     <h3 class="font-bold text-resin-charcoal flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-resin-amber" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM2 8a2 2 0 11-4 0 2 2 0 014 0zM6 15a4 4 0 00-8 0v2h8v-2z" />
-                                        </svg>
+                                        <Users class="w-4 h-4 text-resin-amber" />
                                         {session.title}
                                     </h3>
                                     <p class="text-xs text-resin-earth/60 mt-1">
@@ -722,9 +715,7 @@
     <section>
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-resin-charcoal flex items-center gap-3">
-                <svg class="w-6 h-6 text-resin-lavender" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM15.657 14.243a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM11 17a1 1 0 102 0v-1a1 1 0 10-2 0v1zM5.757 15.657a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zM5.757 4.343a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707z" />
-                </svg>
+                <Clock class="w-6 h-6 text-resin-lavender" />
                 Automations & Recurring
             </h2>
             <button
@@ -841,9 +832,7 @@
                                     type="submit"
                                     class="text-resin-earth/60 hover:text-red-500 transition-colors"
                                 >
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
+                                    <Trash2 class="w-4 h-4" />
                                 </button>
                             </form>
                         </div>

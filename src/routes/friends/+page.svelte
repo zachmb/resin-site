@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
+	import { Users, Mail, Send } from 'lucide-svelte';
 
 	let data: PageData;
 	export { data };
@@ -127,9 +128,7 @@
 		{#if data.friends.length > 0}
 			<section class="mb-12">
 				<h2 class="text-2xl font-bold text-resin-charcoal mb-6 flex items-center gap-2">
-					<svg class="w-6 h-6 text-resin-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292m0 0H7m5 0h5m-5 0a4 4 0 100-5.292m0 5.292V21" />
-					</svg>
+					<Users class="w-6 h-6 text-resin-forest" />
 					Your Friends ({data.friends.length})
 				</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,9 +184,7 @@
 		{#if data.pendingReceived.length > 0}
 			<section class="mb-12">
 				<h2 class="text-2xl font-bold text-resin-amber mb-6 flex items-center gap-2">
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-					</svg>
+					<Mail class="w-6 h-6" />
 					Requests ({data.pendingReceived.length})
 				</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -238,9 +235,7 @@
 		{#if data.pendingSent.length > 0}
 			<section class="mb-12">
 				<h2 class="text-2xl font-bold text-resin-earth/70 mb-6 flex items-center gap-2">
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-					</svg>
+					<Send class="w-6 h-6" />
 					Pending ({data.pendingSent.length})
 				</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,9 +268,7 @@
 			<div
 				class="glass-card rounded-[2.5rem] p-16 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent text-center"
 			>
-				<svg class="w-16 h-16 text-resin-forest/30 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292m0 0H7m5 0h5m-5 0a4 4 0 100-5.292m0 5.292V21" />
-				</svg>
+				<Users class="w-16 h-16 text-resin-forest/30 mx-auto mb-4" />
 				<p class="text-resin-earth/60 text-lg font-medium mb-2">No friends yet</p>
 				<p class="text-resin-earth/40 text-sm">Search by email above to add friends and start collaborating</p>
 			</div>

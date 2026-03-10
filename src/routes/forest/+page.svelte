@@ -125,54 +125,111 @@
             class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl mb-24"
         >
             <div
-                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-2 group hover:scale-[1.02] transition-transform duration-500"
+                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
             >
-                <div
-                    class="w-12 h-12 rounded-2xl bg-resin-amber/10 flex items-center justify-center text-resin-amber mb-2"
-                >
-                    <span class="text-2xl">💎</span>
+                <div class="absolute inset-0 bg-gradient-to-br from-resin-amber/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-resin-amber/10 flex items-center justify-center text-resin-amber mb-2 mx-auto"
+                    >
+                        <span class="text-2xl">💎</span>
+                    </div>
+                    <span class="text-4xl font-bold text-resin-charcoal"
+                        >{totalStones}</span
+                    >
+                    <span
+                        class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold mt-2 block"
+                        >Stones Earned</span
+                    >
+                    <p class="text-[10px] text-resin-earth/40 mt-3 leading-relaxed max-w-xs mx-auto">
+                        Earn stones by completing focus sessions, sharing plans with friends, and using the browser extension
+                    </p>
                 </div>
-                <span class="text-3xl font-bold text-resin-charcoal"
-                    >{totalStones}</span
-                >
-                <span
-                    class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold"
-                    >Stones Earned</span
-                >
             </div>
 
             <div
-                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-2 group hover:scale-[1.02] transition-transform duration-500"
+                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
             >
-                <div
-                    class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2 font-serif font-bold italic"
-                >
-                    {currentStreak}d
+                <div class="absolute inset-0 bg-gradient-to-br from-resin-forest/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2 mx-auto font-serif font-bold italic text-lg"
+                    >
+                        {currentStreak}
+                    </div>
+                    <span class="text-4xl font-bold text-resin-charcoal"
+                        >Day Streak</span
+                    >
+                    <span
+                        class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold mt-2 block"
+                        >Keep it going!</span
+                    >
+                    <p class="text-[10px] text-resin-earth/40 mt-3 leading-relaxed max-w-xs mx-auto">
+                        Focus every day to maintain your streak. Missing a day resets it.
+                    </p>
                 </div>
-                <span class="text-3xl font-bold text-resin-charcoal"
-                    >Streak</span
-                >
-                <span
-                    class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold"
-                    >Current</span
-                >
             </div>
 
             <div
-                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-2 group hover:scale-[1.02] transition-transform duration-500"
+                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
             >
-                <div
-                    class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2"
-                >
-                    <span class="text-xl">⏱</span>
+                <div class="absolute inset-0 bg-gradient-to-br from-resin-forest/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="relative z-10">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2 mx-auto"
+                    >
+                        <span class="text-xl">⏱</span>
+                    </div>
+                    <span class="text-4xl font-bold text-resin-charcoal"
+                        >{formatDuration(totalFocusMinutes)}</span
+                    >
+                    <span
+                        class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold mt-2 block"
+                        >Total Focus</span
+                    >
+                    <p class="text-[10px] text-resin-earth/40 mt-3 leading-relaxed max-w-xs mx-auto">
+                        Your longest focus session was {formatDuration(longestSession)}
+                    </p>
                 </div>
-                <span class="text-3xl font-bold text-resin-charcoal"
-                    >{formatDuration(totalFocusMinutes)}</span
-                >
-                <span
-                    class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold"
-                    >Focus Time</span
-                >
+            </div>
+        </div>
+
+        <!-- How Stones Work -->
+        <div class="w-full max-w-4xl mb-24">
+            <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-8">
+                How You Earn Stones
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
+                    <span class="text-2xl">📝</span>
+                    <p class="text-xs font-bold text-resin-charcoal">Save Notes</p>
+                    <p class="text-xs text-resin-amber font-bold">+1 Stone</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
+                    <span class="text-2xl">📸</span>
+                    <p class="text-xs font-bold text-resin-charcoal">Scan Photo</p>
+                    <p class="text-xs text-resin-amber font-bold">+1 Stone</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
+                    <span class="text-2xl">🎯</span>
+                    <p class="text-xs font-bold text-resin-charcoal">Complete Task</p>
+                    <p class="text-xs text-resin-amber font-bold">+5 Stones</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
+                    <span class="text-2xl">💭</span>
+                    <p class="text-xs font-bold text-resin-charcoal">Add Reflection</p>
+                    <p class="text-xs text-resin-amber font-bold">+50 Stones</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
+                    <span class="text-2xl">👥</span>
+                    <p class="text-xs font-bold text-resin-charcoal">Share Session</p>
+                    <p class="text-xs text-resin-amber font-bold">+5 Stones</p>
+                </div>
+                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
+                    <span class="text-2xl">🔒</span>
+                    <p class="text-xs font-bold text-resin-charcoal">Use Shield</p>
+                    <p class="text-xs text-resin-amber font-bold">+5 Stones</p>
+                </div>
             </div>
         </div>
 

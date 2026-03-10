@@ -54,8 +54,17 @@
         isNewUser && typeof window !== 'undefined' && !localStorage.getItem('resin_onboarded')
     );
 
-    const dismissBanner = () => {
+    const dismissBanner = async () => {
         localStorage.setItem('resin_onboarded', '1');
+        // Mark as onboarded in database
+        try {
+            await fetch('?/markWebOnboarded', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+        } catch (err) {
+            console.error('Failed to mark web onboarded:', err);
+        }
     };
 
     const formatTime = (dateString: string) => {

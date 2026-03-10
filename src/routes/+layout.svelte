@@ -7,6 +7,7 @@
 	let { children, data } = $props();
 	let { supabase, session, activeSession } = $derived(data);
 	let isMobileMenuOpen = $state(false);
+	let hasStreak = $derived(data.profile?.current_streak > 0);
 
 	onMount(() => {
 		const {
@@ -47,7 +48,7 @@
 	>
 		<div class="max-w-6xl mx-auto flex items-center justify-between">
 			<a href="/" class="flex items-center gap-2.5 group">
-				<div class="relative">
+				<div class="relative" class:streak-glow={hasStreak}>
 					<img
 						src="/logo.png"
 						alt="Resin Logo"
@@ -111,8 +112,12 @@
 					<a
 						href="/forest"
 						class="hover:text-resin-forest transition-colors relative group"
+					class:streak-nav-glow={hasStreak}
 					>
 						Forest
+					{#if hasStreak}
+						<span class="ml-2 text-xs font-bold text-resin-amber animate-pulse">✨</span>
+					{/if}
 						<span
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
@@ -240,8 +245,12 @@
 				<a
 					href="/forest"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					class:streak-nav-glow={hasStreak}
 					onclick={() => (isMobileMenuOpen = false)}>Forest</a
 				>
+					{#if hasStreak}
+						<span class="ml-2 text-xs font-bold text-resin-amber animate-pulse">✨</span>
+					{/if}
 			<a
 				href="/focus"
 				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"

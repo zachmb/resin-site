@@ -1,4 +1,47 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad, Actions } from './$types';
+import { redirect, fail } from '@sveltejs/kit';
+
+const extractTitle = (content: string) => {
+    if (!content || !content.trim()) return '';
+    const lines = content.split('\n');
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && trimmed !== '#') {
+            return trimmed.replace(/^#+\s*/, '').substring(0, 60);
+        }
+    }
+    return '';
+};
+
+const insertNote = async (supabase: any, row: { user_id: string; title: string; content: string; created_at: string }) => {
+    const result = await supabase
+        .from('amber_sessions')
+        .insert({
+            user_id: row.user_id,
+            raw_text: row.content,
+            display_title: row.title,
+            status: 'draft',
+            created_at: row.created_at
+        })
+        .select()
+        .single();
+
+    if (!result.error) return result;
+
+    // Fallback for older schema
+    console.warn('[home] Preferred schema insert failed, trying fallback...', result.error.message);
+    return await supabase
+        .from('amber_sessions')
+        .insert({
+            user_id: row.user_id,
+            content: row.content,
+            title: row.title,
+            status: 'draft',
+            created_at: row.created_at
+        })
+        .select()
+        .single();
+};
 
 export const load: PageServerLoad = async ({ locals }) => {
     const session = await locals.getSession();
@@ -10,6 +53,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             recentNotes: [],
             todayTasks: [],
             weeklyStats: null,
+            automations: [],
         };
     }
 
@@ -74,6 +118,13 @@ export const load: PageServerLoad = async ({ locals }) => {
         .order('created_at', { ascending: false })
         .limit(20);
 
+    // 7. Focus automations
+    const { data: automations } = await locals.supabase
+        .from('focus_automations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
     // Build weekly stats
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const heatmap: { day: string; date: string; sessions: number; focusMinutes: number }[] = [];
@@ -133,5 +184,124 @@ export const load: PageServerLoad = async ({ locals }) => {
         recentNotes: recentNotes || [],
         todayTasks: todayTasks || [],
         weeklyStats,
+        automations: automations || [],
     };
+};
+
+export const actions: Actions = {
+    quickNote: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const content = data.get('content')?.toString() || '';
+
+        if (!content.trim()) {
+            return fail(400, { error: 'Note content cannot be empty' });
+        }
+
+        const title = extractTitle(content);
+        const { data: note, error } = await insertNote(supabase, {
+            user_id: session.user.id,
+            title: title,
+            content: content,
+            created_at: new Date().toISOString()
+        });
+
+        if (error) {
+            console.error('Error creating note:', error);
+            return fail(500, { error: 'Failed to create note' });
+        }
+
+        throw redirect(303, `/notes?id=${note.id}`);
+    },
+
+    quickSchedule: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const content = data.get('content')?.toString() || '';
+
+        if (!content.trim()) {
+            return fail(400, { error: 'Note content cannot be empty' });
+        }
+
+        const title = extractTitle(content);
+        const { data: note, error } = await insertNote(supabase, {
+            user_id: session.user.id,
+            title: title,
+            content: content,
+            created_at: new Date().toISOString()
+        });
+
+        if (error) {
+            console.error('Error creating note:', error);
+            return fail(500, { error: 'Failed to create note' });
+        }
+
+        throw redirect(303, `/amber`);
+    },
+
+    createAutomation: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const title = data.get('title')?.toString() || '';
+        const time = data.get('time')?.toString() || '';
+        const duration = parseInt(data.get('duration')?.toString() || '25');
+        const daysOfWeek = data.get('daysOfWeek')?.toString() || '';
+
+        if (!title || !time || !daysOfWeek) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const { data: automation, error } = await supabase
+                .from('focus_automations')
+                .insert({
+                    user_id: session.user.id,
+                    title: title,
+                    time: time,
+                    duration_minutes: duration,
+                    days_of_week: daysOfWeek,
+                    enabled: true
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return { success: true, automation };
+        } catch (err) {
+            console.error('Error creating automation:', err);
+            return fail(500, { error: String(err) });
+        }
+    },
+
+    deleteAutomation: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const automationId = data.get('automationId')?.toString();
+
+        if (!automationId) return fail(400, { error: 'Missing automation ID' });
+
+        try {
+            const { error } = await supabase
+                .from('focus_automations')
+                .delete()
+                .eq('id', automationId)
+                .eq('user_id', session.user.id);
+
+            if (error) throw error;
+
+            return { success: true };
+        } catch (err) {
+            console.error('Error deleting automation:', err);
+            return fail(500, { error: String(err) });
+        }
+    }
 };

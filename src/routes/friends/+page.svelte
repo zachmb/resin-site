@@ -51,207 +51,33 @@
 	}
 </script>
 
-<div class="flex h-screen bg-resin-charcoal/5">
-	<!-- Left Panel -->
-	<div class="w-72 border-r border-resin-earth/10 bg-white/40 backdrop-blur-sm flex flex-col">
-		<div class="p-6 border-b border-resin-earth/10">
-			<h1 class="text-2xl font-bold text-resin-charcoal">Friends</h1>
-			<p class="text-sm text-resin-earth/60 mt-1">Connect with other users</p>
-		</div>
-
-		<!-- Tab Navigation -->
-		<div class="flex gap-2 p-4 border-b border-resin-earth/10">
-			<button
-				on:click={() => (activeTab = 'friends')}
-				class="px-3 py-2 rounded-lg font-medium transition-all text-sm {activeTab === 'friends'
-					? 'bg-resin-forest text-white'
-					: 'text-resin-earth/60 hover:bg-black/5'}"
+<div class="min-h-screen bg-gradient-to-br from-resin-bg via-white/20 to-resin-bg pt-24 pb-16 px-4 sm:px-6">
+	<div class="max-w-4xl mx-auto">
+		<!-- Header -->
+		<div class="mb-12">
+			<div
+				class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
 			>
+				Social
+			</div>
+			<h1 class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight mb-2">
 				Friends
-				{#if data.friends.length > 0}
-					<span class="ml-1 text-xs bg-white/30 rounded px-1.5">
-						{data.friends.length}
-					</span>
-				{/if}
-			</button>
-			<button
-				on:click={() => (activeTab = 'received')}
-				class="px-3 py-2 rounded-lg font-medium transition-all text-sm {activeTab === 'received'
-					? 'bg-resin-forest text-white'
-					: 'text-resin-earth/60 hover:bg-black/5'}"
-			>
-				Requests
-				{#if data.pendingReceived.length > 0}
-					<span class="ml-1 text-xs bg-resin-amber/30 rounded px-1.5">
-						{data.pendingReceived.length}
-					</span>
-				{/if}
-			</button>
-			<button
-				on:click={() => (activeTab = 'sent')}
-				class="px-3 py-2 rounded-lg font-medium transition-all text-sm {activeTab === 'sent'
-					? 'bg-resin-forest text-white'
-					: 'text-resin-earth/60 hover:bg-black/5'}"
-			>
-				Pending
-				{#if data.pendingSent.length > 0}
-					<span class="ml-1 text-xs bg-resin-earth/30 rounded px-1.5">
-						{data.pendingSent.length}
-					</span>
-				{/if}
-			</button>
+			</h1>
+			<p class="text-resin-earth/60 font-medium">
+				Connect with others and plan together
+			</p>
 		</div>
 
-		<!-- Content Areas -->
-		<div class="flex-1 overflow-y-auto">
-			{#if activeTab === 'friends'}
-				<div class="p-4 space-y-2">
-					{#each data.friends as friend (friend.id)}
-						<div
-							class="p-4 rounded-xl bg-white/60 border border-resin-forest/10 hover:border-resin-forest/20 transition-all"
-						>
-							<div class="flex items-center gap-3 mb-3">
-								<div
-									class="w-10 h-10 rounded-lg bg-resin-forest/10 text-resin-forest font-bold flex items-center justify-center"
-								>
-									{getInitial(friend.email)}
-								</div>
-								<div class="flex-1 min-w-0">
-									<p class="font-medium text-resin-charcoal truncate">
-										{friend.email.split('@')[0]}
-									</p>
-									<p class="text-xs text-resin-earth/60 truncate">{friend.email}</p>
-								</div>
-							</div>
-							<div class="flex gap-2">
-								<button
-									on:click={() => openJointPlanModal(friend)}
-									class="flex-1 px-3 py-2 text-sm rounded-lg bg-resin-amber/10 text-resin-amber hover:bg-resin-amber/20 transition-all font-medium border border-resin-amber/20"
-								>
-									Joint Plan
-								</button>
-								<form
-									action="?/removeFriend"
-									method="POST"
-									use:enhance
-									on:submit={(e) => {
-										if (!confirm('Remove this friend?')) e.preventDefault();
-									}}
-									class="flex-shrink-0"
-								>
-									<input type="hidden" name="friendship_id" value={friend.id} />
-									<button
-										type="submit"
-										class="px-3 py-2 text-sm rounded-lg text-red-600/60 hover:bg-red-50 transition-all"
-									>
-										Remove
-									</button>
-								</form>
-							</div>
-						</div>
-					{/each}
-
-					{#if data.friends.length === 0}
-						<div class="p-8 text-center">
-							<p class="text-resin-earth/60 text-sm">No friends yet</p>
-							<p class="text-xs text-resin-earth/40 mt-1">Search to add friends above</p>
-						</div>
-					{/if}
-				</div>
-			{:else if activeTab === 'received'}
-				<div class="p-4 space-y-2">
-					{#each data.pendingReceived as request (request.id)}
-						<div
-							class="p-4 rounded-xl bg-white/60 border border-resin-amber/20 hover:border-resin-amber/30 transition-all"
-						>
-							<div class="flex items-center gap-3 mb-3">
-								<div
-									class="w-10 h-10 rounded-lg bg-resin-amber/10 text-resin-amber font-bold flex items-center justify-center"
-								>
-									{getInitial(request.email)}
-								</div>
-								<div class="flex-1 min-w-0">
-									<p class="font-medium text-resin-charcoal truncate">
-										{request.email.split('@')[0]}
-									</p>
-									<p class="text-xs text-resin-earth/60 truncate">{request.email}</p>
-								</div>
-							</div>
-							<div class="flex gap-2">
-								<form action="?/acceptRequest" method="POST" use:enhance class="flex-1">
-									<input type="hidden" name="friendship_id" value={request.id} />
-									<button
-										type="submit"
-										class="w-full px-3 py-2 text-sm rounded-lg bg-resin-forest/10 text-resin-forest hover:bg-resin-forest/20 transition-all font-medium border border-resin-forest/20"
-									>
-										Accept
-									</button>
-								</form>
-								<form action="?/declineRequest" method="POST" use:enhance class="flex-1">
-									<input type="hidden" name="friendship_id" value={request.id} />
-									<button
-										type="submit"
-										class="w-full px-3 py-2 text-sm rounded-lg text-red-600/60 hover:bg-red-50 transition-all border border-red-200/30"
-									>
-										Decline
-									</button>
-								</form>
-							</div>
-						</div>
-					{/each}
-
-					{#if data.pendingReceived.length === 0}
-						<div class="p-8 text-center">
-							<p class="text-resin-earth/60 text-sm">No pending requests</p>
-						</div>
-					{/if}
-				</div>
-			{:else if activeTab === 'sent'}
-				<div class="p-4 space-y-2">
-					{#each data.pendingSent as request (request.id)}
-						<div
-							class="p-4 rounded-xl bg-white/60 border border-resin-earth/10 opacity-75"
-						>
-							<div class="flex items-center gap-3 mb-3">
-								<div
-									class="w-10 h-10 rounded-lg bg-resin-earth/10 text-resin-earth font-bold flex items-center justify-center"
-								>
-									{getInitial(request.email)}
-								</div>
-								<div class="flex-1 min-w-0">
-									<p class="font-medium text-resin-charcoal truncate">
-										{request.email.split('@')[0]}
-									</p>
-									<p class="text-xs text-resin-earth/60 truncate">{request.email}</p>
-								</div>
-							</div>
-							<p class="text-xs text-resin-earth/50 font-mono">Awaiting response...</p>
-						</div>
-					{/each}
-
-					{#if data.pendingSent.length === 0}
-						<div class="p-8 text-center">
-							<p class="text-resin-earth/60 text-sm">No pending requests</p>
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- Right Panel: Search -->
-	<div class="flex-1 flex flex-col p-8">
-		<div class="max-w-2xl">
-			<h2 class="text-3xl font-bold text-resin-charcoal mb-2">Find Friends</h2>
-			<p class="text-resin-earth/60 mb-8">Search by email address to connect with other users</p>
-
+		<!-- Search Card -->
+		<div class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent mb-12">
+			<h2 class="text-lg font-bold text-resin-charcoal mb-6">Find Friends</h2>
 			<form
 				on:submit|preventDefault={handleSearch}
-				class="mb-8 flex gap-3"
+				class="flex gap-3 mb-6"
 			>
 				<input
 					type="email"
-					placeholder="friend@example.com"
+					placeholder="Search by email address..."
 					bind:value={searchEmail}
 					class="flex-1 px-4 py-3 rounded-xl border border-resin-earth/20 bg-white/60 backdrop-blur-sm placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10"
 				/>
@@ -265,10 +91,10 @@
 			</form>
 
 			{#if foundUser}
-				<div class="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-resin-forest/20">
+				<div class="p-6 rounded-2xl bg-white/60 border border-resin-forest/20">
 					<div class="flex items-center gap-4 mb-6">
 						<div
-							class="w-14 h-14 rounded-lg bg-resin-forest/10 text-resin-forest font-bold text-xl flex items-center justify-center"
+							class="w-16 h-16 rounded-full bg-gradient-to-br from-resin-forest/20 to-resin-forest/10 text-resin-forest font-bold text-2xl flex items-center justify-center"
 						>
 							{getInitial(foundUser.email)}
 						</div>
@@ -296,6 +122,164 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- Friends Sections -->
+		{#if data.friends.length > 0}
+			<section class="mb-12">
+				<h2 class="text-2xl font-bold text-resin-charcoal mb-6 flex items-center gap-2">
+					<svg class="w-6 h-6 text-resin-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292m0 0H7m5 0h5m-5 0a4 4 0 100-5.292m0 5.292V21" />
+					</svg>
+					Your Friends ({data.friends.length})
+				</h2>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					{#each data.friends as friend (friend.id)}
+						<div
+							class="glass-card rounded-2xl p-6 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent hover:shadow-lg transition-all"
+						>
+							<div class="flex items-center gap-4 mb-6">
+								<div
+									class="w-14 h-14 rounded-full bg-gradient-to-br from-resin-forest/20 to-resin-forest/10 text-resin-forest font-bold text-lg flex items-center justify-center"
+								>
+									{getInitial(friend.email)}
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="font-bold text-resin-charcoal">
+										{friend.email.split('@')[0]}
+									</p>
+									<p class="text-xs text-resin-earth/60 truncate">{friend.email}</p>
+								</div>
+							</div>
+							<div class="flex gap-2">
+								<button
+									on:click={() => openJointPlanModal(friend)}
+									class="flex-1 px-4 py-2 text-sm rounded-lg bg-resin-amber/10 text-resin-amber hover:bg-resin-amber/20 transition-all font-medium border border-resin-amber/20"
+								>
+									Joint Plan
+								</button>
+								<form
+									action="?/removeFriend"
+									method="POST"
+									use:enhance
+									on:submit={(e) => {
+										if (!confirm('Remove this friend?')) e.preventDefault();
+									}}
+									class="flex-1"
+								>
+									<input type="hidden" name="friendship_id" value={friend.id} />
+									<button
+										type="submit"
+										class="w-full px-4 py-2 text-sm rounded-lg text-red-600/60 hover:bg-red-50 hover:text-red-600 transition-all border border-transparent hover:border-red-200"
+									>
+										Remove
+									</button>
+								</form>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
+		<!-- Incoming Requests -->
+		{#if data.pendingReceived.length > 0}
+			<section class="mb-12">
+				<h2 class="text-2xl font-bold text-resin-amber mb-6 flex items-center gap-2">
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+					</svg>
+					Requests ({data.pendingReceived.length})
+				</h2>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					{#each data.pendingReceived as request (request.id)}
+						<div
+							class="glass-card rounded-2xl p-6 border border-resin-amber/30 shadow-premium bg-gradient-to-br from-resin-amber/5 to-transparent hover:shadow-lg transition-all"
+						>
+							<div class="flex items-center gap-4 mb-6">
+								<div
+									class="w-14 h-14 rounded-full bg-gradient-to-br from-resin-amber/20 to-resin-amber/10 text-resin-amber font-bold text-lg flex items-center justify-center"
+								>
+									{getInitial(request.email)}
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="font-bold text-resin-charcoal">
+										{request.email.split('@')[0]}
+									</p>
+									<p class="text-xs text-resin-earth/60 truncate">{request.email}</p>
+								</div>
+							</div>
+							<div class="flex gap-2">
+								<form action="?/acceptRequest" method="POST" use:enhance class="flex-1">
+									<input type="hidden" name="friendship_id" value={request.id} />
+									<button
+										type="submit"
+										class="w-full px-4 py-2 text-sm rounded-lg bg-resin-forest/10 text-resin-forest hover:bg-resin-forest/20 transition-all font-medium border border-resin-forest/20"
+									>
+										Accept
+									</button>
+								</form>
+								<form action="?/declineRequest" method="POST" use:enhance class="flex-1">
+									<input type="hidden" name="friendship_id" value={request.id} />
+									<button
+										type="submit"
+										class="w-full px-4 py-2 text-sm rounded-lg text-red-600/60 hover:bg-red-50 hover:text-red-600 transition-all border border-transparent hover:border-red-200"
+									>
+										Decline
+									</button>
+								</form>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
+		<!-- Sent Requests -->
+		{#if data.pendingSent.length > 0}
+			<section class="mb-12">
+				<h2 class="text-2xl font-bold text-resin-earth/70 mb-6 flex items-center gap-2">
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+					</svg>
+					Pending ({data.pendingSent.length})
+				</h2>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					{#each data.pendingSent as request (request.id)}
+						<div
+							class="glass-card rounded-2xl p-6 border border-resin-earth/20 shadow-premium bg-gradient-to-br from-white/20 to-transparent opacity-75"
+						>
+							<div class="flex items-center gap-4">
+								<div
+									class="w-14 h-14 rounded-full bg-gradient-to-br from-resin-earth/20 to-resin-earth/10 text-resin-earth font-bold text-lg flex items-center justify-center flex-shrink-0"
+								>
+									{getInitial(request.email)}
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="font-bold text-resin-charcoal">
+										{request.email.split('@')[0]}
+									</p>
+									<p class="text-xs text-resin-earth/60 truncate">{request.email}</p>
+									<p class="text-xs text-resin-earth/50 font-mono mt-2">Awaiting response...</p>
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
+
+		<!-- Empty State -->
+		{#if data.friends.length === 0 && data.pendingReceived.length === 0 && data.pendingSent.length === 0}
+			<div
+				class="glass-card rounded-[2.5rem] p-16 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent text-center"
+			>
+				<svg class="w-16 h-16 text-resin-forest/30 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292m0 0H7m5 0h5m-5 0a4 4 0 100-5.292m0 5.292V21" />
+				</svg>
+				<p class="text-resin-earth/60 text-lg font-medium mb-2">No friends yet</p>
+				<p class="text-resin-earth/40 text-sm">Search by email above to add friends and start collaborating</p>
+			</div>
+		{/if}
 	</div>
 </div>
 

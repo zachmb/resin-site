@@ -31,8 +31,8 @@
         const id = selectedNoteId || (notes.length > 0 ? notes[0].id : "mock");
         const baseNote = notes.find((n: any) => n.id === id) || {
             id: "mock",
-            title: "Project Phoenix",
-            content: "# Project Phoenix\n\nStarting a new project...",
+            title: "New Note",
+            content: "# New Note\n\nStart typing to create a note...",
             created_at: new Date().toISOString(),
         };
 

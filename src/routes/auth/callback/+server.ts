@@ -34,6 +34,13 @@ export const GET = async ({ url, locals: { supabase } }) => {
 
             // Capture and store the refresh_token separately in user_credentials
             // This is critical for background token refresh.
+            console.log('[Auth Callback] Session data:', {
+                has_provider_refresh_token: !!session.provider_refresh_token,
+                has_provider_token: !!session.provider_token,
+                user_id: session.user.id,
+                provider: session.user.app_metadata?.provider
+            });
+
             if (session.provider_refresh_token || session.provider_token) {
                 console.log('[Auth Callback] Provider tokens captured for user:', session.user.id);
                 try {
@@ -52,6 +59,12 @@ export const GET = async ({ url, locals: { supabase } }) => {
 
                     if (session.provider_refresh_token) {
                         updateData.google_refresh_token = session.provider_refresh_token;
+                        console.log('[Auth Callback] Storing refresh token');
+                    } else if (session.provider_token) {
+                        // Fallback: store access token if refresh token not available
+                        // This won't work for long-term use but helps diagnose the issue
+                        updateData.google_refresh_token = session.provider_token;
+                        console.warn('[Auth Callback] No refresh token, storing access token as fallback');
                     }
 
                     const { error: upsertError } = await admin.from('user_credentials').upsert(updateData)

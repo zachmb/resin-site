@@ -122,14 +122,34 @@ export const actions: Actions = {
 			const admin = await getAdminClient();
 
 			// Query auth.users by email via admin client
-			const { data: users, error } = await admin.auth.admin.listUsers();
+			// Need to iterate through all pages since listUsers returns paginated results
+			let allUsers = [];
+			let page = 1;
+			let hasMore = true;
 
-			if (error) {
-				console.error('Auth error:', error);
-				return fail(500, { error: 'Failed to search users' });
+			while (hasMore) {
+				const { data: pageData, error } = await admin.auth.admin.listUsers({
+					page,
+					perPage: 100
+				});
+
+				if (error) {
+					console.error('Auth error:', error);
+					return fail(500, { error: 'Failed to search users' });
+				}
+
+				if (!pageData?.users) {
+					break;
+				}
+
+				allUsers = allUsers.concat(pageData.users);
+
+				// Stop if we got fewer results than requested (means we're on the last page)
+				hasMore = pageData.users.length === 100;
+				page++;
 			}
 
-			const user = users.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+			const user = allUsers.find((u) => u.email?.toLowerCase() === email.toLowerCase());
 
 			if (!user) {
 				return fail(404, { error: 'User not found' });

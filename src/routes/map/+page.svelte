@@ -2,6 +2,7 @@
     import MindMap from "$lib/components/MindMap.svelte";
     import { page } from "$app/stores";
     import { invalidateAll } from "$app/navigation";
+    import { enhance } from "$app/forms";
 
     let { data } = $props();
     let notes = $derived($page.data.notes || []);
@@ -29,13 +30,20 @@
     <div
         class="w-80 h-full border-r border-resin-forest/10 bg-white/50 backdrop-blur-md flex flex-col shadow-premium z-10 flex-shrink-0"
     >
-        <div class="p-6 border-b border-resin-forest/5 bg-white/40">
-            <h2 class="font-bold text-resin-charcoal font-serif text-lg">
-                Saved Notes
-            </h2>
-            <p class="text-xs text-resin-earth/70 mt-1 font-light">
-                Drag notes onto the canvas
-            </p>
+        <div class="p-6 border-b border-resin-forest/5 bg-white/40 flex items-start justify-between">
+            <div>
+                <h2 class="font-bold text-resin-charcoal font-serif text-lg">
+                    Saved Notes
+                </h2>
+                <p class="text-xs text-resin-earth/70 mt-1 font-light">
+                    Drag notes onto the canvas
+                </p>
+            </div>
+            <form method="POST" action="?/clearMap" use:enhance>
+                <button type="submit" class="text-xs text-resin-earth/40 hover:text-red-400 transition-colors mt-1">
+                    Clear Map
+                </button>
+            </form>
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">

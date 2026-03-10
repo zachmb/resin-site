@@ -11,6 +11,7 @@
         recentNotes={data.recentNotes}
         todayTasks={data.todayTasks}
         weeklyStats={data.weeklyStats}
+        automations={data.automations}
     />
 {:else}
     <LandingPage />

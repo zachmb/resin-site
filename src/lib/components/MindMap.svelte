@@ -9,6 +9,9 @@
     import "@xyflow/svelte/dist/style.css";
     import { onMount, untrack } from "svelte";
     import { fade } from "svelte/transition";
+    import MapNode from "./MapNode.svelte";
+
+    const nodeTypes = { mapNode: MapNode };
 
     interface Props {
         notes?: any[];
@@ -22,21 +25,32 @@
     let nodes = $state<any[]>([]);
     let edges = $state<any[]>([]);
 
+    const handleNodeDelete = async (id: string) => {
+        nodes = nodes.filter((n: any) => n.id !== id);  // optimistic remove
+        const formData = new FormData();
+        formData.append("id", id);
+        try {
+            await fetch("/map?/removeFromMap", { method: "POST", body: formData });
+            if (onNoteDropped) onNoteDropped();
+        } catch (err) {
+            console.error("Failed to remove node:", err);
+        }
+    };
+
     $effect(() => {
         nodes = notes.map((note: any) => {
             // Find existing node tracking safely using untrack to prevent infinite loops
             const existing = untrack(() => nodes.find((n) => n.id === note.id));
             return {
                 id: note.id,
-                type: "default",
+                type: "mapNode",
                 position: existing
                     ? existing.position
                     : {
                           x: note.position_x || Math.random() * 200,
                           y: note.position_y || Math.random() * 200,
                       },
-                data: { label: note.title || "Untitled Note" },
-                style: "background: #FCF9F2; border: 1px solid rgba(43, 70, 52, 0.2); border-radius: 12px; padding: 10px; font-weight: bold; color: #2B4634; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);",
+                data: { label: note.title || "Untitled Note", onDelete: handleNodeDelete },
             };
         });
 
@@ -50,6 +64,18 @@
     });
 
     let saveTimeout: ReturnType<typeof setTimeout>;
+    let showConnectPanel = $state(false);
+    let connectFrom = $state('');
+    let connectTo = $state('');
+
+    const handleManualConnect = async () => {
+        if (connectFrom && connectTo && connectFrom !== connectTo) {
+            await onConnect({ source: connectFrom, target: connectTo });
+            showConnectPanel = false;
+            connectFrom = '';
+            connectTo = '';
+        }
+    };
 
     const onNodeDragStop = (event: any, node?: any, nodes?: any) => {
         if (!node) return;
@@ -100,10 +126,9 @@
             ...nodes,
             {
                 id: noteId,
-                type: "default",
+                type: "mapNode",
                 position: { x: position_x, y: position_y },
-                data: { label: "Loading..." }, // will get synced via invalidateAll quickly
-                style: "background: #FCF9F2; border: 1px solid rgba(43, 70, 52, 0.2); border-radius: 12px; padding: 10px; font-weight: bold; color: #2B4634; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);",
+                data: { label: "Loading...", onDelete: handleNodeDelete }, // will get synced via invalidateAll quickly
             },
         ];
 
@@ -151,7 +176,11 @@
                 method: "POST",
                 body: formData,
             });
-            // We'd ideally parse response to get the real UUID and replace tempId
+            const json = await response.json();
+            const realEdge = json?.data?.edge;
+            if (realEdge?.id) {
+                edges = edges.map((e: any) => e.id === tempId ? { ...e, id: realEdge.id } : e);
+            }
         } catch (error) {
             console.error("Failed to save edge:", error);
             // Revert on failure
@@ -205,14 +234,78 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
     bind:this={wrapper}
-    class="w-full h-full"
+    class="w-full h-full relative"
     in:fade={{ duration: 300 }}
     ondragover={onDragOver}
     ondrop={onDrop}
 >
+    <!-- Connect Notes Button -->
+    <button
+        onclick={() => (showConnectPanel = true)}
+        class="absolute top-6 right-6 z-10 px-4 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-resin-forest/20 text-resin-forest font-medium text-sm hover:bg-white hover:shadow-lg transition-all"
+    >
+        + Connect Notes
+    </button>
+
+    <!-- Connect Panel -->
+    {#if showConnectPanel}
+        <div class="absolute top-16 right-6 z-20 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 w-80 border border-resin-forest/10">
+            <h3 class="font-bold text-resin-charcoal mb-4">Connect Two Notes</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-resin-earth/60 mb-2">From</label>
+                    <select
+                        bind:value={connectFrom}
+                        class="w-full px-3 py-2 rounded-lg border border-resin-earth/20 bg-white/60 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
+                    >
+                        <option value="">Select a note...</option>
+                        {#each nodes as node (node.id)}
+                            <option value={node.id}>{node.data.label}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-resin-earth/60 mb-2">To</label>
+                    <select
+                        bind:value={connectTo}
+                        class="w-full px-3 py-2 rounded-lg border border-resin-earth/20 bg-white/60 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
+                    >
+                        <option value="">Select a note...</option>
+                        {#each nodes as node (node.id)}
+                            <option value={node.id}>{node.data.label}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button
+                        onclick={handleManualConnect}
+                        disabled={!connectFrom || !connectTo || connectFrom === connectTo}
+                        class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-medium text-sm hover:bg-resin-forest/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Add Connection
+                    </button>
+                    <button
+                        onclick={() => {
+                            showConnectPanel = false;
+                            connectFrom = '';
+                            connectTo = '';
+                        }}
+                        class="flex-1 px-4 py-2 rounded-lg border border-resin-earth/20 text-resin-charcoal font-medium text-sm hover:bg-resin-earth/5 transition-all"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    {/if}
+
     <SvelteFlow
         {nodes}
         {edges}
+        {nodeTypes}
         onnodedragstop={onNodeDragStop}
         onconnect={onConnect}
         ondelete={onDelete}

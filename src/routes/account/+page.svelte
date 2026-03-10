@@ -4,7 +4,8 @@
 
     let { data } = $props();
     let session = $derived($page.data.session);
-    let profile = $derived($page.data.profile);
+    let profile = $derived(data.profile);
+    let tasteData = $derived(data.tasteData);
 </script>
 
-<AccountView {session} {profile} />
+<AccountView {session} {profile} {tasteData} />

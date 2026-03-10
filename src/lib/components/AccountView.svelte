@@ -2,12 +2,12 @@
     import { enhance } from "$app/forms";
     import { fade } from "svelte/transition";
 
-    let { session, profile } = $props<{ session: any; profile: any }>();
+    let { session, profile, tasteData } = $props<{ session: any; profile: any; tasteData?: any }>();
 
     let loading = $state(false);
     let successMessage = $state("");
     let showDocs = $state(false);
-    let activeCategory = $state<'profile' | 'preferences' | 'integrations' | 'api' | 'privacy'>('profile');
+    let activeCategory = $state<'profile' | 'preferences' | 'integrations' | 'api' | 'privacy' | 'taste'>('profile');
 
     const handleSubmit = () => {
         loading = true;
@@ -23,9 +23,10 @@
         };
     };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return "Member since today";
-        return new Date(dateString).toLocaleDateString("en-US", {
+    const formatDate = (dateString?: string, fallbackDate?: string) => {
+        const dateToFormat = dateString || fallbackDate;
+        if (!dateToFormat) return "Member since today";
+        return new Date(dateToFormat).toLocaleDateString("en-US", {
             month: "long",
             day: "numeric",
             year: "numeric",
@@ -36,9 +37,39 @@
         { id: 'profile', label: 'Profile', icon: '👤' },
         { id: 'preferences', label: 'Preferences', icon: '⚙️' },
         { id: 'integrations', label: 'Integrations', icon: '🔗' },
+        { id: 'taste', label: 'Taste Profile', icon: '✦' },
         { id: 'api', label: 'API', icon: '🔑' },
         { id: 'privacy', label: 'Privacy', icon: '🔒' }
     ] as const;
+
+    const feelingIcons: Record<string, string> = {
+        "Flow State": "⚡",
+        Proud: "⭐",
+        Relieved: "🍃",
+        Energized: "🔥",
+        Drained: "🪫",
+        Frustrated: "🌧️",
+    };
+
+    const topFeelings = $derived(
+        tasteData?.feelingCounts
+            ? Object.entries(tasteData.feelingCounts).sort((a, b) => b[1] - a[1])
+            : []
+    );
+
+    const totalRatings = $derived(tasteData?.ratingHistory?.length || 0);
+    const avgRating = $derived(
+        totalRatings > 0
+            ? Math.round(
+                  (tasteData.ratingHistory.reduce(
+                      (acc: number, curr: any) => acc + curr.rating,
+                      0,
+                  ) /
+                      totalRatings) *
+                      10,
+              ) / 10
+            : 0
+    );
 </script>
 
 <main
@@ -154,7 +185,7 @@
                             <div class="border-t border-resin-forest/5 pt-3">
                                 <label class="text-xs text-resin-earth/60 font-semibold">Member Since</label>
                                 <div class="text-sm text-resin-charcoal mt-1">
-                                    {formatDate(profile?.created_at)}
+                                    {formatDate(profile?.created_at, session?.user.created_at)}
                                 </div>
                             </div>
                         </div>
@@ -504,6 +535,86 @@
                             </a>
                         </div>
                     </section>
+                </div>
+
+            {:else if activeCategory === 'taste'}
+                <!-- Taste Profile Content -->
+                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2">
+                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
+                        Taste Profile
+                    </h2>
+                    <p class="text-sm text-resin-earth/60">
+                        Your emotional landscape and feedback insights
+                    </p>
+                </div>
+
+                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                    <!-- Stats -->
+                    {#if totalRatings > 0 || topFeelings.length > 0}
+                        <section class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5">
+                                <p class="text-xs text-resin-earth/40 font-semibold uppercase tracking-widest mb-2">Feedback Logs</p>
+                                <p class="text-2xl font-bold text-resin-charcoal">{totalRatings}</p>
+                            </div>
+                            {#if totalRatings > 0}
+                                <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5">
+                                    <p class="text-xs text-resin-earth/40 font-semibold uppercase tracking-widest mb-2">Avg Rating</p>
+                                    <p class="text-2xl font-bold text-resin-amber">{avgRating > 0 ? `${avgRating}/5` : "-"}</p>
+                                </div>
+                            {/if}
+                        </section>
+                    {/if}
+
+                    <!-- Top Feelings -->
+                    {#if topFeelings.length > 0}
+                        <section class="bg-white/50 rounded-xl p-6 border border-resin-forest/5">
+                            <h3 class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2">
+                                <span class="text-lg">✦</span>
+                                Top Feelings
+                            </h3>
+                            <div class="space-y-3">
+                                {#each topFeelings as [feeling, count]}
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-lg">
+                                            {feelingIcons[feeling] || "·"}
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="font-bold text-sm text-resin-charcoal">{feeling}</span>
+                                                <span class="text-xs text-resin-earth/50">{count}</span>
+                                            </div>
+                                            <div class="w-full bg-resin-forest/10 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    class="bg-gradient-to-r from-resin-amber to-resin-forest h-1.5"
+                                                    style="width: {(count / topFeelings[0][1]) * 100}%"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        </section>
+                    {:else}
+                        <div class="bg-white/50 rounded-xl p-6 border border-dashed border-resin-forest/10 text-center">
+                            <p class="text-sm text-resin-charcoal font-medium">No feelings logged yet</p>
+                            <p class="text-xs text-resin-earth/60 mt-1">Reflect on a plan to see your landscape grow.</p>
+                        </div>
+                    {/if}
+
+                    <!-- Enjoyed Things -->
+                    {#if tasteData?.enjoyedThings && tasteData.enjoyedThings.length > 0}
+                        <section class="bg-white/50 rounded-xl p-6 border border-resin-forest/5">
+                            <h3 class="font-semibold text-resin-charcoal mb-4">A History of Joy</h3>
+                            <div class="space-y-3 max-h-64 overflow-y-auto">
+                                {#each tasteData.enjoyedThings as item}
+                                    <div class="bg-white/50 rounded-lg p-3 border border-resin-forest/5">
+                                        <p class="text-sm text-resin-charcoal italic mb-2">"{item.text}"</p>
+                                        <span class="text-xs text-resin-earth/50">{item.date}</span>
+                                    </div>
+                                {/each}
+                            </div>
+                        </section>
+                    {/if}
                 </div>
             {/if}
         </div>

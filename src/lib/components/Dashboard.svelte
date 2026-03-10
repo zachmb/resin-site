@@ -1,5 +1,6 @@
 <script lang="ts">
     import { fade } from "svelte/transition";
+    import { enhance } from "$app/forms";
     import FocusControl from "./FocusControl.svelte";
 
     let {
@@ -7,12 +8,33 @@
         recentNotes = [],
         todayTasks = [],
         weeklyStats = null,
+        automations = [],
     } = $props<{
         profile: any;
         recentNotes: any[];
         todayTasks: any[];
         weeklyStats: any;
+        automations: any[];
     }>();
+
+    let composeText = $state('');
+    let showAddAutomation = $state(false);
+    let autoTitle = $state('');
+    let autoTime = $state('');
+    let autoDuration = $state('25');
+    let savingNote = $state(false);
+    let savingAmber = $state(false);
+    let successNote = $state(false);
+    let successAmber = $state(false);
+    let autoDays = $state<Record<string, boolean>>({
+        'Mon': false,
+        'Tue': false,
+        'Wed': false,
+        'Thu': false,
+        'Fri': false,
+        'Sat': false,
+        'Sun': false,
+    });
 
     const formatTime = (dateString: string) => {
         return new Date(dateString).toLocaleTimeString([], {
@@ -55,6 +77,22 @@
         "bg-resin-forest/50",
         "bg-resin-forest/70",
     ];
+
+    const formatDaysOfWeek = (days: string): string => {
+        if (!days) return '';
+        const dayMap: Record<string, string> = {
+            'Mon': 'Mon', 'Tue': 'Tue', 'Wed': 'Wed', 'Thu': 'Thu',
+            'Fri': 'Fri', 'Sat': 'Sat', 'Sun': 'Sun'
+        };
+        return days.split(',').map(d => dayMap[d.trim()] || d.trim()).join(', ');
+    };
+
+    const getDaysForSubmit = (): string => {
+        return Object.entries(autoDays)
+            .filter(([_, checked]) => checked)
+            .map(([day]) => day)
+            .join(',');
+    };
 </script>
 
 <main
@@ -117,8 +155,119 @@
                     </p>
                 </div>
             {/if}
+            <a
+                href="/friends"
+                class="text-sm font-bold text-resin-forest hover:text-resin-amber transition-colors mt-6 inline-block"
+            >
+                + Invite a Friend →
+            </a>
         </div>
     </div>
+
+    <!-- Quick Compose Card -->
+    <section class="mb-8">
+        <div class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent">
+            <textarea
+                bind:value={composeText}
+                placeholder="What's on your mind? Start a note, a plan, anything..."
+                class="w-full bg-white/50 border border-white/30 rounded-2xl p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
+                rows="3"
+            />
+            <div class="flex items-center justify-end gap-3 mt-6">
+                {#if composeText.trim()}
+                    <form
+                        method="POST"
+                        action="?/quickNote"
+                        use:enhance={() => {
+                            savingNote = true;
+                            return async ({ result }) => {
+                                if (result.type === 'success') {
+                                    successNote = true;
+                                    setTimeout(() => {
+                                        savingNote = false;
+                                        successNote = false;
+                                        composeText = '';
+                                    }, 1200);
+                                } else {
+                                    savingNote = false;
+                                }
+                            };
+                        }}
+                    >
+                        <input type="hidden" name="content" value={composeText}>
+                        <button
+                            type="submit"
+                            disabled={savingNote}
+                            class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
+                        >
+                            {#if savingNote}
+                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                            {:else if successNote}
+                                <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            {/if}
+                            {successNote ? 'Saved!' : 'Save Draft'}
+                        </button>
+                    </form>
+                    <form
+                        method="POST"
+                        action="?/quickSchedule"
+                        use:enhance={() => {
+                            savingAmber = true;
+                            return async ({ result }) => {
+                                if (result.type === 'success') {
+                                    successAmber = true;
+                                    setTimeout(() => {
+                                        savingAmber = false;
+                                        successAmber = false;
+                                        composeText = '';
+                                    }, 1200);
+                                } else {
+                                    savingAmber = false;
+                                }
+                            };
+                        }}
+                    >
+                        <input type="hidden" name="content" value={composeText}>
+                        <button
+                            type="submit"
+                            disabled={savingAmber}
+                            class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[160px] justify-center"
+                        >
+                            {#if savingAmber}
+                                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                            {:else if successAmber}
+                                <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            {/if}
+                            {successAmber ? 'Scheduled!' : 'Schedule Amber →'}
+                        </button>
+                    </form>
+                {:else}
+                    <a
+                        href="/notes"
+                        class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all inline-block active:scale-95"
+                    >
+                        Save Draft
+                    </a>
+                    <a
+                        href="/amber"
+                        class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all inline-block active:scale-95"
+                    >
+                        Schedule Amber →
+                    </a>
+                {/if}
+            </div>
+        </div>
+    </section>
 
     <!-- Weekly Activity Heatmap -->
     {#if weeklyStats}
@@ -411,8 +560,122 @@
             </section>
         </div>
 
-        <!-- Right: Quick Stats + Recent Notes -->
+        <!-- Right: Daily Routines + Quick Stats + Recent Notes -->
         <div class="lg:col-span-5 space-y-8">
+            <!-- Daily Routines Card -->
+            <section class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-resin-charcoal flex items-center gap-2">
+                        <svg class="w-5 h-5 text-resin-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Daily Routines
+                    </h3>
+                </div>
+
+                {#if automations.length > 0}
+                    <div class="space-y-3 mb-6">
+                        {#each automations as automation}
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-white/40 border border-white/20">
+                                <div>
+                                    <p class="font-semibold text-resin-charcoal">{automation.title}</p>
+                                    <p class="text-xs text-resin-earth/60">{automation.time} • {automation.duration_minutes}m • {formatDaysOfWeek(automation.days_of_week)}</p>
+                                </div>
+                                <form method="POST" action="?/deleteAutomation" class="inline">
+                                    <input type="hidden" name="automationId" value={automation.id}>
+                                    <button
+                                        type="submit"
+                                        class="w-6 h-6 rounded-full hover:bg-red-500/20 text-resin-earth/50 hover:text-red-600 transition-all flex items-center justify-center"
+                                    >
+                                        ×
+                                    </button>
+                                </form>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+
+                <button
+                    on:click={() => { showAddAutomation = !showAddAutomation; }}
+                    class="w-full px-4 py-3 rounded-xl text-sm font-bold text-resin-forest hover:bg-resin-forest/10 transition-colors text-center"
+                >
+                    + Add Routine
+                </button>
+
+                {#if showAddAutomation}
+                    <form
+                        method="POST"
+                        action="?/createAutomation"
+                        on:submit={(e) => {
+                            const daysString = getDaysForSubmit();
+                            if (!daysString) {
+                                e.preventDefault();
+                                alert('Select at least one day');
+                                return;
+                            }
+                            const input = e.currentTarget.querySelector('input[name="daysOfWeek"]') as HTMLInputElement;
+                            if (input) input.value = daysString;
+                        }}
+                        class="mt-6 p-4 rounded-xl bg-resin-forest/5 border border-resin-forest/10 space-y-4"
+                    >
+                        <input
+                            type="text"
+                            name="title"
+                            placeholder="Routine name"
+                            bind:value={autoTitle}
+                            required
+                            class="w-full px-3 py-2 rounded-lg bg-white border border-white/20 text-sm placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50"
+                        />
+                        <input
+                            type="time"
+                            name="time"
+                            bind:value={autoTime}
+                            required
+                            class="w-full px-3 py-2 rounded-lg bg-white border border-white/20 text-sm focus:outline-none focus:border-resin-forest/50"
+                        />
+                        <select
+                            name="duration"
+                            bind:value={autoDuration}
+                            class="w-full px-3 py-2 rounded-lg bg-white border border-white/20 text-sm focus:outline-none focus:border-resin-forest/50"
+                        >
+                            <option value="15">15 minutes</option>
+                            <option value="25">25 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                            <option value="90">90 minutes</option>
+                        </select>
+                        <div class="grid grid-cols-4 gap-2">
+                            {#each Object.keys(autoDays) as day}
+                                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={autoDays[day]}
+                                        class="rounded w-4 h-4"
+                                    />
+                                    {day}
+                                </label>
+                            {/each}
+                        </div>
+                        <input type="hidden" name="daysOfWeek" value="">
+                        <div class="flex gap-2">
+                            <button
+                                type="submit"
+                                class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-bold text-sm hover:bg-resin-forest/90 transition-colors"
+                            >
+                                Create
+                            </button>
+                            <button
+                                type="button"
+                                on:click={() => { showAddAutomation = false; }}
+                                class="flex-1 px-4 py-2 rounded-lg bg-white border border-white/20 text-resin-charcoal font-bold text-sm hover:bg-resin-earth/5 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                {/if}
+            </section>
+
             {#if weeklyStats}
                 <div class="grid grid-cols-2 gap-4">
                     <a
@@ -514,3 +777,31 @@
         </div>
     </div>
 </main>
+
+<style>
+    :global {
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .animate-bounce {
+            animation: bounce 0.6s ease-in-out;
+        }
+    }
+</style>

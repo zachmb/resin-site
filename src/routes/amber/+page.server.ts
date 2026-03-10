@@ -52,6 +52,36 @@ export const actions: Actions = {
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
 
+        // Check if user has Google credentials connected
+        // Use service role to bypass any RLS issues
+        const { createClient } = await import('@supabase/supabase-js');
+        const { PUBLIC_SUPABASE_URL } = await import('$env/static/public');
+        const { SUPABASE_SERVICE_ROLE_KEY } = await import('$env/static/private');
+
+        const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+            auth: { persistSession: false }
+        });
+
+        const { data: creds, error: credsError } = await admin
+            .from('user_credentials')
+            .select('google_refresh_token')
+            .eq('id', session.user.id)
+            .single();
+
+        if (credsError || !creds?.google_refresh_token) {
+            console.error('[Activate] Credentials check failed:', {
+                error: credsError,
+                has_creds: !!creds,
+                has_token: !!creds?.google_refresh_token,
+                userId: session.user.id
+            });
+            return {
+                success: false,
+                error: 'Google Calendar not connected',
+                code: 'google_not_connected'
+            };
+        }
+
         // Update session status to 'scheduled'
         const { error: sessionError } = await supabase
             .from('amber_sessions')

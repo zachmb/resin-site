@@ -56,17 +56,24 @@ interface DeepSeekTask {
 
 /** Refresh Google access token using stored refresh token from user_credentials table. */
 async function getGoogleAccessToken(userId: string): Promise<string> {
-    const { data: creds } = await admin
+    const { data: creds, error: credsError } = await admin
         .from('user_credentials')
         .select('google_refresh_token')
         .eq('id', userId)
         .single()
 
-    if (!creds?.google_refresh_token) throw new Error('No Google refresh token stored for user')
+    if (credsError) {
+        console.error(`[getGoogleAccessToken] Error fetching credentials for ${userId}:`, credsError);
+        throw new Error(`Cannot retrieve Google credentials: ${credsError.message}`)
+    }
+
+    if (!creds?.google_refresh_token) {
+        throw new Error('Google Calendar not connected. Please sign in with Google in Account settings.')
+    }
 
     console.log(`[getGoogleAccessToken] Refreshing token for ${userId}.`);
     console.log(`[getGoogleAccessToken] Config: ID len=${GOOGLE_CLIENT_ID?.length}, Secret len=${GOOGLE_CLIENT_SECRET?.length}`);
-    console.log(`[getGoogleAccessToken] ID prefix: ${GOOGLE_CLIENT_ID?.substring(0, 10)}...`);
+    console.log(`[getGoogleAccessToken] Token prefix: ${creds.google_refresh_token.substring(0, 10)}...`);
 
     const params: Record<string, string> = {
         client_id: GOOGLE_CLIENT_ID,
@@ -88,8 +95,13 @@ async function getGoogleAccessToken(userId: string): Promise<string> {
     const data = await res.json()
     if (!res.ok) {
         console.error(`[getGoogleAccessToken] Google token refresh failed for user ${userId}. Status: ${res.status}. Data:`, JSON.stringify(data));
-        console.error(`[getGoogleAccessToken] Using Client ID: ${GOOGLE_CLIENT_ID?.substring(0, 15)}...`);
-        throw new Error(`Google token refresh failed: ${JSON.stringify(data)}`)
+        console.error(`[getGoogleAccessToken] Client ID length: ${GOOGLE_CLIENT_ID?.length}`);
+
+        // Check if error is due to invalid refresh token
+        if (data.error === 'invalid_grant') {
+            throw new Error('Google authorization expired. Please sign in again with Google in Account settings.')
+        }
+        throw new Error(`Google token refresh failed: ${data.error || JSON.stringify(data)}`)
     }
     return data.access_token as string
 }

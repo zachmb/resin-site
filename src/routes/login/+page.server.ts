@@ -7,7 +7,7 @@ export const actions = {
             provider: 'google',
             options: {
                 redirectTo: `${url.origin}/auth/callback?next=${next}`,
-                scopes: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+                scopes: 'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent',

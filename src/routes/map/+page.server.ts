@@ -1,6 +1,48 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
+const CONNECTIONS_MARKER = "\n\n---\n**Map connections:**";
+
+async function rebuildConnectionsSection(noteId: string, supabase: any, userId: string) {
+    const [outRes, inRes] = await Promise.all([
+        supabase.from("mind_map_edges").select("target_id").eq("source_id", noteId).eq("user_id", userId),
+        supabase.from("mind_map_edges").select("source_id").eq("target_id", noteId).eq("user_id", userId),
+    ]);
+
+    const outIds = (outRes.data || []).map((e: any) => e.target_id);
+    const inIds = (inRes.data || []).map((e: any) => e.source_id);
+    const allIds = [...new Set([...outIds, ...inIds])];
+
+    const { data: note } = await supabase
+        .from("amber_sessions").select("raw_text")
+        .eq("id", noteId).eq("user_id", userId).single();
+
+    if (!note) return;
+
+    let rawText: string = note.raw_text || "";
+    const markerIndex = rawText.indexOf(CONNECTIONS_MARKER);
+    if (markerIndex !== -1) rawText = rawText.slice(0, markerIndex);
+
+    if (allIds.length === 0) {
+        await supabase.from("amber_sessions").update({ raw_text: rawText })
+            .eq("id", noteId).eq("user_id", userId);
+        return;
+    }
+
+    const { data: connectedNotes } = await supabase
+        .from("amber_sessions").select("id, display_title").in("id", allIds);
+    const titleMap = new Map((connectedNotes || []).map((n: any) => [n.id, n.display_title || "Untitled"]));
+
+    const lines = [
+        ...outIds.map((id: string) => `→ ${titleMap.get(id) || "Untitled"}`),
+        ...inIds.map((id: string) => `← ${titleMap.get(id) || "Untitled"}`),
+    ].join("\n");
+
+    await supabase.from("amber_sessions")
+        .update({ raw_text: rawText + CONNECTIONS_MARKER + " " + lines })
+        .eq("id", noteId).eq("user_id", userId);
+}
+
 export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
@@ -9,7 +51,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         supabase
             .from('amber_sessions')
             .select('*')
-            .eq('user_id', session.user.id),
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false }),
         supabase
             .from('mind_map_edges')
             .select('*')
@@ -93,6 +136,13 @@ export const actions: Actions = {
             console.error('Error creating edge:', error);
             return fail(500, { error: 'Could not create edge' });
         }
+
+        // After successful insert, sync both notes' raw_text
+        await Promise.all([
+            rebuildConnectionsSection(source_id, supabase, session.user.id),
+            rebuildConnectionsSection(target_id, supabase, session.user.id),
+        ]);
+
         return { success: true, edge };
     },
 
@@ -103,6 +153,11 @@ export const actions: Actions = {
         const data = await request.formData();
         const id = data.get('id') as string;
 
+        // Fetch before delete to get source/target
+        const { data: edge } = await supabase
+            .from('mind_map_edges').select('source_id, target_id')
+            .eq('id', id).eq('user_id', session.user.id).single();
+
         const { error } = await supabase
             .from('mind_map_edges')
             .delete()
@@ -110,6 +165,27 @@ export const actions: Actions = {
             .eq('user_id', session.user.id);
 
         if (error) return fail(500, { error: 'Could not delete edge' });
+
+        if (edge) {
+            await Promise.all([
+                rebuildConnectionsSection(edge.source_id, supabase, session.user.id),
+                rebuildConnectionsSection(edge.target_id, supabase, session.user.id),
+            ]);
+        }
+        return { success: true };
+    },
+
+    clearMap: async ({ locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const { error } = await supabase
+            .from('amber_sessions')
+            .update({ is_on_map: false, position_x: null, position_y: null })
+            .eq('user_id', session.user.id)
+            .eq('is_on_map', true);
+
+        if (error) return fail(500, { error: 'Could not clear map' });
         return { success: true };
     }
 };

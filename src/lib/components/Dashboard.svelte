@@ -1,6 +1,7 @@
 <script lang="ts">
     import { fade } from "svelte/transition";
     import { enhance } from "$app/forms";
+    import { goto } from "$app/navigation";
     import FocusControl from "./FocusControl.svelte";
 
     let {
@@ -194,7 +195,12 @@
                                         savingNote = false;
                                         successNote = false;
                                         composeText = '';
-                                    }, 1200);
+                                    }, 800);
+                                } else if (result.type === 'redirect') {
+                                    successNote = true;
+                                    setTimeout(() => {
+                                        goto(result.location);
+                                    }, 800);
                                 } else {
                                     savingNote = false;
                                 }
@@ -217,7 +223,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
                             {/if}
-                            {successNote ? 'Saved!' : 'Save Draft'}
+                            {successNote ? 'Saving...' : 'Save Note'}
                         </button>
                     </form>
                     <form
@@ -232,7 +238,12 @@
                                         savingAmber = false;
                                         successAmber = false;
                                         composeText = '';
-                                    }, 1200);
+                                    }, 800);
+                                } else if (result.type === 'redirect') {
+                                    successAmber = true;
+                                    setTimeout(() => {
+                                        goto(result.location);
+                                    }, 800);
                                 } else {
                                     savingAmber = false;
                                 }
@@ -255,7 +266,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
                             {/if}
-                            {successAmber ? 'Scheduled!' : 'Schedule Amber →'}
+                            {successAmber ? 'Scheduling...' : 'Schedule Amber →'}
                         </button>
                     </form>
                 {:else}
@@ -263,7 +274,7 @@
                         href="/notes"
                         class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all inline-block active:scale-95"
                     >
-                        Save Draft
+                        Save Note
                     </a>
                     <a
                         href="/amber"
@@ -569,6 +580,46 @@
 
         <!-- Right: Daily Routines + Quick Stats + Recent Notes -->
         <div class="lg:col-span-5 space-y-8">
+            <!-- Forest & Rewards Card -->
+            <a href="/forest" class="glass-card rounded-[2.5rem] p-8 border border-resin-forest/20 shadow-premium bg-gradient-to-br from-resin-forest/10 to-transparent hover:shadow-lg transition-all group block">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-resin-charcoal flex items-center gap-2">
+                        <svg class="w-5 h-5 text-resin-forest group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                        </svg>
+                        Forest & Rewards
+                    </h3>
+                    <svg class="w-5 h-5 text-resin-earth/40 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
+                        <p class="text-xs text-resin-earth/60 mb-1">Stones</p>
+                        <p class="text-2xl font-bold text-resin-forest">{profile?.total_stones || profile?.stones || 0}</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
+                        <p class="text-xs text-resin-earth/60 mb-1">Streak</p>
+                        <p class="text-2xl font-bold text-resin-amber">{profile?.current_streak || 0}d</p>
+                    </div>
+                    {#if weeklyStats?.avgRating > 0}
+                        <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
+                            <p class="text-xs text-resin-earth/60 mb-1">Avg Rating</p>
+                            <p class="text-2xl font-bold text-resin-amber">{weeklyStats.avgRating}/5</p>
+                        </div>
+                    {/if}
+                    <div class="p-4 rounded-xl bg-white/40 border border-white/20 text-center">
+                        <p class="text-xs text-resin-earth/60 mb-1">This Week</p>
+                        <p class="text-2xl font-bold text-resin-charcoal">{weeklyStats?.totalFocusMinutes || 0}m</p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-resin-forest font-semibold mt-4 flex items-center gap-1">
+                    View your forest →
+                </p>
+            </a>
+
             <!-- Daily Routines Card -->
             <section class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent">
                 <div class="flex items-center justify-between mb-6">

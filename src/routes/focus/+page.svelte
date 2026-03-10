@@ -22,6 +22,15 @@
 
     let editingSessionId = $state<string | null>(null);
     let editSessionData = $state<{ [key: string]: any }>({});
+
+    let friends = $state(data.friends || []);
+    let sharedSessions = $state(data.sharedSessions || []);
+    let showInviteForm = $state(false);
+    let inviteCollaboratorId = $state('');
+    let inviteTitle = $state('');
+    let inviteDate = $state(new Date().toISOString().split('T')[0]);
+    let inviteTime = $state('09:00');
+    let inviteDuration = $state(30);
     let recurringSessionId = $state<string | null>(null);
     let recurringDays = $state<Record<string, boolean>>({
         'Mon': false,
@@ -461,6 +470,210 @@
             </div>
         {:else if !showScheduleForm}
             <p class="text-resin-earth/60 text-sm">No scheduled sessions yet.</p>
+        {/if}
+    </section>
+
+    <!-- Focus with Friends -->
+    <section class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-resin-charcoal flex items-center gap-3">
+                <svg class="w-6 h-6 text-resin-amber" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM2 8a2 2 0 11-4 0 2 2 0 014 0zM6 15a4 4 0 00-8 0v2h8v-2z" />
+                </svg>
+                Focus with Friends
+            </h2>
+            {#if friends.length > 0}
+                <button
+                    onclick={() => showInviteForm = !showInviteForm}
+                    class="px-4 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all"
+                >
+                    + Invite Friend
+                </button>
+            {/if}
+        </div>
+
+        {#if friends.length === 0}
+            <div class="glass-card rounded-2xl p-8 text-center border border-resin-forest/20">
+                <p class="text-resin-earth/60 mb-2">You don't have any friends yet!</p>
+                <a href="/friends" class="text-xs font-bold text-resin-amber hover:text-resin-amber/80 transition-colors">
+                    Add friends →
+                </a>
+            </div>
+        {:else}
+            {#if showInviteForm}
+                <form
+                    method="POST"
+                    action="?/inviteFriendToFocus"
+                    use:enhance
+                    class="glass-card rounded-2xl p-6 mb-6 border border-resin-amber/20 bg-resin-amber/5"
+                    transition:slide
+                >
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Invite Friend
+                            </label>
+                            <select
+                                name="collaboratorId"
+                                bind:value={inviteCollaboratorId}
+                                required
+                                class="w-full bg-white/70 border border-resin-amber/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-amber/30 transition-all"
+                            >
+                                <option value="">Select a friend...</option>
+                                {#each friends as friend}
+                                    <option value={friend.id}>{friend.email}</option>
+                                {/each}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Focus Title
+                            </label>
+                            <input
+                                type="text"
+                                name="title"
+                                bind:value={inviteTitle}
+                                placeholder="e.g., Deep Work Session"
+                                required
+                                class="w-full bg-white/70 border border-resin-amber/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal placeholder:text-resin-earth/40 focus:outline-none focus:ring-2 focus:ring-resin-amber/30 transition-all"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                    Date
+                                </label>
+                                <input
+                                    type="date"
+                                    name="date"
+                                    bind:value={inviteDate}
+                                    required
+                                    class="w-full bg-white/70 border border-resin-amber/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-amber/30 transition-all"
+                                />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                    Time
+                                </label>
+                                <input
+                                    type="time"
+                                    name="time"
+                                    bind:value={inviteTime}
+                                    required
+                                    class="w-full bg-white/70 border border-resin-amber/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-amber/30 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-3">
+                                Duration: {inviteDuration} minutes
+                            </label>
+                            <input
+                                type="range"
+                                name="duration"
+                                bind:value={inviteDuration}
+                                min="15"
+                                max="480"
+                                step="15"
+                                class="w-full"
+                            />
+                            <div class="flex justify-between text-xs text-resin-earth/60 mt-2">
+                                <span>15 min</span>
+                                <span>8 hours</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button
+                                type="submit"
+                                disabled={!inviteCollaboratorId || !inviteTitle.trim()}
+                                class="flex-1 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all disabled:opacity-50"
+                            >
+                                Send Invite
+                            </button>
+                            <button
+                                type="button"
+                                onclick={() => showInviteForm = false}
+                                class="flex-1 py-2 bg-resin-earth/10 text-resin-earth rounded-lg text-xs font-bold hover:bg-resin-earth/20 transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            {/if}
+
+            {#if sharedSessions.length > 0}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {#each sharedSessions as session (session.id)}
+                        <div class="glass-card rounded-2xl p-6 border border-resin-amber/20" transition:slide>
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="font-bold text-resin-charcoal flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-resin-amber" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM2 8a2 2 0 11-4 0 2 2 0 014 0zM6 15a4 4 0 00-8 0v2h8v-2z" />
+                                        </svg>
+                                        {session.title}
+                                    </h3>
+                                    <p class="text-xs text-resin-earth/60 mt-1">
+                                        {formatDateTime(session.start_time)} • {Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000)} min
+                                    </p>
+                                </div>
+                            </div>
+
+                            {#if session.status === 'pending' && session.collaborator_id === data.session.user.id}
+                                <div class="flex gap-2 mb-3">
+                                    <form method="POST" action="?/acceptSharedFocus" use:enhance class="flex-1">
+                                        <input type="hidden" name="sharedSessionId" value={session.id} />
+                                        <button type="submit" class="w-full py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all">
+                                            Accept
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="?/declineSharedFocus" use:enhance class="flex-1">
+                                        <input type="hidden" name="sharedSessionId" value={session.id} />
+                                        <button type="submit" class="w-full py-2 bg-resin-earth/10 text-resin-earth rounded-lg text-xs font-bold hover:bg-resin-earth/20 transition-all">
+                                            Decline
+                                        </button>
+                                    </form>
+                                </div>
+                            {:else if session.status === 'pending'}
+                                <p class="text-xs text-resin-earth/60 mb-3 italic">Awaiting response...</p>
+                            {/if}
+
+                            {#if session.status === 'scheduled'}
+                                <div class="flex gap-2 mb-3">
+                                    <form method="POST" action="?/completeSharedFocus" use:enhance class="flex-1">
+                                        <input type="hidden" name="sharedSessionId" value={session.id} />
+                                        <button type="submit" class="w-full py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all">
+                                            Mark Complete
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="?/cancelSharedFocus" use:enhance class="flex-1">
+                                        <input type="hidden" name="sharedSessionId" value={session.id} />
+                                        <button type="submit" class="w-full py-2 bg-red-500/10 text-red-600 rounded-lg text-xs font-bold hover:bg-red-500/20 transition-all">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                </div>
+                            {:else if session.status === 'completed'}
+                                <div class="p-3 rounded-lg bg-resin-amber/10 border border-resin-amber/30">
+                                    <p class="text-xs font-bold text-resin-amber">✓ Completed! Both earned +5 stones</p>
+                                </div>
+                            {:else if session.status === 'canceled'}
+                                <div class="p-3 rounded-lg bg-resin-earth/5 border border-resin-earth/20">
+                                    <p class="text-xs text-resin-earth/60">Session canceled</p>
+                                </div>
+                            {/if}
+                        </div>
+                    {/each}
+                </div>
+            {:else if !showInviteForm}
+                <p class="text-resin-earth/60 text-sm">No shared sessions yet. Invite a friend to focus together!</p>
+            {/if}
         {/if}
     </section>
 

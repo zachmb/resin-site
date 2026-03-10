@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href="/favicon.svg" />
+	<link rel="icon" href="/logo.png" />
 	<title>Resin</title>
 </svelte:head>
 

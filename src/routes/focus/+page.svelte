@@ -7,6 +7,7 @@
 
     let activeSessions = $state(data.activeSessions || []);
     let scheduledSessions = $state(data.scheduledSessions || []);
+    let deviceCount = $state(data.deviceCount || 0);
     let showScheduleForm = $state(false);
     let showAutomationForm = $state(false);
 
@@ -83,6 +84,16 @@
             automationDaysOfWeek = [...automationDaysOfWeek, day];
         }
     };
+
+    const getSyncStatus = (session: any) => {
+        if (session.device_scheduled === true) {
+            return { icon: '✓', label: 'Synced to device', color: 'bg-green-400/10 border-green-400/20 text-green-700' };
+        }
+        if (deviceCount === 0) {
+            return { icon: '⚠', label: 'No device connected', color: 'bg-gray-400/10 border-gray-400/20 text-gray-600' };
+        }
+        return { icon: '⟳', label: 'Pending device sync', color: 'bg-resin-amber/10 border-resin-amber/20 text-resin-amber animate-pulse' };
+    };
 </script>
 
 <main class="w-full min-h-screen pt-28 pb-20 px-4 sm:px-6 max-w-6xl mx-auto">
@@ -118,13 +129,28 @@
                 {#each activeSessions as session (session.id)}
                     <div class="glass-card rounded-2xl p-6 border border-resin-amber/30 bg-resin-amber/5" transition:slide>
                         <div class="flex items-start justify-between mb-3">
-                            <div>
+                            <div class="flex-1">
                                 <h3 class="font-bold text-resin-charcoal">{session.title}</h3>
                                 <p class="text-xs text-resin-earth/60 mt-1">
                                     {formatTime(session.start_time)} - {formatTime(session.end_time)}
                                 </p>
+                                <div class="mt-2">
+                                    {#if session.device_scheduled === true}
+                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-400/10 border border-green-400/20 text-green-700">
+                                            ✓ Synced to device
+                                        </span>
+                                    {:else if deviceCount === 0}
+                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-400/10 border border-gray-400/20 text-gray-600">
+                                            ⚠ No device connected
+                                        </span>
+                                    {:else}
+                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber animate-pulse">
+                                            ⟳ Pending device sync
+                                        </span>
+                                    {/if}
+                                </div>
                             </div>
-                            <div class="w-3 h-3 rounded-full bg-resin-amber animate-pulse"></div>
+                            <div class="w-3 h-3 rounded-full bg-resin-amber animate-pulse flex-shrink-0"></div>
                         </div>
 
                         <div class="mb-4">
@@ -357,9 +383,24 @@
                             </form>
                         {:else}
                             <h3 class="font-bold text-resin-charcoal mb-1">{session.title}</h3>
-                            <p class="text-xs text-resin-earth/60 mb-4">
+                            <p class="text-xs text-resin-earth/60 mb-2">
                                 {formatDateTime(session.start_time)} • {session.duration_minutes || Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000)} min
                             </p>
+                            <div class="mb-4">
+                                {#if session.device_scheduled === true}
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-400/10 border border-green-400/20 text-green-700">
+                                        ✓ Synced to device
+                                    </span>
+                                {:else if deviceCount === 0}
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-400/10 border border-gray-400/20 text-gray-600">
+                                        ⚠ No device connected
+                                    </span>
+                                {:else}
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber animate-pulse">
+                                        ⟳ Pending device sync
+                                    </span>
+                                {/if}
+                            </div>
 
                             {#if recurringSessionId === session.id}
                                 <form

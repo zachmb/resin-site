@@ -66,12 +66,19 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         .neq('status', 'declined')
         .order('created_at', { ascending: false });
 
+    // Count registered devices for sync status
+    const { count: deviceCount } = await supabase
+        .from('device_tokens')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+
     return {
         activeSessions: activeSessions || [],
         scheduledSessions: scheduledSessions || [],
         automations: automations || [],
         friends: friends || [],
-        sharedSessions: sharedSessions || []
+        sharedSessions: sharedSessions || [],
+        deviceCount: deviceCount || 0
     };
 };
 

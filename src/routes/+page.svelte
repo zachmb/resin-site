@@ -13,6 +13,7 @@
         todayTasks={data.todayTasks}
         weeklyStats={data.weeklyStats}
         automations={data.automations}
+        isNewUser={data.isNewUser}
     />
 {:else}
     <LandingPage />

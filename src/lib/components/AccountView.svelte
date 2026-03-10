@@ -2,17 +2,18 @@
     import { enhance } from "$app/forms";
     import { fade } from "svelte/transition";
 
-    let { session, profile, tasteData } = $props<{
+    let { session, profile, tasteData, deviceTokens = [] } = $props<{
         session: any;
         profile: any;
         tasteData?: any;
+        deviceTokens?: any[];
     }>();
 
     let loading = $state(false);
     let successMessage = $state("");
     let showDocs = $state(false);
     let activeCategory = $state<
-        "profile" | "preferences" | "integrations" | "api" | "privacy" | "taste"
+        "profile" | "preferences" | "integrations" | "api" | "privacy" | "taste" | "devices"
     >("profile");
 
     const handleSubmit = () => {
@@ -39,10 +40,31 @@
         });
     };
 
+    const formatRelativeTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return "Just now";
+        if (minutes < 60) return `${minutes} min ago`;
+        if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+        if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    };
+
+    const getPlatformIcon = (platform: string) => {
+        if (platform === "apns") return { icon: "📱", label: "iOS App" };
+        return { icon: "🔒", label: "Browser Extension" };
+    };
+
     const categories = [
         { id: "profile", label: "Profile", icon: "👤" },
         { id: "preferences", label: "Preferences", icon: "⚙️" },
         { id: "integrations", label: "Integrations", icon: "🔗" },
+        { id: "devices", label: "Devices", icon: "📱" },
         { id: "taste", label: "Taste Profile", icon: "✦" },
         { id: "api", label: "API", icon: "🔑" },
         { id: "privacy", label: "Privacy", icon: "🔒" },
@@ -972,6 +994,91 @@
                                 {/each}
                             </div>
                         </section>
+                    {/if}
+                </div>
+            {:else if activeCategory === "devices"}
+                <!-- Devices Content -->
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
+                        Connected Devices
+                    </h2>
+                    <p class="text-sm text-resin-earth/60">
+                        Manage your registered devices for focus syncing
+                    </p>
+                </div>
+
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
+                    {#if deviceTokens && deviceTokens.length > 0}
+                        <div class="space-y-3">
+                            {#each deviceTokens as device (device.device_token)}
+                                <div
+                                    class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 flex items-center justify-between"
+                                >
+                                    <div class="flex items-center gap-4 flex-1">
+                                        <div class="text-2xl">
+                                            {getPlatformIcon(device.platform).icon}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h3
+                                                class="font-semibold text-resin-charcoal"
+                                            >
+                                                {getPlatformIcon(device.platform)
+                                                    .label}
+                                            </h3>
+                                            <p
+                                                class="text-xs text-resin-earth/60"
+                                            >
+                                                Last seen:{" "}
+                                                {formatRelativeTime(
+                                                    device.updated_at
+                                                )}
+                                            </p>
+                                            <p
+                                                class="text-xs text-resin-earth/40 mt-1 font-mono"
+                                            >
+                                                {device.device_token.slice(-8)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <form
+                                        method="POST"
+                                        action="?/removeDevice"
+                                        use:enhance={handleSubmit()}
+                                        class="flex-shrink-0 ml-4"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="device_token"
+                                            value={device.device_token}
+                                        />
+                                        <button
+                                            type="submit"
+                                            class="px-3 py-2 text-sm font-semibold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all"
+                                        >
+                                            Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            {/each}
+                        </div>
+                    {:else}
+                        <div
+                            class="bg-white/50 rounded-xl p-8 border border-dashed border-resin-forest/10 text-center"
+                        >
+                            <p class="text-lg text-resin-charcoal font-medium">
+                                No devices connected
+                            </p>
+                            <p class="text-sm text-resin-earth/60 mt-2">
+                                Download the iOS app or browser extension to
+                                sync focus sessions across devices.
+                            </p>
+                        </div>
                     {/if}
                 </div>
             {/if}

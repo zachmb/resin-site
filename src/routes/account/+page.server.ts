@@ -47,8 +47,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 		}
 	}
 
+	// Load device tokens
+	const { data: deviceTokens } = await supabase
+		.from('device_tokens')
+		.select('device_token, platform, updated_at')
+		.eq('user_id', session.user.id)
+		.order('updated_at', { ascending: false });
+
 	return {
 		profile,
+		deviceTokens: deviceTokens || [],
 		tasteData: {
 			feelingCounts,
 			enjoyedThings,
@@ -124,5 +132,24 @@ export const actions: Actions = {
 
         if (updateError) return { success: false, error: 'Failed to generate token' };
         return { success: true, token: newKey };
+    },
+
+    removeDevice: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const token = data.get('device_token')?.toString();
+
+        if (!token) return fail(400, { error: 'Missing device token' });
+
+        const { error } = await supabase
+            .from('device_tokens')
+            .delete()
+            .eq('user_id', session.user.id)
+            .eq('device_token', token);
+
+        if (error) return fail(500, { error: 'Failed to remove device' });
+        return { success: true };
     }
 };

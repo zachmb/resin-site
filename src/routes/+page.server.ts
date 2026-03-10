@@ -178,6 +178,10 @@ export const load: PageServerLoad = async ({ locals }) => {
         feedbackCount: (feedback || []).length,
     };
 
+    // Detect new user - account created in last 5 minutes
+    const createdAt = new Date(session.user.created_at);
+    const isNewUser = (Date.now() - createdAt.getTime()) < 5 * 60 * 1000;
+
     return {
         session,
         profile,
@@ -185,6 +189,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         todayTasks: todayTasks || [],
         weeklyStats,
         automations: automations || [],
+        isNewUser,
     };
 };
 

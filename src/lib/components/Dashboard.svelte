@@ -12,6 +12,7 @@
         todayTasks = [],
         weeklyStats = null,
         automations = [],
+        isNewUser = false,
     } = $props<{
         session?: any;
         profile: any;
@@ -19,6 +20,7 @@
         todayTasks: any[];
         weeklyStats: any;
         automations: any[];
+        isNewUser?: boolean;
     }>();
 
     const firstName =
@@ -45,6 +47,16 @@
         Sat: false,
         Sun: false,
     });
+
+    // Onboarding banner
+    let showShieldModal = $state(false);
+    let showBanner = $derived(
+        isNewUser && typeof window !== 'undefined' && !localStorage.getItem('resin_onboarded')
+    );
+
+    const dismissBanner = () => {
+        localStorage.setItem('resin_onboarded', '1');
+    };
 
     const formatTime = (dateString: string) => {
         return new Date(dateString).toLocaleTimeString([], {
@@ -434,6 +446,48 @@
         </section>
     {/if}
 
+    <!-- Onboarding Banner -->
+    {#if showBanner}
+        <div transition:fade class="mb-8">
+            <div class="glass-card rounded-[2.5rem] p-8 border-2 border-resin-amber/40 bg-gradient-to-r from-resin-amber/10 to-transparent shadow-premium">
+                <div class="flex items-start justify-between gap-6">
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold text-resin-charcoal mb-2 flex items-center gap-2">
+                            🌲 Welcome to Resin, {firstName}!
+                        </h2>
+                        <p class="text-sm text-resin-earth/70 mb-6">
+                            Here's how to get the most out of your focus sessions:
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <a
+                                href="https://testflight.apple.com/join/YOUR_TESTFLIGHT_ID"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-resin-charcoal text-white font-semibold hover:bg-resin-forest transition-colors text-sm"
+                            >
+                                📱 Get the iOS App
+                            </a>
+                            <button
+                                type="button"
+                                onclick={() => showShieldModal = true}
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/50 border border-resin-forest/10 text-resin-charcoal font-semibold hover:bg-white transition-colors text-sm"
+                            >
+                                🔒 Install Browser Extension
+                            </button>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onclick={dismissBanner}
+                        class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-resin-forest/10 transition-colors text-resin-earth/60 hover:text-resin-charcoal"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+        </div>
+    {/if}
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Left: Focus, Taste, Timeline -->
         <div class="lg:col-span-7 space-y-8">
@@ -803,7 +857,7 @@
                 {/if}
 
                 <button
-                    on:click={() => {
+                    onclick={() => {
                         showAddAutomation = !showAddAutomation;
                     }}
                     class="w-full px-4 py-3 rounded-xl text-sm font-bold text-resin-forest hover:bg-resin-forest/10 transition-colors text-center"
@@ -815,7 +869,7 @@
                     <form
                         method="POST"
                         action="?/createAutomation"
-                        on:submit={(e) => {
+                        onsubmit={(e) => {
                             const daysString = getDaysForSubmit();
                             if (!daysString) {
                                 e.preventDefault();
@@ -879,7 +933,7 @@
                             </button>
                             <button
                                 type="button"
-                                on:click={() => {
+                                onclick={() => {
                                     showAddAutomation = false;
                                 }}
                                 class="flex-1 px-4 py-2 rounded-lg bg-white border border-white/20 text-resin-charcoal font-bold text-sm hover:bg-resin-earth/5 transition-colors"

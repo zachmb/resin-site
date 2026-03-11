@@ -68,13 +68,26 @@
     let connectFrom = $state('');
     let connectTo = $state('');
 
+    let isConnecting = $state(false);
+
     const handleManualConnect = async () => {
         if (connectFrom && connectTo && connectFrom !== connectTo) {
-            await onConnect({ source: connectFrom, target: connectTo });
-            showConnectPanel = false;
-            connectFrom = '';
-            connectTo = '';
+            isConnecting = true;
+            try {
+                await onConnect({ source: connectFrom, target: connectTo });
+                // Reset form after successful connection
+                connectFrom = '';
+                connectTo = '';
+            } finally {
+                isConnecting = false;
+            }
         }
+    };
+
+    const closePanel = () => {
+        showConnectPanel = false;
+        connectFrom = '';
+        connectTo = '';
     };
 
     const onNodeDragStop = (event: any, node?: any, nodes?: any) => {
@@ -99,6 +112,19 @@
     };
 
     let wrapper: HTMLElement;
+    let lastSave = $state<number>(0);
+    let isSaving = $state(false);
+
+    const saveConnections = async () => {
+        isSaving = true;
+        try {
+            // Edges are already saved as they're created, this is just to confirm
+            await new Promise(resolve => setTimeout(resolve, 300));
+            lastSave = Date.now();
+        } finally {
+            isSaving = false;
+        }
+    };
 
     const onDragOver = (event: DragEvent) => {
         event.preventDefault();
@@ -230,6 +256,7 @@
             const realEdge = json?.data?.edge;
             if (realEdge?.id) {
                 edges = edges.map((e: any) => e.id === tempId ? { ...e, id: realEdge.id } : e);
+                lastSave = Date.now(); // Update save indicator
             }
         } catch (error) {
             console.error("Failed to save edge:", error);
@@ -291,6 +318,22 @@
 >
     <!-- Action Buttons -->
     <div class="absolute top-6 right-6 z-10 flex gap-2 items-center">
+        <!-- Auto-save indicator -->
+        <div class="px-3 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-resin-forest/10 flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full {lastSave > 0 ? 'bg-green-500' : 'bg-amber-400'} animate-pulse"></div>
+            <span class="text-xs text-resin-earth/60 font-medium">
+                {lastSave > 0 ? 'Saved' : 'Auto-save'}
+            </span>
+        </div>
+
+        <button
+            onclick={saveConnections}
+            disabled={isSaving}
+            class="px-4 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-resin-forest/20 text-resin-forest font-medium text-sm hover:bg-white hover:shadow-lg transition-all disabled:opacity-50 {isSaving ? 'animate-pulse' : ''}"
+        >
+            {isSaving ? '✓ Saving...' : '✓ Save'}
+        </button>
+
         <form method="POST" action="/map?/clearMap" class="inline">
             <button
                 type="submit"
@@ -299,6 +342,7 @@
                 Clear
             </button>
         </form>
+
         <button
             onclick={() => (showConnectPanel = true)}
             class="px-4 py-2 rounded-lg bg-white/80 backdrop-blur-sm border border-resin-forest/20 text-resin-forest font-medium text-sm hover:bg-white hover:shadow-lg transition-all"
@@ -342,20 +386,17 @@
                 <div class="flex gap-2 pt-2">
                     <button
                         onclick={handleManualConnect}
-                        disabled={!connectFrom || !connectTo || connectFrom === connectTo}
-                        class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-medium text-sm hover:bg-resin-forest/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!connectFrom || !connectTo || connectFrom === connectTo || isConnecting}
+                        class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-medium text-sm hover:bg-resin-forest/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed {isConnecting ? 'animate-pulse' : ''}"
                     >
-                        Add Connection
+                        {isConnecting ? 'Adding...' : 'Add Connection'}
                     </button>
                     <button
-                        onclick={() => {
-                            showConnectPanel = false;
-                            connectFrom = '';
-                            connectTo = '';
-                        }}
+                        type="button"
+                        onclick={closePanel}
                         class="flex-1 px-4 py-2 rounded-lg border border-resin-earth/20 text-resin-charcoal font-medium text-sm hover:bg-resin-earth/5 transition-all"
                     >
-                        Cancel
+                        Done
                     </button>
                 </div>
             </div>

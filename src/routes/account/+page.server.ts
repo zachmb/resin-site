@@ -99,6 +99,7 @@ export const actions: Actions = {
         const availability_start = formData.get('availability_start') as string;
         const availability_end = formData.get('availability_end') as string;
         const sync_notes = formData.get('sync_notes') === 'on';
+        const widget_enabled = formData.get('widget_enabled') === 'on';
 
         const updates = {
             id: session.user.id,
@@ -107,6 +108,7 @@ export const actions: Actions = {
             availability_start,
             availability_end,
             sync_notes,
+            widget_enabled,
             updated_at: new Date().toISOString(),
         };
 

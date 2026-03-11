@@ -372,6 +372,45 @@
                             </label>
                         </section>
 
+                        <!-- Widget Settings -->
+                        <section class="border-t border-resin-forest/5 pt-6">
+                            <h3
+                                class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4"
+                            >
+                                Home Screen Widget
+                            </h3>
+                            <label
+                                class="flex items-start gap-4 cursor-pointer group"
+                            >
+                                <div
+                                    class="relative flex items-center justify-center pt-1"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="widget_enabled"
+                                        class="peer sr-only"
+                                        checked={profile?.widget_enabled ?? true}
+                                    />
+                                    <div
+                                        class="w-11 h-6 bg-resin-earth/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-resin-forest shadow-inner"
+                                    ></div>
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div
+                                        class="text-sm font-semibold text-resin-charcoal group-hover:text-resin-forest transition-colors"
+                                    >
+                                        Show Next Plan Widget
+                                    </div>
+                                    <p
+                                        class="text-xs text-resin-earth/70 font-light leading-relaxed"
+                                    >
+                                        Enable or disable the home screen widget
+                                        showing your next upcoming Amber plan.
+                                    </p>
+                                </div>
+                            </label>
+                        </section>
+
                         <!-- Save Button -->
                         <div
                             class="border-t border-resin-forest/5 pt-6 flex items-center justify-between gap-4"

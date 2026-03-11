@@ -41,11 +41,17 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+interface AITaskStep {
+    title: string
+    duration_minutes: number
+    steps: string[]
+}
+
 interface DeepSeekTask {
     type: 'action' | 'intention' | 'habit'
     display_title: string
     original_note: string
-    ai_plan: string[]
+    ai_plan: AITaskStep[]
     scheduling: { start_time: string; end_time: string; duration_minutes: number }
     blocking_active: boolean
     requires_verification?: boolean
@@ -353,11 +359,15 @@ export const POST = async ({ request }: RequestEvent) => {
         })
 
         // 7. Upsert the generated task(s)
+        const description = plan.ai_plan
+            .flatMap(step => [`📍 ${step.title} (${step.duration_minutes}m)`, ...step.steps.map(s => `  • ${s}`)])
+            .join('\n');
+
         const taskRow = {
             id: crypto.randomUUID(),
             session_id,
             title: plan.display_title,
-            description: plan.ai_plan.join('\n'),
+            description,
             estimated_minutes: plan.scheduling.duration_minutes,
             sequence_order: 1,
             start_time: plan.scheduling.start_time,
@@ -368,7 +378,23 @@ export const POST = async ({ request }: RequestEvent) => {
         }
         await admin.from('amber_tasks').upsert(taskRow)
 
-        // 8. Send APNs push to all registered devices for this user
+        // 8. Award stones for activation
+        const stonesAwarded = 3;
+        const { data: currentProfile } = await admin
+            .from('profiles')
+            .select('total_stones')
+            .eq('id', user.id)
+            .single();
+
+        await admin
+            .from('profiles')
+            .update({
+                total_stones: (currentProfile?.total_stones || 0) + stonesAwarded,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+
+        // 9. Send APNs push to all registered devices for this user
         const { data: tokens } = await admin
             .from('device_tokens')
             .select('device_token')
@@ -388,7 +414,7 @@ export const POST = async ({ request }: RequestEvent) => {
             ))
         }
 
-        // 9. Return the full result to the caller (app may still be in foreground)
+        // 10. Return the full result to the caller (app may still be in foreground)
         return json({
             status: 'scheduled',
             task: {

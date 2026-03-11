@@ -2,7 +2,6 @@
     import { enhance } from "$app/forms";
     import { parseCommands } from "$lib/utils/commandParser";
     import CommandPalette from "./CommandPalette.svelte";
-    import NoteAnnotationOverlay from "./NoteAnnotationOverlay.svelte";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
 
@@ -39,19 +38,15 @@
     let saveTimeout: ReturnType<typeof setTimeout>;
     let showShareModal = $state(false);
     let selectedShareFriend: any = $state(null);
-    let showDrawingCanvas = $state(false);
     let lastRewardTime = $state<number>(0);
-    let savedAnnotations: string[] = $state([]);
+    let activationError = $state<string | null>(null);
+    let isRetryingActivation = $state(false);
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
         // Update lastSaved to show the actual creation time of the active note
         if (activeNote?.created_at) {
             lastSaved = new Date(activeNote.created_at);
-        }
-        // Load annotations when note changes
-        if (activeNote?.id && activeNote.id !== 'mock') {
-            loadAnnotations(activeNote.id);
         }
     });
 
@@ -118,17 +113,6 @@
         return `${Math.floor(secs / 86400)}d ago`;
     };
 
-    const loadAnnotations = async (noteId: string) => {
-        try {
-            const response = await fetch(`/api/annotations/${noteId}`);
-            if (response.ok) {
-                const data = await response.json();
-                savedAnnotations = data.annotations || [];
-            }
-        } catch (err) {
-            console.error('Failed to load annotations:', err);
-        }
-    };
 </script>
 
 <!-- ── Main Canvas ── -->
@@ -401,20 +385,6 @@
                 }}
             ></textarea>
 
-            <!-- Saved Annotations Display -->
-            {#if savedAnnotations.length > 0}
-                <div class="px-6 sm:px-10 py-4 border-t border-resin-forest/5 bg-white/20">
-                    <h3 class="text-sm font-semibold text-resin-charcoal mb-3">Annotations</h3>
-                    <div class="space-y-3">
-                        {#each savedAnnotations as annotation, idx (idx)}
-                            <div class="rounded-lg border border-resin-forest/10 bg-white p-2 overflow-hidden">
-                                <img src={annotation} alt="Annotation {idx + 1}" class="w-full max-h-48 object-contain rounded" />
-                            </div>
-                        {/each}
-                    </div>
-                </div>
-            {/if}
-
             <!-- Automation Commands Section -->
             {#if parsedCommands.hasCommands}
                 <div class="px-6 sm:px-10 py-4 border-t border-blue-100">
@@ -608,6 +578,68 @@
                             Canceled
                         </div>
                     {:else}
+                        <!-- Activation error banner -->
+                        {#if activationError}
+                            <div class="w-full bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                                <div class="flex gap-3">
+                                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                    <div class="flex-1">
+                                        <h3 class="text-sm font-semibold text-red-900">Scheduling Failed</h3>
+                                        <p class="text-sm text-red-700 mt-1">{activationError}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onclick={() => activationError = null}
+                                        class="text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="flex gap-2 mt-3">
+                                    <form method="POST" action="?/activateNote" class="flex-1" use:enhance={() => {
+                                        isRetryingActivation = true;
+                                        return async ({ result }) => {
+                                            isRetryingActivation = false;
+                                            if (result.type === "success") {
+                                                activationError = null;
+                                            } else {
+                                                activationError = (result.data?.error || result.error?.message || "Retry failed.") as any;
+                                            }
+                                        };
+                                    }}>
+                                        <input type="hidden" name="id" value={activeNote?.id} />
+                                        <input type="hidden" name="noteContent" value={activeNote?.content} />
+                                        <button
+                                            type="submit"
+                                            disabled={isRetryingActivation}
+                                            class="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            {#if isRetryingActivation}
+                                                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Retrying...
+                                            {:else}
+                                                Retry
+                                            {/if}
+                                        </button>
+                                    </form>
+                                    <button
+                                        type="button"
+                                        onclick={() => activationError = null}
+                                        class="px-3 py-1.5 bg-red-100 text-red-700 text-sm font-semibold rounded-md hover:bg-red-200 transition-colors"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            </div>
+                        {/if}
+
                         <!-- Activate (Draft/Default) -->
                         <div class="flex-1 w-full flex flex-col gap-2">
                             <form
@@ -629,15 +661,11 @@
                                                 timestamp: now
                                             }));
                                         } else if (result.type === "failure") {
-                                            showToast(
-                                                result.data?.error ||
-                                                    "Failed to activate. Please try again.",
-                                            );
+                                            activationError = result.data?.error || "Failed to activate. Please try again.";
+                                            showToast(activationError);
                                         } else if (result.type === "error") {
-                                            showToast(
-                                                result.error?.message ||
-                                                    "An error occurred.",
-                                            );
+                                            activationError = String(result.error?.message || "An error occurred.");
+                                            showToast(activationError);
                                         }
                                         await update();
                                     };
@@ -755,22 +783,6 @@
                     </div>
                 </div>
 
-                <!-- Annotate -->
-                {#if activeNote?.id && activeNote.id !== 'mock'}
-                    <div class="text-xs space-y-2 pt-4 border-t border-resin-earth/10">
-                        <div class="text-resin-earth/40 font-semibold">Annotate</div>
-                        <button
-                            onclick={() => showDrawingCanvas = true}
-                            class="w-full px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all text-xs font-medium border border-blue-200 flex items-center justify-center gap-2"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0M11 4a2 2 0 00-4 0m6 0v6a2 2 0 01-4 0V4m0 0h4v6m0 0H7" />
-                            </svg>
-                            Draw or Highlight
-                        </button>
-                    </div>
-                {/if}
-
                 <!-- Share -->
                 {#if activeNote?.id && activeNote.id !== 'mock' && friends.length > 0}
                     <div class="text-xs space-y-2 pt-4 border-t border-resin-earth/10">
@@ -831,27 +843,4 @@
             </button>
         </div>
     </div>
-{/if}
-
-<!-- Annotation Overlay -->
-{#if showDrawingCanvas}
-    <NoteAnnotationOverlay
-        noteHeight={500}
-        onSave={(dataUrl) => {
-            // Save annotation
-            const formData = new FormData();
-            formData.append('noteId', activeNote.id);
-            formData.append('annotationData', dataUrl);
-            fetch('?/saveAnnotation', {
-                method: 'POST',
-                body: formData
-            }).then(() => {
-                showToast('Annotation saved!');
-                showDrawingCanvas = false;
-                // Reload annotations to display the saved drawing
-                loadAnnotations(activeNote.id);
-            });
-        }}
-        onDismiss={() => (showDrawingCanvas = false)}
-    />
 {/if}

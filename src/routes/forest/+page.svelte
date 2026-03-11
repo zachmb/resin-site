@@ -1,9 +1,11 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fade, fly, scale } from "svelte/transition";
+    import { createSupabaseClient } from "$lib/supabase";
 
     let { data } = $props();
-    let { profile, sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession } = $derived(data);
+    let { sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession } = $derived(data);
+    let profileData = $state(data.profile);
 
     let recentReward = $state<{ text: string; icon: string; timestamp: number } | null>(null);
 
@@ -20,6 +22,33 @@
             } catch (e) {
                 // ignore
             }
+        }
+
+        // Subscribe to real-time profile updates (for iOS sync)
+        const supabase = createSupabaseClient();
+        if (supabase && profileData?.id) {
+            const subscription = supabase
+                .channel(`profiles:${profileData.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'profiles',
+                        filter: `id=eq.${profileData.id}`
+                    },
+                    (payload) => {
+                        // Update profile data when iOS syncs
+                        if (payload.new) {
+                            profileData = payload.new;
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(subscription);
+            };
         }
     });
 
@@ -69,8 +98,8 @@
         },
     ];
 
-    const totalStones = $derived(profile?.total_stones || 0);
-    const currentStreak = $derived(profile?.current_streak || 0);
+    const totalStones = $derived(profileData?.total_stones || 0);
+    const currentStreak = $derived(profileData?.current_streak || 0);
     const unlockedSpecies = $derived(
         treeSpecies.filter((s) => s.unlockCost <= totalStones),
     );

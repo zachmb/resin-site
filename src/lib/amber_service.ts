@@ -12,11 +12,17 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 });
 
+export interface AITaskStep {
+    title: string;
+    duration_minutes: number;
+    steps: string[];
+}
+
 export interface DeepSeekTask {
     type: 'action' | 'intention' | 'habit';
     display_title: string;
     original_note: string;
-    ai_plan: string[];
+    ai_plan: AITaskStep[];
     scheduling: { start_time: string; end_time: string; duration_minutes: number };
     blocking_active: boolean;
     requires_verification?: boolean;
@@ -74,9 +80,13 @@ export async function createCalendarEvent(
     title: string,
     timezone: string
 ): Promise<string | null> {
+    const description = task.ai_plan
+        .flatMap(step => [`📍 ${step.title} (${step.duration_minutes}m)`, ...step.steps.map(s => `  • ${s}`)])
+        .join('\n');
+
     const body = {
         summary: title,
-        description: task.ai_plan.join('\n'),
+        description,
         start: { dateTime: task.scheduling.start_time, timeZone: timezone },
         end: { dateTime: task.scheduling.end_time, timeZone: timezone },
     };
@@ -117,7 +127,7 @@ You are the brain of RESIN, a premium productivity agent. Convert vague thoughts
 
 # OPERATIONAL PIPELINE
 1. CATEGORIZE: ACTION, INTENTION, or HABIT.
-2. PLAN: Generate a thorough, line-by-line action plan.
+2. PLAN: Generate a thorough, line-by-line action plan with specific micro-steps.
 3. ANALYZE CALENDAR: Find best free gaps.
 4. SCHEDULE: Never double-book.
 
@@ -126,12 +136,24 @@ You are the brain of RESIN, a premium productivity agent. Convert vague thoughts
   "type": "action"|"intention"|"habit",
   "display_title": "Short UI title",
   "original_note": "string",
-  "ai_plan": ["Step 1", "Step 2"],
+  "ai_plan": [
+    {
+      "title": "Main action item",
+      "duration_minutes": 20,
+      "steps": ["Micro-step 1 with specifics", "Micro-step 2 with metrics", "Micro-step 3"]
+    }
+  ],
   "scheduling": { "start_time": "ISO8601", "end_time": "ISO8601", "duration_minutes": number },
   "blocking_active": boolean,
   "requires_verification": boolean,
   "notification_copy": "One sentence summary."
 }
+
+# PLAN BREAKDOWN RULES
+- Break each plan item into 2–4 specific, actionable micro-steps
+- Use concrete numbers over vague descriptions (e.g., "3 sets of 15 pushups" not "do pushups")
+- Include setup, execution, and wrap-up if applicable
+- Each step should be completable in a few minutes
 
 # CALENDAR ANALYSIS
 PREFERRED WINDOW: ${startHour}:00–${endHour}:00
@@ -196,7 +218,9 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             id: crypto.randomUUID(),
             session_id: sessionId,
             title: plan.display_title,
-            description: plan.ai_plan.join('\n'),
+            description: plan.ai_plan
+            .flatMap(step => [`📍 ${step.title} (${step.duration_minutes}m)`, ...step.steps.map(s => `  • ${s}`)])
+            .join('\n'),
             estimated_minutes: plan.scheduling.duration_minutes,
             sequence_order: 1,
             start_time: plan.scheduling.start_time,

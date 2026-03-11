@@ -231,10 +231,7 @@
                             <span
                                 class="text-[10px] text-resin-earth/50 whitespace-nowrap"
                             >
-                                {new Date(note.created_at).toLocaleDateString(
-                                    [],
-                                    { month: "short", day: "numeric" },
-                                )}
+                                {formatTimeSince(new Date(note.created_at))}
                             </span>
                             <span
                                 class="text-[10px] text-resin-earth/40 font-medium bg-resin-earth/5 px-2 py-0.5 rounded"

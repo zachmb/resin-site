@@ -2,19 +2,22 @@
     import { enhance } from "$app/forms";
     import { fade } from "svelte/transition";
 
-    let { session, profile, tasteData, deviceTokens = [], commandConfigs = [] } = $props<{
+    let { session, profile, tasteData, deviceTokens = [], commandConfigs = [], friends = [], incomingRequests = [], outgoingRequests = [] } = $props<{
         session: any;
         profile: any;
         tasteData?: any;
         deviceTokens?: any[];
         commandConfigs?: any[];
+        friends?: any[];
+        incomingRequests?: any[];
+        outgoingRequests?: any[];
     }>();
 
     let loading = $state(false);
     let successMessage = $state("");
     let showDocs = $state(false);
     let activeCategory = $state<
-        "profile" | "preferences" | "integrations" | "api" | "privacy" | "taste" | "devices"
+        "profile" | "preferences" | "friends" | "integrations" | "api" | "privacy" | "taste" | "devices"
     >("profile");
 
     // Command config management
@@ -111,6 +114,7 @@
     const categories = [
         { id: "profile", label: "Profile", icon: "👤" },
         { id: "preferences", label: "Preferences", icon: "⚙️" },
+        { id: "friends", label: "Friends", icon: "👥" },
         { id: "integrations", label: "Integrations", icon: "🔗" },
         { id: "devices", label: "Devices", icon: "📱" },
         { id: "taste", label: "Taste Profile", icon: "✦" },
@@ -517,6 +521,299 @@
                         </div>
                     </form>
                 </div>
+            {:else if activeCategory === "friends"}
+                <!-- Friends Content -->
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
+                        Friends
+                    </h2>
+                    <p class="text-sm text-resin-earth/60">
+                        Connect with other Resin users to share progress
+                    </p>
+                </div>
+
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
+                    <!-- Add Friend Section -->
+                    <section
+                        class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                    >
+                        <h3
+                            class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2"
+                        >
+                            <span>➕</span>
+                            Add a Friend
+                        </h3>
+                        <form
+                            method="POST"
+                            action="?/addFriend"
+                            use:enhance={() => {
+                                loading = true;
+                                return async ({ result }) => {
+                                    loading = false;
+                                    if (result.type === "success") {
+                                        successMessage = "Friend request sent!";
+                                        setTimeout(() => {
+                                            successMessage = "";
+                                        }, 3000);
+                                    }
+                                };
+                            }}
+                            class="space-y-4"
+                        >
+                            <div>
+                                <label
+                                    for="friend_email"
+                                    class="block text-sm font-semibold text-resin-charcoal mb-2"
+                                >
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    id="friend_email"
+                                    name="friend_email"
+                                    placeholder="Enter friend's email"
+                                    class="w-full px-4 py-3 bg-white/70 border border-resin-forest/10 rounded-xl focus:outline-none focus:border-resin-forest/30 focus:bg-white transition-all text-resin-charcoal placeholder-resin-earth/40"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                class="w-full px-4 py-3 bg-resin-forest text-white rounded-xl font-bold text-sm hover:bg-resin-charcoal transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {#if loading}
+                                    <svg
+                                        class="animate-spin h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                {/if}
+                                Send Friend Request
+                            </button>
+                            {#if successMessage}
+                                <div
+                                    transition:fade
+                                    class="p-3 bg-resin-forest/10 border border-resin-forest/20 text-resin-forest text-sm font-semibold rounded-lg"
+                                >
+                                    {successMessage}
+                                </div>
+                            {/if}
+                        </form>
+                    </section>
+
+                    <!-- Friends List -->
+                    <section
+                        class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                    >
+                        <h3
+                            class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2"
+                        >
+                            <span>👥</span>
+                            Your Friends
+                        </h3>
+                        {#if friends.length > 0}
+                            <div class="space-y-2">
+                                {#each friends as friend (friend.id)}
+                                    <div
+                                        class="flex items-center justify-between p-3 bg-white rounded-lg border border-resin-forest/5 hover:border-resin-forest/10 transition-colors"
+                                    >
+                                        <div>
+                                            <p class="text-sm font-semibold text-resin-charcoal">
+                                                {friend.email}
+                                            </p>
+                                            <p class="text-xs text-resin-earth/60">
+                                                Friends since {new Date(friend.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        <form
+                                            method="POST"
+                                            action="?/removeFriend"
+                                            use:enhance={() => {
+                                                return async ({ result }) => {
+                                                    if (result.type === "success") {
+                                                        successMessage = "Friend removed";
+                                                        setTimeout(() => {
+                                                            successMessage = "";
+                                                        }, 3000);
+                                                    }
+                                                };
+                                            }}
+                                        >
+                                            <input type="hidden" name="friendship_id" value={friend.id} />
+                                            <button
+                                                type="submit"
+                                                class="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all"
+                                            >
+                                                Remove
+                                            </button>
+                                        </form>
+                                    </div>
+                                {/each}
+                            </div>
+                        {:else}
+                            <div
+                                class="bg-white/50 rounded-lg p-8 border border-dashed border-resin-forest/10 text-center"
+                            >
+                                <p class="text-sm text-resin-charcoal font-medium">
+                                    No friends yet
+                                </p>
+                                <p class="text-xs text-resin-earth/60 mt-1">
+                                    Send a friend request to get started!
+                                </p>
+                            </div>
+                        {/if}
+                    </section>
+
+                    <!-- Incoming Friend Requests -->
+                    {#if incomingRequests.length > 0}
+                        <section
+                            class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                        >
+                            <h3
+                                class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2"
+                            >
+                                <span>📩</span>
+                                Friend Requests
+                            </h3>
+                            <div class="space-y-3">
+                                {#each incomingRequests as request (request.id)}
+                                    <div
+                                        class="flex items-center justify-between p-4 bg-resin-amber/5 rounded-lg border border-resin-amber/20"
+                                    >
+                                        <div>
+                                            <p class="text-sm font-semibold text-resin-charcoal">
+                                                {request.fromEmail}
+                                            </p>
+                                            <p class="text-xs text-resin-earth/60">
+                                                sent {new Date(request.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <form
+                                                method="POST"
+                                                action="?/acceptFriend"
+                                                use:enhance={() => {
+                                                    return async ({ result }) => {
+                                                        if (result.type === "success") {
+                                                            successMessage = "Friend request accepted!";
+                                                            setTimeout(() => {
+                                                                successMessage = "";
+                                                            }, 3000);
+                                                        }
+                                                    };
+                                                }}
+                                                class="inline"
+                                            >
+                                                <input type="hidden" name="request_id" value={request.id} />
+                                                <button
+                                                    type="submit"
+                                                    class="px-3 py-1.5 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-all"
+                                                >
+                                                    Accept
+                                                </button>
+                                            </form>
+                                            <form
+                                                method="POST"
+                                                action="?/rejectFriend"
+                                                use:enhance={() => {
+                                                    return async ({ result }) => {
+                                                        if (result.type === "success") {
+                                                            successMessage = "Friend request rejected";
+                                                            setTimeout(() => {
+                                                                successMessage = "";
+                                                            }, 3000);
+                                                        }
+                                                    };
+                                                }}
+                                                class="inline"
+                                            >
+                                                <input type="hidden" name="request_id" value={request.id} />
+                                                <button
+                                                    type="submit"
+                                                    class="px-3 py-1.5 text-xs font-bold text-resin-earth/60 bg-resin-earth/5 hover:bg-resin-earth/10 rounded-lg transition-all"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        </section>
+                    {/if}
+
+                    <!-- Outgoing Friend Requests -->
+                    {#if outgoingRequests.length > 0}
+                        <section
+                            class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                        >
+                            <h3
+                                class="font-semibold text-resin-charcoal mb-4 flex items-center gap-2"
+                            >
+                                <span>⏳</span>
+                                Pending Requests Sent
+                            </h3>
+                            <div class="space-y-2">
+                                {#each outgoingRequests as request (request.id)}
+                                    <div
+                                        class="flex items-center justify-between p-3 bg-white rounded-lg border border-resin-forest/5 hover:border-resin-forest/10 transition-colors"
+                                    >
+                                        <div>
+                                            <p class="text-sm font-semibold text-resin-charcoal">
+                                                {request.toEmail}
+                                            </p>
+                                            <p class="text-xs text-resin-earth/60">
+                                                sent {new Date(request.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        <form
+                                            method="POST"
+                                            action="?/cancelFriendRequest"
+                                            use:enhance={() => {
+                                                return async ({ result }) => {
+                                                    if (result.type === "success") {
+                                                        successMessage = "Request canceled";
+                                                        setTimeout(() => {
+                                                            successMessage = "";
+                                                        }, 3000);
+                                                    }
+                                                };
+                                            }}
+                                        >
+                                            <input type="hidden" name="request_id" value={request.id} />
+                                            <button
+                                                type="submit"
+                                                class="px-3 py-1.5 text-xs font-bold text-resin-earth/60 bg-resin-earth/5 hover:bg-resin-earth/10 rounded-lg transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </form>
+                                    </div>
+                                {/each}
+                            </div>
+                        </section>
+                    {/if}
+                </div>
             {:else if activeCategory === "integrations"}
                 <!-- Integrations Content -->
                 <div
@@ -705,7 +1002,7 @@
                                 Command Automations
                             </h3>
                             <p class="text-sm text-resin-earth/70 mb-4">
-                                Configure credentials for your claw: commands. When you use a command in your notes, it will automatically trigger these integrations.
+                                Connect external services to your notes. Use <code class="bg-resin-earth/5 px-1.5 py-0.5 rounded text-xs font-mono">claw: [service]</code> syntax in your notes to trigger integrations like email, Slack, Discord, and more.
                             </p>
                         </div>
 
@@ -716,7 +1013,7 @@
                                     class="flex items-center justify-between p-3 bg-white rounded-lg border border-resin-forest/5 hover:border-resin-forest/10 transition-colors"
                                 >
                                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                                        <span class="text-lg">{cmdType.icon}</span>
+                                        <span class="text-lg w-8 flex-shrink-0">{cmdType.icon}</span>
                                         <div class="flex-1 min-w-0">
                                             <div class="font-semibold text-sm text-resin-charcoal">
                                                 {cmdType.label}

@@ -61,6 +61,55 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 		.eq('user_id', session.user.id)
 		.order('created_at', { ascending: true });
 
+	// Load friends and friend requests
+	const { data: friends } = await supabase
+		.from('friends')
+		.select(`
+			id,
+			user_id_1,
+			user_id_2,
+			profiles!friends_user_id_1_fkey(id, email),
+			profiles!friends_user_id_2_fkey(id, email),
+			created_at
+		`)
+		.or(`user_id_1.eq.${session.user.id},user_id_2.eq.${session.user.id}`);
+
+	// Load incoming friend requests
+	const { data: incomingRequests } = await supabase
+		.from('friend_requests')
+		.select(`
+			id,
+			from_user_id,
+			profiles!friend_requests_from_user_id_fkey(id, email),
+			created_at
+		`)
+		.eq('to_user_id', session.user.id)
+		.order('created_at', { ascending: false });
+
+	// Load outgoing friend requests
+	const { data: outgoingRequests } = await supabase
+		.from('friend_requests')
+		.select(`
+			id,
+			to_user_id,
+			profiles!friend_requests_to_user_id_fkey(id, email),
+			created_at
+		`)
+		.eq('from_user_id', session.user.id)
+		.order('created_at', { ascending: false });
+
+	// Transform friends data to include friend info more clearly
+	const friendsList = (friends || []).map((friendship: any) => {
+		const isFriend1 = friendship.user_id_1 === session.user.id;
+		const friendProfile = isFriend1 ? friendship.profiles_user_id_2 : friendship.profiles_user_id_1;
+		return {
+			id: friendship.id,
+			friendId: isFriend1 ? friendship.user_id_2 : friendship.user_id_1,
+			email: friendProfile?.email || 'Unknown',
+			createdAt: friendship.created_at
+		};
+	});
+
 	return {
 		profile,
 		deviceTokens: deviceTokens || [],
@@ -69,7 +118,20 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 			feelingCounts,
 			enjoyedThings,
 			ratingHistory: ratingHistory.reverse() // chronological
-		}
+		},
+		friends: friendsList,
+		incomingRequests: (incomingRequests || []).map((req: any) => ({
+			id: req.id,
+			fromUserId: req.from_user_id,
+			fromEmail: req.profiles?.email || 'Unknown',
+			createdAt: req.created_at
+		})),
+		outgoingRequests: (outgoingRequests || []).map((req: any) => ({
+			id: req.id,
+			toUserId: req.to_user_id,
+			toEmail: req.profiles?.email || 'Unknown',
+			createdAt: req.created_at
+		}))
 	};
 };
 
@@ -243,5 +305,215 @@ export const actions: Actions = {
 
         if (error) return fail(500, { error: 'Failed to delete configuration' });
         return { success: true };
+    },
+
+    addFriend: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const friendEmail = formData.get('friend_email')?.toString().trim();
+
+        if (!friendEmail) {
+            return fail(400, { error: 'Email address required' });
+        }
+
+        // Find user by email
+        const { data: friendUser, error: searchError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', friendEmail)
+            .single();
+
+        if (searchError || !friendUser) {
+            return fail(404, { error: 'User not found' });
+        }
+
+        if (friendUser.id === session.user.id) {
+            return fail(400, { error: 'Cannot add yourself as a friend' });
+        }
+
+        // Check if already friends
+        const { data: existingFriendship } = await supabase
+            .from('friends')
+            .select('id')
+            .or(`and(user_id_1.eq.${session.user.id},user_id_2.eq.${friendUser.id}),and(user_id_1.eq.${friendUser.id},user_id_2.eq.${session.user.id})`)
+            .single();
+
+        if (existingFriendship) {
+            return fail(400, { error: 'Already friends with this user' });
+        }
+
+        // Check if request already exists
+        const { data: existingRequest } = await supabase
+            .from('friend_requests')
+            .select('id')
+            .eq('from_user_id', session.user.id)
+            .eq('to_user_id', friendUser.id)
+            .single();
+
+        if (existingRequest) {
+            return fail(400, { error: 'Friend request already sent' });
+        }
+
+        // Create friend request
+        const { error } = await supabase
+            .from('friend_requests')
+            .insert({
+                from_user_id: session.user.id,
+                to_user_id: friendUser.id
+            });
+
+        if (error) {
+            console.error('Error creating friend request:', error);
+            return fail(500, { error: 'Failed to send friend request' });
+        }
+
+        return { success: true, message: 'Friend request sent!' };
+    },
+
+    acceptFriend: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const requestId = formData.get('request_id')?.toString();
+
+        if (!requestId) {
+            return fail(400, { error: 'Missing request ID' });
+        }
+
+        // Get the request details
+        const { data: friendRequest, error: getError } = await supabase
+            .from('friend_requests')
+            .select('from_user_id, to_user_id')
+            .eq('id', requestId)
+            .eq('to_user_id', session.user.id)
+            .single();
+
+        if (getError || !friendRequest) {
+            return fail(404, { error: 'Friend request not found' });
+        }
+
+        // Create friendship (always store with user_id_1 < user_id_2 lexicographically for consistency)
+        const user1 = friendRequest.from_user_id < friendRequest.to_user_id ? friendRequest.from_user_id : friendRequest.to_user_id;
+        const user2 = friendRequest.from_user_id < friendRequest.to_user_id ? friendRequest.to_user_id : friendRequest.from_user_id;
+
+        const { error: createError } = await supabase
+            .from('friends')
+            .insert({
+                user_id_1: user1,
+                user_id_2: user2
+            });
+
+        if (createError) {
+            console.error('Error creating friendship:', createError);
+            return fail(500, { error: 'Failed to accept friend request' });
+        }
+
+        // Delete the request
+        const { error: deleteError } = await supabase
+            .from('friend_requests')
+            .delete()
+            .eq('id', requestId);
+
+        if (deleteError) {
+            console.error('Error deleting request:', deleteError);
+            return fail(500, { error: 'Failed to process friend request' });
+        }
+
+        return { success: true, message: 'Friend request accepted!' };
+    },
+
+    rejectFriend: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const requestId = formData.get('request_id')?.toString();
+
+        if (!requestId) {
+            return fail(400, { error: 'Missing request ID' });
+        }
+
+        // Verify this is the recipient
+        const { error: deleteError } = await supabase
+            .from('friend_requests')
+            .delete()
+            .eq('id', requestId)
+            .eq('to_user_id', session.user.id);
+
+        if (deleteError) {
+            console.error('Error rejecting request:', deleteError);
+            return fail(500, { error: 'Failed to reject friend request' });
+        }
+
+        return { success: true, message: 'Friend request rejected' };
+    },
+
+    removeFriend: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const friendshipId = formData.get('friendship_id')?.toString();
+
+        if (!friendshipId) {
+            return fail(400, { error: 'Missing friendship ID' });
+        }
+
+        // Verify this user is part of the friendship
+        const { data: friendship, error: getError } = await supabase
+            .from('friends')
+            .select('user_id_1, user_id_2')
+            .eq('id', friendshipId)
+            .single();
+
+        if (getError || !friendship) {
+            return fail(404, { error: 'Friendship not found' });
+        }
+
+        if (friendship.user_id_1 !== session.user.id && friendship.user_id_2 !== session.user.id) {
+            return fail(403, { error: 'Unauthorized' });
+        }
+
+        // Delete the friendship
+        const { error: deleteError } = await supabase
+            .from('friends')
+            .delete()
+            .eq('id', friendshipId);
+
+        if (deleteError) {
+            console.error('Error removing friend:', deleteError);
+            return fail(500, { error: 'Failed to remove friend' });
+        }
+
+        return { success: true, message: 'Friend removed' };
+    },
+
+    cancelFriendRequest: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const requestId = formData.get('request_id')?.toString();
+
+        if (!requestId) {
+            return fail(400, { error: 'Missing request ID' });
+        }
+
+        // Delete request if sent by this user
+        const { error } = await supabase
+            .from('friend_requests')
+            .delete()
+            .eq('id', requestId)
+            .eq('from_user_id', session.user.id);
+
+        if (error) {
+            console.error('Error canceling request:', error);
+            return fail(500, { error: 'Failed to cancel friend request' });
+        }
+
+        return { success: true, message: 'Friend request canceled' };
     }
 };

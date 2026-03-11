@@ -112,7 +112,6 @@
     };
 
     let wrapper: HTMLElement;
-    let lastSave = $state<number>(0);
     let isSaving = $state(false);
 
     const saveConnections = async () => {
@@ -120,7 +119,6 @@
         try {
             // Edges are already saved as they're created, this is just to confirm
             await new Promise(resolve => setTimeout(resolve, 300));
-            lastSave = Date.now();
         } finally {
             isSaving = false;
         }
@@ -256,7 +254,6 @@
             const realEdge = json?.data?.edge;
             if (realEdge?.id) {
                 edges = edges.map((e: any) => e.id === tempId ? { ...e, id: realEdge.id } : e);
-                lastSave = Date.now(); // Update save indicator
             }
         } catch (error) {
             console.error("Failed to save edge:", error);
@@ -318,14 +315,6 @@
 >
     <!-- Action Buttons -->
     <div class="absolute top-6 right-6 z-10 flex gap-2 items-center">
-        <!-- Auto-save indicator -->
-        <div class="px-3 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-resin-forest/10 flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full {lastSave > 0 ? 'bg-green-500' : 'bg-amber-400'} animate-pulse"></div>
-            <span class="text-xs text-resin-earth/60 font-medium">
-                {lastSave > 0 ? 'Saved' : 'Auto-save'}
-            </span>
-        </div>
-
         <button
             onclick={saveConnections}
             disabled={isSaving}

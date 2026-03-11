@@ -8,6 +8,9 @@
     let tasteData = $derived(data.tasteData);
     let deviceTokens = $derived(data.deviceTokens);
     let commandConfigs = $derived(data.commandConfigs);
+    let friends = $derived(data.friends);
+    let incomingRequests = $derived(data.incomingRequests);
+    let outgoingRequests = $derived(data.outgoingRequests);
 </script>
 
-<AccountView {session} {profile} {tasteData} {deviceTokens} {commandConfigs} />
+<AccountView {session} {profile} {tasteData} {deviceTokens} {commandConfigs} {friends} {incomingRequests} {outgoingRequests} />

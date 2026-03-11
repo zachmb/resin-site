@@ -26,6 +26,30 @@
 
         // Subscribe to real-time profile updates (for iOS sync)
         const supabase = createSupabaseClient();
+        let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+        // Fallback: periodically refresh profile for stones/streak sync (every 30 seconds)
+        const setupPolling = () => {
+            pollInterval = setInterval(async () => {
+                if (supabase && profileData?.id) {
+                    try {
+                        const { data } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', profileData.id)
+                            .single();
+
+                        if (data) {
+                            // Update entire profile for consistency
+                            profileData = data;
+                        }
+                    } catch (err) {
+                        // Silent error, polling is a fallback
+                    }
+                }
+            }, 30000); // Poll every 30 seconds
+        };
+
         if (supabase && profileData?.id) {
             const subscription = supabase
                 .channel(`profiles:${profileData.id}`)
@@ -46,8 +70,12 @@
                 )
                 .subscribe();
 
+            // Set up polling as fallback
+            setupPolling();
+
             return () => {
                 supabase.removeChannel(subscription);
+                if (pollInterval) clearInterval(pollInterval);
             };
         }
     });
@@ -544,6 +572,158 @@
                 {/each}
             </div>
         </div>
+
+        <!-- Execution Insights Section -->
+        <div class="mt-16 pb-8">
+            <!-- Section Header -->
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-serif font-bold text-resin-charcoal flex items-center gap-3">
+                        <span>📊</span>
+                        Your Execution Insights
+                    </h2>
+                    <p class="text-sm text-resin-earth/60 mt-1">Real-time analytics on how you spend your focus time</p>
+                </div>
+            </div>
+
+            <!-- Primary Metrics Grid (3 columns) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Total Plans -->
+                <div class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 hover:border-resin-forest/10 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Total Plans</p>
+                            <p class="text-4xl font-bold text-resin-charcoal mt-3">{data.insights.totalCompleted}</p>
+                            <p class="text-xs text-resin-earth/50 mt-2">Completed sessions</p>
+                        </div>
+                        <div class="text-3xl">✅</div>
+                    </div>
+                </div>
+
+                <!-- Estimate Accuracy -->
+                <div class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 hover:border-resin-forest/10 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Estimate Accuracy</p>
+                            <p class="text-2xl font-bold text-resin-amber mt-3">
+                                {#if data.insights.estimateAccuracy && data.insights.estimateAccuracy.includes('spot on')}
+                                    ✓ Spot On
+                                {:else if data.insights.estimateAccuracy && data.insights.estimateAccuracy.includes('longer')}
+                                    +10-20%
+                                {:else if data.insights.estimateAccuracy && data.insights.estimateAccuracy.includes('faster')}
+                                    -10-20%
+                                {:else}
+                                    —
+                                {/if}
+                            </p>
+                            <p class="text-xs text-resin-earth/50 mt-2">vs actual time</p>
+                        </div>
+                        <div class="text-3xl">🎯</div>
+                    </div>
+                </div>
+
+                <!-- Peak Hour -->
+                <div class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 hover:border-resin-forest/10 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Peak Hour</p>
+                            <p class="text-4xl font-bold text-resin-charcoal mt-3">
+                                {#if data.insights.mostActiveHour !== null}
+                                    {String(data.insights.mostActiveHour).padStart(2, '0')}:00
+                                {:else}
+                                    —
+                                {/if}
+                            </p>
+                            <p class="text-xs text-resin-earth/50 mt-2">Most productive</p>
+                        </div>
+                        <div class="text-3xl">⏰</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Metrics Grid (2 columns) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Average Completion Time -->
+                <div class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 hover:border-resin-forest/10 transition-colors">
+                    <p class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Avg Time Per Task</p>
+                    <p class="text-3xl font-bold text-resin-charcoal mt-3">
+                        {#if data.insights.averageCompletionTime > 0}
+                            {data.insights.averageCompletionTime}m
+                        {:else}
+                            —
+                        {/if}
+                    </p>
+                    <p class="text-xs text-resin-earth/50 mt-2">Across all sessions</p>
+                </div>
+
+                <!-- Recent Trend -->
+                <div class="bg-white/50 rounded-xl p-6 border border-resin-forest/5 hover:border-resin-forest/10 transition-colors">
+                    <p class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Recent Trend</p>
+                    <p class="text-sm font-semibold text-resin-charcoal mt-3 leading-relaxed">
+                        {#if data.insights.estimationTrend && !data.insights.estimationTrend.includes('Not enough')}
+                            {data.insights.estimationTrend}
+                        {:else}
+                            <span class="text-resin-earth/50">Not enough completed sessions yet</span>
+                        {/if}
+                    </p>
+                    <p class="text-xs text-resin-earth/50 mt-2">Last 5 sessions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Taste Profile / Emotional Landscape Section -->
+        {#if Object.keys(data.insights.feelingCounts).length > 0}
+            <div class="space-y-8 mt-16 pb-8">
+                <div class="text-center space-y-2">
+                    <h2 class="text-4xl font-serif font-bold text-resin-charcoal">Your Emotional Landscape</h2>
+                    <p class="text-resin-earth/60">Feelings and reflections from your completed plans</p>
+                </div>
+
+                <!-- Feelings Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {#each Object.entries(data.insights.feelingCounts) as [feeling, count] (feeling)}
+                        <div class="bg-gradient-to-br from-resin-petrified/30 to-resin-bg/20 rounded-xl p-6 shadow-lg border border-resin-forest/10">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm font-semibold text-resin-charcoal capitalize">{feeling}</p>
+                                    <p class="text-3xl font-bold text-resin-amber mt-1">{count}</p>
+                                </div>
+                                <span class="text-2xl opacity-60">💭</span>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+
+                <!-- Enjoyed Things -->
+                {#if data.insights.enjoyedThings.length > 0}
+                    <div class="bg-white/50 backdrop-blur rounded-2xl p-6 shadow-lg border border-resin-forest/5">
+                        <h3 class="font-bold text-resin-charcoal mb-4">Things You Enjoyed</h3>
+                        <div class="space-y-2">
+                            {#each data.insights.enjoyedThings as item (item.text)}
+                                <div class="flex items-start gap-3 p-3 bg-resin-forest/5 rounded-lg">
+                                    <span class="text-resin-forest text-lg flex-shrink-0">✨</span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-resin-charcoal">{item.text}</p>
+                                        <p class="text-xs text-resin-earth/50 mt-1">{item.date}</p>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+            </div>
+        {:else}
+            <div class="space-y-8 mt-16 pb-8">
+                <div class="text-center space-y-4">
+                    <h2 class="text-3xl font-serif font-bold text-resin-charcoal">Your Emotional Landscape</h2>
+                    <p class="text-resin-earth/60">Feelings and reflections from your completed plans</p>
+                    <div class="bg-white/50 rounded-xl p-8 border border-dashed border-resin-forest/10 text-center">
+                        <p class="text-lg text-resin-charcoal font-medium">No feelings logged yet</p>
+                        <p class="text-sm text-resin-earth/60 mt-2">Reflect on a plan to see your landscape grow.</p>
+                    </div>
+                </div>
+            </div>
+        {/if}
 
         <!-- Info Footer -->
         <div class="mt-40 text-center space-y-6 opacity-40 max-w-lg mx-auto">

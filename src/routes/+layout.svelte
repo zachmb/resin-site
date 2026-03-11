@@ -131,29 +131,6 @@
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
 					</a>
-					<a
-						href="/insights"
-						class="hover:text-resin-forest transition-colors relative group"
-					>
-						Insights
-						<span
-							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
-						></span>
-					</a>
-				<a
-					href="/friends"
-					class="hover:text-resin-forest transition-colors relative group"
-				>
-					Friends
-					{#if data.pendingFriendCount > 0}
-						<span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-resin-amber text-white rounded-full">
-							{data.pendingFriendCount}
-						</span>
-					{/if}
-					<span
-						class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
-					></span>
-				</a>
 				<a
 					href="/account"
 					class="hover:text-resin-forest transition-colors relative group"
@@ -265,21 +242,6 @@
 				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
 				onclick={() => (isMobileMenuOpen = false)}>Focus</a
 			>
-			<a
-				href="/insights"
-				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
-				onclick={() => (isMobileMenuOpen = false)}>Insights</a
-			>
-			<a
-				href="/friends"
-				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
-				onclick={() => (isMobileMenuOpen = false)}>Friends
-				{#if data.pendingFriendCount > 0}
-					<span class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-resin-amber text-white rounded-full">
-						{data.pendingFriendCount}
-					</span>
-				{/if}
-			</a>
 			<a
 				href="/account"
 				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"

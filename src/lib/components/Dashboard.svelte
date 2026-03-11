@@ -65,7 +65,35 @@
 
         // Subscribe to real-time profile updates (for iOS sync)
         const supabase = createSupabaseClient();
+        let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+        // Fallback: periodically refresh profile for stones/streak sync (every 30 seconds)
+        const setupPolling = () => {
+            pollInterval = setInterval(async () => {
+                if (supabase && profile?.id) {
+                    try {
+                        const { data } = await supabase
+                            .from('profiles')
+                            .select('id, total_stones, current_streak, longest_streak')
+                            .eq('id', profile.id)
+                            .single();
+
+                        if (data) {
+                            // Only update if values changed
+                            if (data.total_stones !== syncedProfile?.total_stones ||
+                                data.current_streak !== syncedProfile?.current_streak) {
+                                syncedProfile = { ...syncedProfile, ...data };
+                            }
+                        }
+                    } catch (err) {
+                        // Silent error, polling is a fallback
+                    }
+                }
+            }, 30000); // Poll every 30 seconds
+        };
+
         if (supabase && profile?.id) {
+            // Set up real-time subscription
             const subscription = supabase
                 .channel(`profiles:${profile.id}`)
                 .on(
@@ -83,10 +111,18 @@
                         }
                     }
                 )
-                .subscribe();
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('[Dashboard] Real-time sync connected');
+                    }
+                });
+
+            // Set up polling as fallback
+            setupPolling();
 
             return () => {
                 supabase.removeChannel(subscription);
+                if (pollInterval) clearInterval(pollInterval);
             };
         }
     });

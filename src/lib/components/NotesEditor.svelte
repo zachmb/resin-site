@@ -30,7 +30,6 @@
     }>();
 
     let isSidebarOpen = $state(true);
-    let isRightPanelOpen = $state(false);
     let searchQuery = $state('');
     let activeTitle = $state<string>('');
     let lastSaved = $state<Date | null>(null);
@@ -337,27 +336,6 @@
                         bind:value={activeTitle}
                         class="flex-1 text-2xl font-serif font-bold text-resin-charcoal bg-transparent focus:outline-none placeholder:text-resin-earth/30"
                     />
-
-                    <!-- Right Panel Toggle -->
-                    <button
-                        onclick={() => isRightPanelOpen = !isRightPanelOpen}
-                        class="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg text-resin-earth/60 hover:text-resin-charcoal hover:bg-black/5 transition-all shrink-0"
-                        title="Toggle properties panel"
-                    >
-                        <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M9 4H5a2 2 0 00-2 2v14a2 2 0 002 2h4m0-16v16m0-16h10a2 2 0 012 2v14a2 2 0 01-2 2h-10"
-                            />
-                        </svg>
-                    </button>
                 </div>
             </div>
 
@@ -694,99 +672,6 @@
                         </div>
                     {/if}
                 </div>
-            </div>
-        </div>
-
-        <!-- Right Panel — Properties -->
-        <div
-            class="hidden lg:flex flex-col flex-shrink-0 w-60 bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 transition-all duration-300 {isRightPanelOpen
-                ? 'opacity-100 translate-x-0'
-                : 'opacity-0 pointer-events-none translate-x-4'}"
-        >
-            <div
-                class="p-4 border-b border-resin-forest/5 bg-white/40 flex justify-between items-center"
-            >
-                <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest">Properties</h3>
-                <button
-                    onclick={() => isRightPanelOpen = false}
-                    class="text-resin-earth/60 hover:text-resin-charcoal transition-colors"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="overflow-y-auto flex-1 p-4 space-y-4 custom-scrollbar">
-                <!-- Created -->
-                <div class="text-xs space-y-1">
-                    <div class="text-resin-earth/40 font-semibold">Created</div>
-                    <div class="text-resin-charcoal/80">
-                        {activeNote?.created_at
-                            ? new Date(activeNote.created_at).toLocaleDateString([], {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                              })
-                            : '—'}
-                    </div>
-                </div>
-
-                <!-- Modified -->
-                <div class="text-xs space-y-1">
-                    <div class="text-resin-earth/40 font-semibold">Modified</div>
-                    <div class="text-resin-charcoal/80">
-                        {lastSaved
-                            ? new Date(lastSaved).toLocaleDateString([], {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                              })
-                            : '—'}
-                    </div>
-                </div>
-
-                <!-- Word Count -->
-                <div class="text-xs space-y-1">
-                    <div class="text-resin-earth/40 font-semibold">Words</div>
-                    <div class="text-resin-charcoal/80 font-mono">{wordCount}</div>
-                </div>
-
-                <!-- Character Count -->
-                <div class="text-xs space-y-1">
-                    <div class="text-resin-earth/40 font-semibold">Characters</div>
-                    <div class="text-resin-charcoal/80 font-mono">{charCount}</div>
-                </div>
-
-                <!-- Save Status -->
-                <div class="text-xs space-y-1">
-                    <div class="text-resin-earth/40 font-semibold">Status</div>
-                    <div class="flex items-center gap-2">
-                        {#if isSaving}
-                            <span class="w-2 h-2 rounded-full bg-resin-amber animate-pulse"></span>
-                            <span class="text-resin-amber">Saving</span>
-                        {:else if lastSaved}
-                            <span class="w-2 h-2 rounded-full bg-resin-forest"></span>
-                            <span class="text-resin-forest">Saved</span>
-                        {:else}
-                            <span class="w-2 h-2 rounded-full bg-resin-earth/30"></span>
-                            <span class="text-resin-earth/60">Unsaved</span>
-                        {/if}
-                    </div>
-                </div>
-
-                <!-- Share -->
-                {#if activeNote?.id && activeNote.id !== 'mock' && friends.length > 0}
-                    <div class="text-xs space-y-2 pt-4 border-t border-resin-earth/10">
-                        <div class="text-resin-earth/40 font-semibold">Share</div>
-                        <button
-                            onclick={() => showShareModal = true}
-                            class="w-full px-3 py-2 rounded-lg bg-resin-amber/10 text-resin-amber hover:bg-resin-amber/20 transition-all text-xs font-medium border border-resin-amber/20"
-                        >
-                            Share with Friend
-                        </button>
-                    </div>
-                {/if}
             </div>
         </div>
     </div>

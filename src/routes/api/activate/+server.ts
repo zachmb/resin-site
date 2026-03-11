@@ -33,6 +33,7 @@ import {
     GOOGLE_CLIENT_SECRET,
 } from '$env/static/private'
 import { sendPush } from '$lib/apns'
+import { executeNoteCommands } from '$lib/services/commandExecutor'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -414,6 +415,9 @@ export const POST = async ({ request }: RequestEvent) => {
             ))
         }
 
+        // 9.5. Execute any claw: commands (async, non-blocking)
+        executeCommandsInBackground(user.id, raw_text, admin);
+
         // 10. Return the full result to the caller (app may still be in foreground)
         return json({
             status: 'scheduled',
@@ -440,6 +444,49 @@ export const POST = async ({ request }: RequestEvent) => {
             .eq('id', session_id)
         return json({ error: String(err) }, { status: 500 })
     }
+}
+
+/**
+ * Execute commands in the background (non-blocking)
+ */
+function executeCommandsInBackground(userId: string, noteContent: string, db: any) {
+    // Run in background - don't wait for it
+    (async () => {
+        try {
+            // Fetch user's command integrations
+            const { data: configs } = await db
+                .from('command_integrations')
+                .select('command_type, config, enabled')
+                .eq('user_id', userId)
+                .eq('enabled', true);
+
+            if (!configs || configs.length === 0) {
+                return; // No commands configured
+            }
+
+            // Execute commands
+            const results = await executeNoteCommands(noteContent, configs);
+
+            // Log results (for debugging/auditing)
+            if (results.length > 0) {
+                await db
+                    .from('command_execution_logs')
+                    .insert(
+                        results.map(r => ({
+                            user_id: userId,
+                            command: r.command,
+                            success: r.success,
+                            message: r.message,
+                            executed_at: new Date().toISOString()
+                        }))
+                    );
+            }
+
+            console.log(`[commands] Executed ${results.length} commands for user ${userId}`);
+        } catch (error) {
+            console.error('[commands] Background execution failed:', error);
+        }
+    })();
 }
 
 export const OPTIONS = async () => new Response(null, {

@@ -2,11 +2,12 @@
     import { enhance } from "$app/forms";
     import { fade } from "svelte/transition";
 
-    let { session, profile, tasteData, deviceTokens = [] } = $props<{
+    let { session, profile, tasteData, deviceTokens = [], commandConfigs = [] } = $props<{
         session: any;
         profile: any;
         tasteData?: any;
         deviceTokens?: any[];
+        commandConfigs?: any[];
     }>();
 
     let loading = $state(false);
@@ -15,6 +16,53 @@
     let activeCategory = $state<
         "profile" | "preferences" | "integrations" | "api" | "privacy" | "taste" | "devices"
     >("profile");
+
+    // Command config management
+    let editingCommandType = $state<string | null>(null);
+    let commandConfigForm = $state<Record<string, string>>({});
+
+    const commandTypes = [
+        { type: 'send-email', icon: '📧', label: 'Email', fields: ['email_address'] },
+        { type: 'webhook', icon: '🔗', label: 'Webhook', fields: ['url'] },
+        { type: 'slack', icon: '💬', label: 'Slack', fields: ['webhook_url', 'channel'] },
+        { type: 'telegram', icon: '✈️', label: 'Telegram', fields: ['bot_token', 'chat_id'] },
+        { type: 'discord', icon: '🎮', label: 'Discord', fields: ['webhook_url'] },
+        { type: 'twitter', icon: '𝕏', label: 'Post to X', fields: ['api_key', 'api_secret', 'access_token', 'access_token_secret'] },
+        { type: 'notion', icon: '📝', label: 'Notion', fields: ['api_key', 'database_id'] }
+    ];
+
+    const fieldLabels: Record<string, string> = {
+        email_address: 'Email Address',
+        url: 'Webhook URL',
+        webhook_url: 'Webhook URL',
+        channel: 'Channel',
+        bot_token: 'Bot Token',
+        chat_id: 'Chat ID',
+        api_key: 'API Key',
+        api_secret: 'API Secret',
+        access_token: 'Access Token',
+        access_token_secret: 'Access Token Secret',
+        database_id: 'Database ID'
+    };
+
+    function getCommandConfig(type: string) {
+        return commandConfigs.find((c: any) => c.command_type === type);
+    }
+
+    function startEditingCommand(type: string) {
+        editingCommandType = type;
+        const existing = getCommandConfig(type);
+        if (existing?.config) {
+            commandConfigForm = { ...existing.config };
+        } else {
+            commandConfigForm = {};
+        }
+    }
+
+    function cancelEditing() {
+        editingCommandType = null;
+        commandConfigForm = {};
+    }
 
     const handleSubmit = () => {
         loading = true;
@@ -643,6 +691,127 @@
                             >
                                 View Repository →
                             </button>
+                        </div>
+                    </section>
+
+                    <!-- Command Automations -->
+                    <section
+                        class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
+                    >
+                        <div class="mb-6">
+                            <h3
+                                class="font-semibold text-resin-charcoal mb-2"
+                            >
+                                Command Automations
+                            </h3>
+                            <p class="text-sm text-resin-earth/70 mb-4">
+                                Configure credentials for your claw: commands. When you use a command in your notes, it will automatically trigger these integrations.
+                            </p>
+                        </div>
+
+                        <div class="space-y-3">
+                            {#each commandTypes as cmdType}
+                                {@const existingConfig = getCommandConfig(cmdType.type)}
+                                <div
+                                    class="flex items-center justify-between p-3 bg-white rounded-lg border border-resin-forest/5 hover:border-resin-forest/10 transition-colors"
+                                >
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <span class="text-lg">{cmdType.icon}</span>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-semibold text-sm text-resin-charcoal">
+                                                {cmdType.label}
+                                            </div>
+                                            <div class="text-xs text-resin-earth/60">
+                                                {existingConfig ? '✓ Configured' : 'Not configured'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onclick={() => startEditingCommand(cmdType.type)}
+                                        class="px-3 py-1.5 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-colors"
+                                    >
+                                        {existingConfig ? 'Edit' : 'Setup'}
+                                    </button>
+                                </div>
+
+                                {#if editingCommandType === cmdType.type}
+                                    <div
+                                        class="p-4 bg-resin-amber/5 rounded-lg border border-resin-amber/20 mt-3 space-y-3"
+                                    >
+                                        <h4 class="font-semibold text-sm text-resin-charcoal">
+                                            Configure {cmdType.label}
+                                        </h4>
+
+                                        {#each cmdType.fields as field}
+                                            <div>
+                                                <label
+                                                    class="block text-xs font-bold text-resin-earth mb-1"
+                                                >
+                                                    {fieldLabels[field] || field}
+                                                </label>
+                                                <input
+                                                    type={field.includes('secret') || field.includes('token') || field.includes('key') ? 'password' : 'text'}
+                                                    bind:value={commandConfigForm[field]}
+                                                    placeholder="Enter {fieldLabels[field] || field}"
+                                                    class="w-full px-3 py-2 text-sm bg-white border border-resin-forest/10 rounded-lg text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/30 focus:ring-1 focus:ring-resin-forest/20"
+                                                />
+                                            </div>
+                                        {/each}
+
+                                        <div class="flex gap-2 pt-2">
+                                            <form
+                                                method="POST"
+                                                action="?/saveCommandConfig"
+                                                use:enhance={() => {
+                                                    return async ({ result }) => {
+                                                        if (result.type === "success") {
+                                                            cancelEditing();
+                                                        }
+                                                    };
+                                                }}
+                                            >
+                                                <input type="hidden" name="commandType" value={cmdType.type} />
+                                                <input type="hidden" name="config" value={JSON.stringify(commandConfigForm)} />
+                                                <button
+                                                    type="submit"
+                                                    class="flex-1 px-3 py-2 text-xs font-bold text-white bg-resin-forest hover:bg-resin-forest/90 rounded-lg transition-colors"
+                                                >
+                                                    Save
+                                                </button>
+                                            </form>
+                                            <button
+                                                type="button"
+                                                onclick={cancelEditing}
+                                                class="flex-1 px-3 py-2 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            {#if getCommandConfig(cmdType.type)}
+                                                <form
+                                                    method="POST"
+                                                    action="?/deleteCommandConfig"
+                                                    use:enhance={() => {
+                                                        return async ({ result }) => {
+                                                            if (result.type === "success") {
+                                                                cancelEditing();
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    <input type="hidden" name="configId" value={getCommandConfig(cmdType.type)?.id || ''} />
+                                                    <button
+                                                        type="submit"
+                                                        class="px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                {/if}
+                            {/each}
                         </div>
                     </section>
                 </div>

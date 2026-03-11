@@ -7,6 +7,7 @@
     let profile = $derived(data.profile);
     let tasteData = $derived(data.tasteData);
     let deviceTokens = $derived(data.deviceTokens);
+    let commandConfigs = $derived(data.commandConfigs);
 </script>
 
-<AccountView {session} {profile} {tasteData} {deviceTokens} />
+<AccountView {session} {profile} {tasteData} {deviceTokens} {commandConfigs} />

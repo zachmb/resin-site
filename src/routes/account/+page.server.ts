@@ -54,9 +54,17 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 		.eq('user_id', session.user.id)
 		.order('updated_at', { ascending: false });
 
+	// Load command integrations
+	const { data: commandConfigs } = await supabase
+		.from('command_integrations')
+		.select('id, command_type, config, enabled')
+		.eq('user_id', session.user.id)
+		.order('created_at', { ascending: true });
+
 	return {
 		profile,
 		deviceTokens: deviceTokens || [],
+		commandConfigs: commandConfigs || [],
 		tasteData: {
 			feelingCounts,
 			enjoyedThings,
@@ -152,6 +160,88 @@ export const actions: Actions = {
             .eq('device_token', token);
 
         if (error) return fail(500, { error: 'Failed to remove device' });
+        return { success: true };
+    },
+
+    saveCommandConfig: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const commandType = formData.get('commandType')?.toString();
+        const configJson = formData.get('config')?.toString();
+
+        if (!commandType || !configJson) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        try {
+            const config = JSON.parse(configJson);
+
+            const { error } = await supabase
+                .from('command_integrations')
+                .upsert({
+                    user_id: session.user.id,
+                    command_type: commandType,
+                    config,
+                    enabled: true,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'user_id,command_type'
+                });
+
+            if (error) {
+                console.error('Error saving command config:', error);
+                return fail(500, { error: 'Failed to save configuration' });
+            }
+
+            return { success: true };
+        } catch (e) {
+            console.error('Error parsing config:', e);
+            return fail(400, { error: 'Invalid configuration format' });
+        }
+    },
+
+    toggleCommandConfig: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const configId = formData.get('configId')?.toString();
+        const enabled = formData.get('enabled') === 'true';
+
+        if (!configId) {
+            return fail(400, { error: 'Missing config ID' });
+        }
+
+        const { error } = await supabase
+            .from('command_integrations')
+            .update({ enabled })
+            .eq('id', configId)
+            .eq('user_id', session.user.id);
+
+        if (error) return fail(500, { error: 'Failed to update configuration' });
+        return { success: true };
+    },
+
+    deleteCommandConfig: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const configId = formData.get('configId')?.toString();
+
+        if (!configId) {
+            return fail(400, { error: 'Missing config ID' });
+        }
+
+        const { error } = await supabase
+            .from('command_integrations')
+            .delete()
+            .eq('id', configId)
+            .eq('user_id', session.user.id);
+
+        if (error) return fail(500, { error: 'Failed to delete configuration' });
         return { success: true };
     }
 };

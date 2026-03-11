@@ -12,6 +12,9 @@
     let googleSignInError = $state<string | null>(null);
     let activatingId = $state<string | null>(null);
     let successId = $state<string | null>(null);
+    let showInsights = $state(false);
+    let insightsLoading = $state(false);
+    let insightsData = $state<any>(null);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("en-US", {
@@ -378,6 +381,42 @@
                                 </button>
                             </form>
                         {/if}
+                        {#if selectedSession.status === 'completed'}
+                            <button
+                                onclick={async () => {
+                                    if (insightsLoading || showInsights) return;
+                                    insightsLoading = true;
+                                    try {
+                                        const res = await fetch('/api/insights/generate', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ sessionId: selectedSession.id })
+                                        });
+                                        if (res.ok) {
+                                            insightsData = await res.json();
+                                            showInsights = true;
+                                        }
+                                    } finally {
+                                        insightsLoading = false;
+                                    }
+                                }}
+                                disabled={insightsLoading}
+                                class="px-4 py-2.5 bg-resin-amber/10 border border-resin-amber/30 text-resin-amber font-semibold rounded-xl hover:bg-resin-amber/20 transition-all text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {#if insightsLoading}
+                                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    <span>Loading...</span>
+                                {:else}
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span>Insights</span>
+                                {/if}
+                            </button>
+                        {/if}
                     </div>
                 </div>
             {:else}
@@ -454,6 +493,91 @@
                 <p class="text-xs text-resin-earth/50 text-center">
                     We use your Google Calendar to find the best time to schedule your focus sessions.
                 </p>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Insights Modal -->
+    {#if showInsights && insightsData}
+        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 space-y-6">
+                <!-- Header -->
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-resin-charcoal flex items-center gap-2">
+                            <svg class="w-6 h-6 text-resin-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Session Insights
+                        </h2>
+                        <p class="text-sm text-resin-earth/60 mt-1">{selectedSession?.display_title}</p>
+                    </div>
+                    <button
+                        onclick={() => showInsights = false}
+                        aria-label="Close insights"
+                        class="text-resin-earth/40 hover:text-resin-earth/60 transition-colors"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Metrics -->
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="bg-resin-forest/5 rounded-lg p-4">
+                        <p class="text-xs text-resin-earth/60 font-semibold">Est. Time</p>
+                        <p class="text-2xl font-bold text-resin-charcoal">{insightsData.insights.totalEstimated}m</p>
+                    </div>
+                    <div class="bg-resin-amber/5 rounded-lg p-4">
+                        <p class="text-xs text-resin-earth/60 font-semibold">Actual</p>
+                        <p class="text-2xl font-bold text-resin-amber">{insightsData.insights.totalActual}m</p>
+                    </div>
+                    <div class="bg-resin-forest/5 rounded-lg p-4">
+                        <p class="text-xs text-resin-earth/60 font-semibold">Completed</p>
+                        <p class="text-2xl font-bold text-resin-charcoal">{insightsData.insights.completedTasks}/{insightsData.insights.taskCount}</p>
+                    </div>
+                    <div class="bg-blue-100/50 rounded-lg p-4">
+                        <p class="text-xs text-resin-earth/60 font-semibold">Accuracy</p>
+                        <p class="text-2xl font-bold text-blue-600">{insightsData.insights.accuracy}%</p>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                {#if insightsData.aiInsights}
+                    <div class="bg-gradient-to-br from-resin-amber/10 to-orange-100/20 rounded-xl p-6 border border-resin-amber/20">
+                        <h3 class="font-bold text-resin-charcoal mb-3 flex items-center gap-2">
+                            <span>💡</span>
+                            AI Feedback
+                        </h3>
+                        <div class="text-sm text-resin-charcoal/80 whitespace-pre-wrap leading-relaxed font-light">
+                            {insightsData.aiInsights}
+                        </div>
+                    </div>
+                {/if}
+
+                <!-- Close Button -->
+                <div class="flex gap-3">
+                    <button
+                        onclick={() => showInsights = false}
+                        class="flex-1 px-4 py-3 border border-resin-earth/20 rounded-lg text-resin-charcoal font-semibold hover:bg-resin-earth/5 transition-colors"
+                    >
+                        Done
+                    </button>
+                    <button
+                        onclick={() => {
+                            if (typeof window !== 'undefined') {
+                                window.location.href = '/insights';
+                            }
+                        }}
+                        class="flex-1 px-4 py-3 bg-resin-forest/10 border border-resin-forest/20 rounded-lg text-resin-forest font-semibold hover:bg-resin-forest/20 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <span>View All Stats</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     {/if}

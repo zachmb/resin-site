@@ -8,6 +8,12 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         throw redirect(303, '/login?next=/amber');
     }
 
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
     const { data: notes } = await supabase
         .from('amber_sessions')
         .select(`
@@ -37,6 +43,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         .order('created_at', { ascending: false });
 
     return {
+        profile,
         notes: normalizedNotes,
         jointPlans: jointPlans || []
     };

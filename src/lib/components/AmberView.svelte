@@ -80,6 +80,14 @@
             </h1>
             <p class="text-resin-earth/70 mt-1">{formatDate(today)}</p>
         </div>
+        {#if profile?.current_streak && profile.current_streak > 1}
+            <div class="flex items-center gap-2 px-3 py-2 bg-orange-100/50 rounded-lg">
+                <svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M8.128 19.573a1 1 0 001.744 0l2.082-5.007h5.277a1 1 0 00.588-1.81l-4.28-3.11 1.602-4.8a1 1 0 00-1.744-1.14L11.882 9H7.118L5.132 3.706a1 1 0 00-1.744 1.14l1.602 4.8-4.28 3.11a1 1 0 00.588 1.81h5.277l2.082 5.007z" />
+                </svg>
+                <span class="font-bold text-orange-700">{profile.current_streak}</span>
+            </div>
+        {/if}
     </div>
 
     <!-- Two-Panel Layout -->

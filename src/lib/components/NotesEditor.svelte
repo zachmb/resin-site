@@ -227,16 +227,11 @@
                                     : "No content"}
                             </p>
                         </div>
-                        <div class="flex justify-between items-center mt-2 gap-2">
-                            <span
-                                class="text-[10px] text-resin-earth/50 whitespace-nowrap"
-                            >
-                                {formatTimeSince(new Date(note.created_at))}
-                            </span>
+                        <div class="mt-2 text-right">
                             <span
                                 class="text-[10px] text-resin-earth/40 font-medium bg-resin-earth/5 px-2 py-0.5 rounded"
                             >
-                                {noteWords} w
+                                {formatTimeSince(new Date(note.created_at))}
                             </span>
                         </div>
                     </button>

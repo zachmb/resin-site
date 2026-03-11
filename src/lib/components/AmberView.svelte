@@ -15,6 +15,11 @@
     let showInsights = $state(false);
     let insightsLoading = $state(false);
     let insightsData = $state<any>(null);
+    let editingTaskId = $state<string | null>(null);
+    let editingTitle = $state('');
+    let editingDuration = $state(0);
+    let editingDescription = $state('');
+    let savingTask = $state(false);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("en-US", {
@@ -221,25 +226,115 @@
                                 Plan Steps ({selectedSession.amber_tasks.length})
                             </h3>
                             <div class="space-y-2">
-                                {#each selectedSession.amber_tasks as task, i}
-                                    <div class="flex gap-3 p-3 bg-white/50 rounded-lg border border-resin-forest/5">
-                                        <div
-                                            class="w-6 h-6 rounded-full bg-resin-forest/10 flex items-center justify-center text-xs font-bold text-resin-forest flex-shrink-0 mt-0.5"
-                                        >
-                                            {i + 1}
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center justify-between gap-2 mb-1">
-                                                <span class="text-sm font-semibold text-resin-charcoal">{task.title}</span>
-                                                <span class="text-xs text-resin-earth/50 font-mono">{task.estimated_minutes}m</span>
+                                {#each selectedSession.amber_tasks as task, i (task.id)}
+                                    {#if editingTaskId === task.id}
+                                        <!-- Edit Mode -->
+                                        <div class="space-y-3 p-4 bg-resin-forest/5 rounded-lg border border-resin-forest/20">
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Title</label>
+                                                <input
+                                                    type="text"
+                                                    bind:value={editingTitle}
+                                                    class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm font-semibold text-resin-charcoal focus:outline-none focus:border-resin-forest/30"
+                                                />
                                             </div>
-                                            {#if task.requires_focus}
-                                                <span class="inline-block text-[9px] font-bold text-resin-amber uppercase tracking-widest px-2 py-0.5 rounded bg-resin-amber/10 border border-resin-amber/20">
-                                                    🛡 Shield
-                                                </span>
-                                            {/if}
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Description (Optional)</label>
+                                                <textarea
+                                                    bind:value={editingDescription}
+                                                    class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm text-resin-charcoal focus:outline-none focus:border-resin-forest/30 resize-none"
+                                                    rows="2"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Duration (minutes)</label>
+                                                <div class="flex items-center gap-3 mt-1">
+                                                    <input
+                                                        type="range"
+                                                        min="5"
+                                                        max="240"
+                                                        step="5"
+                                                        bind:value={editingDuration}
+                                                        class="flex-1"
+                                                    />
+                                                    <span class="text-sm font-bold text-resin-charcoal w-12 text-right">{editingDuration}m</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2 pt-2">
+                                                <button
+                                                    onclick={async () => {
+                                                        savingTask = true;
+                                                        try {
+                                                            const formData = new FormData();
+                                                            formData.append('sessionId', selectedSession.id);
+                                                            formData.append('taskId', task.id);
+                                                            formData.append('title', editingTitle);
+                                                            formData.append('description', editingDescription);
+                                                            formData.append('estimatedMinutes', editingDuration.toString());
+
+                                                            const res = await fetch('?/updateTask', {
+                                                                method: 'POST',
+                                                                body: formData
+                                                            });
+
+                                                            if (res.ok) {
+                                                                task.title = editingTitle;
+                                                                task.description = editingDescription;
+                                                                task.estimated_minutes = editingDuration;
+                                                                editingTaskId = null;
+                                                            }
+                                                        } finally {
+                                                            savingTask = false;
+                                                        }
+                                                    }}
+                                                    disabled={savingTask}
+                                                    class="flex-1 px-3 py-2 bg-resin-forest text-white text-xs font-bold rounded-lg hover:bg-resin-charcoal transition-colors disabled:opacity-50"
+                                                >
+                                                    {savingTask ? 'Saving...' : 'Save'}
+                                                </button>
+                                                <button
+                                                    onclick={() => editingTaskId = null}
+                                                    class="flex-1 px-3 py-2 border border-resin-earth/20 text-resin-earth/60 text-xs font-bold rounded-lg hover:bg-resin-earth/5 transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    {:else}
+                                        <!-- View Mode -->
+                                        <div class="flex gap-3 p-3 bg-white/50 rounded-lg border border-resin-forest/5 group hover:border-resin-forest/10 transition-colors">
+                                            <div
+                                                class="w-6 h-6 rounded-full bg-resin-forest/10 flex items-center justify-center text-xs font-bold text-resin-forest flex-shrink-0 mt-0.5"
+                                            >
+                                                {i + 1}
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center justify-between gap-2 mb-1">
+                                                    <span class="text-sm font-semibold text-resin-charcoal">{task.title}</span>
+                                                    <span class="text-xs text-resin-earth/50 font-mono">{task.estimated_minutes}m</span>
+                                                </div>
+                                                {#if task.description}
+                                                    <p class="text-xs text-resin-earth/60 mb-1">{task.description}</p>
+                                                {/if}
+                                                {#if task.requires_focus}
+                                                    <span class="inline-block text-[9px] font-bold text-resin-amber uppercase tracking-widest px-2 py-0.5 rounded bg-resin-amber/10 border border-resin-amber/20">
+                                                        🛡 Shield
+                                                    </span>
+                                                {/if}
+                                            </div>
+                                            <button
+                                                onclick={() => {
+                                                    editingTaskId = task.id;
+                                                    editingTitle = task.title;
+                                                    editingDescription = task.description || '';
+                                                    editingDuration = task.estimated_minutes;
+                                                }}
+                                                class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-resin-earth/50 hover:text-resin-charcoal hover:bg-black/5 rounded text-xs font-bold"
+                                            >
+                                                ✎ Edit
+                                            </button>
+                                        </div>
+                                    {/if}
                                 {/each}
                             </div>
                         </section>

@@ -291,5 +291,40 @@ export const actions: Actions = {
         }
 
         return { success: true };
+    },
+
+    updateTask: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+        const taskId = data.get('taskId')?.toString();
+        const title = data.get('title')?.toString();
+        const description = data.get('description')?.toString();
+        const estimatedMinutes = parseInt(data.get('estimatedMinutes')?.toString() || '0', 10);
+
+        if (!sessionId || !taskId || !title) {
+            return fail(400, { error: 'Missing required fields' });
+        }
+
+        // Update the amber task
+        const { error } = await supabase
+            .from('amber_tasks')
+            .update({
+                title,
+                description: description || null,
+                estimated_minutes: estimatedMinutes,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', taskId)
+            .eq('amber_session_id', sessionId);
+
+        if (error) {
+            console.error('Error updating task:', error);
+            return fail(500, { error: 'Failed to update task' });
+        }
+
+        return { success: true };
     }
 };

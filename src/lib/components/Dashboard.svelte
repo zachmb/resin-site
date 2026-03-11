@@ -1,7 +1,9 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { fade } from "svelte/transition";
     import { enhance } from "$app/forms";
     import { goto } from "$app/navigation";
+    import { createSupabaseClient } from "$lib/supabase";
     import FocusControl from "./FocusControl.svelte";
     import ResinShieldCard from "./ResinShieldCard.svelte";
 
@@ -48,11 +50,46 @@
         Sun: false,
     });
 
+    // Profile sync state
+    let syncedProfile = $state<any>(null);
+
     // Onboarding banner
     let showShieldModal = $state(false);
     let showBanner = $derived(
         isNewUser && typeof window !== 'undefined' && !localStorage.getItem('resin_onboarded')
     );
+
+    onMount(() => {
+        // Initialize with current profile
+        syncedProfile = profile;
+
+        // Subscribe to real-time profile updates (for iOS sync)
+        const supabase = createSupabaseClient();
+        if (supabase && profile?.id) {
+            const subscription = supabase
+                .channel(`profiles:${profile.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'profiles',
+                        filter: `id=eq.${profile.id}`
+                    },
+                    (payload) => {
+                        // Update profile data when iOS syncs (stones, streak, etc)
+                        if (payload.new) {
+                            syncedProfile = payload.new;
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(subscription);
+            };
+        }
+    });
 
     const dismissBanner = async () => {
         localStorage.setItem('resin_onboarded', '1');
@@ -167,7 +204,7 @@
                     Stones
                 </p>
                 <p class="text-2xl font-bold text-resin-charcoal">
-                    {profile?.total_stones || profile?.stones || 0}
+                    {syncedProfile?.total_stones || syncedProfile?.stones || 0}
                 </p>
             </a>
             <div class="w-px h-8 bg-resin-forest/10"></div>
@@ -178,7 +215,7 @@
                     Streak
                 </p>
                 <p class="text-2xl font-bold text-resin-charcoal">
-                    {profile?.current_streak || 0}d
+                    {syncedProfile?.current_streak || 0}d
                 </p>
             </a>
             {#if weeklyStats?.avgRating > 0}
@@ -757,7 +794,7 @@
                     >
                         <p class="text-xs text-resin-earth/60 mb-1">Stones</p>
                         <p class="text-2xl font-bold text-resin-forest">
-                            {profile?.total_stones || profile?.stones || 0}
+                            {syncedProfile?.total_stones || syncedProfile?.stones || 0}
                         </p>
                     </div>
                     <div
@@ -765,7 +802,7 @@
                     >
                         <p class="text-xs text-resin-earth/60 mb-1">Streak</p>
                         <p class="text-2xl font-bold text-resin-amber">
-                            {profile?.current_streak || 0}d
+                            {syncedProfile?.current_streak || 0}d
                         </p>
                     </div>
                     {#if weeklyStats?.avgRating > 0}

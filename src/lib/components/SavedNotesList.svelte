@@ -8,12 +8,17 @@
     }>();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-        });
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (seconds < 60) return "just now";
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+        if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+        if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+        return `${Math.floor(seconds / 31536000)}y ago`;
     };
 
     const getInitial = (ownerEmail: string): string => {
@@ -108,17 +113,19 @@
                                     class="text-xs font-semibold text-resin-earth/60"
                                     >{formatDate(note.created_at)}</span
                                 >
-                                {#if note.status}
-                                    <span
-                                        class="text-xs font-semibold px-2 py-1 rounded-full {note.status === 'scheduled'
-                                            ? 'bg-resin-amber/20 text-resin-amber'
-                                            : note.status === 'completed'
-                                                ? 'bg-resin-forest/20 text-resin-forest'
-                                                : 'bg-resin-earth/20 text-resin-earth'}"
-                                    >
-                                        {note.status}
-                                    </span>
-                                {/if}
+                                <div class="flex items-center gap-2">
+                                    {#if note.status}
+                                        <span
+                                            class="text-xs font-semibold px-2 py-1 rounded-full {note.status === 'scheduled'
+                                                ? 'bg-resin-amber/20 text-resin-amber'
+                                                : note.status === 'completed'
+                                                    ? 'bg-resin-forest/20 text-resin-forest'
+                                                    : 'bg-resin-earth/20 text-resin-earth'}"
+                                        >
+                                            {note.status}
+                                        </span>
+                                    {/if}
+                                </div>
                             </div>
                         </button>
                     </div>

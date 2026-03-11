@@ -4,8 +4,8 @@
     import { fade } from "svelte/transition";
 
     let { data } = $props();
-    let notes = $derived($page.data.notes || []);
-    let profile = $derived($page.data.profile || null);
+    let notes = $derived(data.notes || []);
+    let profile = $derived(data.profile || null);
     let connections = $derived(data.connections || {});
 
     let toastMessage = $state("");

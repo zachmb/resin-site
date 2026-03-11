@@ -5,6 +5,24 @@
     let { data } = $props();
     let { profile, sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession } = $derived(data);
 
+    let recentReward = $state<{ text: string; icon: string; timestamp: number } | null>(null);
+
+    onMount(() => {
+        // Load most recent reward from localStorage
+        const stored = localStorage.getItem('recentReward');
+        if (stored) {
+            try {
+                const reward = JSON.parse(stored);
+                // Only show if less than 5 minutes old
+                if (Date.now() - reward.timestamp < 300000) {
+                    recentReward = reward;
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+    });
+
     // Tree Species Logic (Synced with iOS App)
     const treeSpecies = [
         {
@@ -120,6 +138,34 @@
             </p>
         </div>
 
+        <!-- Recent Reward Display -->
+        {#if recentReward}
+            <div
+                class="mb-12 max-w-2xl mx-auto"
+                in:fly={{ y: -10, duration: 300 }}
+                out:fly={{ y: -10, duration: 200 }}
+            >
+                <div class="glass-card rounded-2xl p-6 bg-gradient-to-r from-resin-amber/10 via-transparent to-resin-amber/5 border border-resin-amber/30 flex items-center justify-between group hover:scale-[1.02] transition-transform duration-300">
+                    <div class="flex items-center gap-4">
+                        <div class="text-5xl animate-bounce">{recentReward.icon}</div>
+                        <div>
+                            <p class="text-sm font-bold text-resin-charcoal">{recentReward.text}</p>
+                            <p class="text-xs text-resin-earth/50 mt-1">Just now · Check the forest to see your rewards!</p>
+                        </div>
+                    </div>
+                    <button
+                        onclick={() => (recentReward = null)}
+                        class="text-resin-earth/40 hover:text-resin-earth/60 transition-colors flex-shrink-0"
+                        title="Dismiss reward notification"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        {/if}
+
         <!-- Stats Cards -->
         <div
             class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl mb-24"
@@ -197,38 +243,35 @@
         <!-- How Stones Work -->
         <div class="w-full max-w-4xl mb-24">
             <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-8">
-                How You Earn Stones
+                How Stones Are Earned
             </h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
-                    <span class="text-2xl">📝</span>
-                    <p class="text-xs font-bold text-resin-charcoal">Save Notes</p>
-                    <p class="text-xs text-resin-amber font-bold">+1 Stone</p>
+            <div class="glass-card rounded-2xl p-6 space-y-4 border border-white/10">
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">✓</span>
+                    <div>
+                        <p class="text-sm font-bold text-resin-charcoal">Complete an Activated plan</p>
+                        <p class="text-xs text-resin-amber font-bold">+5 stones</p>
+                    </div>
                 </div>
-                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
-                    <span class="text-2xl">📸</span>
-                    <p class="text-xs font-bold text-resin-charcoal">Scan Photo</p>
-                    <p class="text-xs text-resin-amber font-bold">+1 Stone</p>
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">📸</span>
+                    <div>
+                        <p class="text-sm font-bold text-resin-charcoal">Pass a photo verification</p>
+                        <p class="text-xs text-resin-amber font-bold">+3 stones</p>
+                    </div>
                 </div>
-                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
-                    <span class="text-2xl">🎯</span>
-                    <p class="text-xs font-bold text-resin-charcoal">Complete Task</p>
-                    <p class="text-xs text-resin-amber font-bold">+5 Stones</p>
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">🔥</span>
+                    <div>
+                        <p class="text-sm font-bold text-resin-charcoal">Maintain a daily streak</p>
+                        <p class="text-xs text-resin-amber font-bold">+1 stone/day</p>
+                    </div>
                 </div>
-                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
-                    <span class="text-2xl">💭</span>
-                    <p class="text-xs font-bold text-resin-charcoal">Add Reflection</p>
-                    <p class="text-xs text-resin-amber font-bold">+50 Stones</p>
-                </div>
-                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
-                    <span class="text-2xl">👥</span>
-                    <p class="text-xs font-bold text-resin-charcoal">Share Session</p>
-                    <p class="text-xs text-resin-amber font-bold">+5 Stones</p>
-                </div>
-                <div class="glass-card rounded-2xl p-4 text-center space-y-2 border border-white/10">
-                    <span class="text-2xl">🔒</span>
-                    <p class="text-xs font-bold text-resin-charcoal">Use Shield</p>
-                    <p class="text-xs text-resin-amber font-bold">+5 Stones</p>
+                <div class="flex items-start gap-3">
+                    <span class="text-xl">🌲</span>
+                    <div>
+                        <p class="text-sm font-bold text-resin-charcoal">Each session plants a tree in your grove</p>
+                    </div>
                 </div>
             </div>
         </div>

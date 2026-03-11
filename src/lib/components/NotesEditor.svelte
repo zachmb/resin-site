@@ -1,5 +1,8 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { parseCommands } from "$lib/utils/commandParser";
+    import CommandPalette from "./CommandPalette.svelte";
+    import NoteAnnotationOverlay from "./NoteAnnotationOverlay.svelte";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
 
@@ -36,6 +39,8 @@
     let saveTimeout: ReturnType<typeof setTimeout>;
     let showShareModal = $state(false);
     let selectedShareFriend: any = $state(null);
+    let showDrawingCanvas = $state(false);
+    let lastRewardTime = $state<number>(0);
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
@@ -64,6 +69,10 @@
 
     const charCount = $derived(
         (activeNote?.content || '').length
+    );
+
+    const parsedCommands = $derived(
+        parseCommands(activeNote?.content || '')
     );
 
     const autoSave = (content: string) => {
@@ -375,6 +384,13 @@
                 }}
             ></textarea>
 
+            <!-- Automation Commands Section -->
+            {#if parsedCommands.hasCommands}
+                <div class="px-6 sm:px-10 py-4 border-t border-blue-100">
+                    <CommandPalette commands={parsedCommands.commands} />
+                </div>
+            {/if}
+
             <!-- Connected Notes Section -->
             {#if activeNote?.id && connections[activeNote.id]}
                 <div class="px-6 sm:px-10 py-4 border-t border-resin-forest/5 bg-white/20">
@@ -421,7 +437,21 @@
                                     result.type === "success" &&
                                     result.data?.success
                                 ) {
-                                    showToast("Note saved!");
+                                    // Show stone reward on successful save with 60s debouncing
+                                    const now = Date.now();
+                                    if (now - lastRewardTime > 60000) {
+                                        showToast("⭐ Earned +3 Stones for saving!");
+                                        lastRewardTime = now;
+                                        // Store reward to localStorage for forest page display
+                                        localStorage.setItem('recentReward', JSON.stringify({
+                                            text: 'Earned +3 Stones for saving!',
+                                            icon: '⭐',
+                                            timestamp: now
+                                        }));
+                                    } else {
+                                        showToast("Note saved!");
+                                    }
+
                                     onSaveSuccess({
                                         note: result.data.note,
                                         isNew: result.data.isNew,
@@ -548,60 +578,69 @@
                         </div>
                     {:else}
                         <!-- Activate (Draft/Default) -->
-                        <form
-                            method="POST"
-                            action="?/activateNote"
-                            class="flex-1 w-full"
-                            use:enhance={() => {
-                                return async ({ result, update }) => {
-                                    if (result.type === "success") {
-                                        showToast(
-                                            result.data?.message ||
-                                                "DeepSeek activated! Plan generated and scheduled.",
-                                        );
-                                    } else if (result.type === "failure") {
-                                        showToast(
-                                            result.data?.error ||
-                                                "Failed to activate. Please try again.",
-                                        );
-                                    } else if (result.type === "error") {
-                                        showToast(
-                                            result.error?.message ||
-                                                "An error occurred.",
-                                        );
-                                    }
-                                    await update();
-                                };
-                            }}
-                        >
-                            <input type="hidden" name="id" value={activeNote?.id} />
-                            <input
-                                type="hidden"
-                                name="noteContent"
-                                value={activeNote?.content}
-                            />
-                            <button
-                                type="submit"
-                                class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
-                                bg-[#2B4634] text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center
-                                disabled:opacity-45 disabled:cursor-not-allowed"
-                                disabled={!(activeNote?.content || "").trim()}
+                        <div class="flex-1 w-full flex flex-col gap-2">
+                            <form
+                                method="POST"
+                                action="?/activateNote"
+                                class="w-full"
+                                use:enhance={() => {
+                                    return async ({ result, update }) => {
+                                        if (result.type === "success") {
+                                            showToast(
+                                                result.data?.message ||
+                                                    "DeepSeek activated! Plan generated and scheduled.",
+                                            );
+                                            // Store reward to localStorage for forest page display
+                                            const now = Date.now();
+                                            localStorage.setItem('recentReward', JSON.stringify({
+                                                text: 'Plan activated! DeepSeek generating...',
+                                                icon: '🚀',
+                                                timestamp: now
+                                            }));
+                                        } else if (result.type === "failure") {
+                                            showToast(
+                                                result.data?.error ||
+                                                    "Failed to activate. Please try again.",
+                                            );
+                                        } else if (result.type === "error") {
+                                            showToast(
+                                                result.error?.message ||
+                                                    "An error occurred.",
+                                            );
+                                        }
+                                        await update();
+                                    };
+                                }}
                             >
-                                <svg
-                                    class="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    stroke-width="2.5"
-                                ><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                                    ></path></svg
+                                <input type="hidden" name="id" value={activeNote?.id} />
+                                <input
+                                    type="hidden"
+                                    name="noteContent"
+                                    value={activeNote?.content}
+                                />
+                                <button
+                                    type="submit"
+                                    class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
+                                    bg-[#2B4634] text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center
+                                    disabled:opacity-45 disabled:cursor-not-allowed"
+                                    disabled={!(activeNote?.content || "").trim()}
                                 >
-                                Activate
-                            </button>
-                        </form>
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        stroke-width="2.5"
+                                    ><path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                                        ></path></svg
+                                    >
+                                    Activate
+                                </button>
+                            </form>
+                        </div>
                     {/if}
                 </div>
             </div>
@@ -685,6 +724,22 @@
                     </div>
                 </div>
 
+                <!-- Annotate -->
+                {#if activeNote?.id && activeNote.id !== 'mock'}
+                    <div class="text-xs space-y-2 pt-4 border-t border-resin-earth/10">
+                        <div class="text-resin-earth/40 font-semibold">Annotate</div>
+                        <button
+                            onclick={() => showDrawingCanvas = true}
+                            class="w-full px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all text-xs font-medium border border-blue-200 flex items-center justify-center gap-2"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0M11 4a2 2 0 00-4 0m6 0v6a2 2 0 01-4 0V4m0 0h4v6m0 0H7" />
+                            </svg>
+                            Draw or Highlight
+                        </button>
+                    </div>
+                {/if}
+
                 <!-- Share -->
                 {#if activeNote?.id && activeNote.id !== 'mock' && friends.length > 0}
                     <div class="text-xs space-y-2 pt-4 border-t border-resin-earth/10">
@@ -745,4 +800,25 @@
             </button>
         </div>
     </div>
+{/if}
+
+<!-- Annotation Overlay -->
+{#if showDrawingCanvas}
+    <NoteAnnotationOverlay
+        noteHeight={500}
+        onSave={(dataUrl) => {
+            // Save annotation
+            const formData = new FormData();
+            formData.append('noteId', activeNote.id);
+            formData.append('annotationData', dataUrl);
+            fetch('?/saveAnnotation', {
+                method: 'POST',
+                body: formData
+            }).then(() => {
+                showToast('Annotation saved!');
+                showDrawingCanvas = false;
+            });
+        }}
+        onDismiss={() => (showDrawingCanvas = false)}
+    />
 {/if}

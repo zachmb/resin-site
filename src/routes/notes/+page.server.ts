@@ -87,10 +87,17 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
 
+    // Fetch user profile for scheduling preferences
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
     // Fetch notes shared with me
     const { data: sharedNotes } = await supabase
         .from('shared_notes')
-        .select('note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id)')
+        .select('note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id, created_at)')
         .eq('shared_with_id', session.user.id);
 
     const normalizedSharedNotes = (sharedNotes || []).map((share: any) => {
@@ -102,7 +109,8 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
             content: note.raw_text ?? '',
             status: note.status,
             owner_id: share.owner_id,
-            shared_note_id: share.id
+            shared_note_id: share.id,
+            created_at: note.created_at
         };
     });
 
@@ -136,15 +144,30 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
         .select('*')
         .eq('user_id', session.user.id);
 
-    // Fetch user's own notes for building connection metadata
-    const { data: userNotes } = await supabase
+    // Fetch user's own notes for building connection metadata AND for display
+    const { data: userNotes, error: notesError } = await supabase
         .from('amber_sessions')
-        .select('id, display_title, title, raw_text, content')
-        .eq('user_id', session.user.id);
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
 
-    const allNotes = (userNotes || []).map((n: any) => ({
+    if (notesError) {
+        console.error('[notes] Error fetching user notes:', notesError);
+    }
+
+    // Normalize user's own notes for display
+    const normalizedUserNotes = (userNotes || []).map((n: any) => ({
         id: n.id,
-        title: n.display_title || n.title || 'Untitled'
+        title: n.display_title || n.title || 'Untitled',
+        content: n.raw_text || n.content || '',
+        created_at: n.created_at,
+        status: n.status
+    }));
+
+    // Build allNotes for connection metadata (just title, used for mapping)
+    const allNotes = normalizedUserNotes.map(n => ({
+        id: n.id,
+        title: n.title
     }));
 
     // Build connection metadata
@@ -170,9 +193,11 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
     }
 
     return {
+        notes: normalizedUserNotes,
         sharedWithMe: normalizedSharedNotes,
         friends,
-        connections
+        connections,
+        profile
     };
 };
 

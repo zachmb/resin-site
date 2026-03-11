@@ -10,6 +10,7 @@
     let isSubmitting = $state(false);
     let showOptions = $state(false);
     let successMessage = $state("");
+    let syncCheckTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const startFocus = async () => {
         if (!title.trim() || isSubmitting) return;
@@ -30,6 +31,22 @@
                 successMessage = "Focus session sent to phone!";
                 title = "";
                 if (onSessionStarted) onSessionStarted(data.session);
+
+                // Poll sync status after 5 seconds
+                if (data.session?.id) {
+                    if (syncCheckTimeout) clearTimeout(syncCheckTimeout);
+                    syncCheckTimeout = setTimeout(async () => {
+                        try {
+                            const syncRes = await fetch(`/api/focus/sync-status?id=${data.session.id}`);
+                            const syncData = await syncRes.json();
+                            // Status will update reactively once component refetches
+                            if (onSessionStarted) onSessionStarted({ ...data.session, device_scheduled: syncData.device_scheduled });
+                        } catch (err) {
+                            console.error('Sync check failed:', err);
+                        }
+                    }, 5000);
+                }
+
                 setTimeout(() => {
                     successMessage = "";
                 }, 3000);

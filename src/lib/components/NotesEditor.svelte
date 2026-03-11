@@ -41,12 +41,17 @@
     let selectedShareFriend: any = $state(null);
     let showDrawingCanvas = $state(false);
     let lastRewardTime = $state<number>(0);
+    let savedAnnotations: string[] = $state([]);
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
         // Update lastSaved to show the actual creation time of the active note
         if (activeNote?.created_at) {
             lastSaved = new Date(activeNote.created_at);
+        }
+        // Load annotations when note changes
+        if (activeNote?.id && activeNote.id !== 'mock') {
+            loadAnnotations(activeNote.id);
         }
     });
 
@@ -111,6 +116,18 @@
         if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
         if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
         return `${Math.floor(secs / 86400)}d ago`;
+    };
+
+    const loadAnnotations = async (noteId: string) => {
+        try {
+            const response = await fetch(`/api/annotations/${noteId}`);
+            if (response.ok) {
+                const data = await response.json();
+                savedAnnotations = data.annotations || [];
+            }
+        } catch (err) {
+            console.error('Failed to load annotations:', err);
+        }
     };
 </script>
 
@@ -383,6 +400,20 @@
                     autoSave(newVal);
                 }}
             ></textarea>
+
+            <!-- Saved Annotations Display -->
+            {#if savedAnnotations.length > 0}
+                <div class="px-6 sm:px-10 py-4 border-t border-resin-forest/5 bg-white/20">
+                    <h3 class="text-sm font-semibold text-resin-charcoal mb-3">Annotations</h3>
+                    <div class="space-y-3">
+                        {#each savedAnnotations as annotation, idx (idx)}
+                            <div class="rounded-lg border border-resin-forest/10 bg-white p-2 overflow-hidden">
+                                <img src={annotation} alt="Annotation {idx + 1}" class="w-full max-h-48 object-contain rounded" />
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
 
             <!-- Automation Commands Section -->
             {#if parsedCommands.hasCommands}
@@ -817,6 +848,8 @@
             }).then(() => {
                 showToast('Annotation saved!');
                 showDrawingCanvas = false;
+                // Reload annotations to display the saved drawing
+                loadAnnotations(activeNote.id);
             });
         }}
         onDismiss={() => (showDrawingCanvas = false)}

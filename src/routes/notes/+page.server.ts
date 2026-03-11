@@ -460,5 +460,44 @@ export const actions: Actions = {
         }
 
         return { success: true, message: 'Note unshared' };
+    },
+
+    saveAnnotation: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const noteId = data.get('noteId') as string;
+        const annotationData = data.get('annotationData') as string;
+
+        if (!noteId || !annotationData) {
+            console.error('[notes] Missing data:', { noteId, hasData: !!annotationData });
+            return fail(400, { error: 'Missing noteId or annotationData' });
+        }
+
+        try {
+            console.log('[notes] Saving annotation for note:', noteId);
+            const { data: insertedData, error } = await supabase
+                .from('note_annotations')
+                .insert({
+                    note_id: noteId,
+                    user_id: session.user.id,
+                    drawing_data: annotationData,
+                    annotation_type: 'freehand',
+                    created_at: new Date().toISOString()
+                })
+                .select();
+
+            if (error) {
+                console.error('[notes] Failed to save annotation:', error);
+                return fail(500, { error: `Could not save annotation: ${error.message}` });
+            }
+
+            console.log('[notes] Annotation saved successfully:', insertedData);
+            return { success: true, message: 'Annotation saved', data: insertedData };
+        } catch (err) {
+            console.error('[notes] Error saving annotation:', err);
+            return fail(500, { error: 'An error occurred while saving' });
+        }
     }
 };

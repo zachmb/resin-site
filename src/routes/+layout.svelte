@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invalidate } from "$app/navigation";
+	import { browser } from "$app/environment";
 	import { onMount } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
 	import { flushQueue } from "$lib/offline_queue";
@@ -9,7 +10,7 @@
 	let { children, data } = $props();
 	let { supabase, session, activeSession } = $derived(data);
 	let isMobileMenuOpen = $state(false);
-	let isOnline = $state(navigator.onLine ?? true);
+	let isOnline = $state(browser ? navigator.onLine : true);
 	let showDailyRitualPrompt = $state(false);
 
 	// FIX: Make profile reactive so real-time updates propagate
@@ -21,7 +22,7 @@
 		return daysDiff;
 	});
 
-	// Update profileData when data prop changes
+	// Update profileData when data prop changes (e.g. navigation)
 	$effect(() => {
 		profileData = data.profile;
 	});
@@ -73,7 +74,7 @@
 						table: 'profiles',
 						filter: `id=eq.${session.user.id}`
 					},
-					(payload) => {
+					(payload: { new: any }) => {
 						// Update profile data when iOS syncs
 						if (payload.new) {
 							console.log('[Layout] 🔄 Real-time profile update RECEIVED:', {
@@ -82,13 +83,11 @@
 								timestamp: payload.new.updated_at
 							});
 							profileData = payload.new;
-							// Also update data.profile for derived values
-							data.profile = payload.new;
 							console.log('[Layout] ✅ Profile UPDATED in UI');
 						}
 					}
 				)
-				.subscribe((status) => {
+				.subscribe((status: string) => {
 					console.log('[Layout] 📡 Real-time subscription status:', status);
 					if (status === 'SUBSCRIBED') {
 						console.log('[Layout] ✅ Real-time profile sync CONNECTED');
@@ -414,6 +413,11 @@
 					href="/terms"
 					class="hover:underline underline-offset-4 decoration-resin-amber/50"
 					>Terms</a
+				>
+				<a
+					href="/extension"
+					class="hover:underline underline-offset-4 decoration-resin-amber/50"
+					>Web Shield</a
 				>
 				<a
 					href="/support"

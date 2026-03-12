@@ -14,6 +14,15 @@ export interface RewardOutcome {
     isBonusTriggered: boolean;
     celebrationLevel: 'standard' | 'bonus' | 'rare';
     message: string;
+    rewardSources?: string[]; // Track which bonuses were applied
+    achievements?: string[]; // Newly unlocked achievements
+}
+
+export interface EngagementBonus {
+    type: 'daily_first' | 'streak_milestone' | 'weekly_challenge' | 'consistency' | 'long_session';
+    stones: number;
+    healthGain: number;
+    message: string;
 }
 
 /**
@@ -76,6 +85,156 @@ export async function calculateSessionReward(userId: string, sessionDurationMinu
 }
 
 /**
+ * Detect engagement bonuses like daily streaks, milestone bonuses, etc.
+ */
+export async function detectEngagementBonuses(userId: string, newStreak: number, lastSessionDate: Date | null): Promise<EngagementBonus[]> {
+    const bonuses: EngagementBonus[] = [];
+    const now = new Date();
+
+    // Detect "Daily First" bonus - first session of the day
+    const isFirstOfDay = !lastSessionDate ||
+        (now.getTime() - new Date(lastSessionDate).getTime()) > 18 * 60 * 60 * 1000;
+
+    if (isFirstOfDay) {
+        bonuses.push({
+            type: 'daily_first',
+            stones: 1,
+            healthGain: 2,
+            message: '🌅 Daily First! Consistency matters.'
+        });
+    }
+
+    // Detect milestone bonuses at streak multiples
+    if (newStreak > 1 && newStreak % 5 === 0) {
+        const milestoneBonus = Math.floor(newStreak / 5) * 2; // 2 stones per 5-day milestone
+        bonuses.push({
+            type: 'streak_milestone',
+            stones: milestoneBonus,
+            healthGain: 5,
+            message: `🔥 ${newStreak}-Day Streak! +${milestoneBonus} stones`
+        });
+    }
+
+    // Detect weekly challenge bonus (7, 14, 21 day streaks)
+    if ([7, 14, 21, 30].includes(newStreak)) {
+        bonuses.push({
+            type: 'weekly_challenge',
+            stones: 3 + (newStreak / 7),
+            healthGain: 8,
+            message: `🏆 ${newStreak}-Day Milestone! Your forest celebrates!`
+        });
+    }
+
+    // Consistency bonus: 3+ sessions in a row (no missed days)
+    if (newStreak >= 3 && newStreak % 3 === 0) {
+        bonuses.push({
+            type: 'consistency',
+            stones: 1,
+            healthGain: 3,
+            message: '⭐ Consistency unlocked! Keep the rhythm.'
+        });
+    }
+
+    return bonuses;
+}
+
+/**
+ * Sync the total_stones count in profiles based on the count of amber_sessions.
+ * This ensures the 1 note = 1 stone rule.
+ */
+export async function syncStonesFromNotes(userId: string): Promise<number> {
+    const { count, error } = await admin
+        .from('amber_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error('[Gamification] Error counting sessions:', error);
+        return 0;
+    }
+
+    const totalStones = count || 0;
+
+    await admin
+        .from('profiles')
+        .update({
+            total_stones: totalStones,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+    console.log(`[Gamification] Stones synced for ${userId}: ${totalStones}`);
+    return totalStones;
+}
+
+/**
+ * Log a daily visit and update the usage streak.
+ * Safe to call multiple times per day.
+ */
+export async function recordDailyActivity(userId: string): Promise<{ currentStreak: number; longestStreak: number }> {
+    const now = new Date();
+
+    const getLocalDateString = (date: Date) => {
+        const offset = date.getTimezoneOffset() * 60000;
+        const local = new Date(date.getTime() - offset);
+        return local.toISOString().split('T')[0];
+    };
+
+    const todayStr = getLocalDateString(now);
+
+    const { data: profile } = await admin
+        .from('profiles')
+        .select('current_streak, longest_streak, last_active_date')
+        .eq('id', userId)
+        .single();
+
+    if (!profile) {
+        // Profile doesn't exist yet (new user) - return defaults
+        return { currentStreak: 0, longestStreak: 0 };
+    }
+
+    const lastActive = profile.last_active_date ? new Date(profile.last_active_date) : null;
+    const lastActiveStr = lastActive ? getLocalDateString(lastActive) : null;
+
+    let newStreak = profile.current_streak || 0;
+    let newLongest = profile.longest_streak || 0;
+
+    if (lastActiveStr === todayStr) {
+        // Already recorded today
+        return { currentStreak: newStreak, longestStreak: newLongest };
+    }
+
+    // Check if yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = getLocalDateString(yesterday);
+
+    if (lastActiveStr === yesterdayStr) {
+        newStreak += 1;
+    } else {
+        newStreak = 1;
+    }
+
+    if (newStreak > newLongest) {
+        newLongest = newStreak;
+    }
+
+
+    await admin
+        .from('profiles')
+        .update({
+            current_streak: newStreak,
+            longest_streak: newLongest,
+            last_active_date: now.toISOString(),
+            updated_at: now.toISOString()
+        })
+        .eq('id', userId);
+
+    console.log(`[Gamification] Activity recorded for ${userId}: Streak ${newStreak}`);
+    return { currentStreak: newStreak, longestStreak: newLongest };
+}
+
+/**
  * Apply session completion rewards and update user profiles
  */
 export async function applySessionReward(
@@ -99,16 +258,36 @@ export async function applySessionReward(
     const hoursSinceLastSession = lastSession ? (now.getTime() - lastSession.getTime()) / (1000 * 60 * 60) : 25;
     const newStreak = hoursSinceLastSession > 24 ? 1 : (profile.sessions_completed_streak || 0) + 1;
 
+    // Detect and apply engagement bonuses
+    const engagementBonuses = await detectEngagementBonuses(userId, newStreak, lastSession);
+    let totalBonusStones = reward.totalStones;
+    let totalHealthGain = reward.forestHealthGain;
+    const bonusMessages: string[] = [];
+
+    for (const bonus of engagementBonuses) {
+        totalBonusStones += bonus.stones;
+        totalHealthGain += bonus.healthGain;
+        bonusMessages.push(bonus.message);
+    }
+
     // Update profile with stones, streak, forest health
-    const newForestHealth = Math.min(100, (profile.forest_health || 0) + reward.forestHealthGain);
+    const newForestHealth = Math.min(100, (profile.forest_health || 0) + totalHealthGain);
+
+    // Standardize daily streak tracking alongside session streak
+    const { currentStreak, longestStreak } = await recordDailyActivity(userId);
+
+    // Sync stones based on note count (1 note = 1 stone)
+    const stonesCount = await syncStonesFromNotes(userId);
 
     await admin
         .from('profiles')
         .update({
-            total_stones: profile.total_stones + reward.totalStones,
             sessions_completed_streak: newStreak,
             last_session_date: now.toISOString(),
             forest_health: newForestHealth,
+            total_stones: stonesCount,
+            current_streak: currentStreak,
+            longest_streak: longestStreak,
             updated_at: now.toISOString()
         })
         .eq('id', userId);

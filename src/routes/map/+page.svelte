@@ -17,9 +17,11 @@
 
     onMount(() => {
         // Auto-dismiss the hint after 4 seconds
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
             showAutoSaveHint = false;
         }, 4000);
+
+        return () => clearTimeout(timeout);
     });
 
     const onDragStart = (e: DragEvent, note: any) => {

@@ -73,9 +73,8 @@
             Frequently Asked Questions
         </h3>
         <p class="text-resin-earth/80 text-sm">
-            <strong>Where are my API keys stored?</strong><br />
-            All custom API keys you provide are stored exclusively on your device
-            within the secure keychain. They are never sent to our servers.
+            <strong>What is your email address?</strong><br />
+            Our email address is crew@looplessapp.com.
         </p>
     </div>
 </main>

@@ -15,6 +15,7 @@
         weeklyStats = null,
         automations = [],
         isNewUser = false,
+        groups = [],
     } = $props<{
         session?: any;
         profile: any;
@@ -23,6 +24,7 @@
         weeklyStats: any;
         automations: any[];
         isNewUser?: boolean;
+        groups?: any[];
     }>();
 
     const firstName =
@@ -576,6 +578,65 @@
             <ResinShieldCard />
             <FocusControl />
 
+            <!-- Focus Groups Card -->
+            {#if groups && groups.length > 0}
+                <section
+                    class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-forest/15 shadow-premium relative bg-gradient-to-br from-resin-forest/5 to-transparent overflow-hidden"
+                >
+                    <div
+                        class="absolute -right-16 -bottom-16 w-48 h-48 bg-resin-forest/5 rounded-full blur-3xl"
+                    ></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-2xl bg-resin-forest/10 flex items-center justify-center"
+                                >
+                                    <span class="text-lg">👥</span>
+                                </div>
+                                <div>
+                                    <h3
+                                        class="text-lg font-bold text-resin-charcoal"
+                                    >
+                                        Your Groups
+                                    </h3>
+                                    <p
+                                        class="text-[10px] font-bold text-resin-earth/40 uppercase tracking-widest"
+                                    >
+                                        Focus with others
+                                    </p>
+                                </div>
+                            </div>
+                            <a
+                                href="/groups"
+                                class="text-sm font-bold text-resin-forest hover:text-resin-amber transition-colors"
+                            >
+                                View All →
+                            </a>
+                        </div>
+
+                        <div class="space-y-2">
+                            {#each groups.slice(0, 3) as group}
+                                <a
+                                    href="/groups/{group.id}"
+                                    class="flex items-center justify-between p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors group/item"
+                                >
+                                    <div>
+                                        <p class="text-sm font-bold text-resin-charcoal group-hover/item:text-resin-forest transition-colors">
+                                            {group.name}
+                                        </p>
+                                        <p class="text-xs text-resin-earth/60">
+                                            {group.userRole}
+                                        </p>
+                                    </div>
+                                    <span class="text-resin-forest text-sm">→</span>
+                                </a>
+                            {/each}
+                        </div>
+                    </div>
+                </section>
+            {/if}
+
             <!-- Taste Insights Card -->
             {#if weeklyStats && (weeklyStats.topFeeling || weeklyStats.enjoyedThings.length > 0)}
                 <section
@@ -712,7 +773,10 @@
                         class="space-y-0 relative before:absolute before:inset-0 before:left-[11px] before:h-full before:w-0.5 before:bg-gradient-to-b before:from-resin-amber/40 before:via-resin-forest/10 before:to-transparent"
                     >
                         {#each todayTasks as task}
-                            <div class="relative pl-10 pb-8 last:pb-0 group">
+                            <a
+                                href={task.session_id ? `/amber?sessionId=${task.session_id}` : '/amber'}
+                                class="relative pl-10 pb-8 last:pb-0 group block hover:opacity-75 transition-opacity"
+                            >
                                 <div
                                     class="absolute left-0 top-1.5 w-6 h-6 rounded-full border-4 border-[#F8F5EE] bg-white shadow-sm flex items-center justify-center z-10 transition-transform group-hover:scale-125"
                                 >
@@ -753,7 +817,7 @@
                                         {task.description}
                                     </p>
                                 {/if}
-                            </div>
+                            </a>
                         {/each}
                     </div>
                 {:else}
@@ -1066,7 +1130,7 @@
 
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-resin-charcoal font-serif">
-                    Recent Dump Archive
+                    Recent Notes
                 </h3>
                 <a
                     href="/notes"

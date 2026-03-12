@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { fade, fly, scale } from "svelte/transition";
     import { createSupabaseClient } from "$lib/supabase";
+    import ForestRenderer from "$lib/components/ForestRenderer.svelte";
 
     let { data } = $props();
     let { sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession } = $derived(data);
@@ -128,9 +129,24 @@
 
     const totalStones = $derived(profileData?.total_stones || 0);
     const currentStreak = $derived(profileData?.current_streak || 0);
+    const forestHealth = $derived(profileData?.forest_health ?? 100);
     const unlockedSpecies = $derived(
         treeSpecies.filter((s) => s.unlockCost <= totalStones),
     );
+
+    // Get forest health status
+    function getForestStatus() {
+        if (forestHealth >= 80) {
+            return { level: 'thriving', message: '🌳 Your forest is thriving!', color: '#22c55e' };
+        } else if (forestHealth >= 60) {
+            return { level: 'healthy', message: '🌲 Your forest is healthy', color: '#84cc16' };
+        } else if (forestHealth >= 30) {
+            return { level: 'struggling', message: '⚠️ Your forest is struggling', color: '#f97316' };
+        } else {
+            return { level: 'dying', message: '🪨 Your forest is turning to stone!', color: '#ef4444' };
+        }
+    }
+    const forestStatus = $derived(getForestStatus());
 
     // Time period filtering
     let selectedPeriod = $state<"day" | "week" | "month" | "year">("week");
@@ -193,6 +209,33 @@
                 Every plan you complete adds to your permanent digital
                 sanctuary.
             </p>
+        </div>
+
+        <!-- Forest Health Status -->
+        <div class="mb-12 w-full max-w-2xl mx-auto" in:fade={{ duration: 500 }}>
+            <div class="glass-card rounded-xl p-6 border border-resin-forest/10">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-resin-charcoal">{forestStatus.message}</span>
+                    <span class="text-xs font-bold text-resin-earth/60">{forestHealth}%</span>
+                </div>
+                <div class="w-full h-2 bg-resin-earth/10 rounded-full overflow-hidden">
+                    <div
+                        class="h-full transition-all duration-500 rounded-full"
+                        style="width: {forestHealth}%; background-color: {forestStatus.color};"
+                    />
+                </div>
+                <p class="text-xs text-resin-earth/60 mt-2">
+                    {#if forestHealth >= 80}
+                        Keep completing sessions to maintain your thriving forest.
+                    {:else if forestHealth >= 60}
+                        Complete more sessions to restore your forest's health.
+                    {:else if forestHealth >= 30}
+                        Your forest needs attention! Focus sessions will help it recover.
+                    {:else}
+                        Complete a focus session now to save your forest from petrification!
+                    {/if}
+                </p>
+            </div>
         </div>
 
         <!-- Recent Reward Display -->
@@ -330,6 +373,26 @@
                         <p class="text-sm font-bold text-resin-charcoal">Each session plants a tree in your grove</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Personal Forest Visualization -->
+        <div class="w-full max-w-4xl mb-12">
+            <div class="mb-6">
+                <h2 class="text-2xl font-serif font-bold text-resin-charcoal flex items-center gap-3 mb-2">
+                    <span>🌲</span>
+                    Your Forest
+                </h2>
+                <p class="text-resin-earth/60 text-sm">
+                    {totalStones} stones earned · {currentStreak > 1 ? `🔥 ${currentStreak} day streak` : 'Start a streak today!'}
+                </p>
+            </div>
+            <div class="glass-card rounded-2xl p-8 flex justify-center">
+                <ForestRenderer
+                    stones={totalStones}
+                    streak={currentStreak}
+                    size="lg"
+                />
             </div>
         </div>
 

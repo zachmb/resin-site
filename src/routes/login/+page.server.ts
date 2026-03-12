@@ -6,7 +6,7 @@ export const actions = {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${url.origin}/auth/callback?next=${next}`,
+                redirectTo: `${url.origin}/auth/callback?next=${encodeURIComponent(next)}`,
                 scopes: 'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
                 queryParams: {
                     access_type: 'offline',

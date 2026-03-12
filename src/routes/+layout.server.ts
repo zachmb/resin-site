@@ -1,4 +1,5 @@
-export const load = async ({ locals: { supabase, getSession } }) => {
+export const load = async ({ locals: { supabase, getSession }, depends }) => {
+    depends('supabase:auth');
     const session = await getSession();
 
     if (!session) {

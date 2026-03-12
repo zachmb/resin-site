@@ -14,6 +14,7 @@
         weeklyStats={data.weeklyStats}
         automations={data.automations}
         isNewUser={data.isNewUser}
+        groups={data.groups}
     />
 {:else}
     <LandingPage />

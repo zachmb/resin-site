@@ -2,12 +2,29 @@
 	import { invalidate } from "$app/navigation";
 	import { onMount } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
+	import { flushQueue } from "$lib/offline_queue";
+	import DailyRitualPrompt from "$lib/components/DailyRitualPrompt.svelte";
 	import "./layout.css";
 
 	let { children, data } = $props();
 	let { supabase, session, activeSession } = $derived(data);
 	let isMobileMenuOpen = $state(false);
-	let hasStreak = $derived(data.profile?.current_streak > 0);
+	let isOnline = $state(navigator.onLine ?? true);
+	let showDailyRitualPrompt = $state(false);
+
+	// FIX: Make profile reactive so real-time updates propagate
+	let profileData = $state(data.profile);
+	let hasStreak = $derived(profileData?.current_streak > 0);
+	let daysWithoutSession = $derived.by(() => {
+		if (!profileData?.last_session_date) return 999;
+		const daysDiff = Math.floor((Date.now() - new Date(profileData.last_session_date).getTime()) / (1000 * 60 * 60 * 24));
+		return daysDiff;
+	});
+
+	// Update profileData when data prop changes
+	$effect(() => {
+		profileData = data.profile;
+	});
 
 	onMount(() => {
 		const {
@@ -20,8 +37,107 @@
 			},
 		);
 
+		// Offline queue - flush on reconnect
+		window.addEventListener('online', () => {
+			isOnline = true;
+			flushQueue();
+		});
+		window.addEventListener('offline', () => {
+			isOnline = false;
+		});
+
+		// Flush queue on load if we're online
+		if (navigator.onLine) {
+			flushQueue();
+		}
+
+		// Show daily ritual prompt if user hasn't had a session recently
+		if (profileData?.last_session_date && daysWithoutSession >= 1) {
+			// Show prompt after a delay, only once per session
+			setTimeout(() => {
+				showDailyRitualPrompt = true;
+			}, 2000);
+		}
+
+		// FIX: Set up real-time subscription to profile updates from iOS sync
+		// This ensures stones and streak stay in sync across all pages
+		if (session?.user?.id) {
+			console.log('[Layout] 🔄 Setting up real-time subscription for user:', session.user.id.substring(0, 8) + '...');
+			const profileSubscription = supabase
+				.channel(`profiles:${session.user.id}`)
+				.on(
+					'postgres_changes',
+					{
+						event: 'UPDATE',
+						schema: 'public',
+						table: 'profiles',
+						filter: `id=eq.${session.user.id}`
+					},
+					(payload) => {
+						// Update profile data when iOS syncs
+						if (payload.new) {
+							console.log('[Layout] 🔄 Real-time profile update RECEIVED:', {
+								stones: payload.new.total_stones,
+								streak: payload.new.current_streak,
+								timestamp: payload.new.updated_at
+							});
+							profileData = payload.new;
+							// Also update data.profile for derived values
+							data.profile = payload.new;
+							console.log('[Layout] ✅ Profile UPDATED in UI');
+						}
+					}
+				)
+				.subscribe((status) => {
+					console.log('[Layout] 📡 Real-time subscription status:', status);
+					if (status === 'SUBSCRIBED') {
+						console.log('[Layout] ✅ Real-time profile sync CONNECTED');
+					} else if (status === 'CHANNEL_ERROR') {
+						console.error('[Layout] ❌ Real-time subscription CHANNEL_ERROR - Will use polling fallback');
+					}
+				});
+
+			// FIX: Add polling fallback for Supabase free plan
+			// Checks for profile updates every 10 seconds as backup
+			const pollInterval = setInterval(async () => {
+				if (profileData?.id) {
+					try {
+						const { data: updatedProfile } = await supabase
+							.from('profiles')
+							.select('id, total_stones, current_streak, longest_streak, updated_at')
+							.eq('id', profileData.id)
+							.single();
+
+						if (updatedProfile) {
+							// Check if values changed since last poll
+							if (updatedProfile.total_stones !== profileData.total_stones ||
+								updatedProfile.current_streak !== profileData.current_streak) {
+								console.log('[Layout] 📊 Polling detected profile update:', {
+									stones: updatedProfile.total_stones,
+									streak: updatedProfile.current_streak
+								});
+								profileData = updatedProfile;
+								data.profile = updatedProfile;
+							}
+						}
+					} catch (err) {
+						// Silent error - polling is fallback
+						console.error('[Layout] Polling error (will retry):', err);
+					}
+				}
+			}, 10000); // Poll every 10 seconds - faster on free plan
+
+			return () => {
+				console.log('[Layout] Cleaning up subscriptions and polling');
+				subscription.unsubscribe();
+				supabase.removeChannel(profileSubscription);
+				clearInterval(pollInterval);
+			};
+		}
+
 		return () => subscription.unsubscribe();
 	});
+
 </script>
 
 <svelte:head>
@@ -312,4 +428,22 @@
 			</nav>
 		</div>
 	</footer>
+
+	<!-- Offline Indicator -->
+	{#if !isOnline}
+		<div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-900 text-white text-sm rounded-full shadow-lg flex items-center gap-2">
+			<div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+			<span>You're offline — changes will sync when reconnected</span>
+		</div>
+	{/if}
+
+	<!-- Daily Ritual Prompt -->
+	{#if session && profileData}
+		<DailyRitualPrompt
+			visible={showDailyRitualPrompt}
+			daysWithoutSession={daysWithoutSession}
+			currentStreak={profileData?.current_streak || 0}
+			onDismiss={() => (showDailyRitualPrompt = false)}
+		/>
+	{/if}
 </div>

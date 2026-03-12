@@ -34,6 +34,7 @@ import {
 } from '$env/static/private'
 import { sendPush } from '$lib/apns'
 import { executeNoteCommands } from '$lib/services/commandExecutor'
+import { computeUserInsights } from '$lib/amber_service'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -42,20 +43,16 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-interface AITaskStep {
-    title: string
-    duration_minutes: number
-    steps: string[]
-}
-
 interface DeepSeekTask {
     type: 'action' | 'intention' | 'habit'
     display_title: string
-    original_note: string
-    ai_plan: AITaskStep[]
+    ai_plan: string[]
     scheduling: { start_time: string; end_time: string; duration_minutes: number }
     blocking_active: boolean
-    requires_verification?: boolean
+    requires_verification: boolean
+    session_type: 'Soft' | 'Firm'
+    energy_match_score: number
+    energy_demand: 'High' | 'Medium' | 'Low'
     notification_copy: string
 }
 
@@ -188,50 +185,42 @@ async function callDeepSeek(
         : ''
 
     const systemPrompt = `# MISSION
-You are the brain of RESIN, a premium productivity agent. Convert vague thoughts into concrete, scheduled, protected actions.
+You are the Lead Mentor of RESIN, a sophisticated productivity ecosystem. Your objective is not just to schedule tasks, but to architect a user's life according to their biology, true intent, and long-term well-being. You translate chaotic human thoughts into a prioritized, energy-aware "Amber Plan."
 
-# OPERATIONAL PIPELINE
-1. CATEGORIZE: ACTION, INTENTION, or HABIT.
-2. PLAN: Generate a thorough, line-by-line action plan (AI PLAN QUALITY RULES below).
-3. ANALYZE CALENDAR: Follow CALENDAR ANALYSIS step by step.
-4. SCHEDULE: Place the task in the best free gap. Never double-book.
-5. ENFORCE: Set blocking_active appropriately.
+# OPERATIONAL PRINCIPLES
+1. INTUITIVE INTENT EXTRACTION (Chain-of-Thought):
+   - Anchor on Commitments: First, identify fixed deadlines, meetings, and hard constraints.
+   - Disambiguate Intent: Distinguish between "aspirational dreams" and "urgent needs." Predict objective success criteria.
+   - Dialogue-Ready: If vital information is missing, flag it in the notification copy.
+2. ENERGY-AWARE TAGGING & CHRONOTYPE ALIGNMENT:
+   - High-concentration tasks (coding, writing, planning) MUST be slotted into focus peaks.
+   - The "Lull" Protocol: Routine work (admin, email) MUST be deferred to energy lulls.
+3. EMPATHETIC PACING & BURNOUT PREVENTION:
+   - Dynamic Intensity: Bias toward "Soft" sessions if recent success is low. Bias toward "Firm" for deep work.
+   - The Guilt-Free Buffer: Ensure plans include non-negotiable breaks.
+4. RECURSIVE REFINEMENT:
+   - Memory Management: Use past reflections (${userPreferences}) to avoid repeating failure patterns.
 
-# AI PLAN QUALITY RULES
-- INTENTIONS: 4–6 numbered steps. ACTIONS: 2–3 minimum.
-- Each step must be a complete, actionable sentence — not a short label.
-- Calibrate depth and count to the INTENSITY LEVEL.
+# TASK SCORING LOGIC
+- Weight tasks by Urgency, Biological Fit (Energy vs. Peak), and Mental Clarity.
 
 # OUTPUT CONTRACT (STRICT JSON ONLY)
 {
-  "type": "action"|"intention"|"habit",
-  "display_title": "Short UI title",
-  "original_note": "string",
-  "ai_plan": ["Step 1 full sentence.", "Step 2 full sentence."],
+  "type": "action" | "intention" | "habit",
+  "display_title": "Punchy, empathetic title",
+  "ai_plan": ["Step 1.", "Step 2.", "Step 3."],
   "scheduling": { "start_time": "ISO8601", "end_time": "ISO8601", "duration_minutes": number },
-  "blocking_active": boolean,
+  "blocking_active": boolean (always true for High energy tasks),
   "requires_verification": boolean,
-  "notification_copy": "One sentence summary."
+  "session_type": "Soft" | "Firm",
+  "energy_match_score": 0.0-1.0,
+  "energy_demand": "High" | "Medium" | "Low",
+  "notification_copy": "Empathetic nudge summarizing the value of this session."
 }
 
-# INTENSITY LEVEL: ${pctLabel}%
-- 0–25% Gentle: blocking_active=false, requires_verification=false, 2–3 steps.
-- 25–50% Moderate: blocking for focus tasks, no camera, 3–4 steps.
-- 50–75% Firm: blocking + camera for physical/tangible tasks, 4–5 steps.
-- 75–100% Maximum: always blocking, always camera except pure digital, 5–6 steps.
-
-# CALENDAR ANALYSIS — follow exactly
+# CALENDAR ANALYSIS
 PREFERRED WINDOW: ${startHour}:00–${endHour}:00
 CURRENT TIME: ${now} (timezone: ${timezone})
-
-Step A — List every Busy block chronologically.
-Step B — List every Free gap inside preferred window with start time and length.
-Step C — Choose EARLIEST Free gap ≥ estimated duration:
-          • Deep-work: prefer before 12:00 if available.
-          • Errands/social: prefer later.
-          • Skip gaps starting within 15 min of now.
-Step D — If no gap today, advance to tomorrow and repeat.
-Step E — Output start_time/end_time in ${timezone} ISO8601 with offset.
 
 FREE/BUSY CALENDAR DATA:
 ${freeBusy}${prefsAppend}
@@ -343,8 +332,12 @@ export const POST = async ({ request }: RequestEvent) => {
 
         const freeBusy = await getFreeBusy(gToken, timezone)
 
+        // 3.5. Compute learned insights from past sessions
+        const learnedInsights = await computeUserInsights(user.id)
+        const enrichedPreferences = [learnedInsights, user_preferences].filter(Boolean).join('\n\n')
+
         // 4. Call DeepSeek
-        const plan = await callDeepSeek(raw_text, freeBusy, intensity, start_hour, end_hour, timezone, user_preferences)
+        const plan = await callDeepSeek(raw_text, freeBusy, intensity, start_hour, end_hour, timezone, enrichedPreferences)
 
         // 5. Create Google Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone)
@@ -360,22 +353,39 @@ export const POST = async ({ request }: RequestEvent) => {
         })
 
         // 7. Upsert the generated task(s)
+        // Handle both formats: array of objects {title, duration_minutes, steps} OR array of strings
         const description = plan.ai_plan
-            .flatMap(step => [`📍 ${step.title} (${step.duration_minutes}m)`, ...step.steps.map(s => `  • ${s}`)])
+            .map(step => {
+                if (typeof step === 'string') {
+                    // If it's a plain string, return it as-is
+                    return step;
+                } else if (step && typeof step === 'object' && 'title' in step) {
+                    // If it's an object with title/duration/steps, format it nicely
+                    const title = (step as any).title || '';
+                    const duration = (step as any).duration_minutes || 0;
+                    const substeps = (step as any).steps || [];
+                    return [
+                        `📍 ${title}${duration ? ` (${duration}m)` : ''}`,
+                        ...substeps.map((s: string) => `  • ${s}`)
+                    ].join('\n');
+                } else {
+                    return String(step);
+                }
+            })
             .join('\n');
 
         const taskRow = {
             id: crypto.randomUUID(),
             session_id,
             title: plan.display_title,
-            description,
+            description: plan.ai_plan.join('\n'),
             estimated_minutes: plan.scheduling.duration_minutes,
             sequence_order: 1,
             start_time: plan.scheduling.start_time,
             end_time: plan.scheduling.end_time,
             calendar_event_id: calEventId,
             requires_focus: plan.blocking_active,
-            requires_camera_verification: plan.requires_verification ?? false,
+            requires_camera_verification: plan.requires_verification,
         }
         await admin.from('amber_tasks').upsert(taskRow)
 
@@ -425,13 +435,16 @@ export const POST = async ({ request }: RequestEvent) => {
                 id: taskRow.id,
                 title: plan.display_title,
                 description: taskRow.description,
-                ai_plan: plan.ai_plan,
+                // Normalize ai_plan to always be an array of strings for consistency
+                ai_plan: plan.ai_plan.map(step =>
+                    typeof step === 'string' ? step : (step as any).title || String(step)
+                ),
                 start_time: plan.scheduling.start_time,
                 end_time: plan.scheduling.end_time,
                 duration_minutes: plan.scheduling.duration_minutes,
                 calendar_event_id: calEventId,
                 requires_focus: plan.blocking_active,
-                requires_camera_verification: plan.requires_verification ?? false,
+                requires_camera_verification: plan.requires_verification,
                 notification_copy: plan.notification_copy,
             }
         })

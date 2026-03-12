@@ -2,6 +2,7 @@
     import { enhance } from "$app/forms";
     import { parseCommands } from "$lib/utils/commandParser";
     import CommandPalette from "./CommandPalette.svelte";
+    import { onDestroy } from "svelte";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
 
@@ -40,6 +41,12 @@
     let lastRewardTime = $state<number>(0);
     let activationError = $state<string | null>(null);
     let isRetryingActivation = $state(false);
+    let today = new Date().toISOString();
+
+    // Cleanup saveTimeout on unmount
+    onDestroy(() => {
+        if (saveTimeout) clearTimeout(saveTimeout);
+    });
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
@@ -82,22 +89,32 @@
             const formData = new FormData();
             formData.append("id", activeNote.id);
             formData.append("content", content);
-            await fetch("?/updateNote", {
-                method: "POST",
-                body: formData,
-            });
-            lastSaved = new Date();
-            isSaving = false;
-            const lines = content.split("\n");
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed) {
-                    activeNote.title = trimmed
-                        .replace(/^#+\s*/, "")
-                        .substring(0, 60);
-                    activeTitle = activeNote.title;
-                    break;
+            try {
+                const response = await fetch("?/updateNote", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!response.ok) {
+                    console.error(`Failed to save note: ${response.statusText}`);
+                    isSaving = false;
+                    return;
                 }
+                lastSaved = new Date();
+                isSaving = false;
+                const lines = content.split("\n");
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed) {
+                        activeNote.title = trimmed
+                            .replace(/^#+\s*/, "")
+                            .substring(0, 60);
+                        activeTitle = activeNote.title;
+                        break;
+                    }
+                }
+            } catch (error) {
+                console.error("Auto-save failed:", error);
+                isSaving = false;
             }
         }, 1000);
     };
@@ -112,12 +129,37 @@
         return `${Math.floor(secs / 86400)}d ago`;
     };
 
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+        });
+    };
+
 </script>
 
 <!-- ── Main Canvas ── -->
 <main
     class="w-full h-screen pt-20 pb-4 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto overflow-hidden"
 >
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-serif font-bold text-resin-charcoal">
+                Saved Notes
+            </h1>
+            <p class="text-resin-earth/70 mt-1">{formatDate(today)}</p>
+        </div>
+        {#if profile?.current_streak && profile.current_streak > 1}
+            <div class="flex items-center gap-2 px-3 py-2 bg-orange-100/50 rounded-lg">
+                <svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M8.128 19.573a1 1 0 001.744 0l2.082-5.007h5.277a1 1 0 00.588-1.81l-4.28-3.11 1.602-4.8a1 1 0 00-1.744-1.14L11.882 9H7.118L5.132 3.706a1 1 0 00-1.744 1.14l1.602 4.8-4.28 3.11a1 1 0 00.588 1.81h5.277l2.082 5.007z" />
+                </svg>
+                <span class="font-bold text-orange-700">{profile.current_streak}</span>
+            </div>
+        {/if}
+    </div>
     <!-- Active Area Split View -->
     <div
         class="flex-1 flex gap-6 relative overflow-hidden transition-all duration-500"
@@ -424,8 +466,8 @@
                                     }
 
                                     onSaveSuccess({
-                                        note: result.data.note,
-                                        isNew: result.data.isNew,
+                                        note: (result as any).data.note,
+                                        isNew: (result as any).data.isNew,
                                     });
                                 } else if (
                                     result.type === "failure" ||
@@ -433,12 +475,12 @@
                                 ) {
                                     // success type can still have success: false in some cases if not using fail()
                                     showToast(
-                                        result.data?.error ||
+                                        (result as any).data?.error ||
                                             "Failed to save note.",
                                     );
                                 } else if (result.type === "error") {
                                     showToast(
-                                        result.error?.message ||
+                                        (result as any).error?.message ||
                                             "An error occurred.",
                                     );
                                 }
@@ -563,6 +605,7 @@
                                         type="button"
                                         onclick={() => activationError = null}
                                         class="text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+                                        aria-label="Dismiss error"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -577,7 +620,7 @@
                                             if (result.type === "success") {
                                                 activationError = null;
                                             } else {
-                                                activationError = (result.data?.error || result.error?.message || "Retry failed.") as any;
+                                                activationError = ((result as any).data?.error || (result as any).error?.message || "Retry failed.") as string;
                                             }
                                         };
                                     }}>
@@ -587,6 +630,7 @@
                                             type="submit"
                                             disabled={isRetryingActivation}
                                             class="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
+                                            aria-label={isRetryingActivation ? "Retrying activation" : "Retry activation"}
                                         >
                                             {#if isRetryingActivation}
                                                 <svg class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -620,7 +664,7 @@
                                     return async ({ result, update }) => {
                                         if (result.type === "success") {
                                             showToast(
-                                                result.data?.message ||
+                                                (result as any).data?.message ||
                                                     "DeepSeek activated! Plan generated and scheduled.",
                                             );
                                             // Store reward to localStorage for forest page display
@@ -631,10 +675,10 @@
                                                 timestamp: now
                                             }));
                                         } else if (result.type === "failure") {
-                                            activationError = result.data?.error || "Failed to activate. Please try again.";
+                                            activationError = (result as any).data?.error || "Failed to activate. Please try again.";
                                             showToast(activationError);
                                         } else if (result.type === "error") {
-                                            activationError = String(result.error?.message || "An error occurred.");
+                                            activationError = String((result as any).error?.message || "An error occurred.");
                                             showToast(activationError);
                                         }
                                         await update();

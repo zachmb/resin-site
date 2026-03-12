@@ -12,20 +12,16 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 });
 
-export interface AITaskStep {
-    title: string;
-    duration_minutes: number;
-    steps: string[];
-}
-
 export interface DeepSeekTask {
     type: 'action' | 'intention' | 'habit';
     display_title: string;
-    original_note: string;
-    ai_plan: AITaskStep[];
+    ai_plan: string[];
     scheduling: { start_time: string; end_time: string; duration_minutes: number };
     blocking_active: boolean;
-    requires_verification?: boolean;
+    requires_verification: boolean;
+    session_type: 'Soft' | 'Firm';
+    energy_match_score: number;
+    energy_demand: 'High' | 'Medium' | 'Low';
     notification_copy: string;
 }
 
@@ -80,9 +76,7 @@ export async function createCalendarEvent(
     title: string,
     timezone: string
 ): Promise<string | null> {
-    const description = task.ai_plan
-        .flatMap(step => [`📍 ${step.title} (${step.duration_minutes}m)`, ...step.steps.map(s => `  • ${s}`)])
-        .join('\n');
+    const description = task.ai_plan.join('\n');
 
     const body = {
         summary: title,
@@ -106,6 +100,64 @@ export async function createCalendarEvent(
     return ev.id ?? null;
 }
 
+export async function computeUserInsights(userId: string): Promise<string> {
+    try {
+        // Fetch last 30 days of sessions
+        const since = new Date(Date.now() - 30 * 86400000).toISOString();
+        const { data: sessions, error } = await admin
+            .from('amber_sessions')
+            .select('id, status, created_at, amber_tasks(start_time, end_time, estimated_minutes)')
+            .eq('user_id', userId)
+            .gte('created_at', since);
+
+        if (error || !sessions || sessions.length < 3) return '';
+
+        const completed = sessions.filter((s: any) => s.status === 'completed');
+        const rate = Math.round((completed.length / sessions.length) * 100);
+
+        // Peak hour from completed tasks
+        const hourBuckets: Record<number, number> = {};
+        for (const s of completed) {
+            for (const t of (s.amber_tasks || [])) {
+                if (t.start_time) {
+                    const h = new Date(t.start_time).getHours();
+                    hourBuckets[h] = (hourBuckets[h] || 0) + 1;
+                }
+            }
+        }
+        const peakHourEntry = Object.entries(hourBuckets).sort((a, b) => +b[1] - +a[1])[0];
+        const peakHour = peakHourEntry ? parseInt(peakHourEntry[0]) : null;
+
+        // Accuracy from tasks with both times
+        let totalEst = 0, totalActual = 0, taskCount = 0;
+        for (const s of completed) {
+            for (const t of (s.amber_tasks || [])) {
+                if (t.start_time && t.end_time && t.estimated_minutes) {
+                    const actual = Math.round((new Date(t.end_time).getTime() - new Date(t.start_time).getTime()) / 60000);
+                    totalEst += t.estimated_minutes;
+                    totalActual += actual;
+                    taskCount++;
+                }
+            }
+        }
+
+        const lines: string[] = [];
+        lines.push(`Completion rate (last 30 days): ${rate}%`);
+        if (peakHour !== null) lines.push(`Peak performance hour: ${peakHour}:00 (${peakHourEntry![1]} completed tasks)`);
+        if (taskCount > 2) {
+            const accuracy = Math.round((totalActual / totalEst) * 100);
+            if (accuracy > 110) lines.push(`User consistently underestimates tasks by ~${accuracy - 100}% — add extra buffer time`);
+            else if (accuracy < 85) lines.push(`User finishes tasks ~${100 - accuracy}% faster than estimated — tighten estimates`);
+            else lines.push('User estimation accuracy is good');
+        }
+
+        return lines.join('\n');
+    } catch (err) {
+        console.error('Error computing user insights:', err);
+        return '';
+    }
+}
+
 export async function callDeepSeek(
     rawText: string,
     freeBusy: string,
@@ -123,37 +175,38 @@ export async function callDeepSeek(
         : '';
 
     const systemPrompt = `# MISSION
-You are the brain of RESIN, a premium productivity agent. Convert vague thoughts into concrete, scheduled, protected actions.
+You are the Lead Mentor of RESIN, a sophisticated productivity ecosystem. Your objective is not just to schedule tasks, but to architect a user's life according to their biology, true intent, and long-term well-being. You translate chaotic human thoughts into a prioritized, energy-aware "Amber Plan."
 
-# OPERATIONAL PIPELINE
-1. CATEGORIZE: ACTION, INTENTION, or HABIT.
-2. PLAN: Generate a thorough, line-by-line action plan with specific micro-steps.
-3. ANALYZE CALENDAR: Find best free gaps.
-4. SCHEDULE: Never double-book.
+# OPERATIONAL PRINCIPLES
+1. INTUITIVE INTENT EXTRACTION (Chain-of-Thought):
+   - Anchor on Commitments: First, identify fixed deadlines, meetings, and hard constraints.
+   - Disambiguate Intent: Distinguish between "aspirational dreams" and "urgent needs." Predict objective success criteria.
+   - Dialogue-Ready: If vital information is missing, flag it in the notification copy.
+2. ENERGY-AWARE TAGGING & CHRONOTYPE ALIGNMENT:
+   - High-concentration tasks (coding, writing, planning) MUST be slotted into focus peaks.
+   - The "Lull" Protocol: Routine work (admin, email) MUST be deferred to energy lulls.
+3. EMPATHETIC PACING & BURNOUT PREVENTION:
+   - Dynamic Intensity: Bias toward "Soft" sessions if recent success is low. Bias toward "Firm" for deep work.
+   - The Guilt-Free Buffer: Ensure plans include non-negotiable breaks.
+4. RECURSIVE REFINEMENT:
+   - Memory Management: Use past reflections (\${userPreferences}) to avoid repeating failure patterns.
+
+# TASK SCORING LOGIC
+- Weight tasks by Urgency, Biological Fit (Energy vs. Peak), and Mental Clarity.
 
 # OUTPUT CONTRACT (STRICT JSON ONLY)
 {
-  "type": "action"|"intention"|"habit",
-  "display_title": "Short UI title",
-  "original_note": "string",
-  "ai_plan": [
-    {
-      "title": "Main action item",
-      "duration_minutes": 20,
-      "steps": ["Micro-step 1 with specifics", "Micro-step 2 with metrics", "Micro-step 3"]
-    }
-  ],
+  "type": "action" | "intention" | "habit",
+  "display_title": "Punchy, empathetic title",
+  "ai_plan": ["Step 1.", "Step 2.", "Step 3."],
   "scheduling": { "start_time": "ISO8601", "end_time": "ISO8601", "duration_minutes": number },
-  "blocking_active": boolean,
+  "blocking_active": boolean (always true for High energy tasks),
   "requires_verification": boolean,
-  "notification_copy": "One sentence summary."
+  "session_type": "Soft" | "Firm",
+  "energy_match_score": 0.0-1.0,
+  "energy_demand": "High" | "Medium" | "Low",
+  "notification_copy": "Empathetic nudge summarizing the value of this session."
 }
-
-# PLAN BREAKDOWN RULES
-- Break each plan item into 2–4 specific, actionable micro-steps
-- Use concrete numbers over vague descriptions (e.g., "3 sets of 15 pushups" not "do pushups")
-- Include setup, execution, and wrap-up if applicable
-- Each step should be completable in a few minutes
 
 # CALENDAR ANALYSIS
 PREFERRED WINDOW: ${startHour}:00–${endHour}:00
@@ -197,8 +250,12 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         const gToken = await getGoogleAccessToken(userId);
         const freeBusy = await getFreeBusy(gToken, timezone);
 
+        // 2.5. Compute learned insights from past sessions
+        const learnedInsights = await computeUserInsights(userId);
+        const enrichedPreferences = [learnedInsights, user_preferences].filter(Boolean).join('\n\n');
+
         // 3. Call DeepSeek
-        const plan = await callDeepSeek(rawText, freeBusy, intensity, start_hour, end_hour, timezone, user_preferences);
+        const plan = await callDeepSeek(rawText, freeBusy, intensity, start_hour, end_hour, timezone, enrichedPreferences);
 
         // 4. Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone);
@@ -218,16 +275,14 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             id: crypto.randomUUID(),
             session_id: sessionId,
             title: plan.display_title,
-            description: plan.ai_plan
-            .flatMap(step => [`📍 ${step.title} (${step.duration_minutes}m)`, ...step.steps.map(s => `  • ${s}`)])
-            .join('\n'),
+            description: plan.ai_plan.join('\n'),
             estimated_minutes: plan.scheduling.duration_minutes,
             sequence_order: 1,
             start_time: plan.scheduling.start_time,
             end_time: plan.scheduling.end_time,
             calendar_event_id: calEventId,
             requires_focus: plan.blocking_active,
-            requires_camera_verification: plan.requires_verification ?? false,
+            requires_camera_verification: plan.requires_verification,
         };
         await admin.from('amber_tasks').upsert(taskRow);
 

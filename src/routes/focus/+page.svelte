@@ -3,12 +3,14 @@
     import { fade, slide } from 'svelte/transition';
     import FocusControl from '$lib/components/FocusControl.svelte';
     import { Circle, Calendar, Users, Clock, Trash2 } from 'lucide-svelte';
+    import type { PageData } from './$types';
 
     let { data } = $props();
 
     let activeSessions = $state(data.activeSessions || []);
     let scheduledSessions = $state(data.scheduledSessions || []);
     let deviceCount = $state(data.deviceCount || 0);
+    let groups = $state(data.groups || []);
     let showScheduleForm = $state(false);
     let showAutomationForm = $state(false);
 
@@ -43,6 +45,45 @@
         'Sat': false,
         'Sun': false,
     });
+
+    let showCreateGroupForm = $state(false);
+    let groupFormData = $state({ name: '', description: '' });
+    let groupFormError = $state('');
+    let isCreatingGroup = $state(false);
+
+    async function handleCreateGroup() {
+        groupFormError = '';
+        if (!groupFormData.name.trim()) {
+            groupFormError = 'Group name is required';
+            return;
+        }
+
+        isCreatingGroup = true;
+        try {
+            const response = await fetch('/api/groups/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(groupFormData)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                groupFormError = result.error || 'Failed to create group';
+                return;
+            }
+
+            // Reset and navigate to new group
+            showCreateGroupForm = false;
+            groupFormData = { name: '', description: '' };
+            window.location.href = `/groups/${result.id}`;
+        } catch (e) {
+            groupFormError = 'An error occurred. Please try again.';
+            console.error(e);
+        } finally {
+            isCreatingGroup = false;
+        }
+    }
 
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const dayOfWeekAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -114,6 +155,140 @@
     <!-- Quick Focus (FocusControl) -->
     <section class="mb-12">
         <FocusControl />
+    </section>
+
+    <!-- Focus Groups -->
+    <section class="mb-12" transition:fade>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-resin-charcoal flex items-center gap-3">
+                <Users class="w-6 h-6 text-resin-forest" />
+                Your Groups {#if groups.length > 0}({groups.length}){/if}
+            </h2>
+            <div class="flex items-center gap-2">
+                <button
+                    onclick={() => (showCreateGroupForm = !showCreateGroupForm)}
+                    class="px-4 py-2 bg-resin-amber/10 border border-resin-amber/30 text-resin-amber rounded-lg text-xs font-bold hover:bg-resin-amber/20 transition-all flex items-center gap-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create
+                </button>
+                <a
+                    href="/groups"
+                    class="px-4 py-2 bg-resin-forest text-white rounded-lg text-xs font-bold hover:bg-resin-forest/80 transition-all"
+                >
+                    All Groups
+                </a>
+            </div>
+        </div>
+
+        <!-- Create Group Form Modal -->
+        {#if showCreateGroupForm}
+            <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4" transition:fade>
+                <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl" transition:slide={{ duration: 300 }}>
+                    <h3 class="text-2xl font-serif font-bold text-resin-charcoal mb-6">Create New Group</h3>
+
+                    {#if groupFormError}
+                        <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                            {groupFormError}
+                        </div>
+                    {/if}
+
+                    <div class="mb-4">
+                        <label for="groupName" class="block text-sm font-semibold text-resin-charcoal mb-2">
+                            Group Name *
+                        </label>
+                        <input
+                            id="groupName"
+                            type="text"
+                            bind:value={groupFormData.name}
+                            placeholder="e.g., Morning Study Squad"
+                            class="w-full px-4 py-2 border border-resin-forest/20 rounded-lg focus:outline-none focus:border-resin-forest focus:ring-2 focus:ring-resin-forest/20"
+                            disabled={isCreatingGroup}
+                        />
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="groupDesc" class="block text-sm font-semibold text-resin-charcoal mb-2">
+                            Description (optional)
+                        </label>
+                        <textarea
+                            id="groupDesc"
+                            bind:value={groupFormData.description}
+                            placeholder="What's this group about?"
+                            rows="3"
+                            class="w-full px-4 py-2 border border-resin-forest/20 rounded-lg focus:outline-none focus:border-resin-forest focus:ring-2 focus:ring-resin-forest/20 resize-none"
+                            disabled={isCreatingGroup}
+                        ></textarea>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button
+                            onclick={() => {
+                                showCreateGroupForm = false;
+                                groupFormError = '';
+                                groupFormData = { name: '', description: '' };
+                            }}
+                            class="flex-1 px-4 py-2 border border-resin-forest/20 text-resin-charcoal rounded-lg font-semibold hover:bg-resin-forest/5 transition-all"
+                            disabled={isCreatingGroup}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onclick={handleCreateGroup}
+                            class="flex-1 px-4 py-2 bg-resin-forest text-white rounded-lg font-semibold hover:bg-resin-forest/90 transition-all disabled:opacity-50"
+                            disabled={isCreatingGroup || !groupFormData.name.trim()}
+                        >
+                            {isCreatingGroup ? 'Creating...' : 'Create Group'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {/if}
+
+        {#if groups.length > 0}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {#each groups.slice(0, 3) as group (group.id)}
+                    <a
+                        href="/groups/{group.id}"
+                        class="glass-card rounded-2xl p-6 border border-resin-forest/10 hover:border-resin-forest/30 transition-all group/card"
+                    >
+                        <div class="mb-4">
+                            <h3 class="font-bold text-resin-charcoal group-hover/card:text-resin-forest transition-colors">
+                                {group.name}
+                            </h3>
+                            <p class="text-xs text-resin-earth/60 mt-1">
+                                {group.userRole}
+                            </p>
+                        </div>
+
+                        {#if group.description}
+                            <p class="text-xs text-resin-earth/70 leading-relaxed mb-4 line-clamp-2">
+                                {group.description}
+                            </p>
+                        {/if}
+
+                        <div class="flex items-center justify-between text-xs text-resin-earth/50">
+                            <span>Joined {new Date(group.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            <span class="text-resin-forest font-bold">→</span>
+                        </div>
+                    </a>
+                {/each}
+            </div>
+        {:else}
+            <div class="text-center py-12 px-6 bg-gradient-to-br from-resin-forest/5 to-transparent rounded-2xl border border-resin-forest/10">
+                <Users class="w-12 h-12 text-resin-forest/30 mx-auto mb-4" />
+                <p class="text-resin-charcoal font-semibold mb-2">No groups yet</p>
+                <p class="text-sm text-resin-earth/60 mb-4">Create one or ask a friend to invite you</p>
+                <button
+                    onclick={() => (showCreateGroupForm = true)}
+                    class="px-4 py-2 bg-resin-forest text-white rounded-lg text-sm font-semibold hover:bg-resin-forest/80 transition-all"
+                >
+                    Create Your First Group
+                </button>
+            </div>
+        {/if}
     </section>
 
     <!-- Active Sessions -->

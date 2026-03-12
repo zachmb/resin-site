@@ -1,13 +1,29 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { page } from "$app/stores";
+    import SessionCelebration from './SessionCelebration.svelte';
+    import AmberIgniteRitual from './AmberIgniteRitual.svelte';
 
-    let { profile, recentSessions = [] } = $props<{
+    let { profile, recentSessions = [], executionStats = null } = $props<{
         profile: any;
         recentSessions: any[];
+        executionStats?: any;
     }>();
 
     let selectedSessionId = $state<string | null>(null);
-    let activeFilter = $state<'all'|'scheduled'|'completed'|'draft'|'canceled'>('all');
+    let showCelebration = $state(false);
+    let celebrationData = $state<any>(null);
+    let showIgniteRitual = $state(false);
+    let pendingSessionCompletion = $state<string | null>(null);
+
+    // Pre-select session from URL query parameter if present
+    $effect(() => {
+        const sessionIdFromUrl = $page.url.searchParams.get('sessionId');
+        if (sessionIdFromUrl && !selectedSessionId) {
+            selectedSessionId = sessionIdFromUrl;
+        }
+    });
+    let activeFilter = $state<'all'|'scheduled'|'completed'|'canceled'>('all');
     let showGoogleSignIn = $state(false);
     let googleSignInError = $state<string | null>(null);
     let activatingId = $state<string | null>(null);
@@ -20,6 +36,23 @@
     let editingDuration = $state(0);
     let editingDescription = $state('');
     let savingTask = $state(false);
+    let intensityValue = $state(0.5);
+    let totalDuration = $state(0);
+    let startTimeDate = $state('');
+    let startTimeOffset = $state(0);
+    let isSavingAdjustments = $state(false);
+    let adjustmentSaveTimeout: ReturnType<typeof setTimeout>;
+
+    const intensityLabels = ['Relaxed', 'Focused', 'Strict', 'Max'];
+    const intensityColors = ['#2B4634', '#D97706', '#EA580C', '#DC2626'];
+
+    const intensityLabel = $derived(intensityLabels[Math.min(3, Math.floor(intensityValue / 0.25))]);
+    const intensityColor = $derived(intensityColors[Math.min(3, Math.floor(intensityValue / 0.25))]);
+
+    const formatDuration = (mins: number) => {
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
+    };
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString("en-US", {
@@ -52,7 +85,6 @@
             case 'scheduled': return 'Active';
             case 'completed': return 'Completed';
             case 'canceled': return 'Canceled';
-            case 'draft': return 'Draft';
             case 'failed': return 'Failed';
             default: return status;
         }
@@ -74,11 +106,83 @@
         (selectedSession?.amber_tasks || []).reduce((acc: number, t: any) => acc + (t.estimated_minutes || 0), 0)
     );
 
+    const isSessionPastEnd = $derived(
+        selectedSession
+            && selectedSession.status === 'scheduled'
+            && selectedSession.amber_tasks?.at(-1)?.end_time
+            && new Date(selectedSession.amber_tasks.at(-1).end_time) < new Date()
+    );
+
     let today = new Date().toISOString();
+
+    // Initialize adjustment controls when session changes
+    $effect(() => {
+        if (selectedSession) {
+            intensityValue = selectedSession.intensity ?? 0.5;
+            totalDuration = (selectedSession.amber_tasks || []).reduce((s: number, t: any) => s + (t.estimated_minutes ?? 0), 0);
+            const firstTask = selectedSession.amber_tasks?.[0];
+            startTimeDate = firstTask?.start_time ? firstTask.start_time.slice(0, 16) : '';
+            startTimeOffset = 0;
+        }
+    });
+
+    const saveIntensity = async () => {
+        if (!selectedSession) return;
+        isSavingAdjustments = true;
+        try {
+            const formData = new FormData();
+            formData.append('sessionId', selectedSession.id);
+            formData.append('intensity', intensityValue.toString());
+            await fetch('?/updateIntensity', { method: 'POST', body: formData });
+        } finally {
+            isSavingAdjustments = false;
+        }
+    };
+
+    const scaleDurations = async () => {
+        if (!selectedSession) return;
+        isSavingAdjustments = true;
+        try {
+            const currentTotal = (selectedSession.amber_tasks || []).reduce((s: number, t: any) => s + (t.estimated_minutes ?? 0), 0);
+            if (currentTotal === 0) return;
+            const formData = new FormData();
+            formData.append('sessionId', selectedSession.id);
+            formData.append('newTotal', totalDuration.toString());
+            await fetch('?/scaleDurations', { method: 'POST', body: formData });
+        } finally {
+            isSavingAdjustments = false;
+        }
+    };
+
+    const saveStartTime = async () => {
+        if (!selectedSession || !startTimeDate) return;
+        isSavingAdjustments = true;
+        try {
+            const formData = new FormData();
+            formData.append('sessionId', selectedSession.id);
+            formData.append('startTime', startTimeDate);
+            await fetch('?/shiftStartTimes', { method: 'POST', body: formData });
+        } finally {
+            isSavingAdjustments = false;
+        }
+    };
+
+    const shiftTimes = async () => {
+        if (!selectedSession) return;
+        isSavingAdjustments = true;
+        try {
+            const formData = new FormData();
+            formData.append('sessionId', selectedSession.id);
+            formData.append('offsetMinutes', startTimeOffset.toString());
+            await fetch('?/shiftStartTimes', { method: 'POST', body: formData });
+        } finally {
+            isSavingAdjustments = false;
+        }
+    };
 </script>
 
 <main
-    class="w-full h-full min-h-screen pt-24 pb-32 px-4 sm:px-6 relative z-10 flex flex-col max-w-7xl mx-auto"
+    class="w-full h-screen pt-20 pb-4 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto overflow-hidden"
 >
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
@@ -99,10 +203,10 @@
     </div>
 
     <!-- Two-Panel Layout -->
-    <div class="flex gap-6 flex-1 relative min-h-[600px]">
+    <div class="flex gap-6 flex-1 relative overflow-hidden">
         <!-- Left Panel: Session Browser -->
         <div
-            class="flex-shrink-0 w-full sm:w-72 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
+            class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
         >
             <!-- Browser Header -->
             <div class="p-4 border-b border-resin-forest/5 bg-white/40">
@@ -114,7 +218,7 @@
 
             <!-- Filter Tabs -->
             <div class="px-3 py-3 border-b border-resin-forest/5 flex gap-1 overflow-x-auto scroll-smooth">
-                {#each ['all', 'scheduled', 'completed', 'draft', 'canceled'] as filter}
+                {#each (['all', 'scheduled', 'completed', 'canceled'] as const) as filter}
                     <button
                         onclick={() => activeFilter = filter}
                         class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all {activeFilter === filter
@@ -132,15 +236,26 @@
                     {#each filteredSessions as session (session.id)}
                         <button
                             onclick={() => selectedSessionId = session.id}
-                            class="w-full text-left p-3 rounded-lg transition-all border border-transparent {selectedSessionId === session.id
-                                ? 'bg-resin-forest/5 border-resin-forest/10 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-resin-forest before:rounded-r-md'
-                                : 'hover:bg-black/5'}"
+                            class="w-full text-left p-3 rounded-lg transition-all border {selectedSessionId === session.id
+                                ? session.sessionType === 'focus'
+                                    ? 'bg-resin-amber/5 border-resin-amber/20 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-resin-amber before:rounded-r-md'
+                                    : 'bg-resin-forest/5 border-resin-forest/10 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-resin-forest before:rounded-r-md'
+                                : session.sessionType === 'focus'
+                                    ? 'border-transparent hover:bg-resin-amber/5'
+                                    : 'border-transparent hover:bg-black/5'}"
                         >
                             <div class="flex items-start gap-2 mb-1">
                                 <div class="flex-1 min-w-0">
-                                    <h3 class="font-semibold text-sm text-resin-charcoal truncate">
-                                        {session.title || session.display_title || 'Focus Session'}
-                                    </h3>
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        <h3 class="font-semibold text-sm text-resin-charcoal truncate">
+                                            {session.title || session.display_title || 'Focus Session'}
+                                        </h3>
+                                        {#if session.sessionType === 'focus'}
+                                            <span class="flex-shrink-0 text-[9px] font-bold text-resin-amber px-1 py-0 rounded bg-resin-amber/15 border border-resin-amber/30 uppercase tracking-wider">
+                                                🔥 Focus
+                                            </span>
+                                        {/if}
+                                    </div>
                                 </div>
                                 <div class="flex-shrink-0 text-[9px] font-bold text-white px-1.5 py-0.5 rounded {getStatusColor(session.status)}">
                                     {getStatusLabel(session.status)}
@@ -148,10 +263,10 @@
                             </div>
                             <div class="flex items-center justify-between text-xs text-resin-earth/60 gap-2">
                                 <span>
-                                    {new Date(session.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                    {new Date(session.amber_tasks?.[0]?.start_time || session.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                 </span>
                                 <span class="font-mono">
-                                    {(session.amber_tasks || []).reduce((acc, t) => acc + (t.estimated_minutes || 0), 0)}m
+                                    {(session.amber_tasks || []).reduce((acc: number, t: any) => acc + (t.estimated_minutes || 0), 0)}m
                                 </span>
                             </div>
                         </button>
@@ -175,17 +290,29 @@
         >
             {#if selectedSession}
                 <!-- Detail Header -->
-                <div class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-3">
+                <div class="flex-shrink-0 px-6 py-6 border-b {selectedSession.sessionType === 'focus' ? 'border-resin-amber/10 bg-resin-amber/5' : 'border-resin-forest/5 bg-white/40'} space-y-3">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 min-w-0">
-                            <h2 class="text-2xl font-serif font-bold text-resin-charcoal truncate">
-                                {selectedSession.title || selectedSession.display_title || 'Focus Session'}
-                            </h2>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h2 class="text-2xl font-serif font-bold text-resin-charcoal truncate">
+                                    {selectedSession.title || selectedSession.display_title || 'Focus Session'}
+                                </h2>
+                                {#if selectedSession.sessionType === 'focus'}
+                                    <span class="flex-shrink-0 text-[10px] font-bold text-resin-amber px-1.5 py-0.5 rounded bg-resin-amber/20 border border-resin-amber/30 uppercase tracking-wider">
+                                        🔥 Focus Block
+                                    </span>
+                                {/if}
+                            </div>
                             <p class="text-sm text-resin-earth/60 mt-1">
-                                {new Date(selectedSession.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                {new Date(selectedSession.amber_tasks?.[0]?.start_time || selectedSession.created_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                             </p>
+                            {#if executionStats && selectedSession.sessionType !== 'focus'}
+                                <p class="text-xs text-resin-earth/50 italic mt-2">
+                                    💡 {executionStats.label}
+                                </p>
+                            {/if}
                         </div>
-                        <div class="flex-shrink-0 inline-block px-3 py-1.5 rounded-lg bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-widest">
+                        <div class="flex-shrink-0 inline-block px-3 py-1.5 rounded-lg {selectedSession.sessionType === 'focus' ? 'bg-resin-amber/20 text-resin-amber' : 'bg-resin-forest/10 text-resin-forest'} text-[10px] font-bold uppercase tracking-widest">
                             {getStatusLabel(selectedSession.status)}
                         </div>
                     </div>
@@ -219,6 +346,34 @@
                         </div>
                     </section>
 
+                    <!-- Completion Prompt Banner -->
+                    {#if isSessionPastEnd}
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                            <p class="font-semibold text-amber-800">Session ended — did you complete it?</p>
+                            <div class="flex gap-2 flex-wrap">
+                                <form method="POST" action="?/complete" use:enhance>
+                                    <input type="hidden" name="sessionId" value={selectedSession.id} />
+                                    <button class="px-4 py-2 bg-resin-forest text-white rounded-lg text-sm font-semibold hover:bg-resin-forest/90 transition">
+                                        ✓ Yes, Completed
+                                    </button>
+                                </form>
+                                <form method="POST" action="?/markFailed" use:enhance>
+                                    <input type="hidden" name="sessionId" value={selectedSession.id} />
+                                    <button class="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition">
+                                        ✗ Missed It
+                                    </button>
+                                </form>
+                                <form method="POST" action="?/extendSession" use:enhance>
+                                    <input type="hidden" name="sessionId" value={selectedSession.id} />
+                                    <input type="hidden" name="extraMinutes" value="15" />
+                                    <button class="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-semibold hover:bg-amber-200 transition">
+                                        +15 min
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {/if}
+
                     <!-- Plan Steps -->
                     {#if selectedSession.amber_tasks && selectedSession.amber_tasks.length > 0}
                         <section>
@@ -243,22 +398,8 @@
                                                 <textarea
                                                     bind:value={editingDescription}
                                                     class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm text-resin-charcoal focus:outline-none focus:border-resin-forest/30 resize-none"
-                                                    rows="2"
+                                                    style="min-height: auto; height: {Math.min(200, Math.max(50, editingDescription.split('\n').length * 20 + 30))}px"
                                                 />
-                                            </div>
-                                            <div>
-                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Duration (minutes)</label>
-                                                <div class="flex items-center gap-3 mt-1">
-                                                    <input
-                                                        type="range"
-                                                        min="5"
-                                                        max="240"
-                                                        step="5"
-                                                        bind:value={editingDuration}
-                                                        class="flex-1"
-                                                    />
-                                                    <span class="text-sm font-bold text-resin-charcoal w-12 text-right">{editingDuration}m</span>
-                                                </div>
                                             </div>
                                             <div class="flex gap-2 pt-2">
                                                 <button
@@ -313,8 +454,15 @@
                                                     <span class="text-sm font-semibold text-resin-charcoal">{task.title}</span>
                                                     <span class="text-xs text-resin-earth/50 font-mono">{task.estimated_minutes}m</span>
                                                 </div>
+                                                {#if task.start_time && task.end_time}
+                                                    <div class="text-xs text-resin-forest/70 font-semibold mb-1">
+                                                        {new Date(task.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                        {' '}
+                                                        {new Date(task.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – {new Date(task.end_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                                    </div>
+                                                {/if}
                                                 {#if task.description}
-                                                    <p class="text-xs text-resin-earth/60 mb-1">{task.description}</p>
+                                                    <p class="text-xs text-resin-earth/60 mb-1 whitespace-pre-wrap">{task.description}</p>
                                                 {/if}
                                                 {#if task.requires_focus}
                                                     <span class="inline-block text-[9px] font-bold text-resin-amber uppercase tracking-widest px-2 py-0.5 rounded bg-resin-amber/10 border border-resin-amber/20">
@@ -338,6 +486,155 @@
                                 {/each}
                             </div>
                         </section>
+                    {/if}
+
+                    <!-- Adjustments (for scheduled amber sessions only - not focus blocks) -->
+                    {#if selectedSession.status === 'scheduled' && selectedSession.sessionType !== 'focus'}
+                        <div class="mt-4 pt-4 border-t border-resin-earth/10 space-y-5">
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs font-semibold text-resin-earth/50 uppercase tracking-wider">Adjustments</p>
+                                {#if isSavingAdjustments}
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-resin-forest animate-pulse"></div>
+                                        <span class="text-[10px] text-resin-forest font-bold uppercase">Saving...</span>
+                                    </div>
+                                {/if}
+                            </div>
+
+                            <!-- Intensity -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-medium text-resin-earth/70">Enforcement Intensity</span>
+                                    <span class="text-xs font-bold" style="color: {intensityColor}">
+                                        {intensityLabel} · {Math.round(intensityValue * 100)}%
+                                    </span>
+                                </div>
+                                <input type="range" min="0" max="1" step="0.05"
+                                       bind:value={intensityValue}
+                                       oninput={() => {
+                                           clearTimeout(adjustmentSaveTimeout);
+                                           adjustmentSaveTimeout = setTimeout(() => saveIntensity(), 800);
+                                       }}
+                                       class="w-full accent-resin-forest" />
+                            </div>
+
+                            <!-- Duration -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-medium text-resin-earth/70">Total Duration</span>
+                                    <span class="text-xs font-bold text-resin-forest">{formatDuration(totalDuration)}</span>
+                                </div>
+                                <input type="range" min="5" max="480" step="5"
+                                       bind:value={totalDuration}
+                                       oninput={() => {
+                                           clearTimeout(adjustmentSaveTimeout);
+                                           adjustmentSaveTimeout = setTimeout(() => scaleDurations(), 800);
+                                       }}
+                                       class="w-full accent-resin-forest" />
+                            </div>
+
+                            <!-- Start Time -->
+                            {#if startTimeDate}
+                            <div class="space-y-2">
+                                <span class="text-xs font-medium text-resin-earth/70">Start Time</span>
+                                <input type="datetime-local" bind:value={startTimeDate} onchange={saveStartTime}
+                                       class="w-full text-sm border border-resin-earth/20 rounded-lg px-2 py-1 focus:outline-none focus:border-resin-forest/50" />
+                                <div class="space-y-1">
+                                    <input type="range" min="-120" max="120" step="15"
+                                           bind:value={startTimeOffset}
+                                           oninput={() => {
+                                               clearTimeout(adjustmentSaveTimeout);
+                                               adjustmentSaveTimeout = setTimeout(() => shiftTimes(), 800);
+                                           }}
+                                           class="w-full accent-amber-500" />
+                                    <div class="flex justify-between text-xs text-resin-earth/40">
+                                        <span>-2h</span>
+                                        <span class="font-semibold text-amber-600">
+                                            {startTimeOffset === 0 ? 'No shift' : startTimeOffset > 0 ? `+${startTimeOffset}m` : `${startTimeOffset}m`}
+                                        </span>
+                                        <span>+2h</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {/if}
+                        </div>
+                    {/if}
+
+                    <!-- Info for Focus Sessions -->
+                    {#if selectedSession.sessionType === 'focus'}
+                        <div class="mt-4 pt-4 border-t border-resin-amber/20 bg-resin-amber/5 p-3 rounded-lg">
+                            <p class="text-xs text-resin-amber/80">
+                                <span class="font-semibold">Focus Block:</span> This is an automated focus session from your schedule. It will automatically mark as completed when the timer reaches zero.
+                            </p>
+                        </div>
+                    {/if}
+
+                    <!-- Action Buttons (amber sessions only) -->
+                    {#if selectedSession.status === 'scheduled' && selectedSession.sessionType === 'amber'}
+                        <div class="pt-4 space-y-3">
+                            <!-- Hidden form for actual submission -->
+                            <form
+                                id="complete-form-{selectedSession.id}"
+                                method="POST"
+                                action="?/complete"
+                                use:enhance={() => {
+                                    return async ({ result }: any) => {
+                                        if (result.type === 'success' && result.data?.reward) {
+                                            const reward = result.data.reward as any;
+                                            celebrationData = {
+                                                totalStones: reward.totalStones || 3,
+                                                bonusStones: reward.bonusStones || 0,
+                                                forestHealthGain: reward.forestHealthGain || 3,
+                                                celebrationLevel: reward.celebrationLevel || 'standard',
+                                                message: reward.message || 'Session completed!'
+                                            };
+                                            showCelebration = true;
+                                            setTimeout(() => { showCelebration = false; }, 3000);
+                                        }
+                                    };
+                                }}
+                            >
+                                <input
+                                    type="hidden"
+                                    name="sessionId"
+                                    value={selectedSession.id}
+                                />
+                            </form>
+
+                            <!-- Button triggers ritual instead of form -->
+                            <button
+                                onclick={() => {
+                                    showIgniteRitual = true;
+                                    pendingSessionCompletion = selectedSession.id;
+                                }}
+                                class="w-full px-4 py-2.5 bg-resin-forest text-white font-bold rounded-xl hover:bg-resin-charcoal transition-all text-sm flex items-center justify-center gap-2"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Complete
+                            </button>
+                            <form
+                                method="POST"
+                                action="?/cancel"
+                                use:enhance
+                            >
+                                <input
+                                    type="hidden"
+                                    name="sessionId"
+                                    value={selectedSession.id}
+                                />
+                                <button
+                                    type="submit"
+                                    class="w-full px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-600 font-bold rounded-xl hover:bg-red-500/20 transition-all text-sm flex items-center justify-center gap-2"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
                     {/if}
 
                     <!-- Reflection (if available) -->
@@ -364,7 +661,12 @@
                 <!-- Action Bar -->
                 <div class="flex-shrink-0 px-6 py-4 border-t border-resin-forest/5 bg-white/30 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        {#if selectedSession.status === 'completed'}
+                        {#if selectedSession.status === 'scheduled'}
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-resin-amber/10 border border-resin-amber/20 rounded-full">
+                                <div class="w-1.5 h-1.5 rounded-full bg-resin-amber animate-pulse"></div>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-resin-amber">Scheduled · {formatDuration(sessionFocusMinutes)}</span>
+                            </div>
+                        {:else if selectedSession.status === 'completed'}
                             <div class="flex items-center gap-2 px-4 py-2 bg-resin-forest/10 rounded-xl border border-resin-forest/20">
                                 <svg class="w-4 h-4 text-resin-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -378,13 +680,11 @@
                                 </svg>
                                 <span class="text-xs font-bold text-red-600 uppercase">Canceled</span>
                             </div>
-                        {:else if selectedSession.status === 'draft'}
-                            <div class="text-xs text-resin-earth/60">Draft</div>
                         {/if}
                     </div>
 
                     <div class="flex items-center justify-end gap-2">
-                        {#if selectedSession.status === 'draft' || selectedSession.status === 'failed'}
+                        {#if selectedSession.status === 'failed'}
                             <form
                                 method="POST"
                                 action="?/activate"
@@ -394,7 +694,7 @@
                                         if (result.type === 'failure' && result.data?.code === 'google_not_connected') {
                                             activatingId = null;
                                             showGoogleSignIn = true;
-                                            googleSignInError = result.data?.error;
+                                            googleSignInError = result.data?.error as string;
                                         } else if (result.type === 'success') {
                                             successId = selectedSession.id;
                                             setTimeout(() => {
@@ -432,47 +732,6 @@
                                         </svg>
                                     {/if}
                                     <span>{successId === selectedSession.id ? 'Activated!' : 'Activate Plan'}</span>
-                                </button>
-                            </form>
-                        {:else if selectedSession.status === 'scheduled'}
-                            <form
-                                method="POST"
-                                action="?/complete"
-                                use:enhance
-                            >
-                                <input
-                                    type="hidden"
-                                    name="sessionId"
-                                    value={selectedSession.id}
-                                />
-                                <button
-                                    type="submit"
-                                    class="px-4 py-2.5 bg-resin-forest text-white font-bold rounded-xl hover:bg-resin-charcoal transition-all text-sm flex items-center gap-2"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Complete
-                                </button>
-                            </form>
-                            <form
-                                method="POST"
-                                action="?/cancel"
-                                use:enhance
-                            >
-                                <input
-                                    type="hidden"
-                                    name="sessionId"
-                                    value={selectedSession.id}
-                                />
-                                <button
-                                    type="submit"
-                                    class="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-600 font-bold rounded-xl hover:bg-red-500/20 transition-all text-sm flex items-center gap-2"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    Cancel
                                 </button>
                             </form>
                         {/if}
@@ -677,6 +936,34 @@
         </div>
     {/if}
 </main>
+
+<!-- Ignite ritual before session completion -->
+{#if selectedSession && pendingSessionCompletion === selectedSession.id}
+    <AmberIgniteRitual
+        visible={showIgniteRitual}
+        planTitle={selectedSession.display_title || 'Amber Session'}
+        durationMinutes={selectedSession.ai_plan?.[0]?.duration_minutes || 30}
+        onIgnite={() => {
+            showIgniteRitual = false;
+            pendingSessionCompletion = null;
+            // Submit the hidden form
+            const form = document.getElementById(`complete-form-${selectedSession.id}`) as HTMLFormElement;
+            if (form) form.submit();
+        }}
+    />
+{/if}
+
+<!-- Celebration overlay on session completion -->
+{#if celebrationData}
+    <SessionCelebration
+        visible={showCelebration}
+        totalStones={celebrationData.totalStones}
+        bonusStones={celebrationData.bonusStones}
+        forestHealthGain={celebrationData.forestHealthGain}
+        celebrationLevel={celebrationData.celebrationLevel}
+        message={celebrationData.message}
+    />
+{/if}
 
 <style>
     :global {

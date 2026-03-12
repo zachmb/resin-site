@@ -172,7 +172,7 @@
         <div class="bg-resin-forest/5 p-4 rounded-lg mt-4 space-y-2">
             <p><strong>LoopLess LLC</strong></p>
             <p>State of Illinois, United States</p>
-            <p>Email: support@resin.app</p>
+            <p>Email: crew@looplessapp.com</p>
         </div>
 
         <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">

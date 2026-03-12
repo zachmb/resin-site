@@ -181,6 +181,31 @@ export const load: PageServerLoad = async ({ locals }) => {
     // Check if user has visited the web app before
     const isNewUser = !profile?.web_onboarded;
 
+    // Fetch user's focus groups
+    const { data: userGroups } = await locals.supabase
+        .from('focus_group_members')
+        .select(`
+            group_id,
+            role,
+            joined_at,
+            focus_groups (
+                id,
+                name,
+                description,
+                created_by,
+                created_at
+            )
+        `)
+        .eq('user_id', userId)
+        .order('joined_at', { ascending: false })
+        .limit(5);
+
+    const groups = (userGroups || []).map((ug: any) => ({
+        ...ug.focus_groups,
+        userRole: ug.role,
+        joinedAt: ug.joined_at
+    }));
+
     return {
         session,
         profile,
@@ -189,6 +214,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         weeklyStats,
         automations: automations || [],
         isNewUser,
+        groups: groups || [],
     };
 };
 

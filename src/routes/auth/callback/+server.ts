@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit'
 
 export const GET = async ({ url, locals: { supabase } }) => {
     const code = url.searchParams.get('code')
-    const next = url.searchParams.get('next') ?? '/'
+    const next = url.searchParams.get('next') ?? '/notes'
 
     // ── iOS deep-link pass-through ──────────────────────────────────────────
     // When the iOS app initiates OAuth, it sets redirectTo = com.resin.app://...

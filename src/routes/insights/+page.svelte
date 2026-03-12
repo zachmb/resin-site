@@ -1,8 +1,10 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { createSupabaseClient } from '$lib/supabase';
 
     let { data } = $props();
-    const profile = data.profile;
+    let profile = $state(data.profile);
     const insights = data.insights;
 
     const getStreakEmoji = (streak: number) => {
@@ -11,6 +13,38 @@
         if (streak < 30) return '🔥🔥';
         return '🔥🔥🔥';
     };
+
+    // FIX: Subscribe to real-time profile updates from iOS sync
+    onMount(() => {
+        if (!profile?.id) return;
+
+        const supabase = createSupabaseClient();
+        const subscription = supabase
+            .channel(`profiles:${profile.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'profiles',
+                    filter: `id=eq.${profile.id}`
+                },
+                (payload) => {
+                    if (payload.new) {
+                        profile = payload.new;
+                        console.log('[Insights] Profile updated:', {
+                            streak: payload.new.current_streak,
+                            stones: payload.new.total_stones
+                        });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(subscription);
+        };
+    });
 </script>
 
 <main class="min-h-screen pt-24 pb-32 px-4 md:px-8">

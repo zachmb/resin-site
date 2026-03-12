@@ -7,7 +7,7 @@
         MiniMap,
     } from "@xyflow/svelte";
     import "@xyflow/svelte/dist/style.css";
-    import { onMount, untrack } from "svelte";
+    import { onMount, onDestroy, untrack } from "svelte";
     import { fade } from "svelte/transition";
     import MapNode from "./MapNode.svelte";
 
@@ -26,14 +26,21 @@
     let edges = $state<any[]>([]);
 
     const handleNodeDelete = async (id: string) => {
+        // Store original nodes for rollback
+        const originalNodes = nodes;
         nodes = nodes.filter((n: any) => n.id !== id);  // optimistic remove
         const formData = new FormData();
         formData.append("id", id);
         try {
-            await fetch("/map?/removeFromMap", { method: "POST", body: formData });
+            const response = await fetch("/map?/removeFromMap", { method: "POST", body: formData });
+            if (!response.ok) {
+                throw new Error(`Failed: ${response.statusText}`);
+            }
             if (onNoteDropped) onNoteDropped();
         } catch (err) {
             console.error("Failed to remove node:", err);
+            // Rollback on failure
+            nodes = originalNodes;
         }
     };
 
@@ -69,6 +76,11 @@
     let connectTo = $state('');
 
     let isConnecting = $state(false);
+
+    // Cleanup timeouts on unmount
+    onDestroy(() => {
+        if (saveTimeout) clearTimeout(saveTimeout);
+    });
 
     const handleManualConnect = async () => {
         if (connectFrom && connectTo && connectFrom !== connectTo) {
@@ -178,6 +190,11 @@
                 });
             }
         }
+
+        // Store original state for rollback
+        const originalNodes = nodes;
+        const originalEdges = edges;
+
         nodes = [...nodes, ...newNodes];
 
         // Add the related edges
@@ -197,10 +214,14 @@
         formData.append("position_y", position_y.toString());
 
         try {
-            await fetch("/map?/updateNodePosition", {
+            const response = await fetch("/map?/updateNodePosition", {
                 method: "POST",
                 body: formData,
             });
+
+            if (!response.ok) {
+                throw new Error(`Failed: ${response.statusText}`);
+            }
 
             // Also add connected notes to map
             minX = position_x;
@@ -211,10 +232,13 @@
                     formData2.append("id", connectedId);
                     formData2.append("position_x", minX.toString());
                     formData2.append("position_y", position_y.toString());
-                    await fetch("/map?/updateNodePosition", {
+                    const response2 = await fetch("/map?/updateNodePosition", {
                         method: "POST",
                         body: formData2,
                     });
+                    if (!response2.ok) {
+                        throw new Error(`Failed to add connected note: ${response2.statusText}`);
+                    }
                 }
             }
 
@@ -223,12 +247,15 @@
             }
         } catch (error) {
             console.error("Failed to add note to map:", error);
+            // Revert optimistic updates on failure
+            nodes = originalNodes;
+            edges = originalEdges;
         }
     };
 
     const onConnect = async (params: any) => {
         // Optimistically add edge to UI
-        const tempId = `temp-${Date.now()}`;
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
         edges = [
             ...edges,
             {
@@ -250,10 +277,17 @@
                 method: "POST",
                 body: formData,
             });
+
+            if (!response.ok) {
+                throw new Error(`Failed to create edge: ${response.statusText}`);
+            }
+
             const json = await response.json();
             const realEdge = json?.data?.edge;
             if (realEdge?.id) {
                 edges = edges.map((e: any) => e.id === tempId ? { ...e, id: realEdge.id } : e);
+            } else {
+                console.warn("Edge created but no ID returned, keeping temp ID");
             }
         } catch (error) {
             console.error("Failed to save edge:", error);
@@ -271,10 +305,13 @@
             const formData = new FormData();
             formData.append("id", edge.id);
             try {
-                await fetch("/map?/deleteEdge", {
+                const response = await fetch("/map?/deleteEdge", {
                     method: "POST",
                     body: formData,
                 });
+                if (!response.ok) {
+                    console.error(`Failed to delete edge: ${response.statusText}`);
+                }
             } catch (error) {
                 console.error("Failed to delete edge:", error);
             }
@@ -285,10 +322,13 @@
             const formData = new FormData();
             formData.append("id", node.id);
             try {
-                await fetch("/map?/removeFromMap", {
+                const response = await fetch("/map?/removeFromMap", {
                     method: "POST",
                     body: formData,
                 });
+                if (!response.ok) {
+                    console.error(`Failed to remove node from map: ${response.statusText}`);
+                }
             } catch (error) {
                 console.error("Failed to remove node from map:", error);
             }
@@ -296,7 +336,9 @@
 
         if (deletedNodes.length > 0 && onNoteDropped) {
             // Resync unmapped/mapped notes
-            setTimeout(() => onNoteDropped(), 100);
+            const resyncTimeout = setTimeout(() => onNoteDropped(), 100);
+            // Ensure timeout is cleared on unmount (in case onDelete is pending)
+            return () => clearTimeout(resyncTimeout);
         }
     };
 

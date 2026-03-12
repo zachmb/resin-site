@@ -153,13 +153,38 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id);
 
+    // Fetch user's focus groups
+    const { data: userGroups } = await supabase
+        .from('focus_group_members')
+        .select(`
+            group_id,
+            role,
+            joined_at,
+            focus_groups (
+                id,
+                name,
+                description,
+                created_by,
+                created_at
+            )
+        `)
+        .eq('user_id', session.user.id)
+        .order('joined_at', { ascending: false });
+
+    const groups = (userGroups || []).map((ug: any) => ({
+        ...ug.focus_groups,
+        userRole: ug.role,
+        joinedAt: ug.joined_at
+    }));
+
     return {
         activeSessions: activeSessions || [],
         scheduledSessions: scheduledSessions || [],
         automations: automations || [],
         friends: friends || [],
         sharedSessions: sharedSessions || [],
-        deviceCount: deviceCount || 0
+        deviceCount: deviceCount || 0,
+        groups: groups || []
     };
 };
 

@@ -1,7 +1,5 @@
 <script lang="ts">
-    import ResinShieldModal from "./ResinShieldModal.svelte";
-
-    let showModal = $state(false);
+    import { goto } from '$app/navigation';
 </script>
 
 <div
@@ -20,13 +18,13 @@
                 >
                     <img
                         src="/resinext-logo.png"
-                        alt="Resin Shield"
+                        alt="Resin Web Shield"
                         class="w-8 h-8 object-contain"
                     />
                 </div>
                 <div>
                     <h3 class="text-2xl font-bold text-resin-charcoal mb-1">
-                        Activate the Resin Shield
+                        Activate the Resin Web Shield
                     </h3>
                     <div
                         class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-[10px] font-bold text-resin-amber uppercase tracking-wider"
@@ -77,10 +75,10 @@
         </div>
 
         <button
-            onclick={() => (showModal = true)}
+            onclick={() => goto('/extension')}
             class="w-full sm:w-auto px-10 py-4 bg-resin-charcoal text-white rounded-[1.25rem] font-bold text-sm hover:bg-resin-forest transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
         >
-            <span>Install Shield</span>
+            <span>Learn More</span>
             <svg
                 class="w-4 h-4"
                 fill="none"
@@ -97,5 +95,3 @@
         </button>
     </div>
 </div>
-
-<ResinShieldModal bind:isOpen={showModal} />

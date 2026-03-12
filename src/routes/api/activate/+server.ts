@@ -35,6 +35,7 @@ import {
 import { sendPush } from '$lib/apns'
 import { executeNoteCommands } from '$lib/services/commandExecutor'
 import { computeUserInsights } from '$lib/amber_service'
+import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -389,21 +390,9 @@ export const POST = async ({ request }: RequestEvent) => {
         }
         await admin.from('amber_tasks').upsert(taskRow)
 
-        // 8. Award stones for activation
-        const stonesAwarded = 3;
-        const { data: currentProfile } = await admin
-            .from('profiles')
-            .select('total_stones')
-            .eq('id', user.id)
-            .single();
-
-        await admin
-            .from('profiles')
-            .update({
-                total_stones: (currentProfile?.total_stones || 0) + stonesAwarded,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
+        // 8. Sync stones for activation (1 note = 1 stone)
+        await syncStonesFromNotes(user.id);
+        await recordDailyActivity(user.id);
 
         // 9. Send APNs push to all registered devices for this user
         const { data: tokens } = await admin

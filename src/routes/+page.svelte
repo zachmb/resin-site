@@ -15,6 +15,7 @@
         automations={data.automations}
         isNewUser={data.isNewUser}
         groups={data.groups}
+        burnoutRisk={data.burnoutRisk}
     />
 {:else}
     <LandingPage />

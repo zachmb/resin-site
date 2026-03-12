@@ -1,8 +1,10 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import { page } from "$app/stores";
+    import { fly } from "svelte/transition";
     import SessionCelebration from './SessionCelebration.svelte';
     import AmberIgniteRitual from './AmberIgniteRitual.svelte';
+    import ForestDecayAnimation from './ForestDecayAnimation.svelte';
 
     let { profile, recentSessions = [], executionStats = null } = $props<{
         profile: any;
@@ -13,7 +15,11 @@
     let selectedSessionId = $state<string | null>(null);
     let showCelebration = $state(false);
     let celebrationData = $state<any>(null);
+    let showRecoverySuggestion = $state(false);
     let showIgniteRitual = $state(false);
+    let showDecayAnimation = $state(false);
+    let decayAnimationData = $state<any>(null);
+    let pendingSessionFailure = $state<string | null>(null);
     let pendingSessionCompletion = $state<string | null>(null);
 
     // Pre-select session from URL query parameter if present
@@ -69,6 +75,30 @@
         const ampm = h >= 12 ? "PM" : "AM";
         const h12 = h % 12 || 12;
         return `${h12}:${minutes} ${ampm}`;
+    };
+
+    const handleSessionMissed = () => {
+        if (!selectedSession) return;
+        // Show decay animation with estimated losses
+        const estimatedDecay = 15; // base decay amount
+        const estimatedStonesLost = Math.floor(Math.random() * 3) + 1; // 1-3 stones
+
+        showDecayAnimation = true;
+        decayAnimationData = {
+            decayAmount: estimatedDecay,
+            stonesLost: estimatedStonesLost
+        };
+
+        // Submit form after animation completes
+        pendingSessionFailure = selectedSession.id;
+    };
+
+    const submitSessionFailure = () => {
+        if (pendingSessionFailure && selectedSessionId === pendingSessionFailure) {
+            const form = document.querySelector(`#missed-form-${pendingSessionFailure}`) as HTMLFormElement;
+            if (form) form.submit();
+            pendingSessionFailure = null;
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -357,11 +387,21 @@
                                         ✓ Yes, Completed
                                     </button>
                                 </form>
-                                <form method="POST" action="?/markFailed" use:enhance>
+                                <button
+                                    onclick={handleSessionMissed}
+                                    class="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition"
+                                >
+                                    ✗ Missed It
+                                </button>
+                                <!-- Hidden form for decay animation completion -->
+                                <form
+                                    id="missed-form-{selectedSession.id}"
+                                    method="POST"
+                                    action="?/markFailed"
+                                    use:enhance
+                                    style="display: none;"
+                                >
                                     <input type="hidden" name="sessionId" value={selectedSession.id} />
-                                    <button class="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition">
-                                        ✗ Missed It
-                                    </button>
                                 </form>
                                 <form method="POST" action="?/extendSession" use:enhance>
                                     <input type="hidden" name="sessionId" value={selectedSession.id} />
@@ -590,6 +630,14 @@
                                             };
                                             showCelebration = true;
                                             setTimeout(() => { showCelebration = false; }, 3000);
+
+                                            // Show recovery suggestion if session was long without bonus
+                                            if (result.data?.suggestRecovery) {
+                                                setTimeout(() => {
+                                                    showRecoverySuggestion = true;
+                                                    setTimeout(() => { showRecoverySuggestion = false; }, 5000);
+                                                }, 4000);
+                                            }
                                         }
                                     };
                                 }}
@@ -963,6 +1011,33 @@
         celebrationLevel={celebrationData.celebrationLevel}
         message={celebrationData.message}
     />
+{/if}
+
+<!-- Decay animation overlay on session failure -->
+{#if decayAnimationData}
+    <ForestDecayAnimation
+        visible={showDecayAnimation}
+        decayAmount={decayAnimationData.decayAmount}
+        stonesLost={decayAnimationData.stonesLost}
+        message="Session missed — your forest weakens..."
+        onComplete={submitSessionFailure}
+    />
+{/if}
+
+<!-- Recovery suggestion toast -->
+{#if showRecoverySuggestion}
+    <div
+        class="fixed bottom-8 right-8 max-w-sm z-40 rounded-xl p-4 bg-gradient-to-r from-resin-forest/90 to-resin-forest/80 text-white shadow-lg border border-white/20"
+        transition:fly={{ x: 400, duration: 300 }}
+    >
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">☕</span>
+            <div>
+                <p class="font-semibold text-sm">Great work! 🎯</p>
+                <p class="text-xs text-white/80 mt-1">Consider a 10-min break before your next session.</p>
+            </div>
+        </div>
+    </div>
 {/if}
 
 <style>

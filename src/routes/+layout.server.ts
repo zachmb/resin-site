@@ -1,3 +1,5 @@
+import { recordDailyActivity, syncStonesFromNotes } from '$lib/gamification_service';
+
 export const load = async ({ locals: { supabase, getSession }, depends }) => {
     depends('supabase:auth');
     const session = await getSession();
@@ -28,8 +30,17 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
         .eq('id', session.user.id)
         .single();
 
+    // Standardize daily streak tracking on every visit
+    // This function has internal guards to only update once per calendar day
+    const { currentStreak, longestStreak } = await recordDailyActivity(session.user.id);
+    
+    // Sync stones based on note count (1 note = 1 stone)
+    const totalStones = await syncStonesFromNotes(session.user.id);
+
     const normalizedProfile = profile ? {
         ...profile,
+        current_streak: currentStreak,
+        longest_streak: longestStreak,
         sync_notes: profile.sync_notes ?? true
     } : null;
 

@@ -272,7 +272,7 @@ export const actions: Actions = {
         // Verify ownership and fetch session details
         const { data: sessionCheck } = await supabase
             .from('amber_sessions')
-            .select('id, display_title')
+            .select('id, display_title, created_at, amber_tasks(*)')
             .eq('id', sessionId)
             .eq('user_id', session.user.id)
             .single();
@@ -315,11 +315,16 @@ export const actions: Actions = {
             }
 
             await applySessionReward(session.user.id, sessionId, reward);
-            return { success: true, reward };
+
+            // Suggest recovery if session was long and no bonus triggered
+            const totalTaskDuration = (sessionCheck.amber_tasks || []).reduce((sum: number, t: any) => sum + (t.estimated_minutes || 0), 0);
+            const suggestRecovery = totalTaskDuration > 60 && reward.celebrationLevel === 'standard';
+
+            return { success: true, reward, suggestRecovery };
         } catch (rewardError) {
             console.error('Error applying rewards:', rewardError);
             // Still mark as completed even if rewards fail
-            return { success: true, reward: null };
+            return { success: true, reward: null, suggestRecovery: false };
         }
     },
 

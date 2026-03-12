@@ -25,6 +25,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
     const enjoyedThings: { text: string; date: string }[] = [];
     const ratingHistory: { date: string; rating: number }[] = [];
 
+    // Weekly mood breakdown: map day-of-week to feelings
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weeklyMoodBreakdown: Record<string, Record<string, number>> = {};
+    for (const day of dayNames) {
+        weeklyMoodBreakdown[day] = {};
+    }
+
     for (const fb of (feedback || [])) {
         if (fb.rating) {
             ratingHistory.push({
@@ -36,7 +43,12 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         const comments = fb.comments || '';
         const feelingMatch = comments.match(/feeling:(\S+)/);
         if (feelingMatch) {
-            feelingCounts[feelingMatch[1]] = (feelingCounts[feelingMatch[1]] || 0) + 1;
+            const feeling = feelingMatch[1];
+            feelingCounts[feeling] = (feelingCounts[feeling] || 0) + 1;
+
+            // Track by day of week
+            const dayOfWeek = dayNames[new Date(fb.created_at).getDay()];
+            weeklyMoodBreakdown[dayOfWeek][feeling] = (weeklyMoodBreakdown[dayOfWeek][feeling] || 0) + 1;
         }
 
         const enjoyedMatch = comments.match(/enjoyed:(.+)/);
@@ -52,6 +64,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         profile,
         feelingCounts,
         enjoyedThings,
-        ratingHistory: ratingHistory.reverse() // chronological
+        ratingHistory: ratingHistory.reverse(), // chronological
+        weeklyMoodBreakdown
     };
 };

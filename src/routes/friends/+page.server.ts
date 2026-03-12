@@ -30,24 +30,21 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 	}
 
 	// Get the other user's profile for each friendship
-	const friends = await Promise.all(
-		(friendships || []).map(async (friendship) => {
-			const otherId =
-				friendship.requester_id === userId ? friendship.addressee_id : friendship.requester_id;
-			const { data: profile } = await supabase
-				.from('profiles')
-				.select('id, email:auth.users(email)')
-				.eq('id', otherId)
-				.single();
+	const admin = await getAdminClient();
+	const { data: { users: allAuthUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 });
 
-			return {
-				id: friendship.id,
-				user_id: otherId,
-				email: profile?.email || 'Unknown',
-				created_at: friendship.created_at
-			};
-		})
-	);
+	const friends = (friendships || []).map((friendship) => {
+		const otherId =
+			friendship.requester_id === userId ? friendship.addressee_id : friendship.requester_id;
+		const authUser = allAuthUsers.find(u => u.id === otherId);
+
+		return {
+			id: friendship.id,
+			user_id: otherId,
+			email: authUser?.email || 'Unknown',
+			created_at: friendship.created_at
+		};
+	});
 
 	// Get pending received requests
 	const { data: receivedRequests } = await supabase
@@ -56,22 +53,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 		.eq('addressee_id', userId)
 		.eq('status', 'pending');
 
-	const pendingReceived = await Promise.all(
-		(receivedRequests || []).map(async (req) => {
-			const { data: profile } = await supabase
-				.from('profiles')
-				.select('id, email:auth.users(email)')
-				.eq('id', req.requester_id)
-				.single();
+	const pendingReceived = (receivedRequests || []).map((req) => {
+		const authUser = allAuthUsers.find(u => u.id === req.requester_id);
 
-			return {
-				id: req.id,
-				user_id: req.requester_id,
-				email: profile?.email || 'Unknown',
-				created_at: req.created_at
-			};
-		})
-	);
+		return {
+			id: req.id,
+			user_id: req.requester_id,
+			email: authUser?.email || 'Unknown',
+			created_at: req.created_at
+		};
+	});
 
 	// Get pending sent requests
 	const { data: sentRequests } = await supabase
@@ -80,22 +71,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 		.eq('requester_id', userId)
 		.eq('status', 'pending');
 
-	const pendingSent = await Promise.all(
-		(sentRequests || []).map(async (req) => {
-			const { data: profile } = await supabase
-				.from('profiles')
-				.select('id, email:auth.users(email)')
-				.eq('id', req.addressee_id)
-				.single();
+	const pendingSent = (sentRequests || []).map((req) => {
+		const authUser = allAuthUsers.find(u => u.id === req.addressee_id);
 
-			return {
-				id: req.id,
-				user_id: req.addressee_id,
-				email: profile?.email || 'Unknown',
-				created_at: req.created_at
-			};
-		})
-	);
+		return {
+			id: req.id,
+			user_id: req.addressee_id,
+			email: authUser?.email || 'Unknown',
+			created_at: req.created_at
+		};
+	});
 
 	return {
 		friends,
@@ -123,7 +108,7 @@ export const actions: Actions = {
 
 			// Query auth.users by email via admin client
 			// Need to iterate through all pages since listUsers returns paginated results
-			let allUsers = [];
+			let allUsers: any[] = [];
 			let page = 1;
 			let hasMore = true;
 

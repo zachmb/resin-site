@@ -1,13 +1,20 @@
 <script lang="ts">
+    import TreeSVG from './TreeSVG.svelte';
+
     type Size = 'sm' | 'md' | 'lg';
 
     interface Props {
         stones: number;
         streak: number;
         size?: Size;
+        forestHealth?: number;
     }
 
-    let { stones = 0, streak = 0, size = 'md' }: Props = $props();
+    let props: Props = $props();
+    let stones = $derived(props.stones ?? 0);
+    let streak = $derived(props.streak ?? 0);
+    let size = $derived(props.size ?? 'md');
+    let forestHealth = $derived(props.forestHealth ?? 100);
 
     // Size configurations
     const sizeConfig = {
@@ -37,8 +44,42 @@
     const treeCount = Math.max(0, stones);
     const treesArray = Array.from({ length: treeCount }, (_, i) => i);
 
-    // Format streak display
-    const streakDisplay = streak > 1 ? `🔥 ${streak}` : '';
+    // Get species for tree at position with visual variation
+    function getTreeSpecies(index: number): string {
+        const decayRatio = forestHealth < 30 ? 0.6 : forestHealth < 60 ? 0.4 : forestHealth < 80 ? 0.2 : 0;
+        const petrifiedCount = Math.floor(treeCount * decayRatio);
+        const isPetrified = index >= treeCount - petrifiedCount;
+
+        if (isPetrified) return 'stone';
+
+        // Healthy trees cycle through common species
+        const variation = (index * 13) % 4;
+        const treeTypes = ['oak', 'pine', 'cherry', 'amber'];
+        return treeTypes[variation];
+    }
+
+    // Get opacity for tree at position
+    function getTreeOpacity(index: number): number {
+        const decayRatio = forestHealth < 30 ? 0.6 : forestHealth < 60 ? 0.4 : forestHealth < 80 ? 0.2 : 0;
+        const petrifiedCount = Math.floor(treeCount * decayRatio);
+        const isPetrified = index >= treeCount - petrifiedCount;
+
+        if (isPetrified) return 0.6;
+        if (forestHealth < 30) return 0.7;
+        if (forestHealth < 60) return 0.85;
+        if (forestHealth < 80) return 0.95;
+        return 1;
+    }
+
+    // Get scale variation for tree at position
+    function getTreeScale(index: number): number {
+        // Slightly vary tree sizes for visual interest
+        const scaleVariation = 0.85 + ((index * 19) % 30) / 100; // 0.85 - 1.14
+        return scaleVariation;
+    }
+
+    // Format streak display with visual enhancement
+    const streakDisplay = streak > 1 ? `🔥 ${streak}${streak >= 7 ? ' ⭐' : ''}` : '';
 </script>
 
 <div class="forest-container" style="--padding: {config.padding}px;">
@@ -47,10 +88,10 @@
             <p style="font-size: {config.fontSize}px;">No stones yet</p>
         </div>
     {:else}
-        <div class="forest-grid" style="--gap: {config.gap}px;">
+        <div class="forest-grid" style="--gap: {config.gap}px;" class:forest-struggling={forestHealth < 60} class:forest-dying={forestHealth < 30}>
             {#each treesArray as _, i}
-                <div class="tree" style="font-size: {config.treeSize}px;" title="Tree {i + 1}">
-                    🌲
+                <div class="tree" style="opacity: {getTreeOpacity(i)}; transform: scale({getTreeScale(i)});" title="Tree {i + 1}">
+                    <TreeSVG species={getTreeSpecies(i)} size={config.treeSize} health={forestHealth} />
                 </div>
             {/each}
         </div>
@@ -80,6 +121,15 @@
         grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
         gap: var(--gap);
         width: 100%;
+        transition: filter 0.3s ease;
+    }
+
+    .forest-grid.forest-struggling {
+        filter: saturate(0.85);
+    }
+
+    .forest-grid.forest-dying {
+        filter: saturate(0.6) grayscale(0.3);
     }
 
     .tree {

@@ -9,7 +9,7 @@
 		onClick?: () => void;
 	}
 
-	let { noteId, noteTitle, connectionType, isOutgoing, onClick } = $props<Props>();
+	let { noteId, noteTitle, connectionType, isOutgoing, onClick }: Props = $props();
 
 	const connectionLabels: Record<string, string> = {
 		relates_to: 'Related to',

@@ -7,6 +7,7 @@ import {
 } from '$env/static/private';
 import { createClient } from '@supabase/supabase-js';
 import { sendPush } from './apns';
+import { syncStonesFromNotes } from './gamification_service';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
@@ -100,6 +101,21 @@ export async function createCalendarEvent(
     return ev.id ?? null;
 }
 
+export async function deleteCalendarEvent(accessToken: string, eventId: string): Promise<boolean> {
+    const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${accessToken}` }
+        }
+    );
+    if (!res.ok && res.status !== 404) {
+        console.error('[amber_service] Calendar event deletion failed:', await res.text());
+        return false;
+    }
+    return true;
+}
+
 export async function computeUserInsights(userId: string): Promise<string> {
     try {
         // Fetch last 30 days of sessions
@@ -151,6 +167,94 @@ export async function computeUserInsights(userId: string): Promise<string> {
             else lines.push('User estimation accuracy is good');
         }
 
+        // NEW: Query amber_task_feedback for behavioral insights
+        const { data: recentFeedback } = await admin
+            .from('amber_task_feedback')
+            .select('rating, comments, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .limit(30);
+
+        if (recentFeedback && recentFeedback.length > 0) {
+            lines.push('\n# BEHAVIORAL INSIGHTS FROM RECENT SESSIONS');
+
+            // 1. Mood pattern analysis
+            const feelingCounts: Record<string, number> = {};
+            const lastThreeFeelings: string[] = [];
+
+            for (const fb of recentFeedback) {
+                const feelingMatch = fb.comments?.match(/feeling:(\w+)/);
+                if (feelingMatch) {
+                    const feeling = feelingMatch[1];
+                    feelingCounts[feeling] = (feelingCounts[feeling] || 0) + 1;
+                    if (lastThreeFeelings.length < 3) lastThreeFeelings.push(feeling);
+                }
+            }
+
+            if (Object.keys(feelingCounts).length > 0) {
+                const totalWithFeeling = Object.values(feelingCounts).reduce((a, b) => a + b, 0);
+                const drainedPct = Math.round(((feelingCounts['Drained'] || 0) / totalWithFeeling) * 100);
+
+                if (drainedPct >= 40) {
+                    lines.push(`⚠️ Mood pattern: User reports feeling "Drained" in ${drainedPct}% of sessions — schedule more breaks and softer sessions.`);
+                }
+
+                if (lastThreeFeelings.filter(f => f === 'Drained' || f === 'Frustrated').length === 3) {
+                    lines.push(`🚨 BURNOUT SIGNAL: Last 3 sessions all reported feeling drained or frustrated. STRONGLY recommend shorter, easier sessions today.`);
+                }
+            }
+
+            // 2. Average task rating
+            const ratings = recentFeedback
+                .map(fb => {
+                    const ratingMatch = fb.comments?.match(/rating:(\d)/);
+                    return ratingMatch ? parseInt(ratingMatch[1]) : fb.rating;
+                })
+                .filter(r => r !== undefined && r !== null) as number[];
+
+            if (ratings.length > 0) {
+                const avgRating = (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1);
+                if (parseFloat(avgRating) < 2.5) {
+                    lines.push(`Task satisfaction is low (avg rating ${avgRating}/5). User may be overloaded — consider reducing session scope or difficulty.`);
+                } else if (parseFloat(avgRating) >= 4.0) {
+                    lines.push(`User is highly satisfied with recent tasks (avg rating ${avgRating}/5). Current approach is working well.`);
+                }
+            }
+
+            // 3. Enjoyment patterns
+            const enjoyedThings: Record<string, number> = {};
+            for (const fb of recentFeedback) {
+                const enjoyedMatches = fb.comments?.match(/enjoyed:([^,;]+)/g) || [];
+                for (const match of enjoyedMatches) {
+                    const thing = match.replace('enjoyed:', '').trim();
+                    enjoyedThings[thing] = (enjoyedThings[thing] || 0) + 1;
+                }
+            }
+
+            if (Object.keys(enjoyedThings).length > 0) {
+                const topEnjoyments = Object.entries(enjoyedThings)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(e => e[0])
+                    .join(', ');
+                lines.push(`User most enjoys: ${topEnjoyments}. Prioritize these in future plans when possible.`);
+            }
+
+            // 4. Calculate 7-day success rate
+            const recentSessions = sessions.filter((s: any) => {
+                const createdDate = new Date(s.created_at);
+                return createdDate.getTime() > Date.now() - 7 * 86400000;
+            });
+            if (recentSessions.length > 0) {
+                const recentCompleted = recentSessions.filter((s: any) => s.status === 'completed').length;
+                const recentRate = Math.round((recentCompleted / recentSessions.length) * 100);
+                if (recentRate < 60 && recentRate < rate) {
+                    lines.push(`Recent dip: 7-day completion rate is ${recentRate}% (vs. 30-day ${rate}%). Consider lightening load.`);
+                }
+            }
+        }
+
         return lines.join('\n');
     } catch (err) {
         console.error('Error computing user insights:', err);
@@ -165,14 +269,20 @@ export async function callDeepSeek(
     startHour: number,
     endHour: number,
     timezone: string,
-    userPreferences: string
+    userPreferences: string,
+    chronotype: string = 'bear',
+    focusSuccessRate: number = 0.5
 ): Promise<DeepSeekTask> {
     const now = new Date().toLocaleString('en-US', { timeZone: timezone, hour12: false });
     const pctLabel = Math.round(intensity * 100);
 
     const prefsAppend = userPreferences.trim()
-        ? `\n\n# USER PREFERENCE SIGNALS\n${userPreferences.trim()}`
+        ? `\n\n# BEHAVIORAL INSIGHTS (from recent sessions)\n${userPreferences.trim()}`
         : '';
+
+    const energyProfileSection = `\n\n# USER ENERGY PROFILE
+Chronotype: ${chronotype}
+Recent Focus Success Rate: ${Math.round(focusSuccessRate * 100)}%`;
 
     const systemPrompt = `# MISSION
 You are the Lead Mentor of RESIN, a sophisticated productivity ecosystem. Your objective is not just to schedule tasks, but to architect a user's life according to their biology, true intent, and long-term well-being. You translate chaotic human thoughts into a prioritized, energy-aware "Amber Plan."
@@ -185,34 +295,69 @@ You are the Lead Mentor of RESIN, a sophisticated productivity ecosystem. Your o
 2. ENERGY-AWARE TAGGING & CHRONOTYPE ALIGNMENT:
    - High-concentration tasks (coding, writing, planning) MUST be slotted into focus peaks.
    - The "Lull" Protocol: Routine work (admin, email) MUST be deferred to energy lulls.
+   - Chronotype \${chronotype}: Respect the user's biological peak hours. Don't fight their natural rhythm.
 3. EMPATHETIC PACING & BURNOUT PREVENTION:
-   - Dynamic Intensity: Bias toward "Soft" sessions if recent success is low. Bias toward "Firm" for deep work.
-   - The Guilt-Free Buffer: Ensure plans include non-negotiable breaks.
+   - Dynamic Intensity: Bias toward "Soft" sessions if recent success <70%. Bias toward "Firm" for deep work if success ≥80%.
+   - The Guilt-Free Buffer: Ensure plans include non-negotiable breaks between heavy tasks.
+   - Recent Success Rate \${Math.round(focusSuccessRate * 100)}%: If low, reduce scope and expectations. If high, can push harder.
 4. RECURSIVE REFINEMENT:
-   - Memory Management: Use past reflections (\${userPreferences}) to avoid repeating failure patterns.
+   - Memory Management: Use past reflections to avoid repeating failure patterns.
+   - Learn from what worked: User most enjoys [extracted from feedback]. Prioritize these when possible.
 
-# TASK SCORING LOGIC
-- Weight tasks by Urgency, Biological Fit (Energy vs. Peak), and Mental Clarity.
+# TASK BREAKDOWN QUALITY STANDARDS
+Steps should be:
+- **Granular**: Each step is 2-15 minutes of focused work, not vague directions
+- **Concrete**: Use specific verbs (write 500 words, complete 3 exercises, design wireframe for login) not "work on"
+- **Sequential**: Steps build on each other logically
+- **Breakpoint-aware**: Add natural pauses where user can check, stretch, hydrate
+- Example GOOD plan for "Write proposal":
+  ["Outline 3 sections (5m)", "Draft executive summary (15m)", "Flesh out each section (30m)", "Proofread & format (10m)"]
+- Example BAD plan: ["Work on proposal", "Keep going"]
+
+# SCHEDULING OPTIMIZATION
+- Always respect FREE/BUSY calendar (don't schedule during existing events)
+- If multiple slots available, pick the one that aligns with ${chronotype} energy curve
+- Add 5-minute buffer after each task for context switching
+- Never schedule demanding tasks in "lull" hours (opposite of peak for ${chronotype})
+- For ${Math.round(intensity * 100)}% intensity: longer, deeper work is appropriate. Don't fragment.
 
 # OUTPUT CONTRACT (STRICT JSON ONLY)
 {
   "type": "action" | "intention" | "habit",
-  "display_title": "Punchy, empathetic title",
-  "ai_plan": ["Step 1.", "Step 2.", "Step 3."],
-  "scheduling": { "start_time": "ISO8601", "end_time": "ISO8601", "duration_minutes": number },
-  "blocking_active": boolean (always true for High energy tasks),
-  "requires_verification": boolean,
-  "session_type": "Soft" | "Firm",
-  "energy_match_score": 0.0-1.0,
-  "energy_demand": "High" | "Medium" | "Low",
-  "notification_copy": "Empathetic nudge summarizing the value of this session."
+  "display_title": "Punchy, specific title (not generic 'Work on X')",
+  "ai_plan": [
+    "Step 1: Concrete action, 5-15 min",
+    "Step 2: Next concrete action, 10-20 min",
+    "Step 3: Final push or polish, 5-10 min"
+  ],
+  "scheduling": {
+    "start_time": "ISO8601 (respect calendar, align with chronotype peak)",
+    "end_time": "ISO8601 (realistic: sum of step times + buffers)",
+    "duration_minutes": number (total, including micro-breaks)
+  },
+  "blocking_active": boolean (true for High/Medium energy, false for Low/Soft),
+  "requires_verification": boolean (true if completion needs photo/proof),
+  "session_type": "Soft" | "Firm" (Soft if success<70% OR user is drained, Firm if success≥80%),
+  "energy_match_score": 0.0-1.0 (1.0 = perfect chronotype + calendar fit, 0.5 = acceptable compromise),
+  "energy_demand": "High" | "Medium" | "Low" (based on task type and user's recent success rate),
+  "notification_copy": "Empathetic nudge that frames *why* this session matters to user's bigger goals."
 }
+
+# CRITICAL QUALITY GATES
+✓ MUST: Each step is specific, actionable, timed (2-15 min)
+✓ MUST: Start time respects calendar (no overlap with busy blocks)
+✓ MUST: Session type + energy_demand align (High energy → Firm, not Soft)
+✓ MUST: notification_copy references user's goal or enjoyment pattern if known
+✓ MUST: Duration is realistic (sum of steps + 2-min buffers between them)
+✗ AVOID: Generic titles like "Code" or "Study" — be specific
+✗ AVOID: Vague steps like "Keep working" or "Continue from before"
+✗ AVOID: Scheduling during user's lull hours (opposite of ${chronotype} peak)
 
 # CALENDAR ANALYSIS
 PREFERRED WINDOW: ${startHour}:00–${endHour}:00
 CURRENT TIME: ${now} (timezone: ${timezone})
 FREE/BUSY:
-${freeBusy}${prefsAppend}`;
+${freeBusy}${prefsAppend}${energyProfileSection}`;
 
     const res = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -254,8 +399,30 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         const learnedInsights = await computeUserInsights(userId);
         const enrichedPreferences = [learnedInsights, user_preferences].filter(Boolean).join('\n\n');
 
-        // 3. Call DeepSeek
-        const plan = await callDeepSeek(rawText, freeBusy, intensity, start_hour, end_hour, timezone, enrichedPreferences);
+        // 2.7. Fetch user profile for chronotype and success rate
+        const { data: profile } = await admin
+            .from('profiles')
+            .select('chronotype')
+            .eq('id', userId)
+            .single();
+
+        const chronotype = profile?.chronotype || 'bear';
+
+        // Calculate 7-day focus success rate
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const { data: recentSessions } = await admin
+            .from('amber_sessions')
+            .select('status')
+            .eq('user_id', userId)
+            .gte('created_at', sevenDaysAgo);
+
+        const completedCount = (recentSessions || []).filter((s: any) => s.status === 'completed').length;
+        const focusSuccessRate = recentSessions && recentSessions.length > 0
+            ? completedCount / recentSessions.length
+            : 0.5;
+
+        // 3. Call DeepSeek with enhanced user context
+        const plan = await callDeepSeek(rawText, freeBusy, intensity, start_hour, end_hour, timezone, enrichedPreferences, chronotype, focusSuccessRate);
 
         // 4. Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone);
@@ -285,6 +452,9 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             requires_camera_verification: plan.requires_verification,
         };
         await admin.from('amber_tasks').upsert(taskRow);
+
+        // 6.5. Sync stones based on note count (1 note = 1 stone)
+        await syncStonesFromNotes(userId);
 
         // 7. Push Notifications
         const { data: tokens } = await admin.from('device_tokens').select('device_token').eq('user_id', userId).eq('platform', 'apns');

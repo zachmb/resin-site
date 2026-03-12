@@ -133,7 +133,7 @@
 
     const topFeelings = $derived(
         tasteData?.feelingCounts
-            ? Object.entries(tasteData.feelingCounts).sort(
+            ? (Object.entries(tasteData.feelingCounts) as [string, number][]).sort(
                   (a, b) => b[1] - a[1],
               )
             : [],
@@ -884,7 +884,7 @@
                         </div>
                     </section>
 
-                    <!-- Resin Shield Extension -->
+                    <!-- Resin Web Shield Extension -->
                     <section
                         class="bg-resin-charcoal text-white rounded-xl p-6 shadow-xl relative overflow-hidden group"
                     >
@@ -899,13 +899,13 @@
                                 >
                                     <img
                                         src="/resinext-logo.png"
-                                        alt="Resin Shield"
+                                        alt="Resin Web Shield"
                                         class="w-7 h-7 object-contain"
                                     />
                                 </div>
                                 <div class="flex-1">
                                     <h3 class="font-bold text-lg mb-1">
-                                        Resin Shield Extension
+                                        Resin Web Shield Extension
                                     </h3>
                                     <p class="text-sm text-white/60">
                                         Enforce focus across your browser and
@@ -1554,7 +1554,7 @@
                                     <form
                                         method="POST"
                                         action="?/removeDevice"
-                                        use:enhance={handleSubmit()}
+                                        use:enhance={handleSubmit}
                                         class="flex-shrink-0 ml-4"
                                     >
                                         <input

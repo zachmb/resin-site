@@ -2,7 +2,7 @@
     import { fade, fly } from "svelte/transition";
 
     let { data } = $props();
-    let { profile, feelingCounts, enjoyedThings, ratingHistory } =
+    let { profile, feelingCounts, enjoyedThings, ratingHistory, weeklyMoodBreakdown } =
         $derived(data);
 
     const feelingIcons: Record<string, string> = {
@@ -228,6 +228,54 @@
                         <span>Recent</span>
                     </div>
                 </section>
+
+                <!-- 7-Day Mood Trend -->
+                {#if weeklyMoodBreakdown && Object.keys(weeklyMoodBreakdown).some(day => Object.keys(weeklyMoodBreakdown[day]).length > 0)}
+                    <section
+                        class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-forest/10 shadow-premium relative bg-gradient-to-br from-resin-forest/5 to-transparent overflow-hidden"
+                    >
+                        <h3 class="text-lg font-bold text-resin-charcoal mb-6 font-serif">
+                            7-Day Mood Trend
+                        </h3>
+
+                        <div class="space-y-4">
+                            {#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as day}
+                                {@const dayMoods = weeklyMoodBreakdown?.[day] as Record<string, number> || {}}
+                                {@const totalCount = Object.values(dayMoods).reduce((sum, count) => (sum ?? 0) + (count ?? 0), 0) as number}
+                                {#if totalCount > 0}
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-xs font-bold text-resin-earth/60 uppercase">{day}</p>
+                                            <p class="text-xs text-resin-earth/50">{totalCount} entries</p>
+                                        </div>
+                                        <div class="flex gap-1 h-6 rounded-full bg-white/30 p-0.5 overflow-hidden">
+                                            {#each Object.entries(dayMoods).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0)) as [feeling, count]}
+                                                {@const c = count as number}
+                                                {@const percentage = (c / totalCount) * 100}
+                                                {@const feelingColor = feeling === 'Flow State' ? 'bg-yellow-400' : feeling === 'Proud' ? 'bg-amber-400' : feeling === 'Relieved' ? 'bg-green-400' : feeling === 'Energized' ? 'bg-orange-400' : feeling === 'Drained' ? 'bg-red-300' : feeling === 'Frustrated' ? 'bg-slate-400' : 'bg-gray-300'}
+                                                <div
+                                                    class="{feelingColor} transition-all"
+                                                    style="width: {percentage}%;"
+                                                    title="{feeling}: {c}"
+                                                ></div>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                {/if}
+                            {/each}
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="grid grid-cols-2 gap-3 mt-6 pt-6 border-t border-resin-forest/10">
+                            {#each Object.entries({ 'Flow State': '⚡', Proud: '⭐', Relieved: '🍃', Energized: '🔥', Drained: '🪫', Frustrated: '🌧️' }) as [feeling, icon]}
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span>{icon}</span>
+                                    <span class="text-resin-earth/60">{feeling}</span>
+                                </div>
+                            {/each}
+                        </div>
+                    </section>
+                {/if}
             {/if}
         </div>
 

@@ -168,10 +168,58 @@ export async function syncStonesFromNotes(userId: string): Promise<number> {
 }
 
 /**
+ * Calculate the longest streak and the date it was achieved from historical amber_sessions.
+ */
+export async function calculateLongestStreakFromHistory(userId: string): Promise<{ longestStreak: number; longestStreakAt: string | null }> {
+    const { data: sessions, error } = await admin
+        .from('amber_sessions')
+        .select('created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+
+    if (error || !sessions || sessions.length === 0) {
+        return { longestStreak: 0, longestStreakAt: null };
+    }
+
+    const uniqueDates = Array.from(new Set(sessions.map(s => s.created_at.split('T')[0])));
+    
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let longestStreakAt: string | null = null;
+    let lastDate: Date | null = null;
+
+    for (const dateStr of uniqueDates) {
+        const currentDate = new Date(dateStr);
+        
+        if (lastDate) {
+            const diffTime = Math.abs(currentDate.getTime() - lastDate.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+                currentStreak += 1;
+            } else {
+                currentStreak = 1;
+            }
+        } else {
+            currentStreak = 1;
+        }
+
+        if (currentStreak >= longestStreak) {
+            longestStreak = currentStreak;
+            longestStreakAt = dateStr;
+        }
+        
+        lastDate = currentDate;
+    }
+
+    return { longestStreak, longestStreakAt };
+}
+
+/**
  * Log a daily visit and update the usage streak.
  * Safe to call multiple times per day.
  */
-export async function recordDailyActivity(userId: string): Promise<{ currentStreak: number; longestStreak: number }> {
+export async function recordDailyActivity(userId: string): Promise<{ currentStreak: number; longestStreak: number; longestStreakAt: string | null }> {
     const now = new Date();
 
     const getLocalDateString = (date: Date) => {
@@ -184,24 +232,33 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
 
     const { data: profile } = await admin
         .from('profiles')
-        .select('current_streak, longest_streak, last_active_date')
+        .select('current_streak, longest_streak, longest_streak_at, last_active_date')
         .eq('id', userId)
         .single();
 
     if (!profile) {
         // Profile doesn't exist yet (new user) - return defaults
-        return { currentStreak: 0, longestStreak: 0 };
+        return { currentStreak: 0, longestStreak: 0, longestStreakAt: null };
+    }
+
+    // Retroactively calculate if longest_streak seems off or longest_streak_at is missing
+    const history = await calculateLongestStreakFromHistory(userId);
+    let newLongest = Math.max(profile.longest_streak || 0, history.longestStreak);
+    let longestStreakAt = profile.longest_streak_at || history.longestStreakAt;
+
+    if (history.longestStreak > (profile.longest_streak || 0)) {
+        newLongest = history.longestStreak;
+        longestStreakAt = history.longestStreakAt;
     }
 
     const lastActive = profile.last_active_date ? new Date(profile.last_active_date) : null;
     const lastActiveStr = lastActive ? getLocalDateString(lastActive) : null;
 
     let newStreak = profile.current_streak || 0;
-    let newLongest = profile.longest_streak || 0;
 
     if (lastActiveStr === todayStr) {
         // Already recorded today
-        return { currentStreak: newStreak, longestStreak: newLongest };
+        return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt };
     }
 
     // Check if yesterday
@@ -217,21 +274,26 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
 
     if (newStreak > newLongest) {
         newLongest = newStreak;
+        longestStreakAt = todayStr;
     }
 
+    // Sync stones before updating profile to ensure consistency
+    const stonesCount = await syncStonesFromNotes(userId);
 
     await admin
         .from('profiles')
         .update({
             current_streak: newStreak,
             longest_streak: newLongest,
+            longest_streak_at: longestStreakAt,
+            total_stones: stonesCount,
             last_active_date: now.toISOString(),
             updated_at: now.toISOString()
         })
         .eq('id', userId);
 
-    console.log(`[Gamification] Activity recorded for ${userId}: Streak ${newStreak}`);
-    return { currentStreak: newStreak, longestStreak: newLongest };
+    console.log(`[Gamification] Activity recorded for ${userId}: Streak ${newStreak}, Longest ${newLongest} at ${longestStreakAt}`);
+    return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt };
 }
 
 /**

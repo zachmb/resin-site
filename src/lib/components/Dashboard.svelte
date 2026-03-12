@@ -16,6 +16,7 @@
         automations = [],
         isNewUser = false,
         groups = [],
+        burnoutRisk = false,
     } = $props<{
         session?: any;
         profile: any;
@@ -25,6 +26,7 @@
         automations: any[];
         isNewUser?: boolean;
         groups?: any[];
+        burnoutRisk?: boolean;
     }>();
 
     const firstName =
@@ -570,6 +572,26 @@
                 </div>
             </div>
         </div>
+    {/if}
+
+    <!-- Burnout Risk Banner -->
+    {#if burnoutRisk}
+        <section
+            class="rounded-2xl p-6 bg-gradient-to-r from-resin-amber/10 to-orange-50/20 border border-resin-amber/30 shadow-sm"
+            transition:fade={{ duration: 300 }}
+        >
+            <div class="flex items-center gap-4">
+                <span class="text-3xl">🌿</span>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-resin-amber">
+                        You've been feeling drained lately
+                    </p>
+                    <p class="text-xs text-resin-earth/60 mt-1">
+                        Consider a lighter focus session today to recharge.
+                    </p>
+                </div>
+            </div>
+        </section>
     {/if}
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">

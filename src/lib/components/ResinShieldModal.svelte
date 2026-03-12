@@ -37,13 +37,13 @@
                     >
                         <img
                             src="/resinext-logo.png"
-                            alt="Resin Shield"
+                            alt="Resin Web Shield"
                             class="w-6 h-6 object-contain"
                         />
                     </div>
                     <div>
                         <h2 class="text-xl font-bold text-resin-charcoal">
-                            Install Resin Shield
+                            Install Resin Web Shield
                         </h2>
                         <p
                             class="text-xs text-resin-earth/60 font-medium uppercase tracking-wider"

@@ -1,6 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { runActivationPipeline } from '$lib/amber_service';
+import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service';
 
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return null;
@@ -214,9 +215,12 @@ export const actions: Actions = {
         });
 
         if (error) {
-            console.error('Error creating note:', error);
             return fail(500, { error: 'Could not create note' });
         }
+
+        // Trigger sync
+        await syncStonesFromNotes(session.user.id);
+        await recordDailyActivity(session.user.id);
 
         throw redirect(303, `/notes`);
     },
@@ -244,6 +248,10 @@ export const actions: Actions = {
             console.error('[notes] updateNote failed:', error);
             return fail(500, { error: `Could not save note: ${error.message}` });
         }
+
+        // Trigger streak record on update too
+        await recordDailyActivity(session.user.id);
+
         return { success: true, id, title, content };
     },
 
@@ -271,6 +279,10 @@ export const actions: Actions = {
                 return fail(500, { error: `Could not create note: ${error.message}` });
             }
 
+            // Trigger stone sync for the new note
+            await syncStonesFromNotes(session.user.id);
+            await recordDailyActivity(session.user.id);
+
             return { success: true, note: normalizeNote(newNote), isNew: true };
         } else {
             // Existing note
@@ -289,6 +301,9 @@ export const actions: Actions = {
                     details: error.details
                 });
             }
+
+            await recordDailyActivity(session.user.id);
+
             return { success: true, note: normalizeNote(updatedNote), isNew: false };
         }
     },
@@ -307,6 +322,10 @@ export const actions: Actions = {
             .eq('user_id', session.user.id);
 
         if (error) return fail(500, { error: 'Could not delete note' });
+
+        // Sync stones after deletion
+        await syncStonesFromNotes(session.user.id);
+
         return { success: true, deletedId: id };
     },
 

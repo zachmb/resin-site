@@ -452,16 +452,16 @@
                                 ) {
                                     // Show stone reward on successful save with 60s debouncing
                                     const now = Date.now();
-                                    if (now - lastRewardTime > 60000) {
-                                        showToast("⭐ Earned +3 Stones for saving!");
+                                    if (result.data.isNew && now - lastRewardTime > 60000) {
+                                        showToast("⭐ Earned +1 Stone for saving!");
                                         lastRewardTime = now;
                                         // Store reward to localStorage for forest page display
                                         localStorage.setItem('recentReward', JSON.stringify({
-                                            text: 'Earned +3 Stones for saving!',
+                                            text: 'Earned +1 Stone for saving!',
                                             icon: '⭐',
                                             timestamp: now
                                         }));
-                                    } else {
+                                    } else if (!result.data.isNew) {
                                         showToast("Note saved!");
                                     }
 
@@ -726,12 +726,18 @@
     <div
         class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
         onclick={() => showShareModal = false}
-        role="dialog"
-        aria-modal="true"
+        onkeydown={(e) => e.key === 'Escape' && (showShareModal = false)}
+        role="button"
+        tabindex="-1"
+        aria-label="Close modal"
     >
         <div
             class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
             onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            tabindex="0"
         >
             <h3 class="text-lg font-bold text-resin-charcoal mb-4">Share Note</h3>
             <p class="text-sm text-resin-earth/60 mb-4">

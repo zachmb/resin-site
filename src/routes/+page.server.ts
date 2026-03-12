@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
+import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service';
 
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return '';
@@ -206,6 +207,17 @@ export const load: PageServerLoad = async ({ locals }) => {
         joinedAt: ug.joined_at
     }));
 
+    // Burnout risk detection: check if last 5 feedback entries contain "Drained" or "Frustrated"
+    let burnoutRisk = false;
+    if (feedback && feedback.length >= 3) {
+        const recentFeedback = feedback.slice(0, 5);
+        const drainedOrFrustratedCount = recentFeedback.filter((f: any) => {
+            const comments = f.comments || '';
+            return comments.includes('feeling:Drained') || comments.includes('feeling:Frustrated');
+        }).length;
+        burnoutRisk = drainedOrFrustratedCount >= 3;
+    }
+
     return {
         session,
         profile,
@@ -215,6 +227,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         automations: automations || [],
         isNewUser,
         groups: groups || [],
+        burnoutRisk,
     };
 };
 
@@ -243,6 +256,10 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to create note' });
         }
 
+        // Sync profile to update stone count and streak after saving a note
+        await syncStonesFromNotes(session.user.id);
+        await recordDailyActivity(session.user.id);
+
         throw redirect(303, `/notes?id=${note.id}`);
     },
 
@@ -269,6 +286,10 @@ export const actions: Actions = {
             console.error('Error creating note:', error);
             return fail(500, { error: 'Failed to create note' });
         }
+
+        // Sync profile to update stone count and streak after scheduling a note
+        await syncStonesFromNotes(session.user.id);
+        await recordDailyActivity(session.user.id);
 
         throw redirect(303, `/amber`);
     },

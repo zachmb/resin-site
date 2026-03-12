@@ -834,7 +834,7 @@
                                 </div>
                             </div>
 
-                            {#if session.status === 'pending' && session.collaborator_id === data.session.user.id}
+                            {#if session.status === 'pending' && session.collaborator_id === data.session?.user.id}
                                 <div class="flex gap-2 mb-3">
                                     <form method="POST" action="?/acceptSharedFocus" use:enhance class="flex-1">
                                         <input type="hidden" name="sharedSessionId" value={session.id} />

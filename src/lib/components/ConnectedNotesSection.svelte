@@ -17,7 +17,7 @@
 		onNavigateToNote?: (noteId: string) => void;
 	}
 
-	let { outgoing = [], incoming = [], onNavigateToNote } = $props<Props>();
+	let { outgoing = [], incoming = [], onNavigateToNote }: Props = $props();
 
 	const hasConnections = outgoing.length > 0 || incoming.length > 0;
 </script>

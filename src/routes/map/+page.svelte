@@ -38,6 +38,8 @@
     };
 
     const handleDropAction = async () => {
+        // Reset dragging state first
+        draggingNoteId = null;
         // We invalidate all to resync $page.data with the server and force reactivity
         // this is simple, but we can also manually optimistically update if desired
         await invalidateAll();
@@ -65,7 +67,7 @@
                     draggable="true"
                     ondragstart={(e) => onDragStart(e, note)}
                     ondragend={onDragEnd}
-                    class="p-4 bg-white border border-resin-forest/10 rounded-xl shadow-sm cursor-grab hover:shadow-md hover:border-resin-forest/30 transition-all active:cursor-grabbing {draggingNoteId === note.id ? 'opacity-0' : ''}"
+                    class="p-4 bg-white border border-resin-forest/10 rounded-xl shadow-sm cursor-grab hover:shadow-md hover:border-resin-forest/30 transition-all active:cursor-grabbing {draggingNoteId === note.id ? 'opacity-0 pointer-events-none' : ''}"
                 >
                     <h3
                         class="font-semibold text-sm text-resin-charcoal truncate"

@@ -45,8 +45,9 @@
     };
 
     $effect(() => {
-        nodes = notes.map((note: any) => {
-            // Find existing node tracking safely using untrack to prevent infinite loops
+        // Preserve existing nodes to avoid losing optimistic updates
+        const newNodes = notes.map((note: any) => {
+            // Find existing node to preserve position and other properties
             const existing = untrack(() => nodes.find((n) => n.id === note.id));
             return {
                 id: note.id,
@@ -61,13 +62,30 @@
             };
         });
 
-        edges = initialEdges.map((edge: any) => ({
+        // Only update if the list of node IDs actually changed
+        const existingIds = untrack(() => nodes.map((n) => n.id).sort());
+        const newIds = newNodes.map((n) => n.id).sort();
+
+        if (existingIds.join(',') !== newIds.join(',') || newNodes.some((nn, i) => nodes[i]?.data?.label !== nn.data?.label)) {
+            nodes = newNodes;
+        }
+
+        // Update edges from server data
+        const newEdges = initialEdges.map((edge: any) => ({
             id: edge.id,
             source: edge.source_id,
             target: edge.target_id,
             style: "stroke: #2B4634; stroke-width: 2px;",
             animated: true,
         }));
+
+        // Only update edges if they actually changed
+        const existingEdgeIds = untrack(() => edges.map((e) => e.id).sort());
+        const newEdgeIds = newEdges.map((e) => e.id).sort();
+
+        if (existingEdgeIds.join(',') !== newEdgeIds.join(',')) {
+            edges = newEdges;
+        }
     });
 
     let saveTimeout: ReturnType<typeof setTimeout>;

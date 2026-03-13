@@ -275,32 +275,6 @@
             </p>
         </div>
 
-        <!-- Forest Health Status -->
-        <div class="mb-12 w-full max-w-2xl mx-auto" in:fade={{ duration: 500 }}>
-            <div class="glass-card rounded-xl p-6 border border-resin-forest/10">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm font-semibold text-resin-charcoal">{forestStatus.message}</span>
-                    <span class="text-xs font-bold text-resin-earth/60">{forestHealth}%</span>
-                </div>
-                <div class="w-full h-2 bg-resin-earth/10 rounded-full overflow-hidden">
-                        <div
-                            class="h-full transition-all duration-500 rounded-full"
-                            style="width: {forestHealth}%; background-color: {forestStatus.color};"
-                        ></div>
-                </div>
-                <p class="text-xs text-resin-earth/60 mt-2">
-                    {#if forestHealth >= 80}
-                        Keep completing sessions to maintain your thriving forest.
-                    {:else if forestHealth >= 60}
-                        Complete more sessions to restore your forest's health.
-                    {:else if forestHealth >= 30}
-                        Your forest needs attention! Focus sessions will help it recover.
-                    {:else}
-                        Complete a focus session now to save your forest from petrification!
-                    {/if}
-                </p>
-            </div>
-        </div>
 
         <!-- Recent Reward Display -->
         {#if recentReward}
@@ -644,6 +618,31 @@
                     class="text-xs font-medium text-resin-forest/60"
                     >{Math.min(filteredSessions.length, 16)} / 16 plots</span
                 >
+            </div>
+
+            <!-- Forest Health Status -->
+            <div class="glass-card rounded-xl p-6 border border-resin-forest/10 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-resin-charcoal">{forestStatus.message}</span>
+                    <span class="text-xs font-bold text-resin-earth/60">{forestHealth}%</span>
+                </div>
+                <div class="w-full h-2 bg-resin-earth/10 rounded-full overflow-hidden">
+                        <div
+                            class="h-full transition-all duration-500 rounded-full"
+                            style="width: {forestHealth}%; background-color: {forestStatus.color};"
+                        ></div>
+                </div>
+                <p class="text-xs text-resin-earth/60 mt-2">
+                    {#if forestHealth >= 80}
+                        Keep completing sessions to maintain your thriving forest.
+                    {:else if forestHealth >= 60}
+                        Complete more sessions to restore your forest's health.
+                    {:else if forestHealth >= 30}
+                        Your forest needs attention! Focus sessions will help it recover.
+                    {:else}
+                        Complete a focus session now to save your forest from petrification!
+                    {/if}
+                </p>
             </div>
 
             <!-- 4x4 Grid -->

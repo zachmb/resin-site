@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { Apple } from 'lucide-svelte';
     /** @type {import('./$types').ActionData} */
     export let form;
 </script>
@@ -60,11 +61,7 @@
                     <button
                         class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-resin-charcoal border border-resin-charcoal rounded-2xl text-white font-semibold hover:bg-resin-charcoal/80 hover:shadow-md transition-all duration-300 group"
                     >
-                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                            <path
-                                d="M17.05 13.5c-.91 0-1.64.75-1.64 1.74s.73 1.74 1.64 1.74 1.64-.75 1.64-1.74-.73-1.74-1.64-1.74zM17.05 16.7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm3.05-7.2c.91 0 1.64-.75 1.64-1.74s-.73-1.74-1.64-1.74-1.64.75-1.64 1.74.73 1.74 1.64 1.74zm0-2.48c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-                            />
-                        </svg>
+                        <Apple class="w-6 h-6" />
                         Continue with Apple
                     </button>
                 </form>

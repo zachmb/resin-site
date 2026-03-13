@@ -283,7 +283,7 @@
             }
 
             const json = await response.json();
-            const realEdge = json?.data?.edge;
+            const realEdge = json?.edge;
             if (realEdge?.id) {
                 edges = edges.map((e: any) => e.id === tempId ? { ...e, id: realEdge.id } : e);
             } else {

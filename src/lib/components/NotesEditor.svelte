@@ -5,7 +5,7 @@
     import ConfirmDeleteModal from "./ConfirmDeleteModal.svelte";
     import { onDestroy } from "svelte";
     import { invalidateAll } from "$app/navigation";
-    import { setCache, invalidateCache } from "$lib/cache";
+    import { setCache, invalidateCache, clearCache } from "$lib/cache";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
 
@@ -46,6 +46,8 @@
     let isRetryingActivation = $state(false);
     let showDeleteModal = $state(false);
     let deleteFormRef = $state<HTMLFormElement | null>(null);
+    let deleteScheduledFormRef = $state<HTMLFormElement | null>(null);
+    let deleteDraftFormRef = $state<HTMLFormElement | null>(null);
     let today = new Date().toISOString();
 
     // Cleanup saveTimeout on unmount
@@ -163,14 +165,6 @@
             </h1>
             <p class="text-resin-earth/70 mt-1">{formatDate(today)}</p>
         </div>
-        {#if profile?.current_streak && profile.current_streak > 1}
-            <div class="flex items-center gap-2 px-3 py-2 bg-orange-100/50 rounded-lg">
-                <svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M8.128 19.573a1 1 0 001.744 0l2.082-5.007h5.277a1 1 0 00.588-1.81l-4.28-3.11 1.602-4.8a1 1 0 00-1.744-1.14L11.882 9H7.118L5.132 3.706a1 1 0 00-1.744 1.14l1.602 4.8-4.28 3.11a1 1 0 00.588 1.81h5.277l2.082 5.007z" />
-                </svg>
-                <span class="font-bold text-orange-700">{profile.current_streak}</span>
-            </div>
-        {/if}
     </div>
     <!-- Active Area Split View -->
     <div
@@ -418,7 +412,7 @@
 
             <!-- Connected Notes Section -->
             {#if activeNote?.id && connections[activeNote.id]}
-                <div class="px-6 sm:px-10 py-4 border-t border-resin-forest/5 bg-white/20">
+                <div class="px-6 sm:px-10 py-4 bg-white/20">
                     <ConnectedNotesSection
                         outgoing={connections[activeNote.id]?.outgoing || []}
                         incoming={connections[activeNote.id]?.incoming || []}
@@ -593,11 +587,12 @@
                             <form
                                 method="POST"
                                 action="?/deleteNote"
-                                bind:this={deleteFormRef}
+                                bind:this={deleteScheduledFormRef}
                                 use:enhance={() => {
                                     return async ({ result, update }) => {
                                         if (result.type === "success") {
                                             showToast("Plan deleted");
+                                            clearCache();
                                             await invalidateAll();
                                         } else if (result.type === "failure") {
                                             showToast(
@@ -616,7 +611,10 @@
                                 <input type="hidden" name="id" value={activeNote?.id} />
                                 <button
                                     type="button"
-                                    onclick={() => (showDeleteModal = true)}
+                                    onclick={() => {
+                                        deleteFormRef = deleteScheduledFormRef;
+                                        showDeleteModal = true;
+                                    }}
                                     class="px-3 py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-1.5 transition-all
                                     bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
                                 >
@@ -789,11 +787,12 @@
                             <form
                                 method="POST"
                                 action="?/deleteNote"
-                                bind:this={deleteFormRef}
+                                bind:this={deleteDraftFormRef}
                                 use:enhance={() => {
                                     return async ({ result, update }) => {
                                         if (result.type === "success") {
                                             showToast("Note deleted");
+                                            clearCache();
                                             await invalidateAll();
                                         } else if (result.type === "failure") {
                                             showToast(
@@ -812,7 +811,10 @@
                                 <input type="hidden" name="id" value={activeNote?.id} />
                                 <button
                                     type="button"
-                                    onclick={() => (showDeleteModal = true)}
+                                    onclick={() => {
+                                        deleteFormRef = deleteDraftFormRef;
+                                        showDeleteModal = true;
+                                    }}
                                     class="px-3 py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-1.5 transition-all
                                     bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
                                 >

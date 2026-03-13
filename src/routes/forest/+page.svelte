@@ -561,27 +561,6 @@
             </div>
         </div>
 
-        <!-- Personal Forest Visualization -->
-        <div class="w-full max-w-4xl mb-12">
-            <div class="mb-6">
-                <h2 class="text-2xl font-serif font-bold text-resin-charcoal flex items-center gap-3 mb-2">
-                    <span><TreePine size={24} /></span>
-                    Your Forest
-                </h2>
-                <p class="text-resin-earth/60 text-sm">
-                    {totalStones} stones earned · {currentStreak > 1 ? `🔥 ${currentStreak} day streak` : 'Start a streak today!'}
-                </p>
-            </div>
-            <div class="glass-card rounded-2xl p-8 flex justify-center" class:reward-forest-glow={showForestGlow}>
-                <ForestRenderer
-                    stones={totalStones}
-                    streak={currentStreak}
-                    size="lg"
-                    forestHealth={profileData?.forest_health || 100}
-                />
-            </div>
-        </div>
-
         <!-- Time Period Selector -->
         <div class="flex gap-1 p-1 bg-white/40 rounded-xl w-fit mx-auto mb-8">
             {#each ["day", "week", "month", "year"] as period}
@@ -659,7 +638,7 @@
             <div class="flex items-center justify-between mb-3">
                 <span
                     class="text-xs font-bold uppercase tracking-widest text-resin-earth/40"
-                    >Your Grove</span
+                    >Your Forest</span
                 >
                 <span
                     class="text-xs font-medium text-resin-forest/60"
@@ -745,83 +724,6 @@
                                 {species.unlockCost} Stones
                             </div>
                         {/if}
-                    </div>
-                {/each}
-            </div>
-        </div>
-
-        <!-- Session History -->
-        <div class="w-full max-w-4xl space-y-6 mt-20">
-            <h2 class="text-lg font-serif font-bold text-resin-charcoal tracking-tight">
-                Session History
-            </h2>
-            <div class="grid gap-4">
-                {#each filteredSessions as session, i}
-                    <div
-                        class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/20 hover:border-resin-amber/30 transition-all"
-                    >
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-resin-forest/5 overflow-hidden"
-                            >
-                                {#if session.status === "scheduled" || session.status === "completed"}
-                                    <TreeSVG species={getSpeciesIcon(session)} size={32} health={forestHealth} />
-                                {:else}
-                                    <div class="text-2xl">🪨</div>
-                                {/if}
-                            </div>
-                            <div>
-                                <h3
-                                    class="font-bold text-resin-charcoal text-lg"
-                                >
-                                    {session.title ||
-                                        session.display_title ||
-                                        "Focus Session"}
-                                </h3>
-                                <p
-                                    class="text-xs font-bold text-resin-earth/50 uppercase tracking-wider mt-1"
-                                >
-                                    {new Date(
-                                        session.created_at,
-                                    ).toLocaleDateString("en-US", {
-                                        weekday: "short",
-                                        month: "short",
-                                        day: "numeric",
-                                    })}
-                                    {#if session.focusMinutes > 0}
-                                        <span class="mx-2 text-resin-forest/30"
-                                            >•</span
-                                        >
-                                        <span class="text-resin-forest"
-                                            >{session.focusMinutes}m focused</span
-                                        >
-                                    {/if}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            {#if session.status === "scheduled"}
-                                <span
-                                    class="px-3 py-1 bg-resin-amber/10 text-resin-amber text-[10px] font-bold uppercase tracking-widest rounded-full"
-                                    >Active Plan</span
-                                >
-                            {:else if session.status === "completed"}
-                                <span
-                                    class="px-3 py-1 bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-widest rounded-full"
-                                    >Completed</span
-                                >
-                            {:else if session.status === "canceled"}
-                                <span
-                                    class="px-3 py-1 bg-resin-earth/10 text-resin-earth/60 text-[10px] font-bold uppercase tracking-widest rounded-full"
-                                    >Canceled</span
-                                >
-                            {:else}
-                                <span
-                                    class="px-3 py-1 bg-resin-forest/5 text-resin-earth/50 text-[10px] font-bold uppercase tracking-widest rounded-full"
-                                    >Draft</span
-                                >
-                            {/if}
-                        </div>
                     </div>
                 {/each}
             </div>
@@ -1059,6 +961,83 @@
                 </div>
             </div>
         {/if}
+
+        <!-- Session History -->
+        <div class="w-full max-w-4xl space-y-6 mt-20">
+            <h2 class="text-lg font-serif font-bold text-resin-charcoal tracking-tight">
+                Session History
+            </h2>
+            <div class="grid gap-4">
+                {#each filteredSessions as session, i}
+                    <div
+                        class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-white/20 hover:border-resin-amber/30 transition-all"
+                    >
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-resin-forest/5 overflow-hidden"
+                            >
+                                {#if session.status === "scheduled" || session.status === "completed"}
+                                    <TreeSVG species={getSpeciesIcon(session)} size={32} health={forestHealth} />
+                                {:else}
+                                    <div class="text-2xl">🪨</div>
+                                {/if}
+                            </div>
+                            <div>
+                                <h3
+                                    class="font-bold text-resin-charcoal text-lg"
+                                >
+                                    {session.title ||
+                                        session.display_title ||
+                                        "Focus Session"}
+                                </h3>
+                                <p
+                                    class="text-xs font-bold text-resin-earth/50 uppercase tracking-wider mt-1"
+                                >
+                                    {new Date(
+                                        session.created_at,
+                                    ).toLocaleDateString("en-US", {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                    })}
+                                    {#if session.focusMinutes > 0}
+                                        <span class="mx-2 text-resin-forest/30"
+                                            >•</span
+                                        >
+                                        <span class="text-resin-forest"
+                                            >{session.focusMinutes}m focused</span
+                                        >
+                                    {/if}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {#if session.status === "scheduled"}
+                                <span
+                                    class="px-3 py-1 bg-resin-amber/10 text-resin-amber text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Active Plan</span
+                                >
+                            {:else if session.status === "completed"}
+                                <span
+                                    class="px-3 py-1 bg-resin-forest/10 text-resin-forest text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Completed</span
+                                >
+                            {:else if session.status === "canceled"}
+                                <span
+                                    class="px-3 py-1 bg-resin-earth/10 text-resin-earth/60 text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Canceled</span
+                                >
+                            {:else}
+                                <span
+                                    class="px-3 py-1 bg-resin-forest/5 text-resin-earth/50 text-[10px] font-bold uppercase tracking-widest rounded-full"
+                                    >Draft</span
+                                >
+                            {/if}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        </div>
 
         <!-- Info Footer -->
         <div class="mt-40 text-center space-y-6 opacity-40 max-w-lg mx-auto">

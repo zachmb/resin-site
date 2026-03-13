@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import { fade } from "svelte/transition";
     import { enhance } from "$app/forms";
-    import { goto } from "$app/navigation";
+    import { goto, invalidateAll } from "$app/navigation";
     import { createSupabaseClient } from "$lib/supabase";
     import FocusControl from "./FocusControl.svelte";
     import ResinShieldCard from "./ResinShieldCard.svelte";
@@ -303,15 +303,12 @@
                             return async ({ result }) => {
                                 if (result.type === "success") {
                                     successNote = true;
+                                    await invalidateAll();
                                     setTimeout(() => {
                                         savingNote = false;
                                         successNote = false;
                                         composeText = "";
-                                    }, 800);
-                                } else if (result.type === "redirect") {
-                                    successNote = true;
-                                    setTimeout(() => {
-                                        goto(result.location);
+                                        goto(result.data?.redirectTo || "/notes");
                                     }, 800);
                                 } else {
                                     savingNote = false;
@@ -376,15 +373,12 @@
                             return async ({ result }) => {
                                 if (result.type === "success") {
                                     successAmber = true;
+                                    await invalidateAll();
                                     setTimeout(() => {
                                         savingAmber = false;
                                         successAmber = false;
                                         composeText = "";
-                                    }, 800);
-                                } else if (result.type === "redirect") {
-                                    successAmber = true;
-                                    setTimeout(() => {
-                                        goto(result.location);
+                                        goto(result.data?.redirectTo || "/amber");
                                     }, 800);
                                 } else {
                                     savingAmber = false;
@@ -1007,6 +1001,13 @@
                                 <form
                                     method="POST"
                                     action="?/deleteAutomation"
+                                    use:enhance={() => {
+                                        return async ({ result }) => {
+                                            if (result.type === 'success') {
+                                                await invalidateAll();
+                                            }
+                                        };
+                                    }}
                                     class="inline"
                                 >
                                     <input
@@ -1039,6 +1040,26 @@
                     <form
                         method="POST"
                         action="?/createAutomation"
+                        use:enhance={() => {
+                            return async ({ result }) => {
+                                if (result.type === 'success') {
+                                    await invalidateAll();
+                                    showAddAutomation = false;
+                                    autoTitle = '';
+                                    autoTime = '';
+                                    autoDuration = '25';
+                                    autoDays = {
+                                        Mon: false,
+                                        Tue: false,
+                                        Wed: false,
+                                        Thu: false,
+                                        Fri: false,
+                                        Sat: false,
+                                        Sun: false,
+                                    };
+                                }
+                            };
+                        }}
                         onsubmit={(e) => {
                             const daysString = getDaysForSubmit();
                             if (!daysString) {

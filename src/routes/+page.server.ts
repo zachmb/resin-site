@@ -260,7 +260,7 @@ export const actions: Actions = {
         await syncStonesFromNotes(session.user.id);
         await recordDailyActivity(session.user.id);
 
-        throw redirect(303, `/notes?id=${note.id}`);
+        return { success: true, noteId: note.id, redirectTo: `/notes?id=${note.id}` };
     },
 
     quickSchedule: async ({ request, locals: { supabase, getSession } }) => {
@@ -291,7 +291,7 @@ export const actions: Actions = {
         await syncStonesFromNotes(session.user.id);
         await recordDailyActivity(session.user.id);
 
-        throw redirect(303, `/amber`);
+        return { success: true, noteId: note.id, redirectTo: `/amber` };
     },
 
     createAutomation: async ({ request, locals: { supabase, getSession } }) => {

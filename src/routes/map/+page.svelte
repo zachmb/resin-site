@@ -14,6 +14,7 @@
     let unmappedNotes = $derived(notes.filter((n: any) => !n.is_on_map));
 
     let showAutoSaveHint = $state(true);
+    let draggingNoteId = $state<string | null>(null);
 
     onMount(() => {
         // Auto-dismiss the hint after 4 seconds
@@ -25,10 +26,15 @@
     });
 
     const onDragStart = (e: DragEvent, note: any) => {
+        draggingNoteId = note.id;
         if (e.dataTransfer) {
             e.dataTransfer.setData("application/svelteflow", note.id);
             e.dataTransfer.effectAllowed = "move";
         }
+    };
+
+    const onDragEnd = () => {
+        draggingNoteId = null;
     };
 
     const handleDropAction = async () => {
@@ -58,7 +64,8 @@
                 <div
                     draggable="true"
                     ondragstart={(e) => onDragStart(e, note)}
-                    class="p-4 bg-white border border-resin-forest/10 rounded-xl shadow-sm cursor-grab hover:shadow-md hover:border-resin-forest/30 transition-all active:cursor-grabbing"
+                    ondragend={onDragEnd}
+                    class="p-4 bg-white border border-resin-forest/10 rounded-xl shadow-sm cursor-grab hover:shadow-md hover:border-resin-forest/30 transition-all active:cursor-grabbing {draggingNoteId === note.id ? 'opacity-0' : ''}"
                 >
                     <h3
                         class="font-semibold text-sm text-resin-charcoal truncate"

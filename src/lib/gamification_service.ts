@@ -6,6 +6,18 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 });
 
+function dateStringInTimeZone(date: Date, timeZone: string): string {
+    // Produces YYYY-MM-DD for the provided timezone.
+    // Using Intl avoids relying on server timezone offsets.
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(date);
+    return parts; // en-CA formats as YYYY-MM-DD
+}
+
 export interface RewardOutcome {
     baseStones: number;
     bonusStones: number;
@@ -141,8 +153,13 @@ export async function detectEngagementBonuses(userId: string, newStreak: number,
 /**
  * Sync the total_stones count in profiles based on the count of amber_sessions.
  * This ensures the 1 note = 1 stone rule.
+ * FIX: Only update if the count has actually changed to avoid redundant writes.
  */
-export async function syncStonesFromNotes(userId: string): Promise<number> {
+export async function syncStonesFromNotes(
+    userId: string,
+    opts?: { force?: boolean }
+): Promise<number> {
+    const force = opts?.force === true;
     const { count, error } = await admin
         .from('amber_sessions')
         .select('*', { count: 'exact', head: true })
@@ -154,6 +171,18 @@ export async function syncStonesFromNotes(userId: string): Promise<number> {
     }
 
     const totalStones = count || 0;
+
+    // Fetch existing stones to avoid overwriting a higher count (e.g. from local iOS notes not yet synced)
+    const { data: profile } = await admin
+        .from('profiles')
+        .select('total_stones')
+        .eq('id', userId)
+        .single();
+
+    if (!force && profile && profile.total_stones > totalStones) {
+        console.log(`[Gamification] Skipping stone sync for ${userId}: Profile has ${profile.total_stones}, DB sessions only has ${totalStones}`);
+        return profile.total_stones;
+    }
 
     await admin
         .from('profiles')
@@ -170,7 +199,10 @@ export async function syncStonesFromNotes(userId: string): Promise<number> {
 /**
  * Calculate the longest streak and the date it was achieved from historical amber_sessions.
  */
-export async function calculateLongestStreakFromHistory(userId: string): Promise<{ longestStreak: number; longestStreakAt: string | null }> {
+export async function calculateLongestStreakFromHistory(
+    userId: string,
+    timeZone: string = 'UTC'
+): Promise<{ longestStreak: number; longestStreakAt: string | null }> {
     const { data: sessions, error } = await admin
         .from('amber_sessions')
         .select('created_at')
@@ -181,7 +213,17 @@ export async function calculateLongestStreakFromHistory(userId: string): Promise
         return { longestStreak: 0, longestStreakAt: null };
     }
 
-    const uniqueDates = Array.from(new Set(sessions.map(s => s.created_at.split('T')[0])));
+    const uniqueDates = Array.from(
+        new Set(
+            sessions
+                .map((s: any) => {
+                    const d = new Date(s.created_at);
+                    if (Number.isNaN(d.getTime())) return null;
+                    return dateStringInTimeZone(d, timeZone);
+                })
+                .filter(Boolean) as string[]
+        )
+    ).sort();
     
     let currentStreak = 0;
     let longestStreak = 0;
@@ -204,7 +246,9 @@ export async function calculateLongestStreakFromHistory(userId: string): Promise
             currentStreak = 1;
         }
 
-        if (currentStreak >= longestStreak) {
+        // Only update the "at" date when we truly exceed the previous max to avoid
+        // shifting `longest_streak_at` forward on ties during recalculation.
+        if (currentStreak > longestStreak) {
             longestStreak = currentStreak;
             longestStreakAt = dateStr;
         }
@@ -222,17 +266,9 @@ export async function calculateLongestStreakFromHistory(userId: string): Promise
 export async function recordDailyActivity(userId: string): Promise<{ currentStreak: number; longestStreak: number; longestStreakAt: string | null }> {
     const now = new Date();
 
-    const getLocalDateString = (date: Date) => {
-        const offset = date.getTimezoneOffset() * 60000;
-        const local = new Date(date.getTime() - offset);
-        return local.toISOString().split('T')[0];
-    };
-
-    const todayStr = getLocalDateString(now);
-
     const { data: profile } = await admin
         .from('profiles')
-        .select('current_streak, longest_streak, longest_streak_at, last_active_date')
+        .select('current_streak, longest_streak, longest_streak_at, last_active_date, timezone')
         .eq('id', userId)
         .single();
 
@@ -241,30 +277,52 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
         return { currentStreak: 0, longestStreak: 0, longestStreakAt: null };
     }
 
-    // Retroactively calculate if longest_streak seems off or longest_streak_at is missing
-    const history = await calculateLongestStreakFromHistory(userId);
-    let newLongest = Math.max(profile.longest_streak || 0, history.longestStreak);
-    let longestStreakAt = profile.longest_streak_at || history.longestStreakAt;
+    const timeZone = (profile as any)?.timezone || 'UTC';
+    const todayStr = dateStringInTimeZone(now, timeZone);
 
-    if (history.longestStreak > (profile.longest_streak || 0)) {
-        newLongest = history.longestStreak;
-        longestStreakAt = history.longestStreakAt;
+    const history = await calculateLongestStreakFromHistory(userId, timeZone);
+    const existingLongest = profile.longest_streak || 0;
+    const historyLongest = history.longestStreak || 0;
+
+    // Never decrease `longest_streak` during recalculation; preserve the matching date.
+    let newLongest = existingLongest >= historyLongest ? existingLongest : historyLongest;
+    let longestStreakAt: string | null = profile.longest_streak_at ?? null;
+
+    if (historyLongest > existingLongest) {
+        longestStreakAt = history.longestStreakAt ?? longestStreakAt;
+    } else if (!longestStreakAt) {
+        // If we don't have a date stored, fall back to history without changing the streak value.
+        longestStreakAt = history.longestStreakAt ?? null;
     }
 
     const lastActive = profile.last_active_date ? new Date(profile.last_active_date) : null;
-    const lastActiveStr = lastActive ? getLocalDateString(lastActive) : null;
+    const lastActiveStr = lastActive ? dateStringInTimeZone(lastActive, timeZone) : null;
 
     let newStreak = profile.current_streak || 0;
 
     if (lastActiveStr === todayStr) {
-        // Already recorded today
+        // Already recorded today: don't change current streak, but still persist any
+        // historical longest-streak correction we computed above.
+        if (
+            newLongest !== existingLongest ||
+            (longestStreakAt && longestStreakAt !== (profile.longest_streak_at ?? null))
+        ) {
+            await admin
+                .from('profiles')
+                .update({
+                    longest_streak: newLongest,
+                    longest_streak_at: longestStreakAt,
+                    updated_at: now.toISOString()
+                })
+                .eq('id', userId);
+        }
         return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt };
     }
 
     // Check if yesterday
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    const yesterdayStr = getLocalDateString(yesterday);
+    const yesterdayStr = dateStringInTimeZone(yesterday, timeZone);
 
     if (lastActiveStr === yesterdayStr) {
         newStreak += 1;
@@ -277,23 +335,19 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
         longestStreakAt = todayStr;
     }
 
-    // Sync stones before updating profile to ensure consistency
-    const stonesCount = await syncStonesFromNotes(userId);
-
     await admin
         .from('profiles')
         .update({
             current_streak: newStreak,
             longest_streak: newLongest,
             longest_streak_at: longestStreakAt,
-            total_stones: stonesCount,
             last_active_date: now.toISOString(),
             updated_at: now.toISOString()
         })
         .eq('id', userId);
 
     console.log(`[Gamification] Activity recorded for ${userId}: Streak ${newStreak}, Longest ${newLongest} at ${longestStreakAt}`);
-    return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt };
+    return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt: longestStreakAt };
 }
 
 /**

@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import { fade, fly, scale } from "svelte/transition";
     import { createSupabaseClient } from "$lib/supabase";
+    import { triggerReward } from "$lib/rewardStore";
     import ForestRenderer from "$lib/components/ForestRenderer.svelte";
 
     let { data } = $props();
@@ -12,6 +13,18 @@
     });
 
     let recentReward = $state<{ text: string; icon: string; timestamp: number } | null>(null);
+    let showForestGlow = $state(false);
+
+    // Trigger reward and forest glow when reward appears
+    $effect(() => {
+        if (recentReward) {
+            triggerReward();
+            showForestGlow = true;
+            setTimeout(() => {
+                showForestGlow = false;
+            }, 4000); // Stop glowing before reward store clears (which is 5 seconds)
+        }
+    });
 
     onMount(() => {
         // Load most recent reward from localStorage
@@ -559,7 +572,7 @@
                     {totalStones} stones earned · {currentStreak > 1 ? `🔥 ${currentStreak} day streak` : 'Start a streak today!'}
                 </p>
             </div>
-            <div class="glass-card rounded-2xl p-8 flex justify-center">
+            <div class="glass-card rounded-2xl p-8 flex justify-center" class:reward-forest-glow={showForestGlow}>
                 <ForestRenderer
                     stones={totalStones}
                     streak={currentStreak}

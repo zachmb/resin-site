@@ -59,13 +59,14 @@
 
     // Onboarding banner
     let showShieldModal = $state(false);
-    let showBanner = $derived(
-        isNewUser && typeof window !== 'undefined' && !localStorage.getItem('resin_onboarded')
-    );
+    // `localStorage` isn't reactive, so a `$derived(...)` won't update when the user dismisses.
+    // Use state and flip it immediately on X.
+    let showBanner = $state(false);
 
     onMount(() => {
         // Initialize with current profile
         syncedProfile = profile;
+        showBanner = isNewUser && !localStorage.getItem('resin_onboarded');
 
         // Subscribe to real-time profile updates (for iOS sync)
         const supabase = createSupabaseClient();
@@ -133,6 +134,7 @@
 
     const dismissBanner = async () => {
         localStorage.setItem('resin_onboarded', '1');
+        showBanner = false;
         // Mark as onboarded in database
         try {
             await fetch('?/markWebOnboarded', {

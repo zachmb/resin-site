@@ -324,7 +324,7 @@ export const actions: Actions = {
         if (error) return fail(500, { error: 'Could not delete note' });
 
         // Sync stones after deletion
-        await syncStonesFromNotes(session.user.id);
+        await syncStonesFromNotes(session.user.id, { force: true });
 
         return { success: true, deletedId: id };
     },

@@ -374,6 +374,67 @@ export const actions: Actions = {
         return { success: true };
     },
 
+    delete: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+
+        if (!sessionId) return { success: false, error: 'Missing session ID' };
+
+        // Verify ownership and fetch tasks for calendar cleanup
+        const { data: sessionData, error: fetchError } = await supabase
+            .from('amber_sessions')
+            .select('id, amber_tasks(calendar_event_id)')
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (fetchError || !sessionData) {
+            return { success: false, error: 'Session not found or unauthorized' };
+        }
+
+        // 1. Clean up Calendar events
+        const calendarEventIds = (sessionData.amber_tasks || [])
+            .map((t: any) => t.calendar_event_id)
+            .filter(Boolean);
+
+        if (calendarEventIds.length > 0) {
+            try {
+                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
+                const gToken = await getGoogleAccessToken(session.user.id);
+                for (const eventId of calendarEventIds) {
+                    await deleteCalendarEvent(gToken, eventId);
+                }
+            } catch (calErr) {
+                console.warn('[Action: delete] Calendar cleanup warning:', calErr);
+            }
+        }
+
+        // 2. Delete from database
+        const { error: deleteError } = await supabase
+            .from('amber_sessions')
+            .delete()
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id);
+
+        if (deleteError) {
+            console.error('[Action: delete] Database delete error:', deleteError);
+            return { success: false, error: 'Failed to delete from database' };
+        }
+
+        // 3. Recalculate stones
+        try {
+            const { syncStonesFromNotes } = await import('$lib/gamification_service');
+            await syncStonesFromNotes(session.user.id, { force: true });
+        } catch (syncError) {
+            console.error('[Action: delete] Stone sync error:', syncError);
+        }
+
+        return { success: true };
+    },
+
     acceptJointPlan: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });

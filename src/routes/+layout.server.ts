@@ -30,17 +30,42 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
         .eq('id', session.user.id)
         .single();
 
-    // Standardize daily streak tracking on every visit
-    // This function has internal guards to only update once per calendar day
-    const { currentStreak, longestStreak } = await recordDailyActivity(session.user.id);
-    
-    // Sync stones based on note count (1 note = 1 stone)
-    const totalStones = await syncStonesFromNotes(session.user.id);
+    // Avoid forcing stones/streak recalculation on every page load. Use stored profile data
+    // and only initialize if the profile is missing key stats (new/empty profile).
+    let initTotalStones: number | null = null;
+    let initCurrentStreak: number | null = null;
+    let initLongestStreak: number | null = null;
+    let initLongestStreakAt: string | null = null;
+    if (profile) {
+        const hasAnySessions = normalizedNotes.length > 0;
+        const needsStonesInit =
+            profile.total_stones == null ||
+            // Some older profiles defaulted to 0 even after the user had sessions.
+            (profile.total_stones === 0 && hasAnySessions);
+        const needsStreakInit =
+            profile.current_streak == null ||
+            profile.longest_streak == null ||
+            profile.longest_streak_at == null ||
+            // Backfill streaks for older profiles that never wrote these fields.
+            ((profile.current_streak === 0 || profile.longest_streak === 0) && hasAnySessions);
+
+        if (needsStonesInit) {
+            initTotalStones = await syncStonesFromNotes(session.user.id);
+        }
+        if (needsStreakInit) {
+            const stats = await recordDailyActivity(session.user.id);
+            initCurrentStreak = stats.currentStreak;
+            initLongestStreak = stats.longestStreak;
+            initLongestStreakAt = stats.longestStreakAt;
+        }
+    }
 
     const normalizedProfile = profile ? {
         ...profile,
-        current_streak: currentStreak,
-        longest_streak: longestStreak,
+        total_stones: initTotalStones ?? profile.total_stones,
+        current_streak: initCurrentStreak ?? profile.current_streak,
+        longest_streak: initLongestStreak ?? profile.longest_streak,
+        longest_streak_at: initLongestStreakAt ?? profile.longest_streak_at,
         sync_notes: profile.sync_notes ?? true
     } : null;
 

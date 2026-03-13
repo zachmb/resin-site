@@ -30,8 +30,18 @@ export const POST = async ({ request }: RequestEvent) => {
     }
 
     try {
+        // Optional: allow callers to force stones to match server sessions count
+        // (i.e. allow decreasing total_stones). Default is protective.
+        let force = false;
+        try {
+            const body = await request.json();
+            force = body?.force === true;
+        } catch {
+            // No JSON body (or invalid) is fine.
+        }
+
         // 1. Recalculate stones (1 note = 1 stone)
-        const totalStones = await syncStonesFromNotes(user.id);
+        const totalStones = await syncStonesFromNotes(user.id, { force });
 
         // 2. Record daily activity (streak)
         const { currentStreak, longestStreak, longestStreakAt } = await recordDailyActivity(user.id);

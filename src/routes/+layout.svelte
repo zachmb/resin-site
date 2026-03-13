@@ -4,6 +4,7 @@
 	import { onMount } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
 	import { flushQueue } from "$lib/offline_queue";
+	import { rewardTriggered } from "$lib/rewardStore";
 	import DailyRitualPrompt from "$lib/components/DailyRitualPrompt.svelte";
 	import "./layout.css";
 
@@ -12,6 +13,7 @@
 	let isMobileMenuOpen = $state(false);
 	let isOnline = $state(browser ? navigator.onLine : true);
 	let showDailyRitualPrompt = $state(false);
+	let showRewardGlow = $state(false);
 
 	// FIX: Make profile reactive so real-time updates propagate
 	let profileData = $state(data.profile);
@@ -25,6 +27,16 @@
 	// Update profileData when data prop changes (e.g. navigation)
 	$effect(() => {
 		profileData = data.profile;
+	});
+
+	// Subscribe to reward events
+	$effect(() => {
+		const unsubscribe = rewardTriggered.subscribe((reward) => {
+			if (reward) {
+				showRewardGlow = true;
+			}
+		});
+		return unsubscribe;
 	});
 
 	onMount(() => {
@@ -163,7 +175,7 @@
 	>
 		<div class="max-w-6xl mx-auto flex items-center justify-between">
 			<a href="/" class="flex items-center gap-2.5 group">
-				<div class="relative" class:streak-glow={hasStreak}>
+				<div class="relative">
 					<img
 						src="/logo.png"
 						alt="Resin Logo"
@@ -175,6 +187,7 @@
 				</div>
 				<span
 					class="text-xl font-bold font-serif text-resin-charcoal tracking-tight"
+					class:reward-text-glow={showRewardGlow}
 					>Resin</span
 				>
 			</a>
@@ -227,12 +240,8 @@
 					<a
 						href="/forest"
 						class="hover:text-resin-forest transition-colors relative group"
-					class:streak-nav-glow={hasStreak}
 					>
 						Forest
-					{#if hasStreak}
-						<span class="ml-2 text-xs font-bold text-resin-amber animate-pulse">✨</span>
-					{/if}
 						<span
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
@@ -346,12 +355,8 @@
 				<a
 					href="/forest"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
-					class:streak-nav-glow={hasStreak}
 					onclick={() => (isMobileMenuOpen = false)}>Forest</a
 				>
-					{#if hasStreak}
-						<span class="ml-2 text-xs font-bold text-resin-amber animate-pulse">✨</span>
-					{/if}
 			<a
 				href="/focus"
 				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"

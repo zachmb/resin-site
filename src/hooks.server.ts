@@ -50,4 +50,48 @@ const corsHandle: Handle = async ({ event, resolve }) => {
     return response
 }
 
-export const handle = sequence(supabaseHandle, corsHandle)
+// Add cache headers for aggressive caching
+const cacheHandle: Handle = async ({ event, resolve }) => {
+    const response = await resolve(event)
+    const url = new URL(event.request.url)
+
+    // Set cache headers based on content type
+    if (url.pathname.startsWith('/api/')) {
+        // API responses: short cache, revalidation required
+        response.headers.set('Cache-Control', 'private, max-age=30, must-revalidate')
+    } else if (
+        url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2|woff|ttf|eot|ico)$/)
+    ) {
+        // Static assets: long cache (1 year) since they're usually versioned
+        response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+    } else if (
+        url.pathname === '/' ||
+        url.pathname.startsWith('/notes') ||
+        url.pathname.startsWith('/amber') ||
+        url.pathname.startsWith('/forest') ||
+        url.pathname.startsWith('/focus') ||
+        url.pathname.startsWith('/map') ||
+        url.pathname.startsWith('/friends') ||
+        url.pathname.startsWith('/account')
+    ) {
+        // HTML pages: cache with revalidation for freshness
+        response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400')
+    } else {
+        // Default: no cache
+        response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    }
+
+    // Add performance and security headers
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.set('X-XSS-Protection', '1; mode=block')
+
+    // Enable compression for text-based content
+    if (response.headers.get('Content-Type')?.includes('text')) {
+        response.headers.set('Vary', 'Accept-Encoding')
+    }
+
+    return response
+}
+
+export const handle = sequence(supabaseHandle, corsHandle, cacheHandle)

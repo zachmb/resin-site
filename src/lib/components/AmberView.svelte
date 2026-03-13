@@ -1,10 +1,13 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import { page } from "$app/stores";
+    import { invalidateAll } from "$app/navigation";
     import { fly } from "svelte/transition";
     import SessionCelebration from './SessionCelebration.svelte';
     import AmberIgniteRitual from './AmberIgniteRitual.svelte';
     import ForestDecayAnimation from './ForestDecayAnimation.svelte';
+    import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
+    import { setCache, invalidateCache } from '$lib/cache';
 
     let { profile, recentSessions = [], executionStats = null } = $props<{
         profile: any;
@@ -47,6 +50,8 @@
     let startTimeDate = $state('');
     let startTimeOffset = $state(0);
     let isSavingAdjustments = $state(false);
+    let showDeleteModal = $state(false);
+    let deleteFormRef = $state<HTMLFormElement | null>(null);
     let adjustmentSaveTimeout: ReturnType<typeof setTimeout>;
 
     const intensityLabels = ['Relaxed', 'Focused', 'Strict', 'Max'];
@@ -704,6 +709,7 @@
                             {/if}
                         </section>
                     {/if}
+
                 </div>
 
                 <!-- Action Bar -->
@@ -738,12 +744,22 @@
                                 action="?/activate"
                                 use:enhance={({ formElement, cancel }) => {
                                     activatingId = selectedSession.id;
+                                    // Optimistic update - show success immediately
+                                    if (selectedSession) {
+                                        const updatedSession = { ...selectedSession, status: 'scheduled' };
+                                        setCache(`session-${selectedSession.id}`, updatedSession, 60000);
+                                    }
                                     return async ({ result }) => {
                                         if (result.type === 'failure' && result.data?.code === 'google_not_connected') {
                                             activatingId = null;
                                             showGoogleSignIn = true;
                                             googleSignInError = result.data?.error as string;
                                         } else if (result.type === 'success') {
+                                            // Cache the confirmed session
+                                            if (selectedSession) {
+                                                setCache(`session-${selectedSession.id}`, selectedSession, 60000);
+                                                invalidateCache('sessions-list');
+                                            }
                                             successId = selectedSession.id;
                                             setTimeout(() => {
                                                 activatingId = null;
@@ -783,6 +799,35 @@
                                 </button>
                             </form>
                         {/if}
+                        <form
+                            method="POST"
+                            action="?/delete"
+                            bind:this={deleteFormRef}
+                            use:enhance={() => {
+                                return async ({ result }) => {
+                                    if (result.type === 'success') {
+                                        selectedSessionId = null;
+                                        await invalidateAll();
+                                    }
+                                };
+                            }}
+                        >
+                            <input
+                                type="hidden"
+                                name="sessionId"
+                                value={selectedSession.id}
+                            />
+                            <button
+                                type="button"
+                                onclick={() => (showDeleteModal = true)}
+                                class="px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-1.5"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                            </button>
+                        </form>
                         {#if selectedSession.status === 'completed'}
                             <button
                                 onclick={async () => {
@@ -1039,6 +1084,18 @@
         </div>
     </div>
 {/if}
+
+<!-- Delete confirmation modal -->
+<ConfirmDeleteModal
+    isOpen={showDeleteModal}
+    title="Delete This Plan?"
+    message="Deleting this plan will permanently remove it and all its tasks. This action cannot be undone."
+    onConfirm={() => {
+        showDeleteModal = false;
+        deleteFormRef?.requestSubmit();
+    }}
+    onCancel={() => (showDeleteModal = false)}
+/>
 
 <style>
     :global {

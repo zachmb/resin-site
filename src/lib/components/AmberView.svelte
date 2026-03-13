@@ -803,6 +803,10 @@
                                         selectedSessionId = null;
                                         clearCache();
                                         await invalidateAll();
+                                    } else if (result.type === 'failure') {
+                                        console.error('Delete failed:', result.data?.error);
+                                    } else if (result.type === 'error') {
+                                        console.error('Delete error:', result.error?.message);
                                     }
                                 };
                             }}

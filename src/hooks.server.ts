@@ -75,7 +75,8 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
         url.pathname.startsWith('/account')
     ) {
         // HTML pages: cache with revalidation for freshness
-        response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400')
+        // MUST be private to prevent CDNs from caching personalized content
+        response.headers.set('Cache-Control', 'private, max-age=300, s-maxage=3600, stale-while-revalidate=86400')
     } else {
         // Default: no cache
         response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')

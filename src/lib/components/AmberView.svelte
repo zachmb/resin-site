@@ -1,17 +1,19 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import { page } from "$app/stores";
-    import { invalidateAll } from "$app/navigation";
-    import { fly } from "svelte/transition";
+    import { invalidateAll, goto } from "$app/navigation";
+    import { fly, fade } from "svelte/transition";
     import SessionCelebration from './SessionCelebration.svelte';
     import AmberIgniteRitual from './AmberIgniteRitual.svelte';
     import ForestDecayAnimation from './ForestDecayAnimation.svelte';
     import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
+    import CalendarVisualizer from './CalendarVisualizer.svelte';
     import { setCache, invalidateCache, clearCache } from '$lib/cache';
 
-    let { profile, recentSessions = [], executionStats = null } = $props<{
+    let { profile, recentSessions = [], externalEvents = [], executionStats = null } = $props<{
         profile: any;
         recentSessions: any[];
+        externalEvents?: any[];
         executionStats?: any;
     }>();
 
@@ -24,6 +26,11 @@
     let decayAnimationData = $state<any>(null);
     let pendingSessionFailure = $state<string | null>(null);
     let pendingSessionCompletion = $state<string | null>(null);
+    let viewMode = $state<'list' | 'calendar'>('list');
+    let selectedSessionIds = $state<string[]>([]);
+    let showClearConfirm = $state(false);
+    let dateToClear = $state<Date | null>(null);
+    let clearingDate = $state<string | null>(null);
 
     // Pre-select session from URL query parameter or auto-select first
     $effect(() => {
@@ -216,10 +223,18 @@
             isSavingAdjustments = false;
         }
     };
+
+    const toggleSessionSelect = (id: string) => {
+        if (selectedSessionIds.includes(id)) {
+            selectedSessionIds = selectedSessionIds.filter(sid => sid !== id);
+        } else {
+            selectedSessionIds = [...selectedSessionIds, id];
+        }
+    };
 </script>
 
 <main
-    class="w-full h-screen pt-20 pb-4 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto overflow-hidden"
+    class="w-full pt-20 pb-12 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto {viewMode === 'list' ? 'h-screen overflow-hidden' : 'min-h-screen'}"
 >
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
@@ -229,10 +244,27 @@
             </h1>
             <p class="text-resin-earth/70 mt-1">{formatDate(today)}</p>
         </div>
+
+        <div class="flex bg-resin-earth/5 p-1 rounded-xl border border-resin-forest/5">
+            <button 
+                onclick={() => viewMode = 'list'}
+                class="px-4 py-2 text-xs font-bold rounded-lg transition-all {viewMode === 'list' ? 'bg-white shadow-premium text-resin-forest' : 'text-resin-earth/50 hover:text-resin-earth'}"
+            >
+                List View
+            </button>
+            <button 
+                onclick={() => viewMode = 'calendar'}
+                class="px-4 py-2 text-xs font-bold rounded-lg transition-all {viewMode === 'calendar' ? 'bg-white shadow-premium text-resin-forest' : 'text-resin-earth/50 hover:text-resin-earth'}"
+            >
+                Calendar
+            </button>
+        </div>
     </div>
 
-    <!-- Two-Panel Layout -->
-    <div class="flex gap-6 flex-1 relative overflow-hidden">
+    <!-- View Switcher -->
+    <div class="flex-1 relative overflow-hidden">
+        {#if viewMode === 'list'}
+            <div class="flex gap-6 h-full relative overflow-hidden" in:fade={{ duration: 200 }}>
         <!-- Left Panel: Session Browser -->
         <div
             class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
@@ -709,7 +741,12 @@
                 <!-- Action Bar -->
                 <div class="flex-shrink-0 px-6 py-4 border-t border-resin-forest/5 bg-white/30 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        {#if selectedSession.status === 'scheduled'}
+                        {#if selectedSession.status === 'draft'}
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-resin-earth/10 border border-resin-earth/20 rounded-full">
+                                <div class="w-1.5 h-1.5 rounded-full bg-resin-earth"></div>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-resin-earth">Draft</span>
+                            </div>
+                        {:else if selectedSession.status === 'scheduled'}
                             <div class="flex items-center gap-2 px-3 py-1.5 bg-resin-amber/10 border border-resin-amber/20 rounded-full">
                                 <div class="w-1.5 h-1.5 rounded-full bg-resin-amber animate-pulse"></div>
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-resin-amber">Scheduled · {formatDuration(sessionFocusMinutes)}</span>
@@ -754,7 +791,11 @@
                                                 setCache(`session-${selectedSession.id}`, selectedSession, 60000);
                                                 invalidateCache('sessions-list');
                                             }
+                                            // Ensure the newly activated session stays selected
+                                            selectedSessionId = selectedSession.id;
                                             successId = selectedSession.id;
+                                            // Redirect to ensure the session is highlighted when page reloads
+                                            await goto(`/amber?sessionId=${selectedSession.id}`);
                                             setTimeout(() => {
                                                 activatingId = null;
                                                 successId = null;
@@ -879,6 +920,71 @@
             {/if}
         </div>
     </div>
+{:else}
+        <div class="h-full" in:fade={{ duration: 200 }}>
+            <CalendarVisualizer 
+                sessions={recentSessions} 
+                externalEvents={externalEvents || []}
+                selectedSessionIds={selectedSessionIds}
+                onSelectSession={(id) => {
+                    selectedSessionId = id;
+                    viewMode = 'list';
+                }}
+                onToggleSelect={toggleSessionSelect}
+                onClearDay={(day) => {
+                    dateToClear = day;
+                    showClearConfirm = true;
+                }}
+            />
+        </div>
+    {/if}
+</div>
+
+<!-- Clear Day Confirmation Modal -->
+{#if showClearConfirm && dateToClear}
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]" in:fade>
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-forest/10" in:fly={{ y: 20 }}>
+            <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-resin-charcoal mb-2">Clear this day?</h3>
+            <p class="text-sm text-resin-earth/70 mb-8 leading-relaxed">
+                This will delete all Amber plans for <strong>{dateToClear.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</strong>. Calendar events won't be recoverable.
+            </p>
+            <div class="flex gap-3">
+                <button 
+                    onclick={() => showClearConfirm = false}
+                    class="flex-1 px-4 py-3 text-sm font-bold text-resin-earth hover:bg-black/5 rounded-xl transition-all"
+                >
+                    Cancel
+                </button>
+                <form 
+                    method="POST" 
+                    action="?/clearDay" 
+                    use:enhance={() => {
+                        showClearConfirm = false;
+                        clearingDate = dateToClear?.toISOString() || null;
+                        return async ({ result }) => {
+                            clearingDate = null;
+                            invalidateAll();
+                        };
+                    }}
+                    class="flex-1"
+                >
+                    <input type="hidden" name="date" value={dateToClear.toISOString()} />
+                    <button 
+                        type="submit"
+                        class="w-full px-4 py-3 text-sm font-bold bg-red-500 text-white hover:bg-red-600 rounded-xl shadow-lg shadow-red-500/20 transition-all"
+                    >
+                        Clear Day
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+{/if}
 
     <!-- Google Sign In Modal -->
     {#if showGoogleSignIn}

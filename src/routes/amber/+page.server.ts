@@ -137,11 +137,24 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         }
     }
 
+    // Load external events if connected
+    let externalEvents: any[] = [];
+    try {
+        const { getGoogleAccessToken, listCalendarEvents } = await import('$lib/amber_service');
+        const gToken = await getGoogleAccessToken(session.user.id);
+        const timeMin = new Date(Date.now() - 7 * 86400000).toISOString();
+        const timeMax = new Date(Date.now() + 14 * 86400000).toISOString();
+        externalEvents = await listCalendarEvents(gToken, timeMin, timeMax, profile?.timezone || 'UTC');
+    } catch (e) {
+        // Silently fail if not connected or error
+    }
+
     return {
         profile,
         notes: allSessions,
         jointPlans: jointPlans || [],
-        executionStats
+        executionStats,
+        externalEvents
     };
 };
 
@@ -834,6 +847,123 @@ export const actions: Actions = {
                     })
                     .eq('id', task.id);
             }
+        }
+
+        return { success: true };
+    },
+
+    bulkDelete: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const sessionIds = JSON.parse(data.get('sessionIds')?.toString() || '[]');
+
+        if (!sessionIds.length) return { success: false, error: 'No sessions selected' };
+
+        // Verify ownership and fetch tasks for calendar cleanup
+        const { data: sessionsData, error: fetchError } = await supabase
+            .from('amber_sessions')
+            .select('id, amber_tasks(calendar_event_id)')
+            .in('id', sessionIds)
+            .eq('user_id', session.user.id);
+
+        if (fetchError || !sessionsData) {
+            return { success: false, error: 'Sessions not found or unauthorized' };
+        }
+
+        // 1. Clean up Calendar events
+        const calendarEventIds = sessionsData.flatMap((s: any) =>
+            (s.amber_tasks || []).map((t: any) => t.calendar_event_id)
+        ).filter(Boolean);
+
+        if (calendarEventIds.length > 0) {
+            try {
+                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
+                const gToken = await getGoogleAccessToken(session.user.id);
+                for (const eventId of calendarEventIds) {
+                    await deleteCalendarEvent(gToken, eventId);
+                }
+            } catch (calErr) {
+                console.warn('[Action: bulkDelete] Calendar cleanup warning:', calErr);
+            }
+        }
+
+        // 2. Delete from database
+        const { error: deleteError } = await supabase
+            .from('amber_sessions')
+            .delete()
+            .in('id', sessionIds)
+            .eq('user_id', session.user.id);
+
+        if (deleteError) {
+            console.error('[Action: bulkDelete] Database delete error:', deleteError);
+            return { success: false, error: 'Failed to delete from database' };
+        }
+
+        return { success: true };
+    },
+
+    clearDay: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const data = await request.formData();
+        const dateStr = data.get('date')?.toString();
+
+        if (!dateStr) return { success: false, error: 'Missing date' };
+
+        const startOfDay = new Date(dateStr);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(dateStr);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Fetch sessions for that day
+        const { data: sessionsData } = await supabase
+            .from('amber_sessions')
+            .select('id, created_at, amber_tasks(start_time, end_time, calendar_event_id)')
+            .eq('user_id', session.user.id);
+
+        const sessionIdsToDelete = (sessionsData || []).filter((s: any) => {
+            const tasks = s.amber_tasks || [];
+            if (tasks.length > 0) {
+                const firstTaskStart = new Date(tasks[0].start_time);
+                return firstTaskStart >= startOfDay && firstTaskStart <= endOfDay;
+            }
+            const createdAt = new Date(s.created_at);
+            return createdAt >= startOfDay && createdAt <= endOfDay;
+        }).map((s: any) => s.id);
+
+        if (sessionIdsToDelete.length === 0) return { success: true };
+
+        // 1. Clean up Calendar events
+        const calendarEventIds = (sessionsData || [])
+            .filter((s: any) => sessionIdsToDelete.includes(s.id))
+            .flatMap((s: any) => (s.amber_tasks || []).map((t: any) => t.calendar_event_id))
+            .filter(Boolean);
+
+        if (calendarEventIds.length > 0) {
+            try {
+                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
+                const gToken = await getGoogleAccessToken(session.user.id);
+                for (const eventId of calendarEventIds) {
+                    await deleteCalendarEvent(gToken, eventId);
+                }
+            } catch (calErr) {
+                console.warn('[Action: clearDay] Calendar cleanup warning:', calErr);
+            }
+        }
+
+        // 2. Delete from database
+        const { error: deleteError } = await supabase
+            .from('amber_sessions')
+            .delete()
+            .in('id', sessionIdsToDelete)
+            .eq('user_id', session.user.id);
+
+        if (deleteError) {
+            console.error('[Action: clearDay] Database delete error:', deleteError);
+            return { success: false, error: 'Failed to delete from database' };
         }
 
         return { success: true };

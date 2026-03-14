@@ -116,6 +116,40 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string):
     return true;
 }
 
+export async function listCalendarEvents(
+    accessToken: string,
+    timeMin: string,
+    timeMax: string,
+    timezone: string
+): Promise<any[]> {
+    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+    url.searchParams.append('timeMin', timeMin);
+    url.searchParams.append('timeMax', timeMax);
+    url.searchParams.append('timeZone', timezone);
+    url.searchParams.append('singleEvents', 'true');
+    url.searchParams.append('orderBy', 'startTime');
+
+    const res = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!res.ok) {
+        console.error('[amber_service] Failed to list calendar events:', await res.text());
+        return [];
+    }
+
+    const data = await res.json();
+    return (data.items || []).map((item: any) => ({
+        id: item.id,
+        title: item.summary || 'Busy',
+        start: item.start.dateTime || item.start.date,
+        end: item.end.dateTime || item.end.date,
+        allDay: !!item.start.date,
+        type: 'external'
+    }));
+}
+
 export async function computeUserInsights(userId: string): Promise<string> {
     try {
         // Fetch last 30 days of sessions

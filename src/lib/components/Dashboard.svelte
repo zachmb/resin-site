@@ -64,13 +64,51 @@
     let showBanner = $state(false);
 
     onMount(() => {
-        // Initialize with current profile
-        syncedProfile = profile;
+        // Try to load from localStorage first (fastest), fallback to server data
+        const cachedProfile = localStorage.getItem('resin_profile');
+        if (cachedProfile) {
+            try {
+                syncedProfile = JSON.parse(cachedProfile);
+            } catch {
+                syncedProfile = profile; // Fallback if cache is corrupted
+            }
+        } else {
+            syncedProfile = profile;
+        }
+
         showBanner = isNewUser && !localStorage.getItem('resin_onboarded');
 
         // Subscribe to real-time profile updates (for iOS sync)
         const supabase = createSupabaseClient();
         let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+        // Immediate background refresh on page load (non-blocking)
+        const refreshProfileImmediately = async () => {
+            if (supabase && profile?.id) {
+                try {
+                    const { data } = await supabase
+                        .from('profiles')
+                        .select('id, total_stones, current_streak, longest_streak')
+                        .eq('id', profile.id)
+                        .single();
+
+                    if (data) {
+                        // Update only if values actually changed
+                        if (data.total_stones !== syncedProfile?.total_stones ||
+                            data.current_streak !== syncedProfile?.current_streak) {
+                            syncedProfile = { ...syncedProfile, ...data };
+                            // Cache the fresh data for next visit
+                            localStorage.setItem('resin_profile', JSON.stringify({ ...syncedProfile, ...data }));
+                        }
+                    }
+                } catch (err) {
+                    // Silent error, we already have cached data
+                }
+            }
+        };
+
+        // Fire immediate background refresh (doesn't block page load)
+        refreshProfileImmediately();
 
         // Fallback: periodically refresh profile for stones/streak sync (every 30 seconds)
         const setupPolling = () => {
@@ -88,6 +126,8 @@
                             if (data.total_stones !== syncedProfile?.total_stones ||
                                 data.current_streak !== syncedProfile?.current_streak) {
                                 syncedProfile = { ...syncedProfile, ...data };
+                                // Cache the fresh data
+                                localStorage.setItem('resin_profile', JSON.stringify({ ...syncedProfile, ...data }));
                             }
                         }
                     } catch (err) {
@@ -113,6 +153,8 @@
                         // Update profile data when iOS syncs (stones, streak, etc)
                         if (payload.new) {
                             syncedProfile = payload.new;
+                            // Cache the fresh data
+                            localStorage.setItem('resin_profile', JSON.stringify(payload.new));
                         }
                     }
                 )
@@ -226,6 +268,7 @@
             >
                 Command Center
             </div>
+            {#if session}
             <h1
                 class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
             >
@@ -233,6 +276,13 @@
                     >{firstName}</span
                 >
             </h1>
+            {:else}
+            <h1
+                class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
+            >
+                Welcome to Resin
+            </h1>
+            {/if}
             <p class="text-resin-earth/60 font-medium mt-2">
                 {formatDate(today)}
             </p>
@@ -535,7 +585,7 @@
                 <div class="flex items-start justify-between gap-6">
                     <div class="flex-1">
                         <h2 class="text-2xl font-bold text-resin-charcoal mb-2 flex items-center gap-2">
-                            🌲 Welcome to Resin, {firstName}!
+                            🌲 Welcome to Resin{#if session}, {firstName}{/if}!
                         </h2>
                         <p class="text-sm text-resin-earth/70 mb-6">
                             Here's how to get the most out of your focus sessions:

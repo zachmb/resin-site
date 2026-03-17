@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { ACHIEVEMENT_DEFINITIONS, type AchievementContext } from './achievementDefinitions';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
@@ -34,6 +35,15 @@ export interface EngagementBonus {
     type: 'daily_first' | 'streak_milestone' | 'weekly_challenge' | 'consistency' | 'long_session';
     stones: number;
     healthGain: number;
+    message: string;
+}
+
+export interface ApplyRewardResult {
+    bonusBreakdown: EngagementBonus[];
+    newAchievements: string[];
+    totalStones: number;
+    forestHealthGain: number;
+    celebrationLevel: 'standard' | 'bonus' | 'rare';
     message: string;
 }
 
@@ -351,13 +361,98 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
 }
 
 /**
+ * Build achievement context from user's current state
+ */
+async function buildAchievementContext(userId: string, sessionCompletedAt: Date): Promise<AchievementContext> {
+    // Fetch user profile
+    const { data: profile } = await admin
+        .from('profiles')
+        .select('total_stones, current_streak, forest_health')
+        .eq('id', userId)
+        .single();
+
+    // Count total completed sessions
+    const { count: totalSessions } = await admin
+        .from('amber_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'completed');
+
+    // Check for weekend sessions in last 7 days
+    const { data: recentSessions } = await admin
+        .from('amber_sessions')
+        .select('created_at')
+        .eq('user_id', userId)
+        .eq('status', 'completed')
+        .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString());
+
+    const weekendDays = new Set<number>();
+    (recentSessions || []).forEach((s: any) => {
+        const day = new Date(s.created_at).getDay();
+        weekendDays.add(day);
+    });
+
+    // Tree species unlock costs (mirrors iOS TreeSpecies)
+    const stoneCosts = [0, 0, 5, 10, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 130, 150, 170, 180, 200, 250, 300, 350];
+    const stones = profile?.total_stones ?? 0;
+    const unlockedSpeciesCount = stoneCosts.filter((cost) => cost <= stones).length;
+
+    return {
+        totalSessions: totalSessions ?? 0,
+        currentStreak: profile?.current_streak ?? 0,
+        totalStones: stones,
+        unlockedSpeciesCount,
+        forestHealth: profile?.forest_health ?? 0,
+        sessionHour: sessionCompletedAt.getHours(),
+        hasSaturdaySession: weekendDays.has(6),
+        hasSundaySession: weekendDays.has(0)
+    };
+}
+
+/**
+ * Check which achievements the user should unlock and insert them into the database
+ */
+async function checkAndAwardAchievements(userId: string, ctx: AchievementContext): Promise<string[]> {
+    // Fetch which achievements user already has
+    const { data: existing } = await admin
+        .from('user_achievements')
+        .select('achievement_id')
+        .eq('user_id', userId);
+
+    const alreadyUnlocked = new Set((existing || []).map((r: any) => r.achievement_id));
+
+    // Check each definition
+    const newlyUnlocked: string[] = [];
+    for (const def of ACHIEVEMENT_DEFINITIONS) {
+        if (!alreadyUnlocked.has(def.id) && def.check(ctx)) {
+            newlyUnlocked.push(def.id);
+        }
+    }
+
+    if (newlyUnlocked.length === 0) return [];
+
+    // Insert newly unlocked
+    await admin.from('user_achievements').upsert(
+        newlyUnlocked.map((achievement_id) => ({
+            user_id: userId,
+            achievement_id,
+            unlocked_at: new Date().toISOString(),
+            notified: false
+        })),
+        { onConflict: 'user_id,achievement_id', ignoreDuplicates: true }
+    );
+
+    return newlyUnlocked;
+}
+
+/**
  * Apply session completion rewards and update user profiles
  */
 export async function applySessionReward(
     userId: string,
     sessionId: string,
     reward: RewardOutcome
-): Promise<void> {
+): Promise<ApplyRewardResult> {
     const now = new Date();
 
     // Get current profile
@@ -439,6 +534,19 @@ export async function applySessionReward(
             })
             .eq('id', userId);
     }
+
+    // Check and award achievements
+    const ctx = await buildAchievementContext(userId, now);
+    const newAchievements = await checkAndAwardAchievements(userId, ctx);
+
+    return {
+        bonusBreakdown: engagementBonuses,
+        newAchievements,
+        totalStones: stonesCount,
+        forestHealthGain: totalHealthGain,
+        celebrationLevel: reward.celebrationLevel,
+        message: reward.message
+    };
 }
 
 /**

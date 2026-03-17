@@ -1,19 +1,29 @@
 <script lang="ts">
 	import { invalidate } from "$app/navigation";
-	import { browser } from "$app/environment";
+	import { page } from "$app/stores";
 	import { onMount } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
 	import { flushQueue } from "$lib/offline_queue";
 	import { rewardTriggered } from "$lib/rewardStore";
+	import { registerServiceWorker } from "$lib/offline";
 	import DailyRitualPrompt from "$lib/components/DailyRitualPrompt.svelte";
+	import OfflineIndicator from "$lib/components/OfflineIndicator.svelte";
 	import "./layout.css";
 
 	let { children, data } = $props();
 	let { supabase, session, activeSession } = $derived(data);
 	let isMobileMenuOpen = $state(false);
-	let isOnline = $state(browser ? navigator.onLine : true);
 	let showDailyRitualPrompt = $state(false);
 	let showRewardGlow = $state(false);
+
+	// Compute page title based on current route
+	let pageTitle = $derived.by(() => {
+		const path = $page.url.pathname;
+		// Home/dashboard pages
+		if (path === '/') return 'Resin';
+		// Default to Resin for all other pages (they can override)
+		return 'Resin';
+	});
 
 	// FIX: Make profile reactive so real-time updates propagate
 	let profileData = $state(data.profile);
@@ -40,6 +50,11 @@
 	});
 
 	onMount(() => {
+		// Register service worker for offline caching
+		registerServiceWorker().catch(() => {
+			console.log('Service Worker registration skipped');
+		});
+
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange(
@@ -52,11 +67,7 @@
 
 		// Offline queue - flush on reconnect
 		window.addEventListener('online', () => {
-			isOnline = true;
 			flushQueue();
-		});
-		window.addEventListener('offline', () => {
-			isOnline = false;
 		});
 
 		// Flush queue on load if we're online
@@ -153,7 +164,7 @@
 
 <svelte:head>
 	<link rel="icon" href="/logo.png" />
-	<title>Resin</title>
+	<title>{pageTitle}</title>
 </svelte:head>
 
 <div
@@ -255,6 +266,15 @@
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
 					</a>
+					<a
+						href="/boards"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Boards
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
 				<a
 					href="/account"
 					class="hover:text-resin-forest transition-colors relative group"
@@ -265,6 +285,15 @@
 					></span>
 				</a>
 				{:else}
+					<a
+						href="#pricing"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Pricing
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
 					<a
 						href="/support"
 						class="hover:text-resin-forest transition-colors relative group"
@@ -438,12 +467,9 @@
 		</div>
 	</footer>
 
-	<!-- Offline Indicator -->
-	{#if !isOnline}
-		<div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-red-900 text-white text-sm rounded-full shadow-lg flex items-center gap-2">
-			<div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-			<span>You're offline — changes will sync when reconnected</span>
-		</div>
+	<!-- Offline Indicator with Sync Status (only for signed-in users) -->
+	{#if session}
+		<OfflineIndicator />
 	{/if}
 
 	<!-- Daily Ritual Prompt -->

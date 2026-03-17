@@ -1,6 +1,8 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { fade, slide } from 'svelte/transition';
+    import { invalidateAll } from '$app/navigation';
+    import { onMount } from 'svelte';
     import FocusControl from '$lib/components/FocusControl.svelte';
     import { Circle, Calendar, Users, Clock, Trash2 } from 'lucide-svelte';
     import type { PageData } from './$types';
@@ -50,6 +52,52 @@
     let groupFormData = $state({ name: '', description: '' });
     let groupFormError = $state('');
     let isCreatingGroup = $state(false);
+
+    onMount(() => {
+        // Try to load from localStorage first for instant display
+        const cachedFocusData = localStorage.getItem('resin_focus_data');
+        if (cachedFocusData) {
+            try {
+                const cached = JSON.parse(cachedFocusData);
+                activeSessions = cached.activeSessions || [];
+                scheduledSessions = cached.scheduledSessions || [];
+                deviceCount = cached.deviceCount || 0;
+                groups = cached.groups || [];
+                friends = cached.friends || [];
+                sharedSessions = cached.sharedSessions || [];
+            } catch {
+                // Cache corrupted, will use server data
+            }
+        }
+
+        // Background refresh to get fresh data
+        const refreshFocusData = async () => {
+            try {
+                const response = await fetch('?/refresh');
+                if (response.ok) {
+                    await invalidateAll();
+                }
+            } catch (err) {
+                // Silent error - we already have cached data
+            }
+        };
+
+        refreshFocusData();
+    });
+
+    // Cache data whenever it changes
+    $effect(() => {
+        const focusCache = {
+            activeSessions,
+            scheduledSessions,
+            deviceCount,
+            groups,
+            friends,
+            sharedSessions,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('resin_focus_data', JSON.stringify(focusCache));
+    });
 
     async function handleCreateGroup() {
         groupFormError = '';
@@ -141,13 +189,10 @@
 <main class="w-full min-h-screen pt-28 pb-20 px-4 sm:px-6 max-w-6xl mx-auto">
     <!-- Header -->
     <div class="mb-12">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-4">
-            Focus & Automation
-        </div>
-        <h1 class="text-5xl font-bold text-resin-charcoal mb-2">
+        <h1 class="text-3xl font-serif font-bold text-resin-charcoal">
             Focus Sessions
         </h1>
-        <p class="text-resin-earth/60">
+        <p class="text-resin-earth/60 font-medium mt-2">
             Control when your phone blocks distractions. All sessions sync instantly to your device.
         </p>
     </div>

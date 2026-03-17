@@ -4,7 +4,7 @@
     import CommandPalette from "./CommandPalette.svelte";
     import ConfirmDeleteModal from "./ConfirmDeleteModal.svelte";
     import { onDestroy } from "svelte";
-    import { invalidateAll } from "$app/navigation";
+    import { invalidateAll, goto } from "$app/navigation";
     import { setCache, invalidateCache, clearCache } from "$lib/cache";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
@@ -44,21 +44,39 @@
     let lastRewardTime = $state<number>(0);
     let activationError = $state<string | null>(null);
     let isRetryingActivation = $state(false);
+    let isActivating = $state(false);
+    let activatingNoteTitle = $state<string>('');
     let showDeleteModal = $state(false);
     let deleteFormRef = $state<HTMLFormElement | null>(null);
     let deleteScheduledFormRef = $state<HTMLFormElement | null>(null);
     let deleteDraftFormRef = $state<HTMLFormElement | null>(null);
     let today = new Date().toISOString();
+    let now = $state(new Date()); // For updating relative times
+    let timeUpdateInterval: ReturnType<typeof setInterval>;
+
+    // Update relative time display every 30 seconds
+    $effect(() => {
+        timeUpdateInterval = setInterval(() => {
+            now = new Date();
+        }, 30000);
+
+        return () => {
+            if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+        };
+    });
 
     // Cleanup saveTimeout on unmount
     onDestroy(() => {
         if (saveTimeout) clearTimeout(saveTimeout);
+        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
     });
 
     $effect(() => {
         activeTitle = activeNote?.title || '';
-        // Update lastSaved to show the actual creation time of the active note
-        if (activeNote?.created_at) {
+        // Update lastSaved to show the actual last update time of the active note
+        if (activeNote?.updated_at) {
+            lastSaved = new Date(activeNote.updated_at);
+        } else if (activeNote?.created_at) {
             lastSaved = new Date(activeNote.created_at);
         }
     });
@@ -158,7 +176,7 @@
     class="w-full h-screen pt-20 pb-4 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto overflow-hidden"
 >
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-3">
         <div>
             <h1 class="text-3xl font-serif font-bold text-resin-charcoal">
                 Saved Notes
@@ -168,7 +186,7 @@
     </div>
     <!-- Active Area Split View -->
     <div
-        class="flex-1 flex gap-6 relative overflow-hidden transition-all duration-500"
+        class="flex-1 flex gap-4 relative overflow-hidden transition-all duration-500"
     >
         <!-- Toggle Button (Desktop only) -->
         <button
@@ -221,7 +239,17 @@
                 />
 
                 <!-- New Note Button -->
-                <form method="POST" action="?/createNote" class="w-full">
+                <form method="POST" action="?/createNote" class="w-full" use:enhance={() => {
+                    return async ({ result }) => {
+                        if (result.type === "success" && result.data?.success) {
+                            const newNote = result.data.note;
+                            // Call onSaveSuccess to let parent handle the update
+                            onSaveSuccess({ note: newNote, isNew: true });
+                        } else if (result.type === "failure") {
+                            showToast((result.data?.error || "Failed to create note") as string);
+                        }
+                    };
+                }}>
                     <button
                         type="submit"
                         class="w-full px-3 py-2.5 rounded-lg bg-resin-forest/10 text-resin-forest font-semibold text-xs border border-resin-forest/20 hover:bg-resin-forest/15 transition-all flex items-center justify-center gap-2"
@@ -278,7 +306,7 @@
                             <span
                                 class="text-[10px] text-resin-earth/40 font-medium bg-resin-earth/5 px-2 py-0.5 rounded"
                             >
-                                {formatTimeSince(new Date(note.created_at))}
+                                {formatTimeSince(new Date(note.updated_at || note.created_at))}
                             </span>
                         </div>
                     </button>
@@ -349,18 +377,18 @@
                 ? 'hidden sm:flex'
                 : 'flex'}"
         >
-            <!-- Editor Header: Mobile Back Button + Title + Right Panel Toggle -->
+            <!-- Editor Header: Mobile Back Button + Title + Action Buttons -->
             <div
-                class="flex-shrink-0 px-4 sm:px-8 py-4 border-b border-resin-forest/5 bg-white/40 space-y-3 sm:space-y-0"
+                class="flex-shrink-0 px-4 sm:px-8 py-3 border-b border-resin-forest/5 bg-white/40"
             >
-                <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center justify-between gap-3">
                     <!-- Mobile Back Button -->
                     <button
                         onclick={() => {
                             isSidebarOpen = true;
                             onBack();
                         }}
-                        class="sm:hidden flex items-center gap-2 text-resin-earth/70 hover:text-resin-charcoal font-medium text-sm transition-colors shrink-0"
+                        class="sm:hidden flex items-center text-resin-earth/70 hover:text-resin-charcoal font-medium text-sm transition-colors shrink-0"
                     >
                         <svg
                             class="w-4 h-4"
@@ -374,7 +402,6 @@
                                 d="M15 19l-7-7 7-7"
                             ></path></svg
                         >
-                        Back
                     </button>
 
                     <!-- Title Input -->
@@ -382,8 +409,190 @@
                         type="text"
                         placeholder="Untitled Note"
                         bind:value={activeTitle}
-                        class="flex-1 text-2xl font-serif font-bold text-resin-charcoal bg-transparent focus:outline-none placeholder:text-resin-earth/30"
+                        class="flex-1 text-lg sm:text-xl font-serif font-bold text-resin-charcoal bg-transparent focus:outline-none placeholder:text-resin-earth/30 min-w-0"
                     />
+
+                    <!-- Action Buttons (Compact) -->
+                    <div class="flex items-center gap-2 shrink-0">
+                        {#if activeNote?.status === 'scheduled'}
+                            <!-- Scheduled: Cancel & Delete -->
+                            <form
+                                method="POST"
+                                action="?/cancelNote"
+                                class="contents"
+                                use:enhance={() => {
+                                    return async ({ result }) => {
+                                        if (result.type === "success") {
+                                            showToast("Plan canceled");
+                                        } else if (result.type === "failure") {
+                                            showToast(result.data?.error || "Failed to cancel.");
+                                        }
+                                    };
+                                }}
+                            >
+                                <input type="hidden" name="id" value={activeNote?.id} />
+                                <button
+                                    type="submit"
+                                    class="px-3 py-1.5 rounded-lg font-semibold text-xs sm:text-sm bg-red-400 text-white hover:opacity-90 transition-all whitespace-nowrap"
+                                    title="Cancel Plan"
+                                >
+                                    Cancel
+                                </button>
+                            </form>
+                            <form
+                                method="POST"
+                                action="?/deleteNote"
+                                bind:this={deleteScheduledFormRef}
+                                class="contents"
+                                use:enhance={() => {
+                                    return async () => {
+                                        showToast("Plan deleted");
+                                        clearCache();
+                                        await invalidateAll();
+                                    };
+                                }}
+                            >
+                                <input type="hidden" name="id" value={activeNote?.id} />
+                                <button
+                                    type="button"
+                                    onclick={() => {
+                                        deleteFormRef = deleteScheduledFormRef;
+                                        showDeleteModal = true;
+                                    }}
+                                    class="px-2.5 py-1.5 rounded-lg font-semibold text-xs sm:text-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all"
+                                    title="Delete"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </form>
+                        {:else if activeNote?.status === 'completed'}
+                            <div class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-resin-forest/10 text-resin-forest whitespace-nowrap">
+                                ✓ Completed
+                            </div>
+                        {:else if activeNote?.status === 'canceled'}
+                            <div class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-red-300/20 text-red-600 whitespace-nowrap">
+                                ✕ Canceled
+                            </div>
+                        {:else}
+                            <!-- Draft: Save, Activate & Delete -->
+                            <form
+                                method="POST"
+                                action="?/saveNote"
+                                class="contents"
+                                use:enhance={() => {
+                                    return async ({ result }) => {
+                                        if (result.type === "success" && result.data?.success) {
+                                            if ((result as any).data?.note) {
+                                                setCache(`note-${(result as any).data.note.id}`, (result as any).data.note, 60000);
+                                                invalidateCache('notes-list');
+                                            }
+                                            const now = Date.now();
+                                            if (result.data.isNew && now - lastRewardTime > 60000) {
+                                                showToast("⭐ Earned +1 Stone for saving!");
+                                                lastRewardTime = now;
+                                                localStorage.setItem('recentReward', JSON.stringify({
+                                                    text: 'Earned +1 Stone for saving!',
+                                                    icon: '⭐',
+                                                    timestamp: now
+                                                }));
+                                            } else if (!result.data.isNew) {
+                                                showToast("Note saved!");
+                                            }
+                                            onSaveSuccess({
+                                                note: (result as any).data.note,
+                                                isNew: (result as any).data.isNew,
+                                            });
+                                        } else {
+                                            showToast((result as any).data?.error || "Failed to save note.");
+                                        }
+                                    };
+                                }}
+                            >
+                                <input type="hidden" name="id" value={activeNote?.id} />
+                                <input type="hidden" name="content" value={activeNote?.content} />
+                                <input type="hidden" name="title" value={activeTitle} />
+                                <button
+                                    type="submit"
+                                    class="px-3 py-1.5 rounded-lg font-semibold text-xs sm:text-sm border border-[#2B4634]/30 text-[#2B4634] bg-[#2B4634]/5 hover:bg-[#2B4634]/15 transition-all disabled:opacity-45 disabled:cursor-not-allowed whitespace-nowrap"
+                                    disabled={!(activeNote?.content || "").trim()}
+                                    title="Save Note"
+                                >
+                                    Save
+                                </button>
+                            </form>
+                            <form
+                                method="POST"
+                                action="?/activateNote"
+                                class="contents"
+                                use:enhance={() => {
+                                    // Show working modal immediately
+                                    isActivating = true;
+                                    activatingNoteTitle = activeTitle || 'Your Plan';
+                                    return async ({ result }) => {
+                                        if (result.type === "success") {
+                                            showToast((result as any).data?.message || "Plan created! DeepSeek is generating your schedule...");
+                                            const sessionId = (result as any).data?.sessionId;
+                                            const now = Date.now();
+                                            localStorage.setItem('recentReward', JSON.stringify({
+                                                text: 'Plan activated! DeepSeek generating...',
+                                                icon: '🚀',
+                                                timestamp: now
+                                            }));
+                                            // Navigate to amber page with scheduling indicator
+                                            if (sessionId) {
+                                                await goto(`/amber?scheduling=${sessionId}`);
+                                            }
+                                            // Keep modal visible while AI is working
+                                            // It will be dismissed when the note's tasks are populated
+                                        } else {
+                                            activationError = (result as any).data?.error || "Failed to activate.";
+                                            showToast(activationError);
+                                            isActivating = false;
+                                        }
+                                    };
+                                }}
+                            >
+                                <input type="hidden" name="id" value={activeNote?.id} />
+                                <input type="hidden" name="noteContent" value={activeNote?.content} />
+                                <input type="hidden" name="title" value={activeTitle} />
+                                <button
+                                    type="submit"
+                                    class="px-3 py-1.5 rounded-lg font-semibold text-xs sm:text-sm bg-[#2B4634] text-white hover:opacity-90 transition-all disabled:opacity-45 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1"
+                                    disabled={!(activeNote?.content || "").trim()}
+                                    title="Activate"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                    <span class="hidden sm:inline">Activate</span>
+                                </button>
+                            </form>
+                            <form
+                                method="POST"
+                                action="?/deleteNote"
+                                bind:this={deleteDraftFormRef}
+                                class="contents"
+                                use:enhance={() => {
+                                    return async () => {
+                                        showToast("Note deleted");
+                                        clearCache();
+                                        await invalidateAll();
+                                    };
+                                }}
+                            >
+                                <input type="hidden" name="id" value={activeNote?.id} />
+                                <button
+                                    type="button"
+                                    onclick={() => {
+                                        deleteFormRef = deleteDraftFormRef;
+                                        showDeleteModal = true;
+                                    }}
+                                    class="px-2.5 py-1.5 rounded-lg font-semibold text-xs sm:text-sm bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all"
+                                    title="Delete"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </form>
+                        {/if}
+                    </div>
                 </div>
             </div>
 
@@ -440,406 +649,94 @@
                     {/if}
                 </div>
             </div>
-
-            <!-- ── Action Bar ── -->
-            <div
-                class="w-full px-4 sm:px-8 pb-6 pt-4 bg-white/40 rounded-b-2xl"
-            >
-                <div class="flex flex-col sm:flex-row items-center gap-3">
-                    <form
-                        method="POST"
-                        action="?/saveNote"
-                        class="flex-1 w-full"
-                        use:enhance={() => {
-                            // Immediate optimistic update
-                            if (activeNote) {
-                                const optimisticNote = { ...activeNote };
-                                setCache(`note-${activeNote.id}`, optimisticNote, 60000);
-                                lastSaved = new Date();
-                            }
-
-                            return async ({ result, update }) => {
-                                if (
-                                    result.type === "success" &&
-                                    result.data?.success
-                                ) {
-                                    // Cache the confirmed response from server
-                                    if ((result as any).data?.note) {
-                                        setCache(`note-${(result as any).data.note.id}`, (result as any).data.note, 60000);
-                                        invalidateCache('notes-list'); // Invalidate notes list cache
-                                    }
-
-                                    // Show stone reward on successful save with 60s debouncing
-                                    const now = Date.now();
-                                    if (result.data.isNew && now - lastRewardTime > 60000) {
-                                        showToast("⭐ Earned +1 Stone for saving!");
-                                        lastRewardTime = now;
-                                        // Store reward to localStorage for forest page display
-                                        localStorage.setItem('recentReward', JSON.stringify({
-                                            text: 'Earned +1 Stone for saving!',
-                                            icon: '⭐',
-                                            timestamp: now
-                                        }));
-                                    } else if (!result.data.isNew) {
-                                        showToast("Note saved!");
-                                    }
-
-                                    onSaveSuccess({
-                                        note: (result as any).data.note,
-                                        isNew: (result as any).data.isNew,
-                                    });
-                                } else if (
-                                    result.type === "failure" ||
-                                    result.type === "success"
-                                ) {
-                                    // success type can still have success: false in some cases if not using fail()
-                                    showToast(
-                                        (result as any).data?.error ||
-                                            "Failed to save note.",
-                                    );
-                                } else if (result.type === "error") {
-                                    showToast(
-                                        (result as any).error?.message ||
-                                            "An error occurred.",
-                                    );
-                                }
-                                await update({ reset: false });
-                            };
-                        }}
-                    >
-                        <input type="hidden" name="id" value={activeNote?.id} />
-                        <input
-                            type="hidden"
-                            name="content"
-                            value={activeNote?.content}
-                        />
+            <!-- Activation error banner (below status bar) -->
+            {#if activationError && activeNote?.status !== 'scheduled' && activeNote?.status !== 'completed' && activeNote?.status !== 'canceled'}
+                <div class="px-6 sm:px-10 py-3 bg-red-50 border-t border-red-200">
+                    <div class="flex gap-3 items-start">
+                        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm font-semibold text-red-900">Scheduling Failed</h3>
+                            <p class="text-sm text-red-700 mt-0.5 break-words">{activationError}</p>
+                        </div>
                         <button
-                            type="submit"
-                            class="w-full py-3.5 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all
-                            border border-[#2B4634]/30 text-[#2B4634] bg-[#2B4634]/5 hover:bg-[#2B4634]/15
-                            disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:bg-[#2B4634]/5"
-                            disabled={!(activeNote?.content || "").trim()}
+                            type="button"
+                            onclick={() => activationError = null}
+                            class="text-red-400 hover:text-red-600 transition-colors flex-shrink-0 mt-0.5"
+                            aria-label="Dismiss error"
                         >
-                            <svg
-                                class="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                stroke-width="2.5"
-                                ><path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                                ></path></svg
-                            >
-                            Save Note
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
-                    </form>
-
-                    {#if activeNote?.status === 'scheduled'}
-                        <!-- Cancel Active Plan & Delete -->
-                        <div class="flex gap-2">
-                            <form
-                                method="POST"
-                                action="?/cancelNote"
-                                class="flex-1"
-                                use:enhance={() => {
-                                    return async ({ result, update }) => {
-                                        if (result.type === "success") {
-                                            showToast("Plan canceled");
-                                        } else if (result.type === "failure") {
-                                            showToast(
-                                                result.data?.error ||
-                                                    "Failed to cancel. Please try again.",
-                                            );
-                                        } else if (result.type === "error") {
-                                            showToast(
-                                                result.error?.message ||
-                                                    "An error occurred.",
-                                            );
-                                        }
-                                        await update();
-                                    };
-                                }}
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <form method="POST" action="?/activateNote" class="flex-1" use:enhance={() => {
+                            isRetryingActivation = true;
+                            return async ({ result }) => {
+                                isRetryingActivation = false;
+                                if (result.type === "success") {
+                                    activationError = null;
+                                    const sessionId = (result as any).data?.sessionId;
+                                    if (sessionId) {
+                                        await goto(`/amber?scheduling=${sessionId}`);
+                                    }
+                                } else {
+                                    activationError = ((result as any).data?.error || (result as any).error?.message || "Retry failed.") as string;
+                                }
+                            };
+                        }}>
+                            <input type="hidden" name="id" value={activeNote?.id} />
+                            <input type="hidden" name="noteContent" value={activeNote?.content} />
+                            <button
+                                type="submit"
+                                disabled={isRetryingActivation}
+                                class="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
                             >
-                                <input type="hidden" name="id" value={activeNote?.id} />
-                                <button
-                                    type="submit"
-                                    class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
-                                    bg-red-400 text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center"
-                                >
-                                    <svg
-                                        class="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="2.5"
-                                    ><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    ></path></svg
-                                    >
-                                    Cancel Plan
-                                </button>
-                            </form>
-
-                            <form
-                                method="POST"
-                                action="?/deleteNote"
-                                bind:this={deleteScheduledFormRef}
-                                use:enhance={() => {
-                                    return async ({ result, update }) => {
-                                        if (result.type === "success") {
-                                            showToast("Plan deleted");
-                                            clearCache();
-                                            await invalidateAll();
-                                        } else if (result.type === "failure") {
-                                            showToast(
-                                                result.data?.error ||
-                                                    "Failed to delete. Please try again.",
-                                            );
-                                        } else if (result.type === "error") {
-                                            showToast(
-                                                result.error?.message ||
-                                                    "An error occurred.",
-                                            );
-                                        }
-                                    };
-                                }}
-                            >
-                                <input type="hidden" name="id" value={activeNote?.id} />
-                                <button
-                                    type="button"
-                                    onclick={() => {
-                                        deleteFormRef = deleteScheduledFormRef;
-                                        showDeleteModal = true;
-                                    }}
-                                    class="px-3 py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-1.5 transition-all
-                                    bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
-                                >
-                                    <svg
-                                        class="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="2.5"
-                                    ><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    ></path></svg
-                                    >
-                                    Delete
-                                </button>
-                            </form>
-                        </div>
-                    {:else if activeNote?.status === 'completed'}
-                        <!-- Completed State -->
-                        <div class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 bg-resin-forest/10 text-resin-forest">
-                            <svg
-                                class="w-4 h-4"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            ><path
-                                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
-                                ></path></svg
-                            >
-                            Completed
-                        </div>
-                    {:else if activeNote?.status === 'canceled'}
-                        <!-- Canceled State -->
-                        <div class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 bg-red-300/20 text-red-600">
-                            <svg
-                                class="w-4 h-4"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            ><path
-                                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-                                ></path></svg
-                            >
-                            Canceled
-                        </div>
-                    {:else}
-                        <!-- Activation error banner -->
-                        {#if activationError}
-                            <div class="w-full bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                                <div class="flex gap-3">
-                                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                {#if isRetryingActivation}
+                                    <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    <div class="flex-1">
-                                        <h3 class="text-sm font-semibold text-red-900">Scheduling Failed</h3>
-                                        <p class="text-sm text-red-700 mt-1">{activationError}</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onclick={() => activationError = null}
-                                        class="text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
-                                        aria-label="Dismiss error"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div class="flex gap-2 mt-3">
-                                    <form method="POST" action="?/activateNote" class="flex-1" use:enhance={() => {
-                                        isRetryingActivation = true;
-                                        return async ({ result }) => {
-                                            isRetryingActivation = false;
-                                            if (result.type === "success") {
-                                                activationError = null;
-                                            } else {
-                                                activationError = ((result as any).data?.error || (result as any).error?.message || "Retry failed.") as string;
-                                            }
-                                        };
-                                    }}>
-                                        <input type="hidden" name="id" value={activeNote?.id} />
-                                        <input type="hidden" name="noteContent" value={activeNote?.content} />
-                                        <button
-                                            type="submit"
-                                            disabled={isRetryingActivation}
-                                            class="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
-                                            aria-label={isRetryingActivation ? "Retrying activation" : "Retry activation"}
-                                        >
-                                            {#if isRetryingActivation}
-                                                <svg class="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Retrying...
-                                            {:else}
-                                                Retry
-                                            {/if}
-                                        </button>
-                                    </form>
-                                    <button
-                                        type="button"
-                                        onclick={() => activationError = null}
-                                        class="px-3 py-1.5 bg-red-100 text-red-700 text-sm font-semibold rounded-md hover:bg-red-200 transition-colors"
-                                    >
-                                        Dismiss
-                                    </button>
-                                </div>
-                            </div>
-                        {/if}
-
-                        <!-- Activate (Draft/Default) & Delete -->
-                        <div class="flex-1 w-full flex gap-2">
-                            <form
-                                method="POST"
-                                action="?/activateNote"
-                                class="flex-1"
-                                use:enhance={() => {
-                                    return async ({ result, update }) => {
-                                        if (result.type === "success") {
-                                            showToast(
-                                                (result as any).data?.message ||
-                                                    "DeepSeek activated! Plan generated and scheduled.",
-                                            );
-                                            // Store reward to localStorage for forest page display
-                                            const now = Date.now();
-                                            localStorage.setItem('recentReward', JSON.stringify({
-                                                text: 'Plan activated! DeepSeek generating...',
-                                                icon: '🚀',
-                                                timestamp: now
-                                            }));
-                                        } else if (result.type === "failure") {
-                                            activationError = (result as any).data?.error || "Failed to activate. Please try again.";
-                                            showToast(activationError);
-                                        } else if (result.type === "error") {
-                                            activationError = String((result as any).error?.message || "An error occurred.");
-                                            showToast(activationError);
-                                        }
-                                        await update();
-                                    };
-                                }}
-                            >
-                                <input type="hidden" name="id" value={activeNote?.id} />
-                                <input
-                                    type="hidden"
-                                    name="noteContent"
-                                    value={activeNote?.content}
-                                />
-                                <button
-                                    type="submit"
-                                    class="w-full py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all
-                                    bg-[#2B4634] text-white hover:opacity-90 active:opacity-100 shadow-sm hover:shadow text-center
-                                    disabled:opacity-45 disabled:cursor-not-allowed"
-                                    disabled={!(activeNote?.content || "").trim()}
-                                >
-                                    <svg
-                                        class="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="2.5"
-                                    ><path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                                        ></path></svg
-                                    >
-                                    Activate
-                                </button>
-                            </form>
-                            <form
-                                method="POST"
-                                action="?/deleteNote"
-                                bind:this={deleteDraftFormRef}
-                                use:enhance={() => {
-                                    return async ({ result, update }) => {
-                                        if (result.type === "success") {
-                                            showToast("Note deleted");
-                                            clearCache();
-                                            await invalidateAll();
-                                        } else if (result.type === "failure") {
-                                            showToast(
-                                                result.data?.error ||
-                                                    "Failed to delete. Please try again.",
-                                            );
-                                        } else if (result.type === "error") {
-                                            showToast(
-                                                result.error?.message ||
-                                                    "An error occurred.",
-                                            );
-                                        }
-                                    };
-                                }}
-                            >
-                                <input type="hidden" name="id" value={activeNote?.id} />
-                                <button
-                                    type="button"
-                                    onclick={() => {
-                                        deleteFormRef = deleteDraftFormRef;
-                                        showDeleteModal = true;
-                                    }}
-                                    class="px-3 py-3.5 rounded-xl font-bold text-[15px] flex items-center justify-center gap-1.5 transition-all
-                                    bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
-                                >
-                                    <svg
-                                        class="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="2.5"
-                                    ><path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    ></path></svg
-                                    >
-                                    Delete
-                                </button>
-                            </form>
-                        </div>
-                    {/if}
+                                    Retrying...
+                                {:else}
+                                    Retry
+                                {/if}
+                            </button>
+                        </form>
+                        <button
+                            type="button"
+                            onclick={() => activationError = null}
+                            class="px-3 py-1.5 bg-red-100 text-red-700 text-sm font-semibold rounded-md hover:bg-red-200 transition-colors"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
                 </div>
-            </div>
+            {/if}
         </div>
     </div>
 </main>
+
+<!-- Working Modal - shows while AI is scheduling the plan -->
+{#if isActivating}
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center space-y-4">
+            <div class="flex justify-center">
+                <svg class="animate-spin h-12 w-12 text-[#2B4634]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-[#2B4634] mb-2">{activatingNoteTitle}</h2>
+                <p class="text-sm text-resin-earth/70">DeepSeek is generating your schedule...</p>
+                <p class="text-xs text-resin-earth/50 mt-2">This may take a moment. You can close this window.</p>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <!-- Delete confirmation modal -->
 <ConfirmDeleteModal

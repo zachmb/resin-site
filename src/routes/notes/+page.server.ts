@@ -29,6 +29,7 @@ const isMissingColumnError = (error: any) => {
 };
 
 const insertNote = async (supabase: any, row: { user_id: string; title: string; content: string; created_at: string }) => {
+    const now = new Date().toISOString();
     // Attempt the preferred schema (raw_text, display_title, status)
     const result = await supabase
         .from('amber_sessions')
@@ -37,7 +38,8 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
             raw_text: row.content,
             display_title: row.title,
             status: 'draft',
-            created_at: row.created_at
+            created_at: row.created_at,
+            updated_at: now
         })
         .select()
         .single();
@@ -54,17 +56,19 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
             content: row.content,
             title: row.title,
             status: 'draft',
-            created_at: row.created_at
+            created_at: row.created_at,
+            updated_at: now
         })
         .select()
         .single();
 };
 
 const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; title: string; content: string }) => {
+    const now = new Date().toISOString();
     // Attempt the preferred schema (raw_text, display_title)
     const result = await supabase
         .from('amber_sessions')
-        .update({ raw_text: row.content, display_title: row.title })
+        .update({ raw_text: row.content, display_title: row.title, updated_at: now })
         .eq('id', row.id)
         .eq('user_id', row.user_id)
         .select()
@@ -77,29 +81,36 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
     console.warn('[notes] Preferred schema update failed, trying fallback...', result.error.message);
     return await supabase
         .from('amber_sessions')
-        .update({ content: row.content, title: row.title })
+        .update({ content: row.content, title: row.title, updated_at: now })
         .eq('id', row.id)
         .eq('user_id', row.user_id)
         .select()
         .single();
 };
 
-export const load: PageServerLoad = async ({ locals: { getSession, supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { getSession, supabase }, setHeaders }) => {
+    // Disable caching to ensure fresh notes every time
+    setHeaders({
+        'cache-control': 'no-cache, no-store, must-revalidate'
+    });
+
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
+
+    const userId = session.user.id;
 
     // Fetch user profile for scheduling preferences
     const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', userId)
         .single();
 
     // Fetch notes shared with me
     const { data: sharedNotes } = await supabase
         .from('shared_notes')
         .select('note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id, created_at)')
-        .eq('shared_with_id', session.user.id);
+        .eq('shared_with_id', userId);
 
     const normalizedSharedNotes = (sharedNotes || []).map((share: any) => {
         const note = share.amber_sessions;
@@ -119,13 +130,13 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
     const { data: friendships } = await supabase
         .from('friendships')
         .select('id, requester_id, addressee_id, status')
-        .or(`requester_id.eq.${session.user.id},addressee_id.eq.${session.user.id}`)
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
         .eq('status', 'accepted');
 
     const friends = await Promise.all(
         (friendships || []).map(async (friendship: any) => {
             const otherId =
-                friendship.requester_id === session.user.id ? friendship.addressee_id : friendship.requester_id;
+                friendship.requester_id === userId ? friendship.addressee_id : friendship.requester_id;
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('id')
@@ -143,13 +154,13 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase } })
     const { data: edges } = await supabase
         .from('mind_map_edges')
         .select('*')
-        .eq('user_id', session.user.id);
+        .eq('user_id', userId);
 
     // Fetch user's own notes for building connection metadata AND for display
     const { data: userNotes, error: notesError } = await supabase
         .from('amber_sessions')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
     if (notesError) {
@@ -207,39 +218,62 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
-        const { error } = await insertNote(supabase, {
-            user_id: session.user.id,
+        const userId = session.user.id;
+
+        const { data: newNote, error } = await insertNote(supabase, {
+            user_id: userId,
             title: '',
             content: '',
             created_at: new Date().toISOString()
         });
 
         if (error) {
-            return fail(500, { error: 'Could not create note' });
+            console.error('[createNote] Error creating note:', error);
+            return fail(500, { error: 'Could not create note', details: error.message });
         }
 
-        // Trigger sync
-        await syncStonesFromNotes(session.user.id);
-        await recordDailyActivity(session.user.id);
+        if (!newNote) {
+            console.error('[createNote] No note returned from insert');
+            return fail(500, { error: 'No note returned from database' });
+        }
 
-        throw redirect(303, `/notes`);
+        try {
+            // Trigger sync
+            await syncStonesFromNotes(userId);
+            await recordDailyActivity(userId);
+        } catch (syncErr) {
+            console.warn('[createNote] Sync error (non-blocking):', syncErr);
+        }
+
+        const normalizedNote = normalizeNote(newNote);
+        console.log('[createNote] Successfully created note:', normalizedNote.id);
+
+        return {
+            success: true,
+            note: normalizedNote,
+            isNew: true
+        };
     },
 
     updateNote: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const id = data.get('id') as string;
         const content = data.get('content') as string;
+        const providedTitle = (data.get('title') as string)?.trim();
 
         if (id === 'mock') return { success: false, error: 'Cannot autosave a mock note' };
 
-        const title = extractTitle(content) || '';
+        // Use provided title if available, otherwise extract from content
+        const title = providedTitle || extractTitle(content) || '';
 
         const { error } = await updateNoteRow(supabase, {
             id,
-            user_id: session.user.id,
+            user_id: userId,
             title,
             content
         });
@@ -250,7 +284,7 @@ export const actions: Actions = {
         }
 
         // Trigger streak record on update too
-        await recordDailyActivity(session.user.id);
+        await recordDailyActivity(userId);
 
         return { success: true, id, title, content };
     },
@@ -259,16 +293,20 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const id = data.get('id') as string;
         const content = data.get('content') as string;
+        const providedTitle = (data.get('title') as string)?.trim();
 
-        const title = extractTitle(content);
+        // Use provided title if available, otherwise extract from content
+        const title = providedTitle || extractTitle(content);
 
         if (id === 'mock' || !id) {
             // It's a new note
             const { data: newNote, error } = await insertNote(supabase, {
-                user_id: session.user.id,
+                user_id: userId,
                 title: title || '',
                 content,
                 created_at: new Date().toISOString()
@@ -280,15 +318,15 @@ export const actions: Actions = {
             }
 
             // Trigger stone sync for the new note
-            await syncStonesFromNotes(session.user.id);
-            await recordDailyActivity(session.user.id);
+            await syncStonesFromNotes(userId);
+            await recordDailyActivity(userId);
 
             return { success: true, note: normalizeNote(newNote), isNew: true };
         } else {
             // Existing note
             const { data: updatedNote, error } = await updateNoteRow(supabase, {
                 id,
-                user_id: session.user.id,
+                user_id: userId,
                 title: title || '',
                 content
             });
@@ -302,7 +340,7 @@ export const actions: Actions = {
                 });
             }
 
-            await recordDailyActivity(session.user.id);
+            await recordDailyActivity(userId);
 
             return { success: true, note: normalizeNote(updatedNote), isNew: false };
         }
@@ -312,6 +350,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const id = data.get('id') as string;
 
@@ -319,12 +359,12 @@ export const actions: Actions = {
             .from('amber_sessions')
             .delete()
             .eq('id', id)
-            .eq('user_id', session.user.id);
+            .eq('user_id', userId);
 
         if (error) return fail(500, { error: 'Could not delete note' });
 
         // Sync stones after deletion
-        await syncStonesFromNotes(session.user.id, { force: true });
+        await syncStonesFromNotes(userId, { force: true });
 
         return { success: true, deletedId: id };
     },
@@ -333,18 +373,22 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const content = data.get('noteContent') as string;
+        const providedTitle = (data.get('title') as string)?.trim();
 
         if (!content || !content.trim()) return fail(400, { error: 'Note content cannot be empty' });
 
         // Save the note first to ensure we have a session record
-        const title = extractTitle(content);
+        // Use provided title if available, otherwise extract from content
+        const title = providedTitle || extractTitle(content);
         let sessionId = data.get('id') as string;
 
         if (!sessionId || sessionId === 'mock') {
             const { data: newNote, error } = await insertNote(supabase, {
-                user_id: session.user.id,
+                user_id: userId,
                 title: title || '',
                 content,
                 created_at: new Date().toISOString()
@@ -355,17 +399,28 @@ export const actions: Actions = {
             // Update existing
             await updateNoteRow(supabase, {
                 id: sessionId,
-                user_id: session.user.id,
+                user_id: userId,
                 title: title || '',
                 content
             });
         }
 
         try {
-            await runActivationPipeline(session.user.id, sessionId, content, {
+            // Return immediately with success - fire activation in background
+            // This gives the user immediate feedback while AI processes in the background
+
+            // Fire the background activation without awaiting
+            const activationPromise = runActivationPipeline(userId, sessionId, content, {
                 timezone: 'America/Chicago' // Default or get from profile/request
+            }).catch((err: any) => {
+                console.error('[notes] Background activation failed:', err);
             });
-            return { success: true, message: 'DeepSeek activated! Plan generated and scheduled.' };
+
+            return {
+                success: true,
+                message: 'Plan created! DeepSeek is generating your schedule...',
+                sessionId: sessionId
+            };
         } catch (err: any) {
             console.error('[notes] Activation failed:', err);
             return fail(500, { error: err.message || 'Activation failed' });
@@ -376,6 +431,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const sessionId = data.get('id') as string;
 
@@ -385,7 +442,7 @@ export const actions: Actions = {
             .from('amber_sessions')
             .update({ status: 'canceled' })
             .eq('id', sessionId)
-            .eq('user_id', session.user.id);
+            .eq('user_id', userId);
 
         if (error) {
             console.error('[notes] Cancel failed:', error);
@@ -399,6 +456,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const sessionId = data.get('id') as string;
 
@@ -408,7 +467,7 @@ export const actions: Actions = {
             .from('amber_sessions')
             .update({ status: 'completed', updated_at: new Date().toISOString() })
             .eq('id', sessionId)
-            .eq('user_id', session.user.id);
+            .eq('user_id', userId);
 
         if (error) {
             console.error('[notes] Complete failed:', error);
@@ -422,6 +481,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const noteId = data.get('note_id') as string;
         const sharedWithId = data.get('shared_with_id') as string;
@@ -433,7 +494,7 @@ export const actions: Actions = {
             .from('amber_sessions')
             .select('id')
             .eq('id', noteId)
-            .eq('user_id', session.user.id)
+            .eq('user_id', userId)
             .single();
 
         if (noteError || !note) {
@@ -444,7 +505,7 @@ export const actions: Actions = {
             .from('shared_notes')
             .insert({
                 note_id: noteId,
-                owner_id: session.user.id,
+                owner_id: userId,
                 shared_with_id: sharedWithId
             });
 
@@ -460,6 +521,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const userId = session.user.id;
+
         const data = await request.formData();
         const noteId = data.get('note_id') as string;
         const sharedWithId = data.get('shared_with_id') as string;
@@ -470,7 +533,7 @@ export const actions: Actions = {
             .from('shared_notes')
             .delete()
             .eq('note_id', noteId)
-            .eq('owner_id', session.user.id)
+            .eq('owner_id', userId)
             .eq('shared_with_id', sharedWithId);
 
         if (error) {

@@ -46,13 +46,21 @@ export const POST = async ({ request }: RequestEvent) => {
         // 2. Record daily activity (streak)
         const { currentStreak, longestStreak, longestStreakAt } = await recordDailyActivity(user.id);
 
-        // 3. Return latest profile stats
+        // 3. Fetch forest health and other profile data
+        const { data: profile } = await admin.from('profiles')
+            .select('forest_health, widget_enabled')
+            .eq('id', user.id)
+            .single();
+
+        // 4. Return latest profile stats
         return json({
             total_stones: totalStones,
             current_streak: currentStreak,
             longest_streak: longestStreak,
             longest_streak_at: longestStreakAt,
-            last_active_date: new Date().toISOString()
+            last_active_date: new Date().toISOString(),
+            forest_health: profile?.forest_health ?? 100,
+            widget_enabled: profile?.widget_enabled ?? true
         });
     } catch (err) {
         console.error('[api/profile/sync] Error:', err);

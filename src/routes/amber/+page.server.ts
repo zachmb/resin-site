@@ -270,6 +270,31 @@ export const actions: Actions = {
             return { success: false, error: 'Failed to update session' };
         }
 
+        // Create blocking session entry to trigger extension blocking during task times
+        // This allows the extension to block distracting sites during the amber session
+        try {
+            const firstTask = tasks[0];
+            const lastTask = tasks[tasks.length - 1];
+
+            if (firstTask && lastTask) {
+                const sessionStartTime = firstTask.start_time || taskUpdates[0]?.startTime;
+                const sessionEndTime = lastTask.end_time || taskUpdates[taskUpdates.length - 1]?.endTime;
+
+                if (sessionStartTime && sessionEndTime) {
+                    await supabase.from('blocking_sessions').insert({
+                        user_id: session.user.id,
+                        start_time: sessionStartTime,
+                        end_time: sessionEndTime,
+                        is_active: true,
+                        title: `Amber Session: ${tasks[0]?.title || 'Focus'}`
+                    });
+                }
+            }
+        } catch (blockingErr) {
+            // Non-critical: blocking session creation failure doesn't fail the activation
+            console.warn('[Activate] Warning: blocking session creation failed', blockingErr);
+        }
+
         return { success: true };
     },
 
@@ -310,6 +335,32 @@ export const actions: Actions = {
         if (error) {
             console.error('Error completing plan:', error);
             return { success: false, error: 'Failed to complete plan' };
+        }
+
+        // Clean up associated blocking sessions (extension blocking)
+        // Mark them as inactive since the session is complete
+        try {
+            const { data: tasks } = await supabase
+                .from('amber_tasks')
+                .select('start_time, end_time')
+                .eq('amber_session_id', sessionId);
+
+            if (tasks && tasks.length > 0) {
+                const firstTask = tasks[0];
+                const lastTask = tasks[tasks.length - 1];
+
+                if (firstTask?.start_time && lastTask?.end_time) {
+                    await supabase
+                        .from('blocking_sessions')
+                        .update({ is_active: false })
+                        .eq('user_id', session.user.id)
+                        .gte('start_time', new Date(firstTask.start_time).toISOString())
+                        .lte('end_time', new Date(lastTask.end_time).toISOString())
+                        .eq('is_active', true);
+                }
+            }
+        } catch (blockingErr) {
+            console.warn('[Complete] Warning: blocking session update failed', blockingErr);
         }
 
         // Apply gamification rewards (variable stones, forest health, streak)
@@ -373,6 +424,31 @@ export const actions: Actions = {
         if (error) {
             console.error('Error canceling plan:', error);
             return { success: false, error: 'Failed to cancel plan' };
+        }
+
+        // Clean up associated blocking sessions (extension blocking)
+        try {
+            const { data: tasks } = await supabase
+                .from('amber_tasks')
+                .select('start_time, end_time')
+                .eq('amber_session_id', sessionId);
+
+            if (tasks && tasks.length > 0) {
+                const firstTask = tasks[0];
+                const lastTask = tasks[tasks.length - 1];
+
+                if (firstTask?.start_time && lastTask?.end_time) {
+                    await supabase
+                        .from('blocking_sessions')
+                        .delete()
+                        .eq('user_id', session.user.id)
+                        .gte('start_time', new Date(firstTask.start_time).toISOString())
+                        .lte('end_time', new Date(lastTask.end_time).toISOString())
+                        .eq('is_active', true);
+                }
+            }
+        } catch (blockingErr) {
+            console.warn('[Cancel] Warning: blocking session cleanup failed', blockingErr);
         }
 
         // Apply forest decay for breaking focus (loss aversion mechanic)

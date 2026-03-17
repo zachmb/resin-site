@@ -27,6 +27,16 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
         return session
     }
 
+    /**
+     * getUser() authenticates with the Supabase server to verify the user is genuine.
+     * Use this for sensitive operations instead of getSession().
+     */
+    event.locals.getUser = async () => {
+        const { data: { user }, error } = await event.locals.supabase.auth.getUser()
+        if (error) return null
+        return user
+    }
+
     // Refresh the session if it exists to ensure cookies are synchronized
     await event.locals.getSession()
 
@@ -66,7 +76,6 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
         response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
     } else if (
         url.pathname === '/' ||
-        url.pathname.startsWith('/notes') ||
         url.pathname.startsWith('/amber') ||
         url.pathname.startsWith('/forest') ||
         url.pathname.startsWith('/focus') ||
@@ -77,6 +86,12 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
         // HTML pages: cache with revalidation for freshness
         // MUST be private to prevent CDNs from caching personalized content
         response.headers.set('Cache-Control', 'private, max-age=300, s-maxage=3600, stale-while-revalidate=86400')
+    } else if (url.pathname.startsWith('/notes')) {
+        // Notes page: always fetch fresh (managed by setHeaders in load function)
+        // Don't override - let the load function's no-cache directives take precedence
+        if (!response.headers.has('Cache-Control')) {
+            response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+        }
     } else {
         // Default: no cache
         response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')

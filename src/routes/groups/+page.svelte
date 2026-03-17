@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ForestRenderer from '$lib/components/ForestRenderer.svelte';
+    import UnifiedForestRenderer from '$lib/components/UnifiedForestRenderer.svelte';
 
     let { data } = $props();
     let groups = $derived(data.groups || []);
@@ -44,26 +44,34 @@
     }
 </script>
 
-<div class="groups-container">
-    <header class="groups-header">
-        <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-forest/10 border border-resin-forest/20 text-resin-forest text-[10px] font-bold uppercase tracking-widest mb-4">
-                👥 Community
+<svelte:head>
+    <title>Focus Groups | Resin</title>
+</svelte:head>
+
+<main class="flex-grow pt-32 pb-20 px-6 relative z-10 w-full overflow-hidden bg-resin-bg">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header Section -->
+        <div class="mb-16 space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-forest/5 border border-resin-forest/10 text-resin-forest/60 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">
+                        👥 Community
+                    </div>
+                    <h1 class="text-5xl md:text-6xl font-bold text-resin-charcoal mb-2 font-serif">Focus Groups</h1>
+                    <p class="text-resin-earth/70 max-w-2xl text-lg font-light">Connect with study buddies, form accountability circles, and compete on shared challenges. Work together, focus better.</p>
+                </div>
+                <button
+                    class="create-btn"
+                    onclick={() => (showCreateForm = !showCreateForm)}
+                    title="Create a new group"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create Group
+                </button>
             </div>
-            <h1 class="text-5xl font-serif font-bold text-resin-charcoal mb-2">Focus Groups</h1>
-            <p class="text-resin-earth/60 max-w-2xl">Connect with study buddies, form accountability circles, and compete on shared challenges. Work together, focus better.</p>
         </div>
-        <button
-            class="create-btn"
-            onclick={() => (showCreateForm = !showCreateForm)}
-            title="Create a new group"
-        >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Create Group
-        </button>
-    </header>
 
     {#if showCreateForm}
         <div class="create-form-container">
@@ -169,7 +177,7 @@
                             <div class="forests-grid">
                                 {#each group.members.slice(0, 4) as member (member.userId)}
                                     <div class="member-forest-item">
-                                        <ForestRenderer
+                                        <UnifiedForestRenderer
                                             stones={member.total_stones || 0}
                                             streak={member.current_streak || 0}
                                             size="sm"
@@ -193,26 +201,10 @@
             {/each}
         </div>
     {/if}
-</div>
+    </div>
+</main>
 
 <style>
-    .groups-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 40px 20px;
-    }
-
-    .groups-header {
-        margin-bottom: 40px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 20px;
-    }
-
-    .groups-header h1 {
-        margin-bottom: 12px;
-    }
 
     .create-btn {
         display: flex;
@@ -222,7 +214,7 @@
         background: #2b4634;
         color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 12px;
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
@@ -234,6 +226,7 @@
     .create-btn:hover:not(:disabled) {
         background: #1f3226;
         transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(43, 70, 52, 0.2);
     }
 
     .create-btn:disabled {
@@ -364,8 +357,9 @@
 
     .groups-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-        gap: 24px;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 28px;
+        width: 100%;
     }
 
     .group-card {
@@ -376,16 +370,16 @@
         text-decoration: none;
         color: inherit;
         transition: all 0.3s ease;
-        background: linear-gradient(135deg, #ffffff 0%, rgba(43, 70, 52, 0.02) 100%);
-        border: 1px solid rgba(43, 70, 52, 0.12);
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        background: white;
+        border: 1px solid rgba(43, 70, 52, 0.15);
+        border-radius: 20px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
 
     .group-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 16px 32px rgba(43, 70, 52, 0.15);
-        border-color: rgba(43, 70, 52, 0.25);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(43, 70, 52, 0.12);
+        border-color: rgba(43, 70, 52, 0.3);
     }
 
     .card-gradient {
@@ -400,7 +394,7 @@
     .card-content {
         display: flex;
         flex-direction: column;
-        padding: 24px;
+        padding: 28px;
         flex: 1;
     }
 
@@ -547,6 +541,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 400px;
+        min-height: 500px;
+        width: 100%;
     }
 </style>

@@ -52,7 +52,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
             .from('amber_sessions')
             .select('*')
             .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false }),
+            .order('updated_at', { ascending: false, nullsFirst: false }),
         supabase
             .from('mind_map_edges')
             .select('*')

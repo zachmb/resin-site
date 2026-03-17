@@ -300,12 +300,12 @@ export const POST = async ({ request }: RequestEvent) => {
         }, { status: 401 })
     }
 
-    const {
+    let {
         session_id,
         raw_text,
         intensity = 0.5,
-        start_hour = 16,
-        end_hour = 22,
+        start_hour,
+        end_hour,
         user_preferences = '',
         timezone = 'UTC',
         google_access_token = null,
@@ -322,6 +322,27 @@ export const POST = async ({ request }: RequestEvent) => {
         .eq('user_id', user.id)
 
     try {
+        // 2.5. Get per-day availability if not provided
+        if (start_hour === undefined || end_hour === undefined) {
+            const { data: profile } = await admin
+                .from('profiles')
+                .select('availability_schedule')
+                .eq('id', user.id)
+                .single()
+
+            const today = new Date()
+            const dayOfWeek = today.getDay() // 0=Sun, 6=Sat
+            const availSchedule = profile?.availability_schedule as any[] || null
+
+            if (availSchedule && Array.isArray(availSchedule) && availSchedule[dayOfWeek]) {
+                start_hour = start_hour ?? availSchedule[dayOfWeek].start ?? 16
+                end_hour = end_hour ?? availSchedule[dayOfWeek].end ?? 22
+            } else {
+                start_hour = start_hour ?? 16
+                end_hour = end_hour ?? 22
+            }
+        }
+
         // 3. Get Google access token & free/busy
         let gToken: string
         if (google_access_token) {

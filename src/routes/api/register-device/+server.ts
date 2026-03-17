@@ -26,7 +26,7 @@ export const POST = async ({ request }: RequestEvent) => {
     const { data: { user }, error: userError } = await admin.auth.getUser(jwt)
     if (userError || !user) return json({ error: 'Invalid or expired token' }, { status: 401 })
 
-    // 2. Parse body
+    // 2. Parse body (accept device_token from iOS app, map to token in db)
     let body: { device_token?: string; platform?: string }
     try {
         body = await request.json()
@@ -39,12 +39,21 @@ export const POST = async ({ request }: RequestEvent) => {
         return json({ error: 'device_token is required' }, { status: 400 })
     }
 
-    // 3. Upsert into device_tokens table (unique on user_id + device_token)
+    // Map platform to device_type: 'apns' → 'ios'
+    const device_type = platform === 'apns' ? 'ios' : platform
+
+    // 3. Upsert into device_tokens table
     const { error: dbError } = await admin
         .from('device_tokens')
         .upsert(
-            { user_id: user.id, device_token, platform, updated_at: new Date().toISOString() },
-            { onConflict: 'user_id,device_token' }
+            {
+                user_id: user.id,
+                token: device_token,
+                device_type,
+                is_active: true,
+                updated_at: new Date().toISOString()
+            },
+            { onConflict: 'user_id,token' }
         )
 
     if (dbError) {

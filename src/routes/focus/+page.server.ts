@@ -2,7 +2,12 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendPush } from '$lib/apns';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, getSession }, setHeaders }) => {
+    // Disable server caching for fresh data
+    setHeaders({
+        'cache-control': 'no-cache, no-store, must-revalidate'
+    });
+
     const session = await getSession();
 
     if (!session) {
@@ -206,11 +211,13 @@ export const actions: Actions = {
         // Combine date and time into ISO string
         const startTime = new Date(`${date}T${time}`);
         const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+        const sessionId = crypto.randomUUID();
 
         try {
             const { data: insertedSession, error } = await supabase
                 .from('blocking_sessions')
                 .insert({
+                    id: sessionId,
                     user_id: session.user.id,
                     title: title,
                     start_time: startTime.toISOString(),
@@ -222,19 +229,25 @@ export const actions: Actions = {
 
             if (error) throw error;
 
-            // Send push notification to device
+            // Send silent push notification to iOS devices
             const { data: tokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', session.user.id)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (tokens && tokens.length > 0) {
-                await Promise.all(tokens.map(({ device_token }) =>
-                    sendPush(device_token, {
-                        title: 'Scheduled Focus Session',
-                        body: `"${title}" scheduled for ${startTime.toLocaleTimeString()}`,
-                        data: { type: 'sync_blocking' }
+                await Promise.all(tokens.map(({ token }) =>
+                    sendPush(token, {
+                        title: title,
+                        body: 'Focus session started',
+                        pushType: 'background',
+                        data: {
+                            type: 'focus_session_start',
+                            sessionId: sessionId,
+                            endTime: endTime.toISOString()
+                        }
                     })
                 ));
             }
@@ -267,13 +280,14 @@ export const actions: Actions = {
             // Notify device to sync
             const { data: tokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', session.user.id)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (tokens && tokens.length > 0) {
-                await Promise.all(tokens.map(({ device_token }) =>
-                    sendPush(device_token, {
+                await Promise.all(tokens.map(({ token }) =>
+                    sendPush(token, {
                         title: 'Focus Session Cancelled',
                         body: 'A scheduled focus session was removed.',
                         data: { type: 'sync_blocking' }
@@ -387,13 +401,14 @@ export const actions: Actions = {
             // Send push notification to device
             const { data: tokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', session.user.id)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (tokens && tokens.length > 0) {
-                await Promise.all(tokens.map(({ device_token }) =>
-                    sendPush(device_token, {
+                await Promise.all(tokens.map(({ token }) =>
+                    sendPush(token, {
                         title: 'Focus Session Updated',
                         body: `"${title}" updated for ${startTime.toLocaleTimeString()}`,
                         data: { type: 'sync_blocking' }
@@ -506,13 +521,14 @@ export const actions: Actions = {
             // Send push notification to device
             const { data: tokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', session.user.id)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (tokens && tokens.length > 0) {
-                await Promise.all(tokens.map(({ device_token }) =>
-                    sendPush(device_token, {
+                await Promise.all(tokens.map(({ token }) =>
+                    sendPush(token, {
                         title: 'Focus Routine Created',
                         body: `"${blockingSession.title}" will repeat on ${daysOfWeek.split(',').map(d => d.trim().slice(0, 3)).join(', ')}`,
                         data: { type: 'sync_blocking' }
@@ -577,9 +593,10 @@ export const actions: Actions = {
             // Send push notification to collaborator
             const { data: tokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', collaboratorId)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (tokens && tokens.length > 0) {
                 const { data: initiatorProfile } = await supabase
@@ -588,8 +605,8 @@ export const actions: Actions = {
                     .eq('id', session.user.id)
                     .single();
 
-                await Promise.all(tokens.map(({ device_token }) =>
-                    sendPush(device_token, {
+                await Promise.all(tokens.map(({ token }) =>
+                    sendPush(token, {
                         title: 'Focus Session Invite',
                         body: `${initiatorProfile?.email?.split('@')[0]} invited you to focus at ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
                         data: { type: 'focus_invite' }
@@ -673,13 +690,14 @@ export const actions: Actions = {
             // Send push notification to initiator
             const { data: initiatorTokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', sharedSession.initiator_id)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (initiatorTokens && initiatorTokens.length > 0) {
-                await Promise.all(initiatorTokens.map(({ device_token }) =>
-                    sendPush(device_token, {
+                await Promise.all(initiatorTokens.map(({ token }) =>
+                    sendPush(token, {
                         title: 'Focus Session Accepted',
                         body: `Your friend accepted the focus session at ${new Date(sharedSession.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
                         data: { type: 'focus_accepted' }
@@ -874,13 +892,14 @@ export const actions: Actions = {
 
             const { data: tokens } = await supabase
                 .from('device_tokens')
-                .select('device_token')
+                .select('token')
                 .eq('user_id', otherUserId)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios')
+                .eq('is_active', true);
 
             if (tokens && tokens.length > 0) {
-                await Promise.all(tokens.map(({ device_token }) =>
-                    sendPush(device_token, {
+                await Promise.all(tokens.map(({ token }) =>
+                    sendPush(token, {
                         title: 'Focus Session Canceled',
                         body: `${sharedSession.title} was canceled by your friend`,
                         data: { type: 'focus_canceled' }

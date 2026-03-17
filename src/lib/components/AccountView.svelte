@@ -106,6 +106,11 @@
         return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     };
 
+    const getAvailabilityTime = (hour: number, type: 'start' | 'end') => {
+        const h = Math.floor(hour).toString().padStart(2, '0');
+        return `${h}:00`;
+    };
+
     const getPlatformIcon = (platform: string) => {
         if (platform === "apns") return { icon: "📱", label: "iOS App" };
         return { icon: "🔒", label: "Browser Extension" };
@@ -341,46 +346,49 @@
                         use:enhance={handleSubmit}
                         class="space-y-6"
                     >
-                        <!-- Focus Window -->
+                        <!-- Weekly Availability -->
                         <section>
                             <h3
                                 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4"
                             >
-                                Daily Focus Window
+                                Weekly Availability
                             </h3>
-                            <div class="space-y-4">
-                                <div class="space-y-2">
-                                    <label
-                                        for="availability_start"
-                                        class="text-sm font-semibold text-resin-charcoal"
-                                    >
-                                        Focus Starts
-                                    </label>
-                                    <input
-                                        type="time"
-                                        id="availability_start"
-                                        name="availability_start"
-                                        value={profile?.availability_start ??
-                                            "09:00"}
-                                        class="w-full px-4 py-3 bg-white/70 border border-resin-forest/10 rounded-xl focus:outline-none focus:border-resin-forest/30 focus:bg-white transition-all text-resin-charcoal font-medium"
-                                    />
-                                </div>
-                                <div class="space-y-2">
-                                    <label
-                                        for="availability_end"
-                                        class="text-sm font-semibold text-resin-charcoal"
-                                    >
-                                        Focus Ends
-                                    </label>
-                                    <input
-                                        type="time"
-                                        id="availability_end"
-                                        name="availability_end"
-                                        value={profile?.availability_end ??
-                                            "17:00"}
-                                        class="w-full px-4 py-3 bg-white/70 border border-resin-forest/10 rounded-xl focus:outline-none focus:border-resin-forest/30 focus:bg-white transition-all text-resin-charcoal font-medium"
-                                    />
-                                </div>
+                            <p class="text-sm text-resin-earth/60 mb-6">
+                                Set your availability for each day. Plans will schedule within these windows.
+                            </p>
+                            <div class="space-y-3">
+                                {#each ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as day, index}
+                                    <div class="bg-white/40 rounded-xl p-4 border border-resin-forest/5 hover:border-resin-forest/15 transition-all">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-20 flex-shrink-0">
+                                                <p class="font-semibold text-resin-charcoal text-sm">{day}</p>
+                                            </div>
+                                            <div class="flex-1 flex items-center gap-3">
+                                                <div class="flex items-center gap-2">
+                                                    <label for="start_{index}" class="text-xs text-resin-earth/70">From:</label>
+                                                    <input
+                                                        type="time"
+                                                        id="start_{index}"
+                                                        name="availability_start_{index}"
+                                                        value={getAvailabilityTime(profile?.availability_schedule?.[index]?.start ?? 16, 'start')}
+                                                        class="w-28 px-4 py-2 bg-white border border-resin-forest/10 rounded-lg focus:outline-none focus:border-resin-forest/30 text-resin-charcoal font-medium text-base"
+                                                    />
+                                                </div>
+                                                <div class="text-resin-earth/40">→</div>
+                                                <div class="flex items-center gap-2">
+                                                    <label for="end_{index}" class="text-xs text-resin-earth/70">To:</label>
+                                                    <input
+                                                        type="time"
+                                                        id="end_{index}"
+                                                        name="availability_end_{index}"
+                                                        value={getAvailabilityTime(profile?.availability_schedule?.[index]?.end ?? 22, 'end')}
+                                                        class="w-28 px-4 py-2 bg-white border border-resin-forest/10 rounded-lg focus:outline-none focus:border-resin-forest/30 text-resin-charcoal font-medium text-base"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/each}
                             </div>
                         </section>
 

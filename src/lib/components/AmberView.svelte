@@ -31,6 +31,7 @@
     let showClearConfirm = $state(false);
     let dateToClear = $state<Date | null>(null);
     let clearingDate = $state<string | null>(null);
+    let schedulingSessionIds = $state<Set<string>>(new Set());
 
     // Pre-select session from URL query parameter or auto-select first
     $effect(() => {
@@ -41,6 +42,26 @@
             selectedSessionId = filteredSessions[0].id;
         }
     });
+
+    // Detect when a session is being scheduled (created but no tasks yet)
+    $effect(() => {
+        const schedulingId = $page.url.searchParams.get('scheduling');
+        if (schedulingId) {
+            schedulingSessionIds.add(schedulingId);
+            selectedSessionId = schedulingId;
+        }
+    });
+
+    // Auto-remove from scheduling when tasks appear
+    $effect(() => {
+        for (const sessionId of schedulingSessionIds) {
+            const session = recentSessions.find(s => s.id === sessionId);
+            if (session && session.amber_tasks && session.amber_tasks.length > 0) {
+                schedulingSessionIds.delete(sessionId);
+            }
+        }
+    });
+
     let activeFilter = $state<'all'|'scheduled'|'completed'|'canceled'>('all');
     let showGoogleSignIn = $state(false);
     let googleSignInError = $state<string | null>(null);
@@ -89,6 +110,20 @@
         const ampm = h >= 12 ? "PM" : "AM";
         const h12 = h % 12 || 12;
         return `${h12}:${minutes} ${ampm}`;
+    };
+
+    const formatRelativeTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (seconds < 60) return "just now";
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+        if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
+        if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo ago`;
+        return `${Math.floor(seconds / 31536000)}y ago`;
     };
 
     const handleSessionMissed = () => {
@@ -144,6 +179,13 @@
         filteredSessions.find((s: any) => s.id === selectedSessionId)
         ?? filteredSessions[0]
         ?? null
+    );
+
+    const isSelectedSessionScheduling = $derived(
+        selectedSession &&
+        selectedSession.status === 'draft' &&
+        (!selectedSession.amber_tasks || selectedSession.amber_tasks.length === 0) &&
+        schedulingSessionIds.has(selectedSession.id)
     );
 
     const sessionFocusMinutes = $derived(
@@ -237,7 +279,7 @@
     class="w-full pt-20 pb-12 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto {viewMode === 'list' ? 'h-screen overflow-hidden' : 'min-h-screen'}"
 >
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-3">
         <div>
             <h1 class="text-3xl font-serif font-bold text-resin-charcoal">
                 Amber Sessions
@@ -246,13 +288,13 @@
         </div>
 
         <div class="flex bg-resin-earth/5 p-1 rounded-xl border border-resin-forest/5">
-            <button 
+            <button
                 onclick={() => viewMode = 'list'}
                 class="px-4 py-2 text-xs font-bold rounded-lg transition-all {viewMode === 'list' ? 'bg-white shadow-premium text-resin-forest' : 'text-resin-earth/50 hover:text-resin-earth'}"
             >
                 List View
             </button>
-            <button 
+            <button
                 onclick={() => viewMode = 'calendar'}
                 class="px-4 py-2 text-xs font-bold rounded-lg transition-all {viewMode === 'calendar' ? 'bg-white shadow-premium text-resin-forest' : 'text-resin-earth/50 hover:text-resin-earth'}"
             >
@@ -264,7 +306,7 @@
     <!-- View Switcher -->
     <div class="flex-1 relative overflow-hidden">
         {#if viewMode === 'list'}
-            <div class="flex gap-6 h-full relative overflow-hidden" in:fade={{ duration: 200 }}>
+            <div class="flex gap-4 h-full relative overflow-hidden" in:fade={{ duration: 200 }}>
         <!-- Left Panel: Session Browser -->
         <div
             class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
@@ -318,18 +360,13 @@
                                         {/if}
                                     </div>
                                 </div>
-                                <div class="flex-shrink-0 text-[9px] font-bold text-white px-1.5 py-0.5 rounded {getStatusColor(session.status)}">
-                                    {getStatusLabel(session.status)}
+                                <div class="flex-shrink-0 text-[9px] font-bold text-white px-1.5 py-0.5 rounded {schedulingSessionIds.has(session.id) ? 'bg-resin-amber/60' : getStatusColor(session.status)}">
+                                    {schedulingSessionIds.has(session.id) ? 'Working...' : getStatusLabel(session.status)}
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between text-xs text-resin-earth/60 gap-2">
-                                <span>
-                                    {new Date(session.amber_tasks?.[0]?.start_time || session.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                </span>
-                                <span class="font-mono">
-                                    {(session.amber_tasks || []).reduce((acc: number, t: any) => acc + (t.estimated_minutes || 0), 0)}m
-                                </span>
-                            </div>
+                            <span class="text-xs font-semibold text-resin-earth/60">
+                                {formatRelativeTime(session.updated_at || session.created_at)}
+                            </span>
                         </button>
                     {/each}
                 {:else}
@@ -573,7 +610,7 @@
                             </div>
 
                             <!-- Intensity -->
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xs font-medium text-resin-earth/70">Enforcement Intensity</span>
                                     <span class="text-xs font-bold" style="color: {intensityColor}">
@@ -587,10 +624,17 @@
                                            adjustmentSaveTimeout = setTimeout(() => saveIntensity(), 800);
                                        }}
                                        class="w-full accent-resin-forest" />
+                                <!-- Quick Preset Buttons -->
+                                <div class="flex gap-2">
+                                    <button onclick={() => { intensityValue = 0.25; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-resin-forest/10 text-resin-forest hover:bg-resin-forest/20 transition-colors">Gentle</button>
+                                    <button onclick={() => { intensityValue = 0.5; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-resin-amber/10 text-amber-600 hover:bg-resin-amber/20 transition-colors">Moderate</button>
+                                    <button onclick={() => { intensityValue = 0.75; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors">Firm</button>
+                                    <button onclick={() => { intensityValue = 1.0; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors">Max</button>
+                                </div>
                             </div>
 
                             <!-- Duration -->
-                            <div class="space-y-2">
+                            <div class="space-y-3">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xs font-medium text-resin-earth/70">Total Duration</span>
                                     <span class="text-xs font-bold text-resin-forest">{formatDuration(totalDuration)}</span>
@@ -602,6 +646,14 @@
                                            adjustmentSaveTimeout = setTimeout(() => scaleDurations(), 800);
                                        }}
                                        class="w-full accent-resin-forest" />
+                                <!-- Quick Duration Buttons -->
+                                <div class="flex gap-2 flex-wrap">
+                                    <button onclick={() => { totalDuration = 25; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">25m</button>
+                                    <button onclick={() => { totalDuration = 45; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">45m</button>
+                                    <button onclick={() => { totalDuration = 60; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">1h</button>
+                                    <button onclick={() => { totalDuration = 90; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">1.5h</button>
+                                    <button onclick={() => { totalDuration = 120; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">2h</button>
+                                </div>
                             </div>
 
                             <!-- Start Time -->
@@ -981,6 +1033,31 @@
                         Clear Day
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<!-- Session Scheduling Working Modal -->
+{#if isSelectedSessionScheduling}
+    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]" in:fade>
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-amber/10" in:fly={{ y: 20 }}>
+            <div class="flex flex-col items-center gap-6">
+                <div class="w-16 h-16 bg-resin-amber/10 rounded-2xl flex items-center justify-center">
+                    <svg class="w-8 h-8 text-resin-amber animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-serif font-bold text-resin-charcoal mb-2">Working...</h3>
+                    <p class="text-sm text-resin-earth/70">
+                        {selectedSession?.title || selectedSession?.display_title || 'Your plan'} is being scheduled
+                    </p>
+                    <p class="text-xs text-resin-earth/50 mt-2">
+                        DeepSeek is generating your schedule
+                    </p>
+                </div>
             </div>
         </div>
     </div>

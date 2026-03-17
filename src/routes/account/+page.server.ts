@@ -166,17 +166,30 @@ export const actions: Actions = {
         const formData = await request.formData();
         const openclaw_url = formData.get('openclaw_url') as string;
         const openclaw_api_key = formData.get('openclaw_api_key') as string;
-        const availability_start = formData.get('availability_start') as string;
-        const availability_end = formData.get('availability_end') as string;
         const sync_notes = formData.get('sync_notes') === 'on';
         const widget_enabled = formData.get('widget_enabled') === 'on';
+
+        // Build per-day availability schedule
+        const availabilitySchedule = [];
+        for (let i = 0; i < 7; i++) {
+            const startTime = formData.get(`availability_start_${i}`) as string;
+            const endTime = formData.get(`availability_end_${i}`) as string;
+
+            // Parse time strings (HH:MM) to hours
+            const startHour = startTime ? parseInt(startTime.split(':')[0]) : 16;
+            const endHour = endTime ? parseInt(endTime.split(':')[0]) : 22;
+
+            availabilitySchedule.push({
+                start: startHour,
+                end: endHour
+            });
+        }
 
         const updates = {
             id: session.user.id,
             openclaw_url,
             openclaw_api_key,
-            availability_start,
-            availability_end,
+            availability_schedule: availabilitySchedule,
             sync_notes,
             widget_enabled,
             updated_at: new Date().toISOString(),

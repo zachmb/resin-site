@@ -54,6 +54,11 @@
         Sun: false,
     });
 
+    // Focus goal tracking
+    let weeklyFocusGoal = $state<number>(300); // Default 5 hours in minutes
+    let showGoalEditor = $state(false);
+    let editGoalValue = $state("300");
+
     // Profile sync state
     let syncedProfile = $state<any>(null);
 
@@ -74,6 +79,13 @@
             }
         } else {
             syncedProfile = profile;
+        }
+
+        // Load weekly focus goal from localStorage
+        const savedGoal = localStorage.getItem('weeklyFocusGoal');
+        if (savedGoal) {
+            weeklyFocusGoal = parseInt(savedGoal);
+            editGoalValue = savedGoal;
         }
 
         showBanner = isNewUser && !localStorage.getItem('resin_onboarded');
@@ -263,24 +275,17 @@
         class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
     >
         <div>
-            <div
-                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
-            >
-                Command Center
-            </div>
-            {#if session}
+            {#if !session}
             <h1
-                class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
+                class="text-3xl font-serif font-bold text-resin-charcoal"
             >
-                Welcome back, <span class="text-resin-forest italic serif"
-                    >{firstName}</span
-                >
+                Welcome to Resin
             </h1>
             {:else}
             <h1
-                class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
+                class="text-3xl font-serif font-bold text-resin-charcoal"
             >
-                Welcome to Resin
+                Dashboard
             </h1>
             {/if}
             <p class="text-resin-earth/60 font-medium mt-2">
@@ -323,14 +328,13 @@
                     </p>
                 </div>
             {/if}
-            <a
-                href="/friends"
-                class="text-sm font-bold text-resin-forest hover:text-resin-amber transition-colors mt-6 inline-block"
-            >
-                + Invite a Friend →
-            </a>
         </div>
     </div>
+
+    <!-- Initiate Focus Card -->
+    <section class="mb-8 max-w-md">
+        <FocusControl />
+    </section>
 
     <!-- Quick Compose Card -->
     <section class="mb-8">
@@ -542,6 +546,60 @@
                     </div>
                 </div>
 
+                <!-- Focus Goal Section -->
+                <div class="mb-6 p-4 bg-resin-forest/5 rounded-xl border border-resin-forest/10">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-resin-forest uppercase tracking-wider">Weekly Focus Goal</span>
+                        <button
+                            onclick={() => showGoalEditor = !showGoalEditor}
+                            class="text-xs font-bold text-resin-forest/60 hover:text-resin-forest px-2 py-1 rounded hover:bg-resin-forest/10 transition-colors"
+                        >
+                            {showGoalEditor ? 'Done' : '✎ Edit'}
+                        </button>
+                    </div>
+
+                    {#if showGoalEditor}
+                        <div class="flex gap-2 mb-3">
+                            <input
+                                type="number"
+                                bind:value={editGoalValue}
+                                class="flex-1 px-3 py-1.5 text-sm rounded border border-resin-forest/20 focus:outline-none focus:border-resin-forest/50"
+                                min="0"
+                                max="1440"
+                            />
+                            <span class="text-xs font-semibold text-resin-earth/60 px-2 py-1.5">minutes</span>
+                            <button
+                                onclick={() => {
+                                    weeklyFocusGoal = parseInt(editGoalValue) || 300;
+                                    showGoalEditor = false;
+                                    localStorage.setItem('weeklyFocusGoal', weeklyFocusGoal.toString());
+                                }}
+                                class="px-3 py-1.5 text-xs font-bold bg-resin-forest text-white rounded hover:bg-resin-forest/90 transition-colors"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    {/if}
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-sm font-bold text-resin-charcoal">{weeklyStats.totalFocusMinutes} / {weeklyFocusGoal} min</span>
+                            <span class="text-xs text-resin-earth/60">{Math.round((weeklyStats.totalFocusMinutes / weeklyFocusGoal) * 100)}%</span>
+                        </div>
+                        <div class="w-full bg-resin-earth/10 rounded-full h-2">
+                            <div
+                                class="bg-gradient-to-r from-resin-forest to-resin-amber h-2 rounded-full transition-all duration-500"
+                                style="width: {Math.min((weeklyStats.totalFocusMinutes / weeklyFocusGoal) * 100, 100)}%"
+                            ></div>
+                        </div>
+                        {#if weeklyStats.totalFocusMinutes >= weeklyFocusGoal}
+                            <p class="text-xs text-resin-forest font-semibold">🎉 Goal achieved this week!</p>
+                        {:else}
+                            <p class="text-xs text-resin-earth/60">{weeklyFocusGoal - weeklyStats.totalFocusMinutes}m to reach your goal</p>
+                        {/if}
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-7 gap-3">
                     {#each weeklyStats.heatmap as day}
                         <div class="flex flex-col items-center gap-2">
@@ -643,8 +701,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Left: Focus, Taste, Timeline -->
         <div class="lg:col-span-7 space-y-8">
-            <ResinShieldCard />
-            <FocusControl />
+            <ResinShieldCard extensionInstalled={profile?.extension_enabled === true} />
 
             <!-- Focus Groups Card -->
             {#if groups && groups.length > 0}

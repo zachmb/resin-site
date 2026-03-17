@@ -2,27 +2,49 @@
     import { onMount } from "svelte";
     import { fade, fly, scale } from "svelte/transition";
     import { createSupabaseClient } from "$lib/supabase";
-    import { triggerReward } from "$lib/rewardStore";
-    import ForestRenderer from "$lib/components/ForestRenderer.svelte";
+    import { rewardTriggered } from "$lib/rewardStore";
+    import UnifiedForestRenderer from "$lib/components/UnifiedForestRenderer.svelte";
+    import SimpleTree from "$lib/components/SimpleTree.svelte";
+    import BonusBreakdown from "$lib/components/BonusBreakdown.svelte";
+    import AchievementBadge from "$lib/components/AchievementBadge.svelte";
+    import { ACHIEVEMENT_DEFINITIONS } from "$lib/achievementDefinitions";
+    import { TREE_SPECIES, getTreeSpecies, getUnlockedSpecies, getSFSymbolEmoji } from "$lib/treeSpecies";
+    import { Gem, Flame, Zap, Trophy, Crown, Diamond, Leaf, Trees, Sparkles, Sun, Star, Sprout } from "lucide-svelte";
+
+    // Map achievement icon names to lucide components
+    const iconComponents: Record<string, any> = {
+        'gem': Gem,
+        'flame': Flame,
+        'zap': Zap,
+        'trophy': Trophy,
+        'crown': Crown,
+        'diamond': Diamond,
+        'leaf': Leaf,
+        'tree': Trees,
+        'sparkles': Sparkles,
+        'sun': Sun,
+        'star': Star,
+        'sprout': Sprout,
+    };
 
     let { data } = $props();
-    let { sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession } = $derived(data);
-    let profileData = $state(data.profile);
-    $effect(() => {
-        profileData = data.profile;
-    });
+    let { sessions, statusCounts, minutesByDay, totalFocusMinutes, longestSession, userAchievements = [], newlyNotifiedAchievements = [] } = $derived(data);
+
+    // Real-time profile updates from subscriptions
+    let realtimeProfile = $state(data.profile);
+    let profileData = $derived(realtimeProfile || data.profile);
 
     let recentReward = $state<{ text: string; icon: string; timestamp: number } | null>(null);
     let showForestGlow = $state(false);
+    let newAchievementToast = $state<string | null>(null);
 
-    // Trigger reward and forest glow when reward appears
+    // Trigger forest glow when reward appears
     $effect(() => {
         if (recentReward) {
-            triggerReward();
             showForestGlow = true;
             setTimeout(() => {
                 showForestGlow = false;
-            }, 4000); // Stop glowing before reward store clears (which is 5 seconds)
+            }, 4000);
         }
     });
 
@@ -39,6 +61,14 @@
             } catch (e) {
                 // ignore
             }
+        }
+
+        // Show achievement toast for first newly notified achievement
+        if (newlyNotifiedAchievements && newlyNotifiedAchievements.length > 0) {
+            newAchievementToast = newlyNotifiedAchievements[0];
+            setTimeout(() => {
+                newAchievementToast = null;
+            }, 5000);
         }
 
         // Subscribe to real-time profile updates (for iOS sync)
@@ -58,7 +88,7 @@
 
                         if (data) {
                             // Update entire profile for consistency
-                            profileData = data;
+                            realtimeProfile = data;
                         }
                     } catch (err) {
                         // Silent error, polling is a fallback
@@ -81,7 +111,7 @@
                     (payload) => {
                         // Update profile data when iOS syncs
                         if (payload.new) {
-                            profileData = payload.new;
+                            realtimeProfile = payload.new;
                         }
                     }
                 )
@@ -96,92 +126,29 @@
             };
         }
     });
-    import TreeSVG from '$lib/components/TreeSVG.svelte';
-    import {
-        TreePine, TreeDeciduous, TreePalm, Leaf, LeafyGreen, Sprout, Flower, Flower2,
-        Sun, Star, Flame, Gem, Diamond, Crown, Zap, Wind, Sparkles, Trophy
-    } from 'lucide-svelte';
 
-    // Lucide Icon Mapping for achievements and rarity
-    const iconComponents: Record<string, any> = {
-        sprout: Sprout,
-        leaf: Leaf,
-        tree: TreePine,
-        star: Star,
-        crown: Crown,
-        flame: Flame,
-        gem: Gem,
-        zap: Zap,
-        wind: Wind,
-        sun: Sun,
-        sparkles: Sparkles,
-        trophy: Trophy,
-        flower: Flower,
-        flower2: Flower2,
-        diamond: Diamond,
-        infinity: Diamond // Placeholder for infinity, use diamond for now
-    };
+    // DB-backed achievements merged with definitions
+    const achievementBadges = $derived(
+        ACHIEVEMENT_DEFINITIONS.map((def) => ({
+            ...def,
+            unlockedAt: userAchievements.find((a: any) => a.achievement_id === def.id)?.unlocked_at ?? null
+        }))
+    );
 
-    // Tree Species Logic (Synced with iOS App)
-    const treeSpecies = [
-        // Common (0-20)
-        { id: "amber", name: "Amber Seedling", icon: "sprout", unlockCost: 0, rarity: "common", description: "Your first step" },
-        { id: "sprout", name: "Forest Sprout", icon: "leaf", unlockCost: 0, rarity: "common", description: "The beginning of growth" },
-        { id: "pine", name: "Pine Tree", icon: "tree", unlockCost: 5, rarity: "common", description: "Steady and strong" },
-        { id: "oak", name: "Oak", icon: "tree", unlockCost: 10, rarity: "common", description: "Ancient wisdom" },
+    // Milestone progress for stones
+    const stoneMilestones = [50, 100, 250, 500, 1000, 2500, 5000];
+    const nextStoneMilestone = $derived(stoneMilestones.find((m) => m > totalStones) ?? totalStones + 50);
+    const prevStoneMilestone = $derived([...stoneMilestones].reverse().find((m) => m <= totalStones) ?? 0);
+    const stoneProgress = $derived(
+        (totalStones - prevStoneMilestone) / (nextStoneMilestone - prevStoneMilestone)
+    );
 
-        // Uncommon (20-50)
-        { id: "cherry", name: "Cherry Blossom", icon: "flower", unlockCost: 20, rarity: "uncommon", description: "Delicate beauty" },
-        { id: "maple", name: "Maple Tree", icon: "leaf", unlockCost: 25, rarity: "uncommon", description: "Seasonal splendor" },
-        { id: "birch", name: "Silver Birch", icon: "tree", unlockCost: 30, rarity: "uncommon", description: "Elegant whiteness" },
-        { id: "willow", name: "Weeping Willow", icon: "wind", unlockCost: 35, rarity: "uncommon", description: "Graceful branches" },
-        { id: "jasmine", name: "Jasmine Vine", icon: "flower2", unlockCost: 40, rarity: "uncommon", description: "Sweet fragrance" },
-        { id: "lavender", name: "Lavender Field", icon: "sparkles", unlockCost: 45, rarity: "uncommon", description: "Calming presence" },
-
-        // Rare (50-100)
-        { id: "redwood", name: "Redwood Giant", icon: "tree", unlockCost: 50, rarity: "rare", description: "Touch the sky" },
-        { id: "bamboo", name: "Bamboo Petrified Forest", icon: "leaf", unlockCost: 60, rarity: "rare", description: "Resilient growth" },
-        { id: "palm", name: "Palm Tree", icon: "sun", unlockCost: 70, rarity: "rare", description: "Paradise found" },
-        { id: "baobab", name: "Baobab", icon: "tree", unlockCost: 80, rarity: "rare", description: "Ancestral strength" },
-        { id: "sunflower", name: "Sunflower Field", icon: "flower", unlockCost: 90, rarity: "rare", description: "Face the sun" },
-        { id: "iris", name: "Iris Garden", icon: "leaf", unlockCost: 100, rarity: "rare", description: "Royal elegance" },
-
-        // Epic (100-200)
-        { id: "sakura", name: "Sakura Grove", icon: "flower", unlockCost: 110, rarity: "epic", description: "Transient perfection" },
-        { id: "cypress", name: "Cypress Forest", icon: "tree", unlockCost: 130, rarity: "epic", description: "Mediterranean soul" },
-        { id: "moonlight", name: "Moonlit Glade", icon: "sparkles", unlockCost: 150, rarity: "epic", description: "Night's poetry" },
-        { id: "starry", name: "Starry Night", icon: "star", unlockCost: 170, rarity: "epic", description: "Cosmic wonder" },
-        { id: "aurora", name: "Aurora Borealis", icon: "sparkles", unlockCost: 180, rarity: "epic", description: "Sky dances" },
-
-        // Legendary (200+)
-        { id: "ancient", name: "Ancient Grove", icon: "crown", unlockCost: 200, rarity: "legendary", description: "Timeless magic" },
-        { id: "crystalline", name: "Crystalline Forest", icon: "gem", unlockCost: 250, rarity: "legendary", description: "Eternal brilliance" },
-        { id: "phoenix", name: "Phoenix Tree", icon: "flame", unlockCost: 300, rarity: "legendary", description: "Rising reborn" },
-        { id: "eternal", name: "Eternal Garden", icon: "infinity", unlockCost: 350, rarity: "legendary", description: "Infinity flourishing" },
-    ];
-
-    // Achievement definitions
-    const achievements = [
-        { id: "first_session", name: "First Steps", icon: "sprout", condition: (s: number) => s >= 1, description: "Complete your first session" },
-        { id: "week_streak", name: "Weekly Ritual", icon: "flame", condition: (s: number) => s >= 7, description: "7-day streak" },
-        { id: "month_streak", name: "Monthly Dedication", icon: "trophy", condition: (s: number) => s >= 30, description: "30-day streak" },
-        { id: "century", name: "Century", icon: "crown", condition: (s: number) => s >= 100, description: "100 total sessions" },
-        { id: "focused_hour", name: "Hour of Power", icon: "zap", condition: () => longestSession >= 60, description: "60+ minute session" },
-        { id: "collector", name: "Stone Collector", icon: "gem", condition: (s: number, st: number) => st >= 50, description: "50+ stones earned" },
-        { id: "gardener", name: "Gardener", icon: "leaf", condition: (s: number) => s >= 20, description: "20 different trees" },
-        { id: "forest_keeper", name: "Forest Keeper", icon: "tree", condition: () => forestHealth >= 80, description: "Maintain 80% forest health" },
-        { id: "night_owl", name: "Night Owl", icon: "wind", condition: () => true, description: "Late night sessions" },
-        { id: "early_bird", name: "Early Bird", icon: "sun", condition: () => true, description: "Morning sessions" },
-    ];
-
-    const unlockedAchievements = $derived(
-        achievements.filter(a => {
-            if (a.id === 'gardener') return unlockedSpecies.length >= 20;
-            if (a.id === 'forest_keeper') return forestHealth >= 80;
-            if (a.id === 'focused_hour') return longestSession >= 60;
-            if (a.id === 'collector') return totalStones >= 50;
-            return a.condition(currentStreak, totalStones);
-        })
+    // Milestone progress for streak
+    const streakMilestones = [5, 10, 15, 20, 25, 30, 50, 75, 100];
+    const nextStreakMilestone = $derived(streakMilestones.find((m) => m > currentStreak) ?? currentStreak + 5);
+    const prevStreakMilestone = $derived([...streakMilestones].reverse().find((m) => m <= currentStreak) ?? 0);
+    const streakProgress = $derived(
+        (currentStreak - prevStreakMilestone) / (nextStreakMilestone - prevStreakMilestone)
     );
 
     const totalStones = $derived(profileData?.total_stones || 0);
@@ -189,9 +156,7 @@
     const longestStreak = $derived(profileData?.longest_streak || 0);
     const longestStreakAt = $derived(profileData?.longest_streak_at || null);
     const forestHealth = $derived(profileData?.forest_health ?? 100);
-    const unlockedSpecies = $derived(
-        treeSpecies.filter((s: any) => s.unlockCost <= totalStones),
-    );
+    const unlockedSpecies = $derived(getUnlockedSpecies(totalStones));
 
     // Get forest health status
     function getForestStatus() {
@@ -219,14 +184,17 @@
     const gridSessions = $derived(filteredSessions.slice(0, 16));
     const overflow = $derived(Math.max(0, filteredSessions.length - 16));
 
-    // Helper: get icon key based on session duration
-    function getSpeciesIcon(session: any): string {
-        if (!session) return "";
+    // Helper: get species based on session duration (unified with iOS)
+    function getSpeciesForSession(session: any): any {
+        if (!session) return null;
         const mins = session.focusMinutes;
-        if (mins >= 120) return "starry"; // starry (majestic)
-        if (mins >= 60) return "oak"; // oak (large)
-        if (mins >= 20) return "amber"; // amber (standard)
-        return "sprout"; // shrub
+        let speciesId: string;
+        if (mins >= 120) speciesId = "cherry"; // majestic
+        else if (mins >= 60) speciesId = "oak"; // large
+        else if (mins >= 20) speciesId = "amber"; // standard
+        else speciesId = "sprout"; // shrub
+
+        return getTreeSpecies(speciesId) || TREE_SPECIES[0];
     }
 
     // Format minutes to hours/mins
@@ -249,255 +217,254 @@
 </svelte:head>
 
 <main
-    class="flex-grow pt-32 pb-20 px-6 relative z-10 w-full overflow-hidden bg-resin-bg"
+    class="w-full h-full min-h-screen pt-24 pb-32 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto"
 >
-    <div class="max-w-6xl mx-auto flex flex-col items-center">
-        <!-- Header Section -->
-        <div
-            class="text-center mb-16 space-y-4"
-            in:fly={{ y: -20, duration: 800 }}
+    <!-- Header Section -->
+    <div class="mb-12">
+        <h1
+            class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
         >
-            <div
-                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-forest/5 border border-resin-forest/10 text-resin-forest/60 text-[10px] font-bold uppercase tracking-[0.2em]"
-            >
-                Rewards & Progress
-            </div>
-            <h1
-                class="text-4xl md:text-6xl font-bold text-resin-charcoal font-serif tracking-tight"
-            >
-                The Petrified <span class="italic text-resin-forest"
-                    >Forest</span
-                >
-            </h1>
-            <p class="text-resin-earth/70 text-lg font-light max-w-xl mx-auto">
-                Every plan you complete adds to your permanent digital
-                sanctuary.
-            </p>
-        </div>
+            The Petrified Forest
+        </h1>
+        <p class="text-resin-earth/60 font-medium mt-2">
+            Every plan you complete adds to your permanent digital sanctuary.
+        </p>
+    </div>
 
-
-        <!-- Recent Reward Display -->
-        {#if recentReward}
-            <div
-                class="mb-12 max-w-2xl mx-auto"
-                in:fly={{ y: -10, duration: 300 }}
-                out:fly={{ y: -10, duration: 200 }}
-            >
-                <div class="glass-card rounded-2xl p-6 bg-gradient-to-r from-resin-amber/10 via-transparent to-resin-amber/5 border border-resin-amber/30 flex items-center justify-between group hover:scale-[1.02] transition-transform duration-300">
-                    <div class="flex items-center gap-4">
-                        <div class="text-5xl animate-bounce">{recentReward.icon}</div>
-                        <div>
-                            <p class="text-sm font-bold text-resin-charcoal">{recentReward.text}</p>
-                            <p class="text-xs text-resin-earth/50 mt-1">Just now · Check the forest to see your rewards!</p>
-                        </div>
-                    </div>
-                    <button
-                        onclick={() => (recentReward = null)}
-                        class="text-resin-earth/40 hover:text-resin-earth/60 transition-colors flex-shrink-0"
-                        title="Dismiss reward notification"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        {/if}
-
-        <!-- Stats Cards -->
+    <!-- Recent Reward Display -->
+    {#if recentReward}
         <div
-            class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl mb-24"
-        >
-            <div
-                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
+            class="mb-12 w-full max-w-2xl"
+                in:scale={{ duration: 300 }}
+                out:fly={{ y: -20, duration: 200 }}
             >
-                <div class="absolute inset-0 bg-gradient-to-br from-resin-amber/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="relative z-10">
-                    <div
-                        class="w-12 h-12 rounded-2xl bg-resin-amber/10 flex items-center justify-center text-resin-amber mb-2 mx-auto"
-                    >
-                        <Gem size={24} />
-                    </div>
-                    <span class="text-4xl font-bold text-resin-charcoal"
-                        >{totalStones}</span
-                    >
-                    <span
-                        class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold mt-2 block"
-                        >Stones Earned</span
-                    >
-                    <p class="text-[10px] text-resin-earth/40 mt-3 leading-relaxed max-w-xs mx-auto">
-                        Earn stones by completing focus sessions, sharing plans with friends, and using the browser extension
-                    </p>
-                </div>
-            </div>
+                <div class="relative overflow-hidden">
+                    <!-- Shimmer effect background -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
 
-            <div
-                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
-            >
-                <div class="absolute inset-0 bg-gradient-to-br from-resin-forest/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="relative z-10">
-                    <div
-                        class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2 mx-auto font-serif font-bold italic text-lg"
-                    >
-                        {currentStreak}
-                    </div>
-                    <span class="text-4xl font-bold text-resin-charcoal"
-                        >Day Streak</span
-                    >
-                    <span
-                        class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold mt-2 block"
-                        >Keep it going!</span
-                    >
-                    <p class="text-[10px] text-resin-earth/40 mt-3 leading-relaxed max-w-xs mx-auto">
-                        Focus every day to maintain your streak. Missing a day resets it.
-                    </p>
-                </div>
-            </div>
-
-            <div
-                class="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center space-y-3 group hover:scale-[1.02] transition-all duration-500 relative overflow-hidden"
-            >
-                <div class="absolute inset-0 bg-gradient-to-br from-resin-forest/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="relative z-10">
-                    <div
-                        class="w-12 h-12 rounded-2xl bg-resin-forest/10 flex items-center justify-center text-resin-forest mb-2 mx-auto"
-                    >
-                        <Zap size={24} />
-                    </div>
-                    <span class="text-4xl font-bold text-resin-charcoal"
-                        >{formatDuration(totalFocusMinutes)}</span
-                    >
-                    <span
-                        class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold mt-2 block"
-                        >Total Focus</span
-                    >
-                    <p class="text-[10px] text-resin-earth/40 mt-3 leading-relaxed max-w-xs mx-auto">
-                        Your longest focus session was {formatDuration(longestSession)}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Daily Engagement & Challenges -->
-        <div class="w-full max-w-6xl mb-24">
-            <div class="space-y-8">
-                <div class="text-center space-y-2">
-                    <h2 class="text-4xl font-serif font-bold text-resin-charcoal">Daily Challenges</h2>
-                    <p class="text-resin-earth/60">Stay engaged with daily milestones and streak bonuses</p>
-                </div>
-
-                <!-- Daily Streaks & Milestones -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Current Streak Progress -->
-                    <div class="glass-card rounded-2xl p-6 border border-resin-amber/20 bg-gradient-to-br from-resin-amber/5 to-transparent">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-resin-charcoal flex items-center gap-2">
-                                <Flame size={24} class="text-resin-amber" /> Current Streak
-                            </h3>
-                            <span class="text-3xl font-bold text-resin-amber">{currentStreak}</span>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="w-full h-2 bg-resin-earth/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-gradient-to-r from-resin-amber to-orange-400 rounded-full" style="width: {Math.min(currentStreak / 7, 1) * 100}%;"></div>
-                            </div>
-                            <p class="text-xs text-resin-earth/60">
-                                {#if currentStreak === 0}
-                                    Start today to begin your streak!
-                                {:else if currentStreak < 7}
-                                    {7 - currentStreak} days until weekly milestone!
-                                {:else if currentStreak < 30}
-                                    {30 - currentStreak} days until monthly milestone!
-                                {:else}
-                                    You're a champion! Keep it going! 🏆
-                                {/if}
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Next Milestone -->
-                    <div class="glass-card rounded-2xl p-6 border border-resin-forest/20">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-resin-charcoal flex items-center gap-2">
-                                <Trophy size={24} class="text-resin-amber" /> Next Milestone
-                            </h3>
-                        </div>
-                        <div class="space-y-3">
-                            {#if currentStreak < 7}
-                                <div>
-                                    <p class="text-sm font-semibold text-resin-charcoal">7-Day Streak</p>
-                                    <p class="text-2xl font-bold text-resin-amber mt-1">{7 - currentStreak}</p>
-                                    <p class="text-xs text-resin-earth/60 mt-1">Days remaining</p>
-                                </div>
-                            {:else if currentStreak < 30}
-                                <div>
-                                    <p class="text-sm font-semibold text-resin-charcoal">30-Day Streak</p>
-                                    <p class="text-2xl font-bold text-resin-amber mt-1">{30 - currentStreak}</p>
-                                    <p class="text-xs text-resin-earth/60 mt-1">Days remaining</p>
-                                </div>
-                            {:else}
-                                <div>
-                                    <p class="text-sm font-semibold text-resin-charcoal">100-Day Legend</p>
-                                    <p class="text-2xl font-bold text-resin-amber mt-1">{100 - Math.min(currentStreak, 99)}</p>
-                                    <p class="text-xs text-resin-earth/60 mt-1">Days to legendary status</p>
-                                </div>
-                            {/if}
-                        </div>
-                    </div>
-
-                    <!-- Daily Bonus -->
-                    <div class="glass-card rounded-2xl p-6 border border-resin-forest/20 bg-gradient-to-br from-resin-forest/5 to-transparent">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-resin-charcoal flex items-center gap-2">
-                                <Sparkles size={24} class="text-resin-amber" /> Today's Bonus
-                            </h3>
-                        </div>
-                        <div class="space-y-3 text-sm">
+                    <div class="glass-card rounded-2xl p-6 bg-gradient-to-r from-resin-amber/15 via-white/40 to-resin-amber/10 border border-resin-amber/40 flex items-center justify-between group hover:scale-[1.03] transition-all duration-300 shadow-lg shadow-resin-amber/20">
+                        <div class="flex items-center gap-6 relative z-10">
+                            <div class="text-6xl animate-bounce drop-shadow-lg">{recentReward.icon}</div>
                             <div>
-                                <p class="text-resin-earth/70">First session of the day:</p>
-                                <p class="text-lg font-bold text-resin-amber">+1 Stone +2 Health</p>
-                            </div>
-                            <div class="pt-3 border-t border-resin-forest/10">
-                                <p class="text-resin-earth/70">Consistency bonus every 3 sessions:</p>
-                                <p class="text-lg font-bold text-resin-forest">+1 Stone +3 Health</p>
+                                <p class="text-base font-bold text-resin-charcoal flex items-center gap-2">
+                                    🎉 {recentReward.text}
+                                </p>
+                                <p class="text-xs text-resin-forest font-semibold mt-1">
+                                    ✨ Just earned! Watch your forest grow →
+                                </p>
                             </div>
                         </div>
+                        <button
+                            onclick={() => (recentReward = null)}
+                            class="text-resin-earth/40 hover:text-resin-earth/60 transition-colors flex-shrink-0 relative z-10"
+                            title="Dismiss reward notification"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+    {/if}
+
+    <!-- Bonus Breakdown Card (from new reward store) -->
+    {#if $rewardTriggered?.bonusBreakdown && $rewardTriggered.bonusBreakdown.length > 0}
+        <BonusBreakdown
+            baseStones={$rewardTriggered.baseStones}
+            bonusBreakdown={$rewardTriggered.bonusBreakdown}
+            forestHealthGain={$rewardTriggered.forestHealthGain}
+            newAchievements={$rewardTriggered.newAchievements}
+            visible={true}
+        />
+    {/if}
+
+    <!-- Your Forest Section (MOVED UP) -->
+    <div class="w-full mb-24">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-3">
+                <span
+                    class="text-xs font-bold uppercase tracking-widest text-resin-earth/40"
+                    >Your Forest</span
+                >
+                <span
+                    class="text-xs font-medium text-resin-forest/60"
+                    >{Math.min(filteredSessions.length, 16)} / 16 plots</span
+                >
+            </div>
+
+            <!-- Forest Health Status -->
+            <div class="glass-card rounded-xl p-6 border border-resin-forest/10 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-resin-charcoal">{forestStatus.message}</span>
+                    <span class="text-xs font-bold text-resin-earth/60">{forestHealth}%</span>
+                </div>
+                <div class="w-full h-2 bg-resin-earth/10 rounded-full overflow-hidden">
+                        <div
+                            class="h-full transition-all duration-500 rounded-full"
+                            style="width: {forestHealth}%; background-color: {forestStatus.color};"
+                        ></div>
+                </div>
+                <p class="text-xs text-resin-earth/60 mt-2">
+                    {#if forestHealth >= 80}
+                        Keep completing sessions to maintain your thriving forest.
+                    {:else if forestHealth >= 60}
+                        Complete more sessions to restore your forest's health.
+                    {:else if forestHealth >= 30}
+                        Your forest needs attention! Focus sessions will help it recover.
+                    {:else}
+                        Complete a focus session now to save your forest from petrification!
+                    {/if}
+                </p>
+            </div>
+
+            <!-- 4x4 Grid with Unified Trees -->
+            <div
+                class="grid grid-cols-4 gap-2 rounded-2xl overflow-hidden mb-4 bg-white/40 p-3"
+            >
+                {#each Array(16) as _, i}
+                    {@const session = gridSessions[i]}
+                    {@const species = session ? getSpeciesForSession(session) : null}
+                    <div
+                        class="flex items-center justify-center aspect-square relative group cursor-pointer transition-all hover:scale-110 rounded-lg bg-white/20 p-1"
+                        class:opacity-40={!session &&
+                            i === 0 &&
+                            filteredSessions.length === 0}
+                    >
+                        {#if session && species}
+                            <div class="flex flex-col items-center gap-1 text-center w-full h-full flex-center">
+                                <SimpleTree species={species} size="md" health={forestHealth} />
+                            </div>
+                            <!-- Tooltip -->
+                            <div
+                                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-resin-charcoal text-white text-[10px] rounded-lg py-1.5 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl"
+                            >
+                                {session.display_title || session.title || "Session"}
+                                •
+                                {session.focusMinutes}m
+                            </div>
+                        {:else}
+                            <span class="text-resin-earth/10 text-2xl">○</span>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+
+            {#if overflow > 0}
+                <p class="text-center text-xs text-resin-earth/40 font-medium">
+                    +{overflow} more this period
+                </p>
+            {/if}
+        </div>
+
+        <!-- Stats + Daily Challenges (Side by Side) -->
+        <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-5 gap-8 mb-24">
+            <!-- Left: Compact Stats -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="glass-card rounded-2xl p-4 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-resin-amber/10 flex items-center justify-center text-resin-amber flex-shrink-0">
+                        <Gem size={20} />
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-resin-charcoal">{totalStones}</p>
+                        <p class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold">Stones</p>
                     </div>
                 </div>
 
-                <!-- Engagement Stats -->
-                <div class="glass-card rounded-2xl p-8 border border-resin-forest/10">
-                    <h3 class="text-xl font-bold text-resin-charcoal mb-6">Your Engagement Stats</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div class="text-center">
-                            <p class="text-sm text-resin-earth/60 uppercase tracking-wider mb-2">Total Sessions</p>
-                            <p class="text-3xl font-bold text-resin-charcoal">{sessions.length}</p>
-                            <p class="text-xs text-resin-earth/50 mt-2">{statusCounts.completed} completed</p>
+                <div class="glass-card rounded-2xl p-4 flex items-center gap-4 bg-gradient-to-br from-resin-forest/8 via-white/60 to-transparent">
+                    <div class="w-10 h-10 rounded-xl bg-resin-forest/20 flex items-center justify-center text-resin-forest flex-shrink-0 font-bold text-lg">
+                        🔥
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-resin-forest">{currentStreak}</p>
+                        <p class="text-xs uppercase tracking-widest text-resin-forest font-bold">Streak</p>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-resin-forest/10 flex items-center justify-center text-resin-forest flex-shrink-0">
+                        <Zap size={20} />
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold text-resin-charcoal">{formatDuration(totalFocusMinutes)}</p>
+                        <p class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold">Total Focus</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Daily Challenges -->
+            <div class="lg:col-span-3">
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-2">Daily Challenges</h2>
+                        <p class="text-sm text-resin-earth/60">Daily milestones and streak bonuses</p>
+                    </div>
+
+                    <!-- Daily Streaks & Milestones -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Current Streak Progress -->
+                        <div class="glass-card rounded-2xl p-4 border border-resin-amber/20 bg-gradient-to-br from-resin-amber/5 to-transparent">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-bold text-sm text-resin-charcoal flex items-center gap-2">
+                                    <Flame size={16} class="text-resin-amber" /> Streak
+                                </h3>
+                                <span class="text-xl font-bold text-resin-amber">{currentStreak}</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="w-full h-1.5 bg-resin-earth/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-resin-amber to-orange-400 rounded-full" style="width: {Math.min(currentStreak / 7, 1) * 100}%;"></div>
+                                </div>
+                                <p class="text-xs text-resin-earth/60">
+                                    {#if currentStreak === 0}
+                                        Start today!
+                                    {:else if currentStreak < 7}
+                                        {7 - currentStreak}d to weekly
+                                    {:else if currentStreak < 30}
+                                        {30 - currentStreak}d to monthly
+                                    {:else}
+                                        Champion! 🏆
+                                    {/if}
+                                </p>
+                            </div>
                         </div>
-                        <div class="text-center">
-                            <p class="text-sm text-resin-earth/60 uppercase tracking-wider mb-2">Success Rate</p>
-                            <p class="text-3xl font-bold text-resin-amber">
-                                {sessions.length > 0 ? Math.round((statusCounts.completed / sessions.length) * 100) : 0}%
-                            </p>
-                            <p class="text-xs text-resin-earth/50 mt-2">Last 30 days</p>
+
+                        <!-- Next Milestone -->
+                        <div class="glass-card rounded-2xl p-4 border border-resin-forest/20">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-bold text-sm text-resin-charcoal flex items-center gap-2">
+                                    <Trophy size={16} class="text-resin-amber" /> Next
+                                </h3>
+                            </div>
+                            <div class="space-y-2">
+                                {#if currentStreak < 7}
+                                    <p class="text-xs font-semibold text-resin-charcoal">7-Day Streak</p>
+                                    <p class="text-xl font-bold text-resin-amber">{7 - currentStreak}d</p>
+                                {:else if currentStreak < 30}
+                                    <p class="text-xs font-semibold text-resin-charcoal">30-Day Streak</p>
+                                    <p class="text-xl font-bold text-resin-amber">{30 - currentStreak}d</p>
+                                {:else}
+                                    <p class="text-xs font-semibold text-resin-charcoal">100-Day Legend</p>
+                                    <p class="text-xl font-bold text-resin-amber">{100 - Math.min(currentStreak, 99)}d</p>
+                                {/if}
+                            </div>
                         </div>
-                        <div class="text-center">
-                            <p class="text-sm text-resin-earth/60 uppercase tracking-wider mb-2">Best Streak</p>
-                            <p class="text-3xl font-bold text-resin-forest">{longestStreak}</p>
-                            {#if longestStreakAt}
-                                <p class="text-[10px] text-resin-earth/40 mt-1">Achieved on {formatDateShort(longestStreakAt)}</p>
-                            {:else}
-                                <p class="text-xs text-resin-earth/50 mt-2">All time</p>
-                            {/if}
-                        </div>
-                        <div class="text-center">
-                            <p class="text-sm text-resin-earth/60 uppercase tracking-wider mb-2">Trees Planted</p>
-                            <h1 class="text-3xl font-bold text-resin-charcoal">Your Petrified Forest</h1>
-                            <p class="text-resin-earth/60">Every saved focus note becomes a stone. Your collection of resilience.</p>
+                    </div>
+
+                    <!-- Today's Bonus -->
+                    <div class="glass-card rounded-2xl p-4 border border-resin-forest/20 bg-gradient-to-br from-resin-forest/5 to-transparent">
+                        <h3 class="font-bold text-sm text-resin-charcoal flex items-center gap-2 mb-3">
+                            <Sparkles size={16} class="text-resin-amber" /> Today's Bonus
+                        </h3>
+                        <div class="space-y-2 text-xs">
+                            <p class="text-resin-earth/70">First session: <span class="font-bold text-resin-amber">+1 Stone +2 Health</span></p>
+                            <p class="text-resin-earth/70">Every 3 sessions: <span class="font-bold text-resin-forest">+1 Stone +3 Health</span></p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Collection Showcase -->
 
         <!-- How Stones Work -->
         <div class="w-full max-w-4xl mb-24">
@@ -527,7 +494,7 @@
                     </div>
                 </div>
                 <div class="flex items-start gap-3">
-                    <TreePine size={24} class="text-xl text-resin-forest" />
+                    <Trees size={24} class="text-xl text-resin-forest" />
                     <div>
                         <p class="text-sm font-bold text-resin-charcoal">Each session plants a tree in your grove</p>
                     </div>
@@ -606,117 +573,32 @@
             </div>
         </div>
 
-        <!-- 4x4 Forest Grid -->
-        <div class="w-full max-w-4xl">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-3">
-                <span
-                    class="text-xs font-bold uppercase tracking-widest text-resin-earth/40"
-                    >Your Forest</span
-                >
-                <span
-                    class="text-xs font-medium text-resin-forest/60"
-                    >{Math.min(filteredSessions.length, 16)} / 16 plots</span
-                >
-            </div>
-
-            <!-- Forest Health Status -->
-            <div class="glass-card rounded-xl p-6 border border-resin-forest/10 mb-4">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm font-semibold text-resin-charcoal">{forestStatus.message}</span>
-                    <span class="text-xs font-bold text-resin-earth/60">{forestHealth}%</span>
-                </div>
-                <div class="w-full h-2 bg-resin-earth/10 rounded-full overflow-hidden">
-                        <div
-                            class="h-full transition-all duration-500 rounded-full"
-                            style="width: {forestHealth}%; background-color: {forestStatus.color};"
-                        ></div>
-                </div>
-                <p class="text-xs text-resin-earth/60 mt-2">
-                    {#if forestHealth >= 80}
-                        Keep completing sessions to maintain your thriving forest.
-                    {:else if forestHealth >= 60}
-                        Complete more sessions to restore your forest's health.
-                    {:else if forestHealth >= 30}
-                        Your forest needs attention! Focus sessions will help it recover.
-                    {:else}
-                        Complete a focus session now to save your forest from petrification!
-                    {/if}
-                </p>
-            </div>
-
-            <!-- 4x4 Grid -->
-            <div
-                class="grid grid-cols-4 gap-[1px] bg-resin-earth/8 rounded-2xl overflow-hidden mb-4"
-            >
-                {#each Array(16) as _, i}
-                    {@const session = gridSessions[i]}
-                    {@const isEven = (Math.floor(i / 4) + (i % 4)) % 2 === 0}
-                    <div
-                        class="flex items-center justify-center h-24 relative group cursor-pointer transition-opacity {isEven
-                            ? "bg-[#C8DCA8]/22"
-                            : "bg-[#B8CC98]/16"}"
-                        class:opacity-40={!session &&
-                            i === 0 &&
-                            filteredSessions.length === 0}
-                    >
-                        {#if session}
-                            <div class="flex flex-col items-center gap-1 text-center">
-                                <TreeSVG species={getSpeciesIcon(session)} size={48} health={forestHealth} />
-                                <span
-                                    class="text-[8px] font-medium text-resin-earth/40 px-1 hidden group-hover:block"
-                                    >{session.focusMinutes}m</span
-                                >
-                            </div>
-                            <!-- Tooltip -->
-                            <div
-                                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-resin-charcoal text-white text-[10px] rounded-lg py-1.5 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl"
-                            >
-                                {session.display_title || session.title || "Session"}
-                                •
-                                {session.focusMinutes}m
-                            </div>
-                        {:else}
-                            <span class="text-resin-earth/10 text-2xl">○</span>
-                        {/if}
-                    </div>
-                {/each}
-            </div>
-
-            {#if overflow > 0}
-                <p class="text-center text-xs text-resin-earth/40 font-medium">
-                    +{overflow} more this period
-                </p>
-            {/if}
-        </div>
-
         <!-- Collection Showcase -->
         <div class="w-full max-w-4xl space-y-10">
             <h2 class="text-2xl font-serif font-bold text-resin-charcoal">
                 Unlocked Collection
             </h2>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
-                {#each treeSpecies as species}
+                {#each TREE_SPECIES as species}
                     {@const unlocked = totalStones >= species.unlockCost}
-                    {@const Icon = iconComponents[species.icon] || Sparkles}
                     <div
                         class="glass-card rounded-2xl p-6 flex flex-col items-center text-center space-y-3 {unlocked
                             ? 'opacity-100'
                             : 'opacity-40 grayscale'} transition-all duration-500"
                     >
-                        <div class="mb-2">
+                        <div class="mb-2 w-12 h-12 flex items-center justify-center">
                             {#if unlocked}
-                                <TreeSVG species={species.id} size={40} health={100} />
+                                <SimpleTree species={species} size="md" health={100} />
                             {:else}
-                                <div class="w-10 h-10 rounded-full bg-resin-earth/10 flex items-center justify-center text-resin-earth/40">
-                                    <Icon size={20} />
+                                <div class="text-3xl opacity-50">
+                                    {species.icon.includes('tree') ? '🌳' : species.icon.includes('leaf') ? '🍃' : '⭐'}
                                 </div>
                             {/if}
                         </div>
                         <div
                             class="text-[10px] uppercase tracking-widest font-bold text-resin-earth/40"
                         >
-                            {species.name}
+                            {species.label}
                         </div>
                         {#if !unlocked}
                             <div class="text-[10px] font-bold text-resin-amber">
@@ -831,31 +713,22 @@
             <div class="space-y-8">
                 <div class="text-center space-y-2">
                     <h2 class="text-4xl font-serif font-bold text-resin-charcoal">Achievements</h2>
-                    <p class="text-resin-earth/60">Milestones earned through dedication</p>
-                    <div class="mt-4 flex items-center justify-center gap-2">
-                        <span class="text-lg font-bold text-resin-amber">{unlockedAchievements.length}</span>
-                        <span class="text-resin-earth/60">of</span>
-                        <span class="text-lg font-bold text-resin-earth/60">{achievements.length}</span>
-                    </div>
+                    <p class="text-resin-earth/60">
+                        {achievementBadges.filter((a) => a.unlockedAt).length} / {achievementBadges.length} unlocked
+                    </p>
                 </div>
 
                 <!-- Achievements Grid -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {#each achievements as achievement (achievement.id)}
-                        {@const isUnlocked = unlockedAchievements.some(a => a.id === achievement.id)}
-                        <div
-                            class="glass-card rounded-2xl p-4 flex flex-col items-center text-center transition-all duration-300 {isUnlocked ? 'border-resin-amber/40 bg-resin-amber/5 scale-105' : 'border-resin-forest/10 opacity-60'} hover:scale-110"
-                            title={achievement.description}
-                        >
-                            <div class="text-4xl mb-2">{achievement.icon}</div>
-                            <p class="font-bold text-sm text-resin-charcoal">{achievement.name}</p>
-                            <p class="text-xs text-resin-earth/50 mt-2">{achievement.description}</p>
-                            {#if isUnlocked}
-                                <div class="mt-2 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-resin-amber/20 text-resin-amber text-[10px] font-bold">
-                                    ✓ Unlocked
-                                </div>
-                            {/if}
-                        </div>
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                    {#each achievementBadges as badge (badge.id)}
+                        <AchievementBadge
+                            achievementId={badge.id}
+                            name={badge.name}
+                            description={badge.description}
+                            icon={badge.icon}
+                            unlockedAt={badge.unlockedAt}
+                            isNew={newlyNotifiedAchievements?.includes(badge.id) ?? false}
+                        />
                     {/each}
                 </div>
 
@@ -863,14 +736,14 @@
                 <div class="space-y-4 mt-12">
                     <div class="text-center">
                         <h3 class="text-2xl font-serif font-bold text-resin-charcoal mb-2">Tree Species Unlocked</h3>
-                        <p class="text-resin-earth/60">{unlockedSpecies.length} / {treeSpecies.length} collected</p>
+                        <p class="text-resin-earth/60">{unlockedSpecies.length} / {TREE_SPECIES.length} collected</p>
                     </div>
 
                     <!-- Rarity Breakdown -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                         {#each ['common', 'uncommon', 'rare', 'epic', 'legendary'] as rarity}
                             {@const count = unlockedSpecies.filter((s: any) => s.rarity === rarity).length}
-                            {@const total = treeSpecies.filter((s: any) => s.rarity === rarity).length}
+                            {@const total = TREE_SPECIES.filter((s: any) => s.rarity === rarity).length}
                             {@const rarityColors = {
                                 common: '#6B7280',
                                 uncommon: '#10B981',
@@ -895,8 +768,8 @@
                             <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                 {#each unlockedSpecies as species (species.id)}
                                     <div class="text-center group cursor-pointer">
-                                        <div class="text-4xl mb-2 group-hover:scale-125 transition-transform">{species.icon}</div>
-                                        <p class="text-xs font-semibold text-resin-charcoal line-clamp-2">{species.name}</p>
+                                        <div class="text-4xl mb-2 group-hover:scale-125 transition-transform">{getSFSymbolEmoji(species.icon)}</div>
+                                        <p class="text-xs font-semibold text-resin-charcoal line-clamp-2">{species.label}</p>
                                         <p class="text-[10px] text-resin-earth/50 mt-1">{species.unlockCost} stones</p>
                                     </div>
                                 {/each}
@@ -976,7 +849,7 @@
                                 class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm border border-resin-forest/5 overflow-hidden"
                             >
                                 {#if session.status === "scheduled" || session.status === "completed"}
-                                    <TreeSVG species={getSpeciesIcon(session)} size={32} health={forestHealth} />
+                                    <SimpleTree species={getSpeciesForSession(session)} size="sm" health={forestHealth} />
                                 {:else}
                                     <div class="text-2xl">🪨</div>
                                 {/if}
@@ -1038,6 +911,32 @@
             </div>
         </div>
 
+        <!-- Achievement Toast Notification -->
+        {#if newAchievementToast}
+            {@const def = ACHIEVEMENT_DEFINITIONS.find((d) => d.id === newAchievementToast)}
+            {#if def}
+                <div
+                    class="fixed bottom-28 right-4 z-50 glass-card rounded-2xl p-4 flex items-center gap-3 border border-resin-amber/40 shadow-lg shadow-resin-amber/20 max-w-xs"
+                    in:fly={{ x: 80, duration: 400 }}
+                    out:fly={{ x: 80, duration: 300 }}
+                >
+                    <div class="w-10 h-10 rounded-xl bg-resin-amber/20 flex items-center justify-center flex-shrink-0">
+                        <svelte:component this={iconComponents[def.icon] || Trophy} size={20} class="text-resin-amber" />
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-resin-amber uppercase tracking-wider">Achievement Unlocked!</p>
+                        <p class="text-sm font-semibold text-resin-charcoal">{def.name}</p>
+                    </div>
+                    <button
+                        onclick={() => (newAchievementToast = null)}
+                        class="text-resin-earth/40 hover:text-resin-earth/60 transition-colors flex-shrink-0 text-lg leading-none"
+                    >
+                        ✕
+                    </button>
+                </div>
+            {/if}
+        {/if}
+
         <!-- Info Footer -->
         <div class="mt-40 text-center space-y-6 opacity-40 max-w-lg mx-auto">
             <p class="text-sm font-light italic">
@@ -1046,7 +945,6 @@
             </p>
             <div class="h-px bg-resin-forest/10 w-24 mx-auto"></div>
         </div>
-    </div>
 </main>
 
 <style>

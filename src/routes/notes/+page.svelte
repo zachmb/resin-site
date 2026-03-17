@@ -2,9 +2,12 @@
     import NotesEditor from "$lib/components/NotesEditor.svelte";
     import { page } from "$app/stores";
     import { fade } from "svelte/transition";
+    import { setCache } from "$lib/cache";
+    import { invalidateAll } from "$app/navigation";
+    import { onMount } from "svelte";
 
     let { data } = $props();
-    let notes = $derived(data.notes || []);
+    let notes = $state<any[]>([]);
     let profile = $derived(data.profile || null);
     let connections = $derived(data.connections || {});
 
@@ -16,6 +19,16 @@
 
     let selectedNoteId = $state<string | null>(null);
     let localDrafts = $state<Record<string, string>>({});
+
+    // Force fresh data load when page mounts
+    onMount(() => {
+        invalidateAll();
+    });
+
+    // Sync server data to local state whenever data changes
+    $effect(() => {
+        notes = data?.notes || [];
+    });
 
     // Open specific note by ID from URL, or reset to first note
     $effect(() => {
@@ -50,7 +63,6 @@
         localDrafts[id] = content;
     };
 
-    import { invalidateAll } from "$app/navigation";
     const handleSaveSuccess = async ({
         note,
         isNew,
@@ -62,13 +74,37 @@
         delete localDrafts[note.id];
         selectedNoteId = note.id;
         showToast("Note saved!");
+
         if (isNew) {
+            // Optimistically add the new note to the list immediately
+            if (!notes.some((n: any) => n.id === note.id)) {
+                notes = [
+                    {
+                        id: note.id,
+                        title: note.title || 'Untitled',
+                        content: note.content || '',
+                        created_at: note.created_at || new Date().toISOString(),
+                        status: note.status || 'draft'
+                    },
+                    ...notes
+                ];
+                // Cache the new note list
+                setCache('notes-list', notes, 5 * 60 * 1000);
+            }
+            // Reload from server to stay in sync
             await invalidateAll();
         }
     };
 
     const handleSelectNote = (note: any) => {
         selectedNoteId = note.id;
+    };
+
+    const handleDeleteNote = async (noteId: string) => {
+        // Remove the note from the list immediately
+        notes = notes.filter((n: any) => n.id !== noteId);
+        // Cache the updated list
+        setCache('notes-list', notes, 5 * 60 * 1000);
     };
 </script>
 
@@ -83,6 +119,7 @@
     onBack={() => (selectedNoteId = null)}
     onSaveSuccess={handleSaveSuccess}
     onSelectNote={handleSelectNote}
+    onDeleteNote={handleDeleteNote}
 />
 
 {#if toastMessage}

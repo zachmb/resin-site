@@ -2,38 +2,69 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
-    const session = await getSession();
+    try {
+        const session = await getSession();
+        if (!session) {
+            throw redirect(303, '/login?next=/forest');
+        }
 
-    if (!session) {
-        throw redirect(303, '/login?next=/forest');
-    }
+        const userId = session.user?.id;
+        if (!userId) {
+            throw redirect(303, '/login?next=/forest');
+        }
 
-    // 1. Fetch user profile for stats
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+        // Run all independent queries in parallel
+        const [profileResult, sessionsResult, feedbackResult, achievementsResult] = await Promise.all([
+            // Fetch profile
+            supabase.from('profiles').select('*').eq('id', userId).single(),
+            // Fetch sessions with tasks
+            supabase
+                .from('amber_sessions')
+                .select(`
+                    *,
+                    amber_tasks (
+                        estimated_minutes,
+                        start_time,
+                        end_time
+                    )
+                `)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false }),
+            // Fetch task feedback
+            supabase
+                .from('amber_task_feedback')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false }),
+            // Fetch achievements
+            supabase
+                .from('user_achievements')
+                .select('achievement_id, unlocked_at, notified')
+                .eq('user_id', userId)
+                .order('unlocked_at', { ascending: false })
+        ]);
 
-    // 2. Fetch amber sessions for trees/stones, including tasks for total time
-    const { data: rawSessions } = await supabase
-        .from('amber_sessions')
-        .select(`
-            *,
-            amber_tasks (
-                estimated_minutes
-            )
-        `)
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
+        const { data: profile, error: profileError } = profileResult;
+        if (profileError) {
+            console.error('[Forest Load] Profile fetch error:', profileError);
+            throw error(500, `Profile fetch failed: ${profileError.message}`);
+        }
+        if (!profile) {
+            console.error('[Forest Load] Profile is null');
+            throw error(404, 'User profile not found');
+        }
 
-    const sessions = (rawSessions || []).map((s: any) => {
-        const focusMinutes = (s.amber_tasks || []).reduce((acc: number, t: any) => acc + (t.estimated_minutes || 0), 0);
-        return {
-            ...s,
-            focusMinutes
-        };
-    });
+        const { data: rawSessions } = sessionsResult;
+        const { data: feedback } = feedbackResult;
+        const { data: userAchievements } = achievementsResult;
+
+        const sessions = (rawSessions || []).map((s: any) => {
+            const focusMinutes = (s.amber_tasks || []).reduce((acc: number, t: any) => acc + (t.estimated_minutes || 0), 0);
+            return {
+                ...s,
+                focusMinutes
+            };
+        });
 
     // Analytics: session status breakdown
     const statusCounts = { completed: 0, scheduled: 0, canceled: 0, draft: 0, failed: 0 };
@@ -56,21 +87,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
     const totalFocusMinutes = sessions.reduce((acc: number, s: any) => acc + s.focusMinutes, 0);
     const longestSession = sessions.reduce((max: number, s: any) => s.focusMinutes > max ? s.focusMinutes : max, 0);
 
-    // Insights: Calculate execution metrics
+    // Insights: Calculate execution metrics from already-loaded sessions
     const completedSessions = sessions.filter((s: any) => s.status === 'completed');
     let totalEstimated = 0;
     let totalActual = 0;
     let validTaskCount = 0;
     const hourCounts: Record<number, number> = {};
 
-    // Fetch task details for completed sessions
-    const { data: tasksData } = await supabase
-        .from('amber_tasks')
-        .select('estimated_minutes, start_time, end_time')
-        .in('amber_session_id', completedSessions.map((s: any) => s.id));
-
-    if (tasksData) {
-        tasksData.forEach((task: any) => {
+    // Use tasks already loaded from the sessions join
+    for (const session of completedSessions) {
+        for (const task of (session.amber_tasks || [])) {
             if (task.start_time && task.end_time) {
                 const estimated = task.estimated_minutes;
                 const startTime = new Date(task.start_time);
@@ -84,7 +110,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
                 const hour = startTime.getHours();
                 hourCounts[hour] = (hourCounts[hour] || 0) + 1;
             }
-        });
+        }
     }
 
     // Calculate estimates accuracy
@@ -107,7 +133,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         ? parseInt(Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0][0])
         : null;
 
-    // Recent estimation trend
+    // Recent estimation trend (use already-loaded tasks)
     const recentSessions = completedSessions.slice(0, 5);
     let recentEstimateVariance = 0;
     if (recentSessions.length > 0) {
@@ -115,13 +141,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         let recentActual = 0;
         let recentCount = 0;
 
-        const { data: recentTasks } = await supabase
-            .from('amber_tasks')
-            .select('estimated_minutes, start_time, end_time')
-            .in('amber_session_id', recentSessions.map((s: any) => s.id));
-
-        if (recentTasks) {
-            recentTasks.forEach((task: any) => {
+        for (const session of recentSessions) {
+            for (const task of (session.amber_tasks || [])) {
                 if (task.start_time && task.end_time) {
                     recentEstimated += task.estimated_minutes;
                     const startTime = new Date(task.start_time);
@@ -129,10 +150,10 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
                     recentActual += Math.round((endTime.getTime() - startTime.getTime()) / 60000);
                     recentCount++;
                 }
-            });
-            if (recentCount > 0) {
-                recentEstimateVariance = Math.round((recentActual / recentEstimated) * 100);
             }
+        }
+        if (recentCount > 0) {
+            recentEstimateVariance = Math.round((recentActual / recentEstimated) * 100);
         }
     }
 
@@ -140,13 +161,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         ? `Recent tasks ${recentEstimateVariance > 110 ? 'take' : 'finish'} ${Math.abs(recentEstimateVariance - 100)}% ${recentEstimateVariance > 110 ? 'longer' : 'faster'}`
         : 'Not enough data';
 
-    // Taste Profile: Load feedback for emotional landscape
-    const { data: feedback } = await supabase
-        .from('amber_task_feedback')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
-
+    // Taste Profile: Process feedback for emotional landscape (already fetched)
     const feelingCounts: Record<string, number> = {};
     const enjoyedThings: { text: string; date: string }[] = [];
 
@@ -176,13 +191,29 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         hasInsights: completedSessions.length > 0
     };
 
-    return {
-        profile,
-        sessions: sessions || [],
-        statusCounts,
-        minutesByDay,
-        totalFocusMinutes,
-        longestSession,
-        insights
-    };
+    // Mark unnotified achievements as notified (toast fires once per page load)
+    const unnotified = (userAchievements || []).filter((a: any) => !a.notified).map((a: any) => a.achievement_id);
+    if (unnotified.length > 0) {
+        await supabase
+            .from('user_achievements')
+            .update({ notified: true })
+            .eq('user_id', userId)
+            .in('achievement_id', unnotified);
+    }
+
+        return {
+            profile,
+            sessions: sessions || [],
+            statusCounts,
+            minutesByDay,
+            totalFocusMinutes,
+            longestSession,
+            insights,
+            userAchievements: userAchievements || [],
+            newlyNotifiedAchievements: unnotified
+        };
+    } catch (err) {
+        console.error('[Forest Load Error]', err);
+        throw error(500, 'Failed to load forest page. Please try again.');
+    }
 };

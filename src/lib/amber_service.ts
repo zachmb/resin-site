@@ -304,7 +304,6 @@ export async function callDeepSeek(
     endHour: number,
     timezone: string,
     userPreferences: string,
-    chronotype: string = 'bear',
     focusSuccessRate: number = 0.5
 ): Promise<DeepSeekTask> {
     const now = new Date().toLocaleString('en-US', { timeZone: timezone, hour12: false });
@@ -314,8 +313,8 @@ export async function callDeepSeek(
         ? `\n\n# BEHAVIORAL INSIGHTS (from recent sessions)\n${userPreferences.trim()}`
         : '';
 
-    const energyProfileSection = `\n\n# USER ENERGY PROFILE
-Chronotype: ${chronotype}
+    const energyProfileSection = `\n\n# USER AVAILABILITY & FOCUS PROFILE
+Preferred Work Hours: ${startHour}:00 - ${endHour}:00
 Recent Focus Success Rate: ${Math.round(focusSuccessRate * 100)}%`;
 
     const systemPrompt = `# MISSION
@@ -326,10 +325,10 @@ You are the Lead Mentor of RESIN, a sophisticated productivity ecosystem. Your o
    - Anchor on Commitments: First, identify fixed deadlines, meetings, and hard constraints.
    - Disambiguate Intent: Distinguish between "aspirational dreams" and "urgent needs." Predict objective success criteria.
    - Dialogue-Ready: If vital information is missing, flag it in the notification copy.
-2. ENERGY-AWARE TAGGING & CHRONOTYPE ALIGNMENT:
-   - High-concentration tasks (coding, writing, planning) MUST be slotted into focus peaks.
-   - The "Lull" Protocol: Routine work (admin, email) MUST be deferred to energy lulls.
-   - Chronotype \${chronotype}: Respect the user's biological peak hours. Don't fight their natural rhythm.
+2. ENERGY-AWARE TAGGING & AVAILABILITY ALIGNMENT:
+   - High-concentration tasks (coding, writing, planning) MUST be slotted within the availability window.
+   - The "Off-Hours" Protocol: Routine work (admin, email) should be deferred when possible.
+   - Availability Window (${startHour}:00 - ${endHour}:00): Schedule demanding tasks only within this window.
 3. EMPATHETIC PACING & BURNOUT PREVENTION:
    - Dynamic Intensity: Bias toward "Soft" sessions if recent success <70%. Bias toward "Firm" for deep work if success ≥80%.
    - The Guilt-Free Buffer: Ensure plans include non-negotiable breaks between heavy tasks.
@@ -350,10 +349,10 @@ Steps should be:
 
 # SCHEDULING OPTIMIZATION
 - Always respect FREE/BUSY calendar (don't schedule during existing events)
-- If multiple slots available, pick the one that aligns with ${chronotype} energy curve
+- Schedule all tasks within the availability window (${startHour}:00 - ${endHour}:00)
 - Add 5-minute buffer after each task for context switching
-- Never schedule demanding tasks in "lull" hours (opposite of peak for ${chronotype})
 - For ${Math.round(intensity * 100)}% intensity: longer, deeper work is appropriate. Don't fragment.
+- If task must happen outside availability window, ask user for permission via notification_copy.
 
 # OUTPUT CONTRACT (STRICT JSON ONLY)
 {
@@ -365,7 +364,7 @@ Steps should be:
     "Step 3: Final push or polish, 5-10 min"
   ],
   "scheduling": {
-    "start_time": "ISO8601 (respect calendar, align with chronotype peak)",
+    "start_time": "ISO8601 (respect calendar and availability window ${startHour}:00-${endHour}:00)",
     "end_time": "ISO8601 (realistic: sum of step times + buffers)",
     "duration_minutes": number (total, including micro-breaks)
   },
@@ -433,14 +432,24 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         const learnedInsights = await computeUserInsights(userId);
         const enrichedPreferences = [learnedInsights, user_preferences].filter(Boolean).join('\n\n');
 
-        // 2.7. Fetch user profile for chronotype and success rate
+        // 2.7. Fetch user profile for availability schedule and success rate
         const { data: profile } = await admin
             .from('profiles')
-            .select('chronotype')
+            .select('availability_schedule')
             .eq('id', userId)
             .single();
 
-        const chronotype = profile?.chronotype || 'bear';
+        // Get day-specific availability for today
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+        const availSchedule = profile?.availability_schedule as any[] || null;
+        let dayStartHour = start_hour;
+        let dayEndHour = end_hour;
+
+        if (availSchedule && Array.isArray(availSchedule) && availSchedule[dayOfWeek]) {
+            dayStartHour = availSchedule[dayOfWeek].start || start_hour;
+            dayEndHour = availSchedule[dayOfWeek].end || end_hour;
+        }
 
         // Calculate 7-day focus success rate
         const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -456,7 +465,7 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             : 0.5;
 
         // 3. Call DeepSeek with enhanced user context
-        const plan = await callDeepSeek(rawText, freeBusy, intensity, start_hour, end_hour, timezone, enrichedPreferences, chronotype, focusSuccessRate);
+        const plan = await callDeepSeek(rawText, freeBusy, intensity, dayStartHour, dayEndHour, timezone, enrichedPreferences, focusSuccessRate);
 
         // 4. Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone);

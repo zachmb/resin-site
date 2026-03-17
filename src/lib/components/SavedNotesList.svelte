@@ -7,6 +7,9 @@
         setActiveNote: (note: any) => void;
     }>();
 
+    let createError = $state('');
+    let isCreating = $state(false);
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -33,38 +36,69 @@
         <h1 class="text-3xl font-serif font-bold text-resin-charcoal">
             Saved Notes
         </h1>
-        <form
-            method="POST"
-            action="?/createNote"
-            use:enhance={() => {
-                return async ({ result, update }) => {
-                    if (result.type === "success" && result.data?.note) {
-                        setActiveNote(result.data.note);
-                    }
-                    await update();
-                };
-            }}
-        >
-            <button
-                type="submit"
-                class="px-5 py-2.5 bg-resin-forest text-white rounded-xl font-semibold hover:bg-resin-charcoal transition-all shadow-sm flex items-center gap-2"
+        <div class="flex gap-2">
+            <a
+                href="/note-groups"
+                class="px-5 py-2.5 bg-resin-earth/10 text-resin-earth hover:bg-resin-earth/20 rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2 border border-resin-earth/20"
             >
-                <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 4v16m8-8H4"
-                    ></path>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l9-4 9 4m0 0v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7" />
                 </svg>
-                New Note
-            </button>
-        </form>
+                Groups
+            </a>
+            <form
+                method="POST"
+                action="?/createNote"
+                use:enhance={() => {
+                    isCreating = true;
+                    createError = '';
+                    return async ({ result, update }) => {
+                        isCreating = false;
+                        if (result.type === "success" && result.data?.note) {
+                            setActiveNote(result.data.note);
+                            createError = '';
+                        } else if (result.type === "failure") {
+                            createError = result.data?.error || 'Failed to create note';
+                            console.error('[SavedNotesList] Create error:', result.data);
+                        } else if (result.type === "error") {
+                            createError = 'An error occurred while creating the note';
+                            console.error('[SavedNotesList] Error:', result.error);
+                        }
+                        await update();
+                    };
+                }}
+            >
+                <button
+                    type="submit"
+                    disabled={isCreating}
+                    class="px-5 py-2.5 bg-resin-forest text-white rounded-xl font-semibold hover:bg-resin-charcoal transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 4v16m8-8H4"
+                        ></path>
+                    </svg>
+                    {#if isCreating}
+                        <span class="inline-block animate-spin">⏳</span>
+                    {:else}
+                        New Note
+                    {/if}
+                </button>
+            </form>
+            {#if createError}
+                <div class="text-red-600 text-sm mt-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                    {createError}
+                </div>
+            {/if}
+        </div>
     </div>
 
     {#if sharedWithMe && sharedWithMe.length > 0}
@@ -111,7 +145,7 @@
                             >
                                 <span
                                     class="text-xs font-semibold text-resin-earth/60"
-                                    >{formatDate(note.created_at)}</span
+                                    >{formatDate(note.updated_at || note.created_at)}</span
                                 >
                                 <div class="flex items-center gap-2">
                                     {#if note.status}
@@ -209,7 +243,7 @@
                         >
                             <span
                                 class="text-xs font-semibold text-resin-earth/60"
-                                >{formatDate(note.created_at)}</span
+                                >{formatDate(note.updated_at || note.created_at)}</span
                             >
                         </div>
                     </button>

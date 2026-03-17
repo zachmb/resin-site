@@ -8,6 +8,25 @@
     let animatedElements = $state<{ [key: string]: boolean }>({});
 
     onMount(() => {
+        // Immediately show content that's in viewport on load
+        const sections = document.querySelectorAll('[data-section]');
+        sections.forEach((section) => {
+            const rect = section.getBoundingClientRect();
+            if (rect.top < window.innerHeight + 50) {
+                const key = section.getAttribute('data-section');
+                if (key) animatedSections[key] = true;
+            }
+        });
+
+        const elements = document.querySelectorAll('[data-element]');
+        elements.forEach((element) => {
+            const rect = element.getBoundingClientRect();
+            if (rect.top < window.innerHeight + 50) {
+                const key = element.getAttribute('data-element');
+                if (key) animatedElements[key] = true;
+            }
+        });
+
         // Create intersection observer to trigger animations on scroll
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
@@ -21,14 +40,16 @@
                     observer.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.1 });
+        }, { threshold: 0.05, rootMargin: '50px' });
 
-        // Observe all sections and elements
-        Object.values(sectionRefs).forEach((ref) => {
-            if (ref) observer.observe(ref);
+        // Observe all sections with data-section attribute
+        sections.forEach((section) => {
+            observer.observe(section);
         });
-        Object.values(elementRefs).forEach((ref) => {
-            if (ref) observer.observe(ref);
+
+        // Observe all elements with data-element attribute
+        elements.forEach((element) => {
+            observer.observe(element);
         });
 
         return () => observer.disconnect();
@@ -38,7 +59,7 @@
 <!-- Main Content -->
 <main class="flex-grow pt-20 pb-20 px-6 relative z-10 w-full overflow-hidden">
     <!-- Hero Section -->
-    <section class="max-w-7xl mx-auto mb-32">
+    <section class="max-w-7xl mx-auto mb-16">
         <!-- Hero Content: Text Left, Visual Right -->
         <div class="grid md:grid-cols-2 gap-16 items-center">
             <!-- Left: Text -->
@@ -50,10 +71,8 @@
                     <span class="text-resin-forest">actually done.</span>
                 </h1>
 
-                <p
-                    class="text-lg md:text-xl text-resin-earth/70 mb-8 font-light leading-relaxed"
-                >
-                    Turn scattered thoughts into actionable plans. Block distractions. Follow through. All in one system.
+                <p class="text-lg md:text-xl text-resin-earth/70 mb-8 font-light leading-relaxed">
+                    Turn thoughts into plans. Block distractions. Actually follow through.
                 </p>
 
                 <!-- CTA Buttons -->
@@ -198,7 +217,7 @@
     </section>
 
     <!-- Problem Section with Visual -->
-    <section class="max-w-5xl mx-auto mb-32">
+    <section class="max-w-5xl mx-auto mb-16">
         <div class="grid md:grid-cols-2 gap-12 items-center">
             <!-- Left: Problems -->
             <div class="space-y-8">
@@ -251,7 +270,7 @@
     </section>
 
     <!-- Core Features Section -->
-    <section class="max-w-6xl mx-auto mb-32">
+    <section class="max-w-6xl mx-auto mb-16">
         <div class="text-center mb-16">
             <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">A system built for focus</h2>
             <p class="text-resin-earth/70 max-w-2xl mx-auto">Three powerful tools working together so you actually finish what you start</p>
@@ -315,14 +334,14 @@
     </section>
 
     <!-- How It Works Section with Mockups -->
-    <section class="max-w-7xl mx-auto mb-32">
+    <section class="max-w-7xl mx-auto mb-16">
         <div class="text-center mb-16">
             <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">How It Works</h2>
             <p class="text-resin-earth/70 max-w-2xl mx-auto">From intention to action. See how distractions disappear and work actually gets done.</p>
         </div>
 
         <!-- Step 1: Brain Dump -->
-        <div class="mb-32">
+        <div class="mb-16">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="order-2 md:order-1">
                     <!-- iPhone Mockup: Brain Dump -->
@@ -367,7 +386,7 @@
         </div>
 
         <!-- Step 2: AI Planning -->
-        <div class="mb-32">
+        <div class="mb-16">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="order-1">
                     <div class="space-y-6">
@@ -444,7 +463,7 @@
         </div>
 
         <!-- Step 3: Schedule Focus -->
-        <div class="mb-32">
+        <div class="mb-16">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="order-2 md:order-1">
                     <!-- Mockup: Focus Session Scheduling -->
@@ -499,7 +518,7 @@
         </div>
 
         <!-- Step 4: Focus & Execute -->
-        <div class="mb-32">
+        <div class="mb-16">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="order-1">
                     <div class="space-y-6">
@@ -617,10 +636,10 @@
     </section>
 
     <!-- Complete Productivity System Section -->
-    <section class="max-w-6xl mx-auto mb-32">
+    <section class="max-w-6xl mx-auto mb-12">
         <div class="text-center mb-16">
-            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">A complete system, not just blocking</h2>
-            <p class="text-resin-earth/70 max-w-2xl mx-auto">Built-in note-taking, smart scheduling, and integrations that supercharge your entire workflow</p>
+            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">A complete system</h2>
+            <p class="text-resin-earth/70 max-w-2xl mx-auto">Notes, scheduling, and automation—everything you need</p>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8">
@@ -633,7 +652,7 @@
                     <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Capture & Connect</h3>
                 </div>
                 <p class="text-resin-earth/70 font-light mb-6">
-                    Built-in note-taking keeps all your thoughts, research, and references in one place. Connect notes to your plans and reflect with full context at your fingertips.
+                    Keep thoughts, research, and notes in one place. Connect them to your plans.
                 </p>
                 <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
                     <div>✓ Encrypted note storage</div>
@@ -651,7 +670,7 @@
                     <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Intelligent Scheduling</h3>
                 </div>
                 <p class="text-resin-earth/70 font-light mb-6">
-                    Schedule focus sessions that sync to your calendar. Resin coordinates with your existing commitments so blocking doesn't conflict with important meetings.
+                    Schedule sessions that sync to your calendar. Smart blocking avoids conflicts.
                 </p>
                 <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
                     <div>✓ Calendar sync</div>
@@ -669,7 +688,7 @@
                     <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Supercharge with Integrations</h3>
                 </div>
                 <p class="text-resin-earth/70 font-light mb-6">
-                    Connect to OpenClaw, Zapier, and other serious tools. Feed your focus sessions into custom workflows. Build the exact productivity system you need.
+                    Integrate with Zapier and webhooks. Build custom workflows that match your needs.
                 </p>
                 <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
                     <div>✓ OpenClaw integration</div>
@@ -684,11 +703,11 @@
     <section
         bind:this={sectionRefs['forest']}
         data-section="forest"
-        class="max-w-6xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['forest'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
+        class="max-w-6xl mx-auto mb-12 md:mb-20 px-4 md:px-0 transition-all duration-700 {animatedSections['forest'] ? 'opacity-100 translate-y-0' : 'opacity-100 translate-y-0'}"
     >
         <div class="text-center mb-8 md:mb-16">
-            <h2 class="text-3xl md:text-5xl font-bold text-resin-charcoal font-serif mb-3 md:mb-4">Grow your forest. Build together.</h2>
-            <p class="text-sm md:text-base text-resin-earth/70 max-w-2xl mx-auto">Watch your progress bloom into something beautiful</p>
+            <h2 class="text-3xl md:text-5xl font-bold text-resin-charcoal font-serif mb-3 md:mb-4">Grow together</h2>
+            <p class="text-sm md:text-base text-resin-earth/70 max-w-2xl mx-auto">Visualize progress and build accountability</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-4 md:gap-8">
@@ -701,7 +720,7 @@
                     <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Your Petrified Forest</h3>
                 </div>
                 <p class="text-resin-earth/70 font-light mb-6">
-                    Every focused session grows your forest. Each completed task turns your tree to stone, claiming your amber rewards. Watch your productivity transform into a visual masterpiece that proves what you've actually accomplished.
+                    Every session grows your forest. Completed tasks turn to stone and earn rewards. Visual proof of your progress.
                 </p>
 
                 <!-- Forest Visualization -->
@@ -744,7 +763,7 @@
                     <h3 class="text-2xl font-bold text-resin-charcoal mb-2">Study with Friends</h3>
                 </div>
                 <p class="text-resin-earth/70 font-light mb-6">
-                    Focus isn't solitary. Resin lets you study or work in sync with friends. Block distractions together, share your focus sessions, and build accountability as a group. Everyone stays locked in.
+                    Study in sync with friends. Block distractions together and build accountability.
                 </p>
                 <div class="space-y-2 text-xs text-resin-earth/60 font-medium">
                     <div>✓ Synchronized focus sessions</div>
@@ -753,191 +772,5 @@
                 </div>
             </div>
         </div>
-    </section>
-
-    <!-- Ecosystem Section -->
-    <section
-        bind:this={sectionRefs['ecosystem']}
-        data-section="ecosystem"
-        class="max-w-6xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['ecosystem'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
-    >
-        <div class="text-center mb-8 md:mb-16">
-            <h2 class="text-3xl md:text-5xl font-bold text-resin-charcoal font-serif mb-3 md:mb-4">Everywhere you are</h2>
-            <p class="text-sm md:text-base text-resin-earth/70 max-w-2xl mx-auto">Resin works on iPhone, iPad, Mac, and the web. Blocking syncs across all devices.</p>
-        </div>
-
-        <div class="grid md:grid-cols-3 gap-4 md:gap-8">
-            <div class="glass-card rounded-2xl p-6 md:p-8 text-center transition-all duration-500 hover:border-resin-forest/30 md:transform md:hover:scale-105">
-                <div class="flex justify-center mb-4">
-                    <Smartphone class="w-8 md:w-10 h-8 md:h-10 text-resin-forest" />
-                </div>
-                <h3 class="font-bold text-resin-charcoal mb-2 text-base md:text-lg">iPhone & iPad</h3>
-                <p class="text-xs md:text-sm text-resin-earth/70 font-light">Full app with Screen Time integration. Apps actually get blocked.</p>
-            </div>
-            <div class="glass-card rounded-2xl p-6 md:p-8 text-center border border-resin-forest/20 transition-all duration-500 hover:border-resin-amber/30 md:transform md:hover:scale-105">
-                <div class="flex justify-center mb-4">
-                    <Globe class="w-8 md:w-10 h-8 md:h-10 text-resin-amber" />
-                </div>
-                <h3 class="font-bold text-resin-charcoal mb-2 text-base md:text-lg">Mac & Web</h3>
-                <p class="text-xs md:text-sm text-resin-earth/70 font-light">Plan on the web. Mac blocking coming soon.</p>
-            </div>
-            <div class="glass-card rounded-2xl p-6 md:p-8 text-center transition-all duration-500 hover:border-resin-forest/30 md:transform md:hover:scale-105">
-                <div class="flex justify-center mb-4">
-                    <Chrome class="w-8 md:w-10 h-8 md:h-10 text-resin-charcoal" />
-                </div>
-                <h3 class="font-bold text-resin-charcoal mb-2 text-base md:text-lg">Chrome Extension</h3>
-                <p class="text-xs md:text-sm text-resin-earth/70 font-light">Blocks social sites during focus sessions. Always in sync.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Why Resin Section -->
-    <section
-        bind:this={sectionRefs['why']}
-        data-section="why"
-        class="max-w-5xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['why'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
-    >
-        <div class="glass-card rounded-3xl p-6 md:p-12 bg-gradient-to-br from-resin-amber/5 to-resin-forest/5 border-resin-forest/10 hover:border-resin-forest/30 transition-all duration-500">
-            <div class="text-center space-y-8">
-                <div>
-                    <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">For anyone ready to reclaim their focus</h2>
-                    <p class="text-resin-earth/70 max-w-2xl mx-auto text-lg">Resin is for people drowning in distractions who want their attention back. For anyone who keeps saying "I'll do it tomorrow" but tomorrow never comes. For those tired of lost hours to social media, and ready to fill that reclaimed time with work that matters. For people ready to prove to themselves what they can accomplish when they're actually focused.</p>
-                </div>
-
-                <div class="grid md:grid-cols-3 gap-8 pt-8 border-t border-resin-forest/10">
-                    <div
-                        bind:this={elementRefs['stat1']}
-                        data-element="stat1"
-                        class="space-y-2 transition-all duration-700 {animatedElements['stat1'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
-                    >
-                        <div class="text-3xl font-bold text-resin-forest">2.5k+</div>
-                        <p class="text-sm text-resin-earth/70">Active users getting things done</p>
-                    </div>
-                    <div
-                        bind:this={elementRefs['stat2']}
-                        data-element="stat2"
-                        class="space-y-2 transition-all duration-700 {animatedElements['stat2'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
-                        style="transition-delay: 100ms"
-                    >
-                        <div class="text-3xl font-bold text-resin-amber">10k+</div>
-                        <p class="text-sm text-resin-earth/70">Focus sessions completed</p>
-                    </div>
-                    <div
-                        bind:this={elementRefs['stat3']}
-                        data-element="stat3"
-                        class="space-y-2 transition-all duration-700 {animatedElements['stat3'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
-                        style="transition-delay: 200ms"
-                    >
-                        <div class="text-3xl font-bold text-resin-charcoal">92%</div>
-                        <p class="text-sm text-resin-earth/70">Complete their plans</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Privacy Section -->
-    <section
-        bind:this={sectionRefs['privacy']}
-        data-section="privacy"
-        class="max-w-5xl mx-auto mb-16 md:mb-32 px-4 md:px-0 transition-all duration-700 {animatedSections['privacy'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
-    >
-        <div class="glass-card rounded-3xl p-6 md:p-12 border border-resin-forest/20 hover:border-resin-forest/40 transition-all duration-500">
-            <div class="text-center space-y-8">
-                <div>
-                    <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">Your thoughts, completely private</h2>
-                    <p class="text-resin-earth/70 max-w-2xl mx-auto text-lg">Your ideas are personal. We treat them that way.</p>
-                </div>
-
-                <div class="grid md:grid-cols-3 gap-8 pt-8 border-t border-resin-forest/10">
-                    <div
-                        bind:this={elementRefs['privacy1']}
-                        data-element="privacy1"
-                        class="space-y-4 transition-all duration-700 hover:scale-105 {animatedElements['privacy1'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
-                    >
-                        <div class="flex justify-center">
-                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Lock class="w-6 h-6 text-resin-forest" />
-                            </div>
-                        </div>
-                        <h3 class="font-bold text-resin-charcoal">End-to-End Encrypted</h3>
-                        <p class="text-sm text-resin-earth/70">All your notes, plans, and reflections are encrypted on your device. We can't see them, even if we wanted to.</p>
-                    </div>
-                    <div
-                        bind:this={elementRefs['privacy2']}
-                        data-element="privacy2"
-                        class="space-y-4 transition-all duration-700 hover:scale-105 {animatedElements['privacy2'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
-                        style="transition-delay: 100ms"
-                    >
-                        <div class="flex justify-center">
-                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Shield class="w-6 h-6 text-resin-forest" />
-                            </div>
-                        </div>
-                        <h3 class="font-bold text-resin-charcoal">No Tracking. No Selling.</h3>
-                        <p class="text-sm text-resin-earth/70">We never sell your data or use it for ad targeting. Your thoughts belong to you, not to advertisers.</p>
-                    </div>
-                    <div
-                        bind:this={elementRefs['privacy3']}
-                        data-element="privacy3"
-                        class="space-y-4 transition-all duration-700 hover:scale-105 {animatedElements['privacy3'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}"
-                        style="transition-delay: 200ms"
-                    >
-                        <div class="flex justify-center">
-                            <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Smartphone class="w-6 h-6 text-resin-forest" />
-                            </div>
-                        </div>
-                        <h3 class="font-bold text-resin-charcoal">Privacy by Default</h3>
-                        <p class="text-sm text-resin-earth/70">No accounts. No logins. No permissions. Your data stays on your device unless you choose to sync.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Final CTA -->
-    <section
-        bind:this={sectionRefs['cta']}
-        data-section="cta"
-        class="mt-16 md:mt-32 mb-16 md:mb-20 px-4 md:px-0 text-center space-y-6 md:space-y-10 transition-all duration-700 {animatedSections['cta'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}"
-    >
-        <h2
-            class="text-3xl md:text-6xl font-bold text-resin-charcoal font-serif max-w-2xl mx-auto text-balance"
-        >
-            What matters deserves your focus.
-        </h2>
-        <p class="text-base md:text-lg text-resin-earth/70 max-w-xl mx-auto">Stop letting distractions win. Start actually finishing what you know needs to be done. Try Resin for free today.</p>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-                href="/login?next=/"
-                class="group relative inline-flex items-center justify-center px-10 py-5 bg-resin-forest text-white rounded-full font-semibold text-lg hover:bg-resin-charcoal transition-all duration-500 shadow-premium hover:shadow-2xl hover:-translate-y-1 w-full sm:w-auto"
-            >
-                Start Free on Web
-                <svg
-                    class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                >
-                    <path
-                        fill-rule="evenodd"
-                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                        clip-rule="evenodd"
-                    />
-                </svg>
-            </a>
-            <a
-                href="https://testflight.apple.com/join/yV53qa1z"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="group relative inline-flex items-center justify-center px-10 py-5 bg-resin-charcoal/10 text-resin-charcoal rounded-full font-semibold text-lg hover:bg-resin-amber hover:text-white transition-all duration-500 border border-resin-charcoal/20 hover:border-resin-amber w-full sm:w-auto"
-            >
-                <Apple class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                Get iOS Beta
-            </a>
-        </div>
-
-        <p class="text-sm text-resin-earth/50 pt-8">No credit card required. Free forever plan available.</p>
     </section>
 </main>

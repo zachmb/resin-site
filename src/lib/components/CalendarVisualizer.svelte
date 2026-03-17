@@ -101,7 +101,7 @@
 
 <div class="flex flex-col bg-white/40 backdrop-blur-xl rounded-2xl border border-resin-forest/10 shadow-premium mb-12">
     <!-- Calendar Header -->
-    <div class="p-4 border-b border-resin-forest/5 bg-white/40 flex items-center justify-between sticky top-[80px] z-30">
+    <div class="px-4 py-2.5 border-b border-resin-forest/5 bg-white/40 flex items-center justify-between sticky top-[80px] z-30">
         <div class="flex items-center gap-4">
             <h2 class="text-lg font-serif font-bold text-resin-charcoal">Calendar View</h2>
             <div class="flex bg-resin-earth/5 p-1 rounded-lg">

@@ -222,7 +222,7 @@
     <!-- Header Section -->
     <div class="mb-12">
         <h1
-            class="text-4xl md:text-6xl font-serif font-bold text-resin-charcoal tracking-tight"
+            class="text-3xl font-serif font-bold text-resin-charcoal"
         >
             The Petrified Forest
         </h1>

@@ -43,6 +43,7 @@
     let savingAmber = $state(false);
     let successNote = $state(false);
     let successAmber = $state(false);
+    let startingFocus = $state(false);
     let autoDays = $state<Record<string, boolean>>({
         Mon: false,
         Tue: false,
@@ -293,35 +294,51 @@
         </div>
 
         <div class="flex items-center gap-8">
-            <!-- Start 1 Hour Focus Button -->
-            <button
-                onclick={async () => {
-                    try {
-                        const res = await fetch("/api/focus", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                title: "Quick Focus Block",
-                                durationMinutes: 60,
-                            }),
-                        });
-                        const data = await res.json();
-                        if (data.status === "success") {
-                            // Show success feedback
-                            console.log("Focus session started");
-                        }
-                    } catch (err) {
-                        console.error("Failed to start focus session:", err);
-                    }
-                }}
-                class="px-5 py-2.5 bg-resin-amber text-white rounded-xl text-xs font-bold hover:bg-resin-amber/90 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap"
-                title="Start a 1-hour focus block on your phone"
-            >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Start 1h
-            </button>
+            <!-- Focus Section with Label and Button -->
+            <div class="flex items-end gap-3">
+                <div class="text-center">
+                    <p class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1">
+                        Quick Focus
+                    </p>
+                    <button
+                        onclick={async () => {
+                            if (startingFocus) return;
+                            startingFocus = true;
+                            try {
+                                const res = await fetch("/api/focus", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        title: "Quick Focus Block",
+                                        durationMinutes: 60,
+                                    }),
+                                });
+                                const data = await res.json();
+                                if (data.status === "success") {
+                                    await goto("/focus");
+                                }
+                            } catch (err) {
+                                console.error("Failed to start focus session:", err);
+                            } finally {
+                                startingFocus = false;
+                            }
+                        }}
+                        disabled={startingFocus}
+                        class="px-5 py-2.5 bg-resin-amber text-white rounded-xl text-xs font-bold hover:bg-resin-amber/90 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed"
+                        title="Start a 1-hour focus block on your phone"
+                    >
+                        {#if startingFocus}
+                            <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                            Starting...
+                        {:else}
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Start 1h
+                        {/if}
+                    </button>
+                </div>
+            </div>
 
             <div class="w-px h-8 bg-resin-forest/10"></div>
 

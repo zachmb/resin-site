@@ -687,6 +687,48 @@ export const actions: Actions = {
         return { success: true };
     },
 
+    shiftSingleTask: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const data = await request.formData();
+        const sessionId = data.get('sessionId')?.toString();
+        const taskId = data.get('taskId')?.toString();
+        const offsetMinutes = parseInt(data.get('offsetMinutes')?.toString() || '0', 10);
+
+        if (!sessionId || !taskId) return fail(400, { error: 'Missing fields' });
+
+        // Verify ownership
+        const { data: check } = await supabase
+            .from('amber_sessions')
+            .select('id')
+            .eq('id', sessionId)
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (!check) return fail(401, { error: 'Unauthorized' });
+
+        // Fetch current task times
+        const { data: task } = await supabase
+            .from('amber_tasks')
+            .select('start_time, end_time')
+            .eq('id', taskId)
+            .eq('amber_session_id', sessionId)
+            .single();
+
+        if (!task?.start_time) return { success: true }; // no-op if no times
+
+        const newStart = new Date(new Date(task.start_time).getTime() + offsetMinutes * 60000).toISOString();
+        const newEnd = task.end_time ? new Date(new Date(task.end_time).getTime() + offsetMinutes * 60000).toISOString() : null;
+
+        await supabase
+            .from('amber_tasks')
+            .update({ start_time: newStart, end_time: newEnd, updated_at: new Date().toISOString() })
+            .eq('id', taskId);
+
+        return { success: true };
+    },
+
     updateIntensity: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
@@ -697,6 +739,7 @@ export const actions: Actions = {
 
         if (!sessionId) return fail(400, { error: 'Missing session ID' });
 
+        // Update session intensity
         const { error } = await supabase
             .from('amber_sessions')
             .update({ intensity })
@@ -706,6 +749,26 @@ export const actions: Actions = {
         if (error) {
             console.error('Error updating intensity:', error);
             return fail(500, { error: 'Failed to update intensity' });
+        }
+
+        // Calculate tier and apply tier-based rules to all tasks
+        const tier = intensity < 0.25 ? 0 : intensity < 0.5 ? 1 : intensity < 0.75 ? 2 : 3;
+        const { data: tasks } = await supabase
+            .from('amber_tasks')
+            .select('id')
+            .eq('amber_session_id', sessionId);
+
+        for (const task of tasks || []) {
+            const updates: any = { updated_at: new Date().toISOString() };
+            if (tier === 0) { updates.requires_focus = false; updates.requires_camera_verification = false; }
+            else if (tier === 1) { updates.requires_focus = true; updates.requires_camera_verification = false; }
+            else if (tier === 2) { updates.requires_focus = true; /* keep existing camera */ }
+            else { updates.requires_focus = true; updates.requires_camera_verification = true; }
+
+            await supabase
+                .from('amber_tasks')
+                .update(updates)
+                .eq('id', task.id);
         }
 
         return { success: true };

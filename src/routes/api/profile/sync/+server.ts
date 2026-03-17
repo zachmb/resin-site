@@ -48,7 +48,7 @@ export const POST = async ({ request }: RequestEvent) => {
 
         // 3. Fetch forest health and other profile data
         const { data: profile } = await admin.from('profiles')
-            .select('forest_health, widget_enabled')
+            .select('forest_health, widget_enabled, unlocked_tree_ids, hardened_mode_enabled')
             .eq('id', user.id)
             .single();
 
@@ -60,7 +60,9 @@ export const POST = async ({ request }: RequestEvent) => {
             longest_streak_at: longestStreakAt,
             last_active_date: new Date().toISOString(),
             forest_health: profile?.forest_health ?? 100,
-            widget_enabled: profile?.widget_enabled ?? true
+            widget_enabled: profile?.widget_enabled ?? true,
+            unlocked_tree_ids: profile?.unlocked_tree_ids ?? [],
+            hardened_mode_enabled: profile?.hardened_mode_enabled ?? false
         });
     } catch (err) {
         console.error('[api/profile/sync] Error:', err);

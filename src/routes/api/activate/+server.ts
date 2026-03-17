@@ -29,6 +29,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public'
 import {
     SUPABASE_SERVICE_ROLE_KEY,
     DEEPSEEK_API_KEY,
+    GEMINI_API_KEY,
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
 } from '$env/static/private'
@@ -167,25 +168,22 @@ async function createCalendarEvent(
     return null
 }
 
-// ── DeepSeek helper ────────────────────────────────────────────────────────────
+// ── AI Planning helpers ────────────────────────────────────────────────────────────
 
-async function callDeepSeek(
-    rawText: string,
-    freeBusy: string,
-    intensity: number,
+/** Generate system prompt for AI planning */
+function getSystemPrompt(
     startHour: number,
     endHour: number,
     timezone: string,
+    freeBusy: string,
     userPreferences: string
-): Promise<DeepSeekTask> {
+): string {
     const now = new Date().toLocaleString('en-US', { timeZone: timezone, hour12: false })
-    const pctLabel = Math.round(intensity * 100)
-
     const prefsAppend = userPreferences.trim()
         ? `\n\n# USER PREFERENCE SIGNALS\n${userPreferences.trim()}`
         : ''
 
-    const systemPrompt = `# MISSION
+    return `# MISSION
 You are the Lead Mentor of RESIN, a sophisticated productivity ecosystem. Your objective is not just to schedule tasks, but to architect a user's life according to their biology, true intent, and long-term well-being. You translate chaotic human thoughts into a prioritized, energy-aware "Amber Plan."
 
 # OPERATIONAL PRINCIPLES
@@ -227,7 +225,13 @@ FREE/BUSY CALENDAR DATA:
 ${freeBusy}${prefsAppend}
 
 OUTPUT ONLY VALID JSON. NO MARKDOWN. NO CODE BLOCKS.`
+}
 
+/** Call DeepSeek API */
+async function callDeepSeek(
+    rawText: string,
+    systemPrompt: string
+): Promise<DeepSeekTask> {
     const res = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
@@ -247,6 +251,77 @@ OUTPUT ONLY VALID JSON. NO MARKDOWN. NO CODE BLOCKS.`
     const completion = await res.json()
     const raw = completion.choices?.[0]?.message?.content ?? ''
     return JSON.parse(raw) as DeepSeekTask
+}
+
+/** Call Gemini API as fallback */
+async function callGemini(
+    rawText: string,
+    systemPrompt: string
+): Promise<DeepSeekTask> {
+    if (!GEMINI_API_KEY) {
+        throw new Error('Gemini API key not configured')
+    }
+
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+        body: JSON.stringify({
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: systemPrompt },
+                        { text: rawText },
+                    ],
+                },
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 1024,
+                responseMimeType: 'application/json',
+            },
+        }),
+    })
+
+    if (!res.ok) throw new Error(`Gemini error ${res.status}: ${await res.text()}`)
+    const completion = await res.json()
+    const raw = completion.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    return JSON.parse(raw) as DeepSeekTask
+}
+
+/** Try DeepSeek with timeout; fall back to Gemini on failure */
+async function callDeepSeekWithFallback(
+    rawText: string,
+    systemPrompt: string
+): Promise<{ task: DeepSeekTask; service: 'deepseek' | 'gemini' }> {
+    const timeoutMs = 10000 // 10 second timeout
+    let deepseekError: Error | null = null
+
+    try {
+        // Race between DeepSeek call and timeout
+        const deepseekPromise = callDeepSeek(rawText, systemPrompt)
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('DeepSeek timeout')), timeoutMs)
+        )
+
+        const task = await Promise.race([deepseekPromise, timeoutPromise])
+        console.log('[activate] ✅ DeepSeek succeeded')
+        return { task, service: 'deepseek' }
+    } catch (err) {
+        deepseekError = err as Error
+        console.warn(`[activate] ⚠️ DeepSeek failed (${deepseekError.message}), falling back to Gemini`)
+    }
+
+    try {
+        const task = await callGemini(rawText, systemPrompt)
+        console.log('[activate] ✅ Gemini fallback succeeded')
+        return { task, service: 'gemini' }
+    } catch (geminiError) {
+        console.error('[activate] ❌ Both DeepSeek and Gemini failed')
+        throw new Error(
+            `AI planning failed: DeepSeek (${deepseekError?.message}) → Gemini (${(geminiError as Error)?.message})`
+        )
+    }
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -358,8 +433,10 @@ export const POST = async ({ request }: RequestEvent) => {
         const learnedInsights = await computeUserInsights(user.id)
         const enrichedPreferences = [learnedInsights, user_preferences].filter(Boolean).join('\n\n')
 
-        // 4. Call DeepSeek
-        const plan = await callDeepSeek(raw_text, freeBusy, intensity, start_hour, end_hour, timezone, enrichedPreferences)
+        // 4. Generate system prompt and call DeepSeek (with Gemini fallback)
+        const systemPrompt = getSystemPrompt(start_hour, end_hour, timezone, freeBusy, enrichedPreferences)
+        const { task: plan, service } = await callDeepSeekWithFallback(raw_text, systemPrompt)
+        console.log(`[activate] Used ${service} for plan generation`)
 
         // 5. Create Google Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone)

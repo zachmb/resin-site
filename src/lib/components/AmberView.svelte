@@ -3,11 +3,13 @@
     import { page } from "$app/stores";
     import { invalidateAll, goto } from "$app/navigation";
     import { fly, fade } from "svelte/transition";
+    import { onDestroy } from "svelte";
     import SessionCelebration from './SessionCelebration.svelte';
     import AmberIgniteRitual from './AmberIgniteRitual.svelte';
     import ForestDecayAnimation from './ForestDecayAnimation.svelte';
     import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
     import CalendarVisualizer from './CalendarVisualizer.svelte';
+    import AmberCalendar from './AmberCalendar.svelte';
     import { setCache, invalidateCache, clearCache } from '$lib/cache';
 
     let { profile, recentSessions = [], externalEvents = [], executionStats = null } = $props<{
@@ -32,6 +34,17 @@
     let dateToClear = $state<Date | null>(null);
     let clearingDate = $state<string | null>(null);
     let schedulingSessionIds = $state<Set<string>>(new Set());
+    let schedulingStep = $state(0);
+    let schedulingStepInterval: ReturnType<typeof setInterval> | null = null;
+    let justCompletedSessionId = $state<string | null>(null);
+    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+
+    const SCHEDULING_STEPS = [
+        { label: 'Analyzing your note...', icon: '📖' },
+        { label: 'Checking your calendar...', icon: '📅' },
+        { label: 'Building your plan...', icon: '🧠' },
+        { label: 'Creating calendar event...', icon: '✅' },
+    ];
 
     // Pre-select session from URL query parameter or auto-select first
     $effect(() => {
@@ -52,13 +65,47 @@
         }
     });
 
-    // Auto-remove from scheduling when tasks appear
+    // Auto-remove from scheduling when tasks appear, show success state
     $effect(() => {
         for (const sessionId of schedulingSessionIds) {
             const session = recentSessions.find(s => s.id === sessionId);
-            if (session && session.amber_tasks && session.amber_tasks.length > 0) {
+            if (session?.amber_tasks?.length > 0) {
                 schedulingSessionIds.delete(sessionId);
+                justCompletedSessionId = sessionId;
+                setTimeout(() => { justCompletedSessionId = null; }, 2500);
             }
+        }
+    });
+
+    // Polling to refresh session data while scheduling
+    $effect(() => {
+        if (schedulingSessionIds.size > 0 && !pollingInterval) {
+            pollingInterval = setInterval(() => invalidateAll(), 3000);
+        } else if (schedulingSessionIds.size === 0 && pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+    });
+
+    // Cleanup polling on component destroy
+    onDestroy(() => {
+        if (pollingInterval) clearInterval(pollingInterval);
+        if (schedulingStepInterval) clearInterval(schedulingStepInterval);
+    });
+
+    // Step animation while scheduling
+    $effect(() => {
+        if (isSelectedSessionScheduling) {
+            schedulingStep = 0;
+            schedulingStepInterval = setInterval(() => {
+                schedulingStep = Math.min(schedulingStep + 1, SCHEDULING_STEPS.length - 1);
+            }, 4000);
+        } else {
+            if (schedulingStepInterval) {
+                clearInterval(schedulingStepInterval);
+                schedulingStepInterval = null;
+            }
+            schedulingStep = 0;
         }
     });
 
@@ -83,12 +130,39 @@
     let showDeleteModal = $state(false);
     let deleteFormRef = $state<HTMLFormElement | null>(null);
     let adjustmentSaveTimeout: ReturnType<typeof setTimeout>;
+    let aiPickedDuration = $state(0);
+    let editingTaskOffset = $state(0);
 
     const intensityLabels = ['Relaxed', 'Focused', 'Strict', 'Max'];
     const intensityColors = ['#2B4634', '#D97706', '#EA580C', '#DC2626'];
 
     const intensityLabel = $derived(intensityLabels[Math.min(3, Math.floor(intensityValue / 0.25))]);
     const intensityColor = $derived(intensityColors[Math.min(3, Math.floor(intensityValue / 0.25))]);
+
+    const intensityTier = $derived(
+        intensityValue < 0.25 ? 0 : intensityValue < 0.5 ? 1 : intensityValue < 0.75 ? 2 : 3
+    );
+
+    const intensityConfigs = [
+        { label: 'Gentle', color: '#2B4634', icon: '🌿', status: 'No blocking or photo proof', blocking: false, photo: false },
+        { label: 'Moderate', color: '#D97706', icon: '⚡', status: 'Screen time blocking enabled', blocking: true, photo: false },
+        { label: 'Firm', color: '#EA580C', icon: '🔥', status: 'Blocking + photo proof for physical tasks', blocking: true, photo: false },
+        { label: 'Maximum', color: '#92400E', icon: '🔒', status: 'All tasks: blocking + photo proof required', blocking: true, photo: true }
+    ];
+    const ic = $derived(intensityConfigs[intensityTier]);
+
+    const formatOffset = (mins: number) => {
+        if (mins === 0) return 'No shift';
+        const abs = Math.abs(mins), h = Math.floor(abs/60), m = abs%60;
+        const label = h > 0 && m > 0 ? `${h}h ${m}m` : h > 0 ? `${h}h` : `${m}m`;
+        return mins > 0 ? `+${label}` : `-${label}`;
+    };
+
+    const durationPresets = $derived.by(() => {
+        const base = aiPickedDuration || totalDuration;
+        const step = base < 20 ? 5 : base < 45 ? 10 : base < 90 ? 15 : 30;
+        return [-2,-1,0,1,2].map(n => base + n * step).filter(v => v >= 5);
+    });
 
     const formatDuration = (mins: number) => {
         const h = Math.floor(mins / 60), m = mins % 60;
@@ -183,7 +257,7 @@
 
     const isSelectedSessionScheduling = $derived(
         selectedSession &&
-        selectedSession.status === 'draft' &&
+        (selectedSession.status === 'draft' || selectedSession.status === 'processing') &&
         (!selectedSession.amber_tasks || selectedSession.amber_tasks.length === 0) &&
         schedulingSessionIds.has(selectedSession.id)
     );
@@ -209,6 +283,8 @@
             const firstTask = selectedSession.amber_tasks?.[0];
             startTimeDate = firstTask?.start_time ? firstTask.start_time.slice(0, 16) : '';
             startTimeOffset = 0;
+            // Reset aiPickedDuration on session change
+            aiPickedDuration = 0;
         }
     });
 
@@ -220,6 +296,16 @@
             formData.append('sessionId', selectedSession.id);
             formData.append('intensity', intensityValue.toString());
             await fetch('?/updateIntensity', { method: 'POST', body: formData });
+
+            // Optimistically update task badges in selectedSession
+            if (selectedSession) {
+                for (const task of selectedSession.amber_tasks || []) {
+                    if (intensityTier === 0) { task.requires_focus = false; task.requires_camera_verification = false; }
+                    else if (intensityTier === 1) { task.requires_focus = true; task.requires_camera_verification = false; }
+                    else if (intensityTier === 2) { task.requires_focus = true; /* camera unchanged */ }
+                    else { task.requires_focus = true; task.requires_camera_verification = true; }
+                }
+            }
         } finally {
             isSavingAdjustments = false;
         }
@@ -509,6 +595,24 @@
                                                     style="min-height: auto; height: {Math.min(200, Math.max(50, editingDescription.split('\n').length * 20 + 30))}px"
                                                 />
                                             </div>
+                                            <!-- Task Duration Slider -->
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
+                                                    Length: <span class="font-mono text-resin-forest">{editingDuration}m</span>
+                                                </label>
+                                                <input type="range" min="5" max="240" step="5" bind:value={editingDuration}
+                                                       class="w-full mt-1" style="accent-color: #2B4634" />
+                                            </div>
+                                            <!-- Task Time Offset Slider -->
+                                            {#if task.start_time}
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
+                                                    When: <span class="font-mono text-amber-600">{editingTaskOffset === 0 ? 'Original' : editingTaskOffset > 0 ? `${editingTaskOffset}m later` : `${Math.abs(editingTaskOffset)}m earlier`}</span>
+                                                </label>
+                                                <input type="range" min="-120" max="120" step="5" bind:value={editingTaskOffset}
+                                                       class="w-full mt-1" style="accent-color: #D97706" />
+                                            </div>
+                                            {/if}
                                             <div class="flex gap-2 pt-2">
                                                 <button
                                                     onclick={async () => {
@@ -530,6 +634,23 @@
                                                                 task.title = editingTitle;
                                                                 task.description = editingDescription;
                                                                 task.estimated_minutes = editingDuration;
+
+                                                                // Handle time offset if provided
+                                                                if (editingTaskOffset !== 0 && task.start_time) {
+                                                                    const offsetForm = new FormData();
+                                                                    offsetForm.append('sessionId', selectedSession.id);
+                                                                    offsetForm.append('taskId', task.id);
+                                                                    offsetForm.append('offsetMinutes', editingTaskOffset.toString());
+                                                                    await fetch('?/shiftSingleTask', { method: 'POST', body: offsetForm });
+
+                                                                    // Update task times in-place
+                                                                    task.start_time = new Date(new Date(task.start_time).getTime() + editingTaskOffset * 60000).toISOString();
+                                                                    if (task.end_time) {
+                                                                        task.end_time = new Date(new Date(task.end_time).getTime() + editingTaskOffset * 60000).toISOString();
+                                                                    }
+                                                                    editingTaskOffset = 0;
+                                                                }
+
                                                                 editingTaskId = null;
                                                             }
                                                         } finally {
@@ -584,6 +705,7 @@
                                                     editingTitle = task.title;
                                                     editingDescription = task.description || '';
                                                     editingDuration = task.estimated_minutes;
+                                                    editingTaskOffset = 0;
                                                 }}
                                                 class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-resin-earth/50 hover:text-resin-charcoal hover:bg-black/5 rounded text-xs font-bold"
                                             >
@@ -611,25 +733,42 @@
 
                             <!-- Intensity -->
                             <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-medium text-resin-earth/70">Enforcement Intensity</span>
-                                    <span class="text-xs font-bold" style="color: {intensityColor}">
-                                        {intensityLabel} · {Math.round(intensityValue * 100)}%
-                                    </span>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg">{ic.icon}</span>
+                                        <span class="text-sm font-bold text-resin-charcoal">{ic.label}</span>
+                                    </div>
+                                    <span class="text-xs font-mono text-resin-forest font-bold">{Math.round(intensityValue * 100)}%</span>
                                 </div>
+                                <p class="text-xs text-resin-earth/60">{ic.status}</p>
                                 <input type="range" min="0" max="1" step="0.05"
                                        bind:value={intensityValue}
                                        oninput={() => {
                                            clearTimeout(adjustmentSaveTimeout);
                                            adjustmentSaveTimeout = setTimeout(() => saveIntensity(), 800);
                                        }}
-                                       class="w-full accent-resin-forest" />
-                                <!-- Quick Preset Buttons -->
+                                       style="accent-color: {ic.color}"
+                                       class="w-full" />
+                                <!-- Intensity Tier Badges -->
+                                <div class="flex gap-2 text-xs font-bold">
+                                    {#if ic.blocking}
+                                        <span class="px-2 py-1 rounded bg-amber-100 border border-amber-200 text-amber-700">🛡 Blocking</span>
+                                    {/if}
+                                    {#if ic.photo}
+                                        <span class="px-2 py-1 rounded bg-orange-100 border border-orange-200 text-orange-700">📸 Photo Proof</span>
+                                    {/if}
+                                </div>
+                                <!-- Preset Buttons -->
                                 <div class="flex gap-2">
-                                    <button onclick={() => { intensityValue = 0.25; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-resin-forest/10 text-resin-forest hover:bg-resin-forest/20 transition-colors">Gentle</button>
-                                    <button onclick={() => { intensityValue = 0.5; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-resin-amber/10 text-amber-600 hover:bg-resin-amber/20 transition-colors">Moderate</button>
-                                    <button onclick={() => { intensityValue = 0.75; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors">Firm</button>
-                                    <button onclick={() => { intensityValue = 1.0; saveIntensity(); }} class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded bg-red-100 text-red-600 hover:bg-red-200 transition-colors">Max</button>
+                                    {#each intensityConfigs as config, idx}
+                                        <button
+                                            onclick={() => { intensityValue = idx === 0 ? 0.25 : idx === 1 ? 0.5 : idx === 2 ? 0.75 : 1.0; saveIntensity(); }}
+                                            class="flex-1 text-[11px] font-bold px-2 py-1.5 rounded transition-all border-2 {intensityTier === idx ? 'border-current text-white' : 'border-transparent text-white/70 hover:text-white'}"
+                                            style="background-color: {intensityTier === idx ? config.color : config.color + '40'}; border-color: {intensityTier === idx ? config.color : 'transparent'}"
+                                        >
+                                            {config.label}
+                                        </button>
+                                    {/each}
                                 </div>
                             </div>
 
@@ -639,20 +778,23 @@
                                     <span class="text-xs font-medium text-resin-earth/70">Total Duration</span>
                                     <span class="text-xs font-bold text-resin-forest">{formatDuration(totalDuration)}</span>
                                 </div>
-                                <input type="range" min="5" max="480" step="5"
+                                <input type="range" min="5" max={Math.max(240, (aiPickedDuration || totalDuration) * 2)} step="5"
                                        bind:value={totalDuration}
                                        oninput={() => {
                                            clearTimeout(adjustmentSaveTimeout);
                                            adjustmentSaveTimeout = setTimeout(() => scaleDurations(), 800);
                                        }}
                                        class="w-full accent-resin-forest" />
-                                <!-- Quick Duration Buttons -->
+                                <!-- Smart Duration Presets -->
                                 <div class="flex gap-2 flex-wrap">
-                                    <button onclick={() => { totalDuration = 25; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">25m</button>
-                                    <button onclick={() => { totalDuration = 45; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">45m</button>
-                                    <button onclick={() => { totalDuration = 60; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">1h</button>
-                                    <button onclick={() => { totalDuration = 90; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">1.5h</button>
-                                    <button onclick={() => { totalDuration = 120; scaleDurations(); }} class="text-[11px] font-bold px-2.5 py-1.5 rounded bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15 transition-colors">2h</button>
+                                    {#each durationPresets as preset}
+                                        <button
+                                            onclick={() => { totalDuration = preset; scaleDurations(); }}
+                                            class="text-[11px] font-bold px-2.5 py-1.5 rounded transition-all {totalDuration === preset ? 'bg-resin-forest text-white shadow-sm' : 'bg-resin-earth/10 text-resin-earth/70 hover:bg-resin-earth/15'}"
+                                        >
+                                            {formatDuration(preset)}
+                                        </button>
+                                    {/each}
                                 </div>
                             </div>
 
@@ -672,8 +814,8 @@
                                            class="w-full accent-amber-500" />
                                     <div class="flex justify-between text-xs text-resin-earth/40">
                                         <span>-2h</span>
-                                        <span class="font-semibold text-amber-600">
-                                            {startTimeOffset === 0 ? 'No shift' : startTimeOffset > 0 ? `+${startTimeOffset}m` : `${startTimeOffset}m`}
+                                        <span class="font-semibold text-amber-600 font-mono">
+                                            {formatOffset(startTimeOffset)}
                                         </span>
                                         <span>+2h</span>
                                     </div>
@@ -973,16 +1115,40 @@
         </div>
     </div>
 {:else}
-        <div class="h-full" in:fade={{ duration: 200 }}>
-            <CalendarVisualizer 
-                sessions={recentSessions} 
-                externalEvents={externalEvents || []}
-                selectedSessionIds={selectedSessionIds}
-                onSelectSession={(id) => {
-                    selectedSessionId = id;
-                    viewMode = 'list';
+        <div class="h-full p-4" in:fade={{ duration: 200 }}>
+            <AmberCalendar
+                sessions={recentSessions}
+                onReschedule={async (task, newStart, newEnd) => {
+                    try {
+                        // Get auth token from page data
+                        const session = $page.data.session;
+                        if (!session?.access_token) {
+                            console.error('Not authenticated');
+                            return;
+                        }
+
+                        const response = await fetch('/api/amber/reschedule', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`
+                            },
+                            body: JSON.stringify({
+                                task_id: task.id,
+                                new_start_time: newStart,
+                                new_end_time: newEnd
+                            })
+                        });
+                        if (response.ok) {
+                            invalidateAll();
+                        } else {
+                            const errorText = await response.text();
+                            console.error('Reschedule failed:', response.status, errorText);
+                        }
+                    } catch (err) {
+                        console.error('Reschedule error:', err);
+                    }
                 }}
-                onToggleSelect={toggleSessionSelect}
                 onClearDay={(day) => {
                     dateToClear = day;
                     showClearConfirm = true;
@@ -995,42 +1161,56 @@
 <!-- Clear Day Confirmation Modal -->
 {#if showClearConfirm && dateToClear}
     <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]" in:fade>
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-forest/10" in:fly={{ y: 20 }}>
-            <div class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
-                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white/95 backdrop-blur-sm rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-forest/5" in:fly={{ y: 20 }}>
+            <!-- Icon -->
+            <div class="w-16 h-16 bg-resin-amber/10 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                <svg class="w-8 h-8 text-resin-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </div>
-            <h3 class="text-xl font-serif font-bold text-resin-charcoal mb-2">Clear this day?</h3>
-            <p class="text-sm text-resin-earth/70 mb-8 leading-relaxed">
-                This will delete all Amber plans for <strong>{dateToClear.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</strong>. Calendar events won't be recoverable.
-            </p>
+
+            <!-- Content -->
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-serif font-bold text-resin-charcoal mb-3">Clear this day?</h3>
+                <p class="text-sm text-resin-earth/70 leading-relaxed">
+                    Remove all Amber plans scheduled for <strong class="text-resin-charcoal">{dateToClear.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</strong>. Calendar events will be deleted.
+                </p>
+            </div>
+
+            <!-- Actions -->
             <div class="flex gap-3">
-                <button 
+                <button
                     onclick={() => showClearConfirm = false}
-                    class="flex-1 px-4 py-3 text-sm font-bold text-resin-earth hover:bg-black/5 rounded-xl transition-all"
+                    disabled={clearingDate !== null}
+                    class="flex-1 px-4 py-3 text-sm font-bold text-resin-earth/70 bg-white/50 hover:bg-white/80 border border-resin-forest/10 rounded-xl transition-all disabled:opacity-50"
                 >
                     Cancel
                 </button>
-                <form 
-                    method="POST" 
-                    action="?/clearDay" 
+                <form
+                    method="POST"
+                    action="?/clearDay"
                     use:enhance={() => {
-                        showClearConfirm = false;
                         clearingDate = dateToClear?.toISOString() || null;
                         return async ({ result }) => {
-                            clearingDate = null;
-                            invalidateAll();
+                            if (result.type === 'success') {
+                                showClearConfirm = false;
+                                clearingDate = null;
+                                await invalidateAll();
+                            } else {
+                                console.error('Clear day action failed:', result);
+                                clearingDate = null;
+                            }
                         };
                     }}
                     class="flex-1"
                 >
-                    <input type="hidden" name="date" value={dateToClear.toISOString()} />
-                    <button 
+                    <input type="hidden" name="date" value={dateToClear?.toISOString() || ''} />
+                    <button
                         type="submit"
-                        class="w-full px-4 py-3 text-sm font-bold bg-red-500 text-white hover:bg-red-600 rounded-xl shadow-lg shadow-red-500/20 transition-all"
+                        disabled={clearingDate !== null}
+                        class="w-full px-4 py-3 text-sm font-bold bg-resin-amber text-white hover:bg-resin-amber/90 rounded-xl shadow-lg shadow-resin-amber/20 transition-all disabled:opacity-50"
                     >
-                        Clear Day
+                        {clearingDate ? 'Clearing...' : 'Clear Day'}
                     </button>
                 </form>
             </div>
@@ -1038,27 +1218,53 @@
     </div>
 {/if}
 
-<!-- Session Scheduling Working Modal -->
-{#if isSelectedSessionScheduling}
-    <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]" in:fade>
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-amber/10" in:fly={{ y: 20 }}>
-            <div class="flex flex-col items-center gap-6">
-                <div class="w-16 h-16 bg-resin-amber/10 rounded-2xl flex items-center justify-center">
-                    <svg class="w-8 h-8 text-resin-amber animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+<!-- Session Scheduling Working Modal with Progress -->
+{#if isSelectedSessionScheduling || justCompletedSessionId === selectedSession?.id}
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100]" transition:fade>
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl" transition:fly={{ y: 20 }}>
+            {#if justCompletedSessionId === selectedSession?.id}
+                <!-- SUCCESS STATE -->
+                <div class="flex flex-col items-center gap-5">
+                    <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-xl font-serif font-bold text-resin-charcoal mb-1">Plan Ready</h3>
+                        <p class="text-sm text-resin-earth/70">
+                            {selectedSession?.display_title || 'Your plan'} is scheduled
+                        </p>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <h3 class="text-lg font-serif font-bold text-resin-charcoal mb-2">Working...</h3>
-                    <p class="text-sm text-resin-earth/70">
-                        {selectedSession?.title || selectedSession?.display_title || 'Your plan'} is being scheduled
-                    </p>
-                    <p class="text-xs text-resin-earth/50 mt-2">
-                        DeepSeek is generating your schedule
-                    </p>
+            {:else}
+                <!-- WORKING STATE -->
+                <div class="flex flex-col items-center gap-5">
+                    <div class="w-16 h-16 bg-resin-amber/10 rounded-2xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-resin-amber animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-serif font-bold text-resin-charcoal mb-1">
+                            {selectedSession?.display_title || 'Your plan'}
+                        </h3>
+                        <!-- Animated step label with key for transition -->
+                        {#key schedulingStep}
+                            <p class="text-sm text-resin-amber font-medium" transition:fade={{ duration: 300 }}>
+                                {SCHEDULING_STEPS[schedulingStep].icon} {SCHEDULING_STEPS[schedulingStep].label}
+                            </p>
+                        {/key}
+                        <!-- Progress dots -->
+                        <div class="flex gap-1 justify-center mt-3">
+                            {#each SCHEDULING_STEPS as _, i}
+                                <div class="h-1.5 rounded-full transition-all duration-500 {i <= schedulingStep ? 'bg-resin-amber w-4' : 'bg-resin-amber/20 w-1.5'}"></div>
+                            {/each}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            {/if}
         </div>
     </div>
 {/if}

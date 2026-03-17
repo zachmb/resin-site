@@ -1,5 +1,6 @@
-import { error, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import { error, redirect, fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
+import { generateForestTrees } from '$lib/forestGenerator';
 
 export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
     try {
@@ -161,6 +162,9 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         ? `Recent tasks ${recentEstimateVariance > 110 ? 'take' : 'finish'} ${Math.abs(recentEstimateVariance - 100)}% ${recentEstimateVariance > 110 ? 'longer' : 'faster'}`
         : 'Not enough data';
 
+    // Generate actual forest trees from sessions (synced with iOS app)
+    const forestTrees = generateForestTrees(sessions, profile.forest_health || 100);
+
     // Taste Profile: Process feedback for emotional landscape (already fetched)
     const feelingCounts: Record<string, number> = {};
     const enjoyedThings: { text: string; date: string }[] = [];
@@ -204,6 +208,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         return {
             profile,
             sessions: sessions || [],
+            forestTrees,
             statusCounts,
             minutesByDay,
             totalFocusMinutes,
@@ -215,5 +220,113 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
     } catch (err) {
         console.error('[Forest Load Error]', err);
         throw error(500, 'Failed to load forest page. Please try again.');
+    }
+};
+
+export const actions: Actions = {
+    unlockTree: async ({ request, locals: { supabase, getSession } }) => {
+        try {
+            const session = await getSession();
+            if (!session) return fail(401, { error: 'Unauthorized' });
+
+            const userId = session.user?.id;
+            if (!userId) return fail(401, { error: 'Unauthorized' });
+
+            const formData = await request.formData();
+            const speciesId = formData.get('speciesId')?.toString();
+
+            if (!speciesId) {
+                return fail(400, { error: 'Missing species ID' });
+            }
+
+            // Fetch current profile data
+            const { data: profile, error: fetchError } = await supabase
+                .from('profiles')
+                .select('total_stones, unlocked_tree_ids')
+                .eq('id', userId)
+                .single();
+
+            if (fetchError || !profile) {
+                return fail(500, { error: 'Failed to fetch profile' });
+            }
+
+            // Parse unlocked trees
+            let unlockedTrees = Array.isArray(profile.unlocked_tree_ids)
+                ? profile.unlocked_tree_ids
+                : (profile.unlocked_tree_ids ? JSON.parse(profile.unlocked_tree_ids as any) : []);
+
+            if (!Array.isArray(unlockedTrees)) {
+                unlockedTrees = [];
+            }
+
+            // Check if already unlocked
+            if (unlockedTrees.includes(speciesId)) {
+                return fail(400, { error: 'Tree already unlocked' });
+            }
+
+            // Get tree cost from treeSpecies
+            const treeCosts: Record<string, number> = {
+                amber: 0, stone: 0, sprout: 0,
+                pine: 5, oak: 10, cherry: 20, maple: 25, birch: 30, willow: 35, jasmine: 40, lavender: 45,
+                redwood: 50, bamboo: 60, palm: 70, baobab: 80, sunflower: 90, iris: 100, sakura: 110, cypress: 130,
+                moonlight: 150, starry: 170, aurora: 180, ancient: 200,
+                crystalline: 250, phoenix: 300, eternal: 350,
+                rockStack: 0
+            };
+
+            const cost = treeCosts[speciesId] || 0;
+
+            // Free trees don't need stones
+            if (cost === 0) {
+                unlockedTrees.push(speciesId);
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({
+                        unlocked_tree_ids: unlockedTrees,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (updateError) {
+                    return fail(500, { error: 'Failed to unlock tree' });
+                }
+
+                return { success: true, message: `${speciesId} unlocked!` };
+            }
+
+            // Check if user has enough stones
+            if ((profile.total_stones || 0) < cost) {
+                return fail(400, {
+                    error: `Not enough stones. Need ${cost}, have ${profile.total_stones || 0}`
+                });
+            }
+
+            // Deduct stones and add tree to unlocked list
+            unlockedTrees.push(speciesId);
+            const newStoneCount = (profile.total_stones || 0) - cost;
+
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({
+                    total_stones: newStoneCount,
+                    unlocked_tree_ids: unlockedTrees,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId);
+
+            if (updateError) {
+                return fail(500, { error: 'Failed to unlock tree' });
+            }
+
+            return {
+                success: true,
+                message: `Tree unlocked! -${cost} 🪨`,
+                newStoneCount,
+                unlockedTrees
+            };
+        } catch (err) {
+            console.error('[Unlock Tree Error]:', err);
+            return fail(500, { error: 'An unexpected error occurred' });
+        }
     }
 };

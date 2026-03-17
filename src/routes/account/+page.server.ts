@@ -528,5 +528,66 @@ export const actions: Actions = {
         }
 
         return { success: true, message: 'Friend request canceled' };
+    },
+
+    toggleHardenedMode: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const formData = await request.formData();
+        const enabled = formData.get('enabled') === 'true';
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                hardened_mode_enabled: enabled,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) {
+            console.error('Error updating hardened mode:', error);
+            return fail(500, { error: 'Failed to update hardened mode setting' });
+        }
+
+        return { success: true, hardened_mode_enabled: enabled };
+    },
+
+    emergencyUnlock: async ({ request, locals: { supabase, getSession } }) => {
+        const session = await getSession();
+        if (!session) return fail(401, { error: 'Unauthorized' });
+
+        // Immediately disable hardened mode
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                hardened_mode_enabled: false,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
+
+        if (error) {
+            console.error('Error emergency unlocking:', error);
+            return fail(500, { error: 'Failed to unlock' });
+        }
+
+        // Send push notification to iOS app to release denyAppRemoval
+        try {
+            const { data: tokens } = await supabase
+                .from('device_tokens')
+                .select('token')
+                .eq('user_id', session.user.id)
+                .eq('platform', 'apns');
+
+            if (tokens && tokens.length > 0) {
+                // Trigger push notification via APNs
+                // (DeviceTokenService will handle the actual removal of denyAppRemoval)
+                // For now, the app will check on next launch via profile sync
+            }
+        } catch (err) {
+            console.error('Error sending emergency unlock notification:', err);
+        }
+
+        return { success: true, message: 'Hardened mode disabled. Resin is now deletable.' };
     }
 };

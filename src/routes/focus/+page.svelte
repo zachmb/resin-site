@@ -54,23 +54,7 @@
     let isCreatingGroup = $state(false);
 
     onMount(() => {
-        // Try to load from localStorage first for instant display
-        const cachedFocusData = localStorage.getItem('resin_focus_data');
-        if (cachedFocusData) {
-            try {
-                const cached = JSON.parse(cachedFocusData);
-                activeSessions = cached.activeSessions || [];
-                scheduledSessions = cached.scheduledSessions || [];
-                deviceCount = cached.deviceCount || 0;
-                groups = cached.groups || [];
-                friends = cached.friends || [];
-                sharedSessions = cached.sharedSessions || [];
-            } catch {
-                // Cache corrupted, will use server data
-            }
-        }
-
-        // Background refresh to get fresh data
+        // Immediately invalidate and refresh data to show newly created sessions
         const refreshFocusData = async () => {
             try {
                 const response = await fetch('?/refresh');
@@ -78,14 +62,15 @@
                     await invalidateAll();
                 }
             } catch (err) {
-                // Silent error - we already have cached data
+                console.error('Error refreshing focus data:', err);
             }
         };
 
+        // Refresh immediately on mount to show the latest active sessions
         refreshFocusData();
     });
 
-    // Cache data whenever it changes
+    // Cache data for offline access, but always prefer server data on load
     $effect(() => {
         const focusCache = {
             activeSessions,
@@ -96,7 +81,11 @@
             sharedSessions,
             timestamp: Date.now()
         };
-        localStorage.setItem('resin_focus_data', JSON.stringify(focusCache));
+        try {
+            localStorage.setItem('resin_focus_data', JSON.stringify(focusCache));
+        } catch (err) {
+            // Silently fail if localStorage is unavailable
+        }
     });
 
     async function handleCreateGroup() {
@@ -124,7 +113,7 @@
             // Reset and navigate to new group
             showCreateGroupForm = false;
             groupFormData = { name: '', description: '' };
-            window.location.href = `/groups/${result.id}`;
+            window.location.href = `/groups/${result.group.id}`;
         } catch (e) {
             groupFormError = 'An error occurred. Please try again.';
             console.error(e);

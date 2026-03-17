@@ -17,8 +17,13 @@
     let successMessage = $state("");
     let showDocs = $state(false);
     let activeCategory = $state<
-        "profile" | "preferences" | "friends" | "integrations" | "api" | "privacy" | "taste" | "devices"
+        "profile" | "preferences" | "friends" | "integrations" | "api" | "privacy" | "taste" | "devices" | "hardened"
     >("profile");
+
+    // Hardened mode management
+    let showHardenedModal = $state(false);
+    let hardenedConfirmed = $state(false);
+    let showEmergencyUnlock = $state(false);
 
     // Command config management
     let editingCommandType = $state<string | null>(null);
@@ -123,8 +128,9 @@
         { id: "integrations", label: "Integrations", icon: "🔗" },
         { id: "devices", label: "Devices", icon: "📱" },
         { id: "taste", label: "Taste Profile", icon: "✦" },
+        { id: "hardened", label: "No Exit Sessions", icon: "🔒" },
         { id: "api", label: "API", icon: "🔑" },
-        { id: "privacy", label: "Privacy", icon: "🔒" },
+        { id: "privacy", label: "Privacy", icon: "🔐" },
     ] as const;
 
     const feelingIcons: Record<string, string> = {
@@ -1594,7 +1600,205 @@
                         </div>
                     {/if}
                 </div>
+            {:else if activeCategory === "hardened"}
+                <!-- Hardened Mode Content -->
+                <div
+                    class="flex-shrink-0 px-6 py-6 border-b border-resin-forest/5 bg-white/40 space-y-2"
+                >
+                    <h2
+                        class="text-2xl font-serif font-bold text-resin-charcoal"
+                    >
+                        🔒 No Exit Focus Sessions
+                    </h2>
+                    <p class="text-sm text-resin-earth/60">
+                        Lock Resin during focus to prevent uninstalling and switching apps
+                    </p>
+                </div>
+
+                <div
+                    class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
+                >
+                    <div class="bg-gradient-to-br from-resin-amber/10 to-resin-forest/5 rounded-xl p-6 border border-resin-forest/10 space-y-4">
+                        <div>
+                            <h3 class="font-semibold text-resin-charcoal mb-2">What is Hardened Mode?</h3>
+                            <p class="text-sm text-resin-earth/70 leading-relaxed">
+                                When you enable Hardened Mode and start a focus session, Resin becomes un-deletable. The delete button disappears from your home screen. This forces you to complete the session or wait for it to expire before you can remove the app.
+                            </p>
+                        </div>
+                        <div class="pt-2 border-t border-resin-forest/10">
+                            <p class="text-xs text-resin-earth/60 font-medium">💡 This feature uses Apple's Family Controls framework — the same technology as parental controls.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-resin-charcoal">
+                                    {profile?.hardened_mode_enabled ? '✓ Enabled' : 'Disabled'}
+                                </p>
+                                <p class="text-sm text-resin-earth/60">
+                                    {profile?.hardened_mode_enabled
+                                        ? 'Your next focus session will activate hardened mode'
+                                        : 'Click below to enable hardened mode'}
+                                </p>
+                            </div>
+                            {#if profile?.hardened_mode_enabled}
+                                <button
+                                    type="button"
+                                    onclick={() => showEmergencyUnlock = true}
+                                    class="px-4 py-2 text-sm font-semibold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all"
+                                >
+                                    🚨 Emergency Unlock
+                                </button>
+                            {:else}
+                                <button
+                                    type="button"
+                                    onclick={() => showHardenedModal = true}
+                                    class="px-4 py-2 text-sm font-semibold text-white bg-resin-forest hover:bg-resin-forest/90 rounded-lg transition-all"
+                                >
+                                    Enable Hardened Mode
+                                </button>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 space-y-3">
+                        <h4 class="font-semibold text-resin-charcoal text-sm">How it works:</h4>
+                        <ol class="text-sm text-resin-earth/70 space-y-2 list-decimal list-inside">
+                            <li>Enable hardened mode on this page</li>
+                            <li>Start a focus session on your iOS app</li>
+                            <li>Resin becomes un-deletable during the session</li>
+                            <li>When the session ends, you can delete it normally</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-amber-50 rounded-xl p-4 border border-amber-200/50 space-y-2">
+                        <p class="text-xs font-semibold text-amber-900">⚠️ Important:</p>
+                        <p class="text-xs text-amber-800">
+                            If Resin crashes while hardened mode is active, use the Emergency Unlock button above. You can also force-reset your phone, but that will wipe your device.
+                        </p>
+                    </div>
+                </div>
             {/if}
         </div>
     </div>
+
+    <!-- Hardened Mode Confirmation Modal -->
+    {#if showHardenedModal}
+        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" transition:fade>
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+                <div class="bg-gradient-to-r from-resin-forest to-resin-amber p-6">
+                    <h2 class="text-2xl font-bold text-white">🔒 Enable Hardened Mode?</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-resin-charcoal">
+                        Once you enable this, your next focus session will make Resin <strong>un-deletable</strong>. You won't be able to remove the app until the session ends.
+                    </p>
+                    <div class="bg-amber-50 p-4 rounded-lg space-y-2 text-sm">
+                        <p class="font-semibold text-amber-900">This means:</p>
+                        <ul class="list-disc list-inside text-amber-800 space-y-1">
+                            <li>Delete button will be hidden</li>
+                            <li>Can't uninstall during your focus session</li>
+                            <li>Forces full commitment to the session</li>
+                        </ul>
+                    </div>
+                    {#if !hardenedConfirmed}
+                        <p class="text-sm text-resin-earth/60">
+                            Click the button below twice to confirm:
+                        </p>
+                        <button
+                            type="button"
+                            onclick={() => hardenedConfirmed = true}
+                            class="w-full px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition-all"
+                        >
+                            I understand, continue
+                        </button>
+                    {:else}
+                        <form
+                            method="POST"
+                            action="?/toggleHardenedMode"
+                            use:enhance={({ formData }) => {
+                                formData.append('enabled', 'true');
+                                return async ({ result }) => {
+                                    if (result.type === 'success') {
+                                        showHardenedModal = false;
+                                        hardenedConfirmed = false;
+                                        successMessage = 'Hardened mode enabled!';
+                                        setTimeout(() => successMessage = '', 3000);
+                                    }
+                                };
+                            }}
+                            class="space-y-3"
+                        >
+                            <button
+                                type="submit"
+                                class="w-full px-4 py-3 bg-resin-forest hover:bg-resin-forest/90 text-white font-semibold rounded-lg transition-all"
+                            >
+                                ✓ Enable Hardened Mode
+                            </button>
+                            <button
+                                type="button"
+                                onclick={() => {
+                                    showHardenedModal = false;
+                                    hardenedConfirmed = false;
+                                }}
+                                class="w-full px-4 py-3 bg-resin-earth/10 hover:bg-resin-earth/20 text-resin-charcoal font-semibold rounded-lg transition-all"
+                            >
+                                Cancel
+                            </button>
+                        </form>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Emergency Unlock Modal -->
+    {#if showEmergencyUnlock}
+        <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" transition:fade>
+            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+                <div class="bg-gradient-to-r from-red-600 to-red-700 p-6">
+                    <h2 class="text-2xl font-bold text-white">🚨 Emergency Unlock</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-resin-charcoal">
+                        This will immediately disable hardened mode, making Resin deletable again.
+                    </p>
+                    <p class="text-sm text-resin-earth/60">
+                        Use this only if Resin has crashed or you're unable to complete your focus session.
+                    </p>
+                    <form
+                        method="POST"
+                        action="?/emergencyUnlock"
+                        use:enhance={() => {
+                            return async ({ result }) => {
+                                if (result.type === 'success') {
+                                    showEmergencyUnlock = false;
+                                    successMessage = 'Hardened mode disabled. Resin is now deletable.';
+                                    setTimeout(() => successMessage = '', 3000);
+                                    // Reload to update profile
+                                    setTimeout(() => location.reload(), 500);
+                                }
+                            };
+                        }}
+                        class="space-y-3"
+                    >
+                        <button
+                            type="submit"
+                            class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all"
+                        >
+                            Unlock Now
+                        </button>
+                        <button
+                            type="button"
+                            onclick={() => showEmergencyUnlock = false}
+                            class="w-full px-4 py-3 bg-resin-earth/10 hover:bg-resin-earth/20 text-resin-charcoal font-semibold rounded-lg transition-all"
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {/if}
 </main>

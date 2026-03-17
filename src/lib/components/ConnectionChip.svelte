@@ -53,9 +53,9 @@
 		}
 	};
 
-	const colors = connectionColors[connectionType] || connectionColors.relates_to;
-	const label = connectionLabels[connectionType] || connectionType;
-	const direction = isOutgoing ? '→' : '←';
+	const colors = $derived(connectionColors[connectionType] || connectionColors.relates_to);
+	const label = $derived(connectionLabels[connectionType] || connectionType);
+	const direction = $derived(isOutgoing ? '→' : '←');
 </script>
 
 <button

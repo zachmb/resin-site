@@ -283,8 +283,10 @@ export const actions: Actions = {
             return fail(500, { error: `Could not save note: ${error.message}` });
         }
 
-        // Trigger streak record on update too
-        await recordDailyActivity(userId);
+        // Fire streak record in background (non-blocking)
+        recordDailyActivity(userId).catch(err =>
+            console.warn('[notes] Background streak update failed:', err)
+        );
 
         return { success: true, id, title, content };
     },
@@ -317,9 +319,13 @@ export const actions: Actions = {
                 return fail(500, { error: `Could not create note: ${error.message}` });
             }
 
-            // Trigger stone sync for the new note
-            await syncStonesFromNotes(userId);
-            await recordDailyActivity(userId);
+            // Trigger syncs in background (non-blocking)
+            syncStonesFromNotes(userId).catch(err =>
+                console.warn('[notes] Background stone sync failed:', err)
+            );
+            recordDailyActivity(userId).catch(err =>
+                console.warn('[notes] Background streak update failed:', err)
+            );
 
             return { success: true, note: normalizeNote(newNote), isNew: true };
         } else {
@@ -340,7 +346,10 @@ export const actions: Actions = {
                 });
             }
 
-            await recordDailyActivity(userId);
+            // Fire streak update in background (non-blocking)
+            recordDailyActivity(userId).catch(err =>
+                console.warn('[notes] Background streak update failed:', err)
+            );
 
             return { success: true, note: normalizeNote(updatedNote), isNew: false };
         }
@@ -406,10 +415,20 @@ export const actions: Actions = {
         }
 
         try {
-            // Return immediately with success - fire activation in background
-            // This gives the user immediate feedback while AI processes in the background
+            // Create initial amber_sessions entry with 'processing' status
+            // This gives immediate visual feedback on the amber page while AI runs
+            await supabase.from('amber_sessions').insert({
+                id: sessionId,
+                user_id: userId,
+                raw_text: content,
+                display_title: title || 'Processing...',
+                status: 'processing',
+                intensity: 0.5,
+                created_at: new Date().toISOString()
+            });
 
             // Fire the background activation without awaiting
+            // This will update the entry with full details once AI responds
             const activationPromise = runActivationPipeline(userId, sessionId, content, {
                 timezone: 'America/Chicago' // Default or get from profile/request
             }).catch((err: any) => {

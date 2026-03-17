@@ -51,8 +51,8 @@
                 })
                 .eq("id", profile.id);
 
-            message = "✓ Settings saved successfully";
-            setTimeout(() => (message = ""), 3000);
+            message = "✓ Settings saved! Changes will sync to your extension within 60 seconds.";
+            setTimeout(() => (message = ""), 5000);
         } catch (error) {
             message = "Error saving settings";
         } finally {

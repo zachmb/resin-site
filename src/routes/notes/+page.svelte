@@ -91,9 +91,22 @@
                 // Cache the new note list
                 setCache('notes-list', notes, 5 * 60 * 1000);
             }
-            // Reload from server to stay in sync
-            await invalidateAll();
+        } else {
+            // For existing notes, update in place to show changes immediately
+            const noteIndex = notes.findIndex((n: any) => n.id === note.id);
+            if (noteIndex !== -1) {
+                notes[noteIndex] = {
+                    ...notes[noteIndex],
+                    ...note,
+                    updated_at: note.updated_at || new Date().toISOString()
+                };
+                // Force reactivity
+                notes = [...notes];
+            }
         }
+
+        // Always reload from server to stay in sync (for both new and existing notes)
+        await invalidateAll();
     };
 
     const handleSelectNote = (note: any) => {

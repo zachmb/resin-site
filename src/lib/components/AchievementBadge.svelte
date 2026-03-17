@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { LucideIcon } from 'lucide-svelte';
     import * as Icons from 'lucide-svelte';
 
     let {
@@ -18,7 +17,7 @@
         isNew: boolean;
     } = $props();
 
-    const isUnlocked = unlockedAt !== null;
+    const isUnlocked = $derived(unlockedAt !== null);
 
     // Map icon strings to lucide components
     const iconComponent = (iconName: string) => {
@@ -30,7 +29,7 @@
             gem: Icons.Gem,
             diamond: Icons.Diamond,
             leaf: Icons.Leaf,
-            tree: Icons.Tree,
+            tree: Icons.Trees,
             sparkles: Icons.Sparkles,
             sun: Icons.Sun,
             zap: Icons.Zap,
@@ -50,7 +49,7 @@
         });
     };
 
-    const IconComp = iconComponent(icon);
+    const IconComp = $derived(iconComponent(icon));
     const LockIcon = Icons.Lock;
 </script>
 

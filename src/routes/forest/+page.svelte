@@ -1,12 +1,15 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { fade, fly, scale } from "svelte/transition";
+    import { fade, fly, scale, slide } from "svelte/transition";
+    import { invalidateAll } from "$app/navigation";
     import { createSupabaseClient } from "$lib/supabase";
     import { rewardTriggered } from "$lib/rewardStore";
     import UnifiedForestRenderer from "$lib/components/UnifiedForestRenderer.svelte";
     import SimpleTree from "$lib/components/SimpleTree.svelte";
+    import ActualForestRenderer from "$lib/components/ActualForestRenderer.svelte";
     import BonusBreakdown from "$lib/components/BonusBreakdown.svelte";
     import AchievementBadge from "$lib/components/AchievementBadge.svelte";
+    import TreeShop from "$lib/components/TreeShop.svelte";
     import { ACHIEVEMENT_DEFINITIONS } from "$lib/achievementDefinitions";
     import { TREE_SPECIES, getTreeSpecies, getUnlockedSpecies, getSFSymbolEmoji } from "$lib/treeSpecies";
     import { Gem, Flame, Zap, Trophy, Crown, Diamond, Leaf, Trees, Sparkles, Sun, Star, Sprout } from "lucide-svelte";
@@ -37,6 +40,8 @@
     let recentReward = $state<{ text: string; icon: string; timestamp: number } | null>(null);
     let showForestGlow = $state(false);
     let newAchievementToast = $state<string | null>(null);
+    let selectedTree = $state<any | null>(null);
+    let showShop = $state(false);
 
     // Trigger forest glow when reward appears
     $effect(() => {
@@ -171,6 +176,23 @@
         }
     }
     const forestStatus = $derived(getForestStatus());
+
+    // Tree unlock handler
+    const handleUnlock = async (speciesId: string) => {
+        const response = await fetch('?/unlockTree', {
+            method: 'POST',
+            body: new FormData().append('speciesId', speciesId)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(`Failed to unlock: ${error.error}`);
+            return;
+        }
+
+        // Refresh data to update stones and unlocked trees
+        await invalidateAll();
+    };
 
     // Time period filtering
     let selectedPeriod = $state<"day" | "week" | "month" | "year">("week");
@@ -318,42 +340,46 @@
                 </p>
             </div>
 
-            <!-- 4x4 Grid with Unified Trees -->
-            <div
-                class="grid grid-cols-4 gap-2 rounded-2xl overflow-hidden mb-4 bg-white/40 p-3"
-            >
-                {#each Array(16) as _, i}
-                    {@const session = gridSessions[i]}
-                    {@const species = session ? getSpeciesForSession(session) : null}
-                    <div
-                        class="flex items-center justify-center aspect-square relative group cursor-pointer transition-all hover:scale-110 rounded-lg bg-white/20 p-1"
-                        class:opacity-40={!session &&
-                            i === 0 &&
-                            filteredSessions.length === 0}
-                    >
-                        {#if session && species}
-                            <div class="flex flex-col items-center gap-1 text-center w-full h-full flex-center">
-                                <SimpleTree species={species} size="md" health={forestHealth} />
-                            </div>
-                            <!-- Tooltip -->
-                            <div
-                                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-resin-charcoal text-white text-[10px] rounded-lg py-1.5 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap shadow-xl"
-                            >
-                                {session.display_title || session.title || "Session"}
-                                •
-                                {session.focusMinutes}m
-                            </div>
-                        {:else}
-                            <span class="text-resin-earth/10 text-2xl">○</span>
-                        {/if}
-                    </div>
-                {/each}
-            </div>
+            <!-- Actual Forest with Synced Trees -->
+            <ActualForestRenderer
+                trees={data.forestTrees || []}
+                size="lg"
+                onTreeClick={(tree) => (selectedTree = tree)}
+            />
+        </div>
 
-            {#if overflow > 0}
-                <p class="text-center text-xs text-resin-earth/40 font-medium">
-                    +{overflow} more this period
-                </p>
+        <!-- Tree Shop Section -->
+        <div class="w-full max-w-6xl mb-24">
+            <button
+                onclick={() => (showShop = !showShop)}
+                class="w-full glass-card rounded-2xl p-4 mb-4 flex items-center justify-between hover:bg-white/40 transition-colors group"
+            >
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🌲</span>
+                    <div class="text-left">
+                        <h3 class="font-bold text-resin-charcoal">Tree Collection</h3>
+                        <p class="text-xs text-resin-earth/60">{data.profile?.unlocked_tree_ids?.length || 0} / 27 trees unlocked</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-lg">
+                        <span class="font-bold text-amber-900">{data.profile?.total_stones || 0}</span>
+                        <span>🪨</span>
+                    </div>
+                    <span class="text-resin-earth/50 group-hover:text-resin-earth transition-colors">
+                        {showShop ? '▼' : '▶'}
+                    </span>
+                </div>
+            </button>
+
+            {#if showShop}
+                <div class="glass-card rounded-2xl p-6 animate-in fade-in slide-in-from-up-4 duration-300" transition:slide={{ duration: 300 }}>
+                    <TreeShop
+                        totalStones={data.profile?.total_stones || 0}
+                        unlockedTreeIds={data.profile?.unlocked_tree_ids || []}
+                        onUnlock={handleUnlock}
+                    />
+                </div>
             {/if}
         </div>
 
@@ -935,6 +961,64 @@
                     </button>
                 </div>
             {/if}
+        {/if}
+
+        <!-- Tree Detail Modal -->
+        {#if selectedTree}
+            <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onclick={(e) => { if (e.target === e.currentTarget) selectedTree = null; }}>
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+                    <!-- Header -->
+                    <div class="relative p-8 bg-gradient-to-br from-amber-50 to-orange-100 border-b border-amber-200">
+                        <button
+                            class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white hover:bg-gray-100"
+                            onclick={() => (selectedTree = null)}
+                        >
+                            ✕
+                        </button>
+                        <div class="flex justify-center mb-4">
+                            <SimpleTree species={selectedTree} size="lg" />
+                        </div>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="p-8 space-y-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">{selectedTree.label}</h2>
+                            <p class="text-gray-600 mt-2">{selectedTree.description}</p>
+                        </div>
+
+                        <!-- Rarity Badge -->
+                        <div class="inline-block">
+                            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm"
+                                  style="background-color: {selectedTree.rarity === 'common' ? '#f3f4f6' : selectedTree.rarity === 'uncommon' ? '#dbeafe' : selectedTree.rarity === 'rare' ? '#fce7f3' : selectedTree.rarity === 'epic' ? '#f5d4ff' : '#fef3c7'}; color: {selectedTree.rarity === 'common' ? '#6b7280' : selectedTree.rarity === 'uncommon' ? '#1e40af' : selectedTree.rarity === 'rare' ? '#be185d' : selectedTree.rarity === 'epic' ? '#6b21a8' : '#b45309'};">
+                                {selectedTree.rarity.toUpperCase()}
+                            </span>
+                        </div>
+
+                        <!-- Unlock Info -->
+                        {#if selectedTree.unlockCost > 0}
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-600 uppercase tracking-wide font-bold">Unlock Cost</p>
+                                <p class="text-2xl font-bold text-gray-900 mt-2">{selectedTree.unlockCost} 🪨</p>
+                            </div>
+                        {:else}
+                            <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                                <p class="text-sm text-green-700 font-semibold">✓ FREE TO UNLOCK</p>
+                            </div>
+                        {/if}
+
+                        <!-- Shop Button -->
+                        <a
+                            href="/shop"
+                            class="block w-full text-center px-6 py-3 rounded-lg font-bold text-white transition-all hover:shadow-lg"
+                            style="background: linear-gradient(135deg, #2b4634, #3d5a45);"
+                            onclick={() => (selectedTree = null)}
+                        >
+                            View in Shop
+                        </a>
+                    </div>
+                </div>
+            </div>
         {/if}
 
         <!-- Info Footer -->

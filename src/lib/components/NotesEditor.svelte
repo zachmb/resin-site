@@ -148,7 +148,7 @@
                 console.error("Auto-save failed:", error);
                 isSaving = false;
             }
-        }, 1000);
+        }, 300);
     };
 
     const formatTimeSince = (date: Date | null): string => {
@@ -600,7 +600,7 @@
             <textarea
                 autofocus
                 class="flex-1 w-full bg-transparent resize-none font-sans text-[17px] leading-relaxed text-[#2B4634] focus:outline-none p-6 sm:p-10 placeholder:text-[#5C4B3C]/60"
-                placeholder="Dump your chaotic thoughts, code snippets, and scattered ideas here..."
+                placeholder="What's on your mind? Start a note, a plan, anything..."
                 value={activeNote?.content ===
                 "Dump your chaotic thoughts, code snippets, and scattered ideas here..."
                     ? ""

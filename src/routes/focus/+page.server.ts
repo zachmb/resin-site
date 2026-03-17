@@ -912,5 +912,13 @@ export const actions: Actions = {
             console.error('Error canceling shared focus:', err);
             return { success: false, error: String(err) };
         }
+    },
+
+    refresh: async ({ locals: { supabase, getSession } }) => {
+        // This action is called by the client to refresh data
+        // SvelteKit will automatically invalidate the page data
+        const session = await getSession();
+        if (!session) return { success: false };
+        return { success: true };
     }
 };

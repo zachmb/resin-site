@@ -116,6 +116,34 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string):
     return true;
 }
 
+export async function updateCalendarEvent(
+    accessToken: string,
+    eventId: string,
+    title: string,
+    newStart: string,
+    newEnd: string,
+    timeZone: string
+): Promise<boolean> {
+    const body = {
+        summary: title,
+        start: { dateTime: newStart, timeZone },
+        end: { dateTime: newEnd, timeZone },
+    };
+    const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+        {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }
+    );
+    if (!res.ok) {
+        console.error('[amber_service] Calendar event update failed:', await res.text());
+        return false;
+    }
+    return true;
+}
+
 export async function listCalendarEvents(
     accessToken: string,
     timeMin: string,

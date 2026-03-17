@@ -288,7 +288,7 @@
                 Dashboard
             </h1>
             {/if}
-            <p class="text-resin-earth/60 font-medium mt-2">
+            <p class="text-resin-earth/70 mt-1">
                 {formatDate(today)}
             </p>
         </div>

@@ -45,5 +45,6 @@ CREATE POLICY "Admins can create invites" ON group_invites FOR INSERT WITH CHECK
 );
 
 -- 5. Enable realtime on group_focus_sessions and group_session_participants
-ALTER PUBLICATION supabase_realtime ADD TABLE group_focus_sessions;
-ALTER PUBLICATION supabase_realtime ADD TABLE group_session_participants;
+-- (Skip if already in publication - will get error 42710 if already added)
+-- ALTER PUBLICATION supabase_realtime ADD TABLE group_focus_sessions;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE group_session_participants;

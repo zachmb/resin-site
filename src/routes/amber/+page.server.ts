@@ -4,7 +4,7 @@ import type { PageServerLoad, Actions } from './$types';
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
         throw redirect(303, '/login?next=/amber');
     }
 

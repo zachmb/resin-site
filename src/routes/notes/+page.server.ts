@@ -88,16 +88,16 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         .single();
 };
 
-export const load: PageServerLoad = async ({ locals: { getSession, supabase }, setHeaders }) => {
+export const load: PageServerLoad = async ({ locals: { getUser, supabase }, setHeaders }) => {
     // Disable caching to ensure fresh notes every time
     setHeaders({
         'cache-control': 'no-cache, no-store, must-revalidate'
     });
 
-    const session = await getSession();
-    if (!session) throw redirect(303, '/login');
+    const { data: { user }, error: authError } = await getUser();
+    if (authError || !user) throw redirect(303, '/login');
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Fetch user profile for scheduling preferences
     const { data: profile } = await supabase
@@ -214,11 +214,11 @@ export const load: PageServerLoad = async ({ locals: { getSession, supabase }, s
 };
 
 export const actions: Actions = {
-    createNote: async ({ locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    createNote: async ({ locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const { data: newNote, error } = await insertNote(supabase, {
             user_id: userId,
@@ -255,11 +255,11 @@ export const actions: Actions = {
         };
     },
 
-    updateNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    updateNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const id = data.get('id') as string;
@@ -291,11 +291,11 @@ export const actions: Actions = {
         return { success: true, id, title, content };
     },
 
-    saveNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    saveNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const id = data.get('id') as string;
@@ -355,22 +355,34 @@ export const actions: Actions = {
         }
     },
 
-    deleteNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    deleteNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const id = data.get('id') as string;
 
-        const { error } = await supabase
+        const { count, error } = await supabase
             .from('amber_sessions')
             .delete()
             .eq('id', id)
             .eq('user_id', userId);
 
-        if (error) return fail(500, { error: 'Could not delete note' });
+        // Check for explicit errors
+        if (error) {
+            console.error('[deleteNote] Delete error:', error);
+            return fail(500, { error: 'Could not delete note', code: error.code });
+        }
+
+        // Check RLS silent failure (count === 0 means no rows were affected)
+        if (!count || count === 0) {
+            console.warn('[deleteNote] RLS silent failure - no rows affected');
+            return fail(403, { error: 'Could not delete note. Check your permissions.', code: 'RLS_SILENT_FAILURE' });
+        }
+
+        console.log('[deleteNote] Successfully deleted note:', id);
 
         // Sync stones after deletion
         await syncStonesFromNotes(userId, { force: true });
@@ -378,11 +390,11 @@ export const actions: Actions = {
         return { success: true, deletedId: id };
     },
 
-    activateNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    activateNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const content = data.get('noteContent') as string;
@@ -446,11 +458,11 @@ export const actions: Actions = {
         }
     },
 
-    cancelNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    cancelNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const sessionId = data.get('id') as string;
@@ -471,11 +483,11 @@ export const actions: Actions = {
         return { success: true, message: 'Note canceled' };
     },
 
-    completeNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    completeNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const sessionId = data.get('id') as string;
@@ -496,11 +508,11 @@ export const actions: Actions = {
         return { success: true, message: 'Note marked as completed' };
     },
 
-    shareNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    shareNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const noteId = data.get('note_id') as string;
@@ -536,11 +548,11 @@ export const actions: Actions = {
         return { success: true, message: 'Note shared' };
     },
 
-    unshareNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    unshareNote: async ({ request, locals: { supabase, getUser } }) => {
+        const { data: { user }, error: authError } = await getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
-        const userId = session.user.id;
+        const userId = user.id;
 
         const data = await request.formData();
         const noteId = data.get('note_id') as string;

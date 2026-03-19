@@ -1,0 +1,6 @@
+{
+  "api": {
+    "baseUrl": "https://noteresin.com",
+    "version": "v1"
+  }
+}

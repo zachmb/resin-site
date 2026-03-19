@@ -68,31 +68,40 @@ export const POST = async (event: RequestEvent) => {
         // Calculate new forest health
         const newForestHealth = calculateNewForestHealth(profile.forestHealth, totalHealthGain);
 
-        // Update profile
-        const now = new Date();
-        await db.updateProfile(user.id, {
-            currentStreak: newStreak,
-            forestHealth: newForestHealth,
-            lastSessionDate: now,
-            lastActiveDate: now
-        });
-
-        // Update session
-        await db.updateSession(session_id, {
-            bonus_stones_awarded: reward.bonusStones,
-            was_celebrated: true
-        });
-
-        // Insert forest event
-        await db.insertForestEvent(
-            user.id,
-            reward.isBonusTriggered ? 'forest_flourished' : 'tree_grown',
-            reward.forestHealthGain,
-            session_id
+        // FORTRESS: Use atomic RPC to apply reward (prevents Ghost Rewards)
+        // This single function atomically updates profile + marks session complete + logs event
+        const { data: rpcResult, error: rpcError } = await event.locals.supabase.rpc(
+            'apply_reward_atomic',
+            {
+                p_user_id: user.id,
+                p_session_id: session_id,
+                p_new_streak: newStreak,
+                p_total_stones: profile.totalStones + bonusStones,
+                p_forest_health_gain: totalHealthGain,
+                p_new_forest_health: newForestHealth,
+                p_celebration_level: reward.celebrationLevel,
+                p_message: reward.message
+            }
         );
+
+        if (rpcError || !rpcResult?.success) {
+            const errorMsg = rpcError?.message || rpcResult?.error_message || 'Transaction failed';
+            console.error('[/api/gamification/apply-reward] Atomic RPC failed:', errorMsg);
+            return json({ error: errorMsg }, { status: 500 });
+        }
 
         // Get forest status for response
         const forestStatus = getForestHealthStatus(newForestHealth);
+
+        // Build response from atomic transaction result
+        const rewardSummary = rpcResult.reward_summary || {};
+
+        console.log('[/api/gamification/apply-reward] ✅ Atomic reward applied:', {
+            session: session_id,
+            streak: newStreak,
+            stones: profile.totalStones + bonusStones,
+            forestHealth: newForestHealth
+        });
 
         return json({
             status: 'success',
@@ -103,7 +112,8 @@ export const POST = async (event: RequestEvent) => {
             celebration_level: reward.celebrationLevel,
             message: reward.message,
             bonus_breakdown: bonuses,
-            new_streak: newStreak
+            new_streak: newStreak,
+            _reward_summary: rewardSummary  // For debugging
         });
     } catch (error) {
         console.error('[/api/gamification/apply-reward]', error);

@@ -1,10 +1,10 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
-    const session = await getSession();
+export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
+    const user = await getUser();
 
-    if (!session) {
+    if (!user) {
         throw redirect(303, '/login?next=/insights');
     }
 
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
                 end_time
             )
         `)
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .eq('status', 'completed')
         .order('created_at', { ascending: false });
 
@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
     const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
 
     // Calculate insights from completed sessions

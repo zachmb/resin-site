@@ -61,7 +61,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser, sessio
                             const { data: existing } = await supabase
                                 .from('blocking_sessions')
                                 .select('id')
-                                .eq('user_id', session.user.id)
+                                .eq('user_id', user.id)
                                 .eq('title', automation.title)
                                 .gte('start_time', startTime.toISOString())
                                 .lt('start_time', new Date(startTime.getTime() + 60 * 1000).toISOString())
@@ -69,7 +69,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser, sessio
 
                             if (!existing) {
                                 sessionsToCreate.push({
-                                    user_id: session.user.id,
+                                    user_id: user.id,
                                     title: automation.title,
                                     start_time: startTime.toISOString(),
                                     end_time: endTime.toISOString(),
@@ -194,9 +194,9 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser, sessio
 };
 
 export const actions: Actions = {
-    scheduleSession: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    scheduleSession: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const title = data.get('title')?.toString() || '';
@@ -218,7 +218,7 @@ export const actions: Actions = {
                 .from('blocking_sessions')
                 .insert({
                     id: sessionId,
-                    user_id: session.user.id,
+                    user_id: user.id,
                     title: title,
                     start_time: startTime.toISOString(),
                     end_time: endTime.toISOString(),
@@ -233,7 +233,7 @@ export const actions: Actions = {
             const { data: tokens } = await supabase
                 .from('device_tokens')
                 .select('token')
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .eq('device_type', 'ios')
                 .eq('is_active', true);
 
@@ -259,9 +259,9 @@ export const actions: Actions = {
         }
     },
 
-    cancelSession: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    cancelSession: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -269,19 +269,20 @@ export const actions: Actions = {
         if (!sessionId) return { success: false, error: 'Missing session ID' };
 
         try {
-            const { error } = await supabase
+            const { count, error } = await supabase
                 .from('blocking_sessions')
                 .delete()
                 .eq('id', sessionId)
-                .eq('user_id', session.user.id);
+                .eq('user_id', user.id);
 
             if (error) throw error;
+            if (!count || count === 0) return { success: false, error: 'Session not found or insufficient permissions' };
 
             // Notify device to sync
             const { data: tokens } = await supabase
                 .from('device_tokens')
                 .select('token')
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .eq('device_type', 'ios')
                 .eq('is_active', true);
 
@@ -302,9 +303,9 @@ export const actions: Actions = {
         }
     },
 
-    createAutomation: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    createAutomation: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const title = data.get('title')?.toString() || '';
@@ -320,7 +321,7 @@ export const actions: Actions = {
             const { data: automation, error } = await supabase
                 .from('focus_automations')
                 .insert({
-                    user_id: session.user.id,
+                    user_id: user.id,
                     title: title,
                     time: time,
                     duration_minutes: duration,
@@ -339,9 +340,9 @@ export const actions: Actions = {
         }
     },
 
-    deleteAutomation: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    deleteAutomation: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const automationId = data.get('automationId')?.toString();
@@ -349,13 +350,14 @@ export const actions: Actions = {
         if (!automationId) return { success: false, error: 'Missing automation ID' };
 
         try {
-            const { error } = await supabase
+            const { count, error } = await supabase
                 .from('focus_automations')
                 .delete()
                 .eq('id', automationId)
-                .eq('user_id', session.user.id);
+                .eq('user_id', user.id);
 
             if (error) throw error;
+            if (!count || count === 0) return { success: false, error: 'Automation not found or insufficient permissions' };
 
             return { success: true };
         } catch (err) {
@@ -364,9 +366,9 @@ export const actions: Actions = {
         }
     },
 
-    updateSession: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    updateSession: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -392,7 +394,7 @@ export const actions: Actions = {
                     end_time: endTime.toISOString()
                 })
                 .eq('id', sessionId)
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .select()
                 .single();
 
@@ -402,7 +404,7 @@ export const actions: Actions = {
             const { data: tokens } = await supabase
                 .from('device_tokens')
                 .select('token')
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .eq('device_type', 'ios')
                 .eq('is_active', true);
 
@@ -423,9 +425,9 @@ export const actions: Actions = {
         }
     },
 
-    makeRecurring: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    makeRecurring: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -441,7 +443,7 @@ export const actions: Actions = {
                 .from('blocking_sessions')
                 .select('*')
                 .eq('id', sessionId)
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .single();
 
             if (fetchError || !blockingSession) throw fetchError || new Error('Session not found');
@@ -461,7 +463,7 @@ export const actions: Actions = {
             const { data: automation, error } = await supabase
                 .from('focus_automations')
                 .insert({
-                    user_id: session.user.id,
+                    user_id: user.id,
                     title: blockingSession.title,
                     time: timeStr,
                     duration_minutes: durationMinutes,
@@ -502,7 +504,7 @@ export const actions: Actions = {
                     if (startTime > now) {
                         const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
                         sessionsToCreate.push({
-                            user_id: session.user.id,
+                            user_id: user.id,
                             title: blockingSession.title,
                             start_time: startTime.toISOString(),
                             end_time: endTime.toISOString(),
@@ -522,7 +524,7 @@ export const actions: Actions = {
             const { data: tokens } = await supabase
                 .from('device_tokens')
                 .select('token')
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .eq('device_type', 'ios')
                 .eq('is_active', true);
 
@@ -543,9 +545,9 @@ export const actions: Actions = {
         }
     },
 
-    inviteFriendToFocus: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    inviteFriendToFocus: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const collaboratorId = data.get('collaboratorId')?.toString();
@@ -563,7 +565,7 @@ export const actions: Actions = {
             const { data: friendship, error: friendError } = await supabase
                 .from('friendships')
                 .select('id')
-                .or(`and(requester_id.eq.${session.user.id},addressee_id.eq.${collaboratorId}),and(requester_id.eq.${collaboratorId},addressee_id.eq.${session.user.id})`)
+                .or(`and(requester_id.eq.${user.id},addressee_id.eq.${collaboratorId}),and(requester_id.eq.${collaboratorId},addressee_id.eq.${user.id})`)
                 .eq('status', 'accepted')
                 .single();
 
@@ -578,7 +580,7 @@ export const actions: Actions = {
             const { data: sharedSession, error } = await supabase
                 .from('shared_focus_sessions')
                 .insert({
-                    initiator_id: session.user.id,
+                    initiator_id: user.id,
                     collaborator_id: collaboratorId,
                     title: title,
                     start_time: startTime.toISOString(),
@@ -602,7 +604,7 @@ export const actions: Actions = {
                 const { data: initiatorProfile } = await supabase
                     .from('profiles')
                     .select('email')
-                    .eq('id', session.user.id)
+                    .eq('id', user.id)
                     .single();
 
                 await Promise.all(tokens.map(({ token }) =>
@@ -621,9 +623,9 @@ export const actions: Actions = {
         }
     },
 
-    acceptSharedFocus: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    acceptSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
@@ -642,7 +644,7 @@ export const actions: Actions = {
 
             if (fetchError || !sharedSession) throw fetchError || new Error('Session not found');
 
-            if (sharedSession.collaborator_id !== session.user.id) {
+            if (sharedSession.collaborator_id !== user.id) {
                 return { success: false, error: 'Unauthorized' };
             }
 
@@ -712,9 +714,9 @@ export const actions: Actions = {
         }
     },
 
-    declineSharedFocus: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    declineSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
@@ -730,7 +732,7 @@ export const actions: Actions = {
                 .eq('id', sharedSessionId)
                 .single();
 
-            if (sharedSession?.collaborator_id !== session.user.id) {
+            if (sharedSession?.collaborator_id !== user.id) {
                 return { success: false, error: 'Unauthorized' };
             }
 
@@ -748,9 +750,9 @@ export const actions: Actions = {
         }
     },
 
-    completeSharedFocus: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    completeSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
@@ -769,8 +771,8 @@ export const actions: Actions = {
 
             if (!sharedSession) throw new Error('Session not found');
 
-            const isInitiator = session.user.id === sharedSession.initiator_id;
-            if (!isInitiator && session.user.id !== sharedSession.collaborator_id) {
+            const isInitiator = user.id === sharedSession.initiator_id;
+            if (!isInitiator && user.id !== sharedSession.collaborator_id) {
                 return { success: false, error: 'Unauthorized' };
             }
 
@@ -837,9 +839,9 @@ export const actions: Actions = {
         }
     },
 
-    cancelSharedFocus: async ({ request, locals: { supabase } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    cancelSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
@@ -858,7 +860,7 @@ export const actions: Actions = {
 
             if (fetchError || !sharedSession) throw fetchError || new Error('Session not found');
 
-            if (session.user.id !== sharedSession.initiator_id && session.user.id !== sharedSession.collaborator_id) {
+            if (user.id !== sharedSession.initiator_id && user.id !== sharedSession.collaborator_id) {
                 return { success: false, error: 'Unauthorized' };
             }
 
@@ -886,7 +888,7 @@ export const actions: Actions = {
             if (updateError) throw updateError;
 
             // Notify other participant
-            const otherUserId = session.user.id === sharedSession.initiator_id
+            const otherUserId = user.id === sharedSession.initiator_id
                 ? sharedSession.collaborator_id
                 : sharedSession.initiator_id;
 
@@ -914,11 +916,11 @@ export const actions: Actions = {
         }
     },
 
-    refresh: async ({ locals: { supabase } }) => {
+    refresh: async ({ locals: { supabase, getUser } }) => {
         // This action is called by the client to refresh data
         // SvelteKit will automatically invalidate the page data
-        const session = await getSession();
-        if (!session) return { success: false };
+        const user = await getUser();
+        if (!user) return { success: false };
         return { success: true };
     }
 };

@@ -1,22 +1,22 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
-	const session = await getSession();
-	if (!session) {
+export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
+	const user = await getUser();
+	if (!user) {
 		throw redirect(303, '/login?next=/account');
 	}
 
 	const { data: profile } = await supabase
 		.from('profiles')
 		.select('*')
-		.eq('id', session.user.id)
+		.eq('id', user.id)
 		.single();
 
 	const { data: feedback } = await supabase
 		.from('amber_task_feedback')
 		.select('*')
-		.eq('user_id', session.user.id)
+		.eq('user_id', user.id)
 		.order('created_at', { ascending: false });
 
 	// Process feedback (same as taste page)
@@ -51,14 +51,14 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 	const { data: deviceTokens } = await supabase
 		.from('device_tokens')
 		.select('device_token, platform, updated_at')
-		.eq('user_id', session.user.id)
+		.eq('user_id', user.id)
 		.order('updated_at', { ascending: false });
 
 	// Load command integrations
 	const { data: commandConfigs } = await supabase
 		.from('command_integrations')
 		.select('id, command_type, config, enabled')
-		.eq('user_id', session.user.id)
+		.eq('user_id', user.id)
 		.order('created_at', { ascending: true });
 
 	// Load friends and friend requests
@@ -72,7 +72,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 			profiles!friends_user_id_2_fkey(id, email),
 			created_at
 		`)
-		.or(`user_id_1.eq.${session.user.id},user_id_2.eq.${session.user.id}`);
+		.or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
 
 	// Load incoming friend requests
 	const { data: incomingRequests } = await supabase
@@ -83,7 +83,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 			profiles!friend_requests_from_user_id_fkey(id, email),
 			created_at
 		`)
-		.eq('to_user_id', session.user.id)
+		.eq('to_user_id', user.id)
 		.order('created_at', { ascending: false });
 
 	// Load outgoing friend requests
@@ -95,12 +95,12 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 			profiles!friend_requests_to_user_id_fkey(id, email),
 			created_at
 		`)
-		.eq('from_user_id', session.user.id)
+		.eq('from_user_id', user.id)
 		.order('created_at', { ascending: false });
 
 	// Transform friends data to include friend info more clearly
 	const friendsList = (friends || []).map((friendship: any) => {
-		const isFriend1 = friendship.user_id_1 === session.user.id;
+		const isFriend1 = friendship.user_id_1 === user.id;
 		const friendProfile = isFriend1 ? friendship.profiles_user_id_2 : friendship.profiles_user_id_1;
 		return {
 			id: friendship.id,
@@ -159,9 +159,9 @@ export const actions: Actions = {
         }
     },
 
-    updateProfile: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    updateProfile: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const openclaw_url = formData.get('openclaw_url') as string;
@@ -186,7 +186,7 @@ export const actions: Actions = {
         }
 
         const updates = {
-            id: session.user.id,
+            id: user.id,
             openclaw_url,
             openclaw_api_key,
             availability_schedule: availabilitySchedule,
@@ -201,14 +201,14 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    generateToken: async ({ locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    generateToken: async ({ locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const newKey = crypto.randomUUID();
 
         const updates = {
-            id: session.user.id,
+            id: user.id,
             openclaw_api_key: newKey,
             updated_at: new Date().toISOString(),
         };
@@ -219,28 +219,29 @@ export const actions: Actions = {
         return { success: true, token: newKey };
     },
 
-    removeDevice: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    removeDevice: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const data = await request.formData();
         const token = data.get('device_token')?.toString();
 
         if (!token) return fail(400, { error: 'Missing device token' });
 
-        const { error } = await supabase
+        const { count, error } = await supabase
             .from('device_tokens')
             .delete()
-            .eq('user_id', session.user.id)
+            .eq('user_id', user.id)
             .eq('device_token', token);
 
         if (error) return fail(500, { error: 'Failed to remove device' });
+        if (!count || count === 0) return fail(403, { error: 'Device not found or insufficient permissions' });
         return { success: true };
     },
 
-    saveCommandConfig: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    saveCommandConfig: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const commandType = formData.get('commandType')?.toString();
@@ -256,7 +257,7 @@ export const actions: Actions = {
             const { error } = await supabase
                 .from('command_integrations')
                 .upsert({
-                    user_id: session.user.id,
+                    user_id: user.id,
                     command_type: commandType,
                     config,
                     enabled: true,
@@ -277,9 +278,9 @@ export const actions: Actions = {
         }
     },
 
-    toggleCommandConfig: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    toggleCommandConfig: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const configId = formData.get('configId')?.toString();
@@ -293,15 +294,15 @@ export const actions: Actions = {
             .from('command_integrations')
             .update({ enabled })
             .eq('id', configId)
-            .eq('user_id', session.user.id);
+            .eq('user_id', user.id);
 
         if (error) return fail(500, { error: 'Failed to update configuration' });
         return { success: true };
     },
 
-    deleteCommandConfig: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    deleteCommandConfig: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const configId = formData.get('configId')?.toString();
@@ -310,19 +311,20 @@ export const actions: Actions = {
             return fail(400, { error: 'Missing config ID' });
         }
 
-        const { error } = await supabase
+        const { count, error } = await supabase
             .from('command_integrations')
             .delete()
             .eq('id', configId)
-            .eq('user_id', session.user.id);
+            .eq('user_id', user.id);
 
         if (error) return fail(500, { error: 'Failed to delete configuration' });
+        if (!count || count === 0) return fail(403, { error: 'Configuration not found or insufficient permissions' });
         return { success: true };
     },
 
-    addFriend: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    addFriend: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const friendEmail = formData.get('friend_email')?.toString().trim();
@@ -342,7 +344,7 @@ export const actions: Actions = {
             return fail(404, { error: 'User not found' });
         }
 
-        if (friendUser.id === session.user.id) {
+        if (friendUser.id === user.id) {
             return fail(400, { error: 'Cannot add yourself as a friend' });
         }
 
@@ -350,7 +352,7 @@ export const actions: Actions = {
         const { data: existingFriendship } = await supabase
             .from('friends')
             .select('id')
-            .or(`and(user_id_1.eq.${session.user.id},user_id_2.eq.${friendUser.id}),and(user_id_1.eq.${friendUser.id},user_id_2.eq.${session.user.id})`)
+            .or(`and(user_id_1.eq.${user.id},user_id_2.eq.${friendUser.id}),and(user_id_1.eq.${friendUser.id},user_id_2.eq.${user.id})`)
             .single();
 
         if (existingFriendship) {
@@ -361,7 +363,7 @@ export const actions: Actions = {
         const { data: existingRequest } = await supabase
             .from('friend_requests')
             .select('id')
-            .eq('from_user_id', session.user.id)
+            .eq('from_user_id', user.id)
             .eq('to_user_id', friendUser.id)
             .single();
 
@@ -373,7 +375,7 @@ export const actions: Actions = {
         const { error } = await supabase
             .from('friend_requests')
             .insert({
-                from_user_id: session.user.id,
+                from_user_id: user.id,
                 to_user_id: friendUser.id
             });
 
@@ -385,9 +387,9 @@ export const actions: Actions = {
         return { success: true, message: 'Friend request sent!' };
     },
 
-    acceptFriend: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    acceptFriend: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const requestId = formData.get('request_id')?.toString();
@@ -401,7 +403,7 @@ export const actions: Actions = {
             .from('friend_requests')
             .select('from_user_id, to_user_id')
             .eq('id', requestId)
-            .eq('to_user_id', session.user.id)
+            .eq('to_user_id', user.id)
             .single();
 
         if (getError || !friendRequest) {
@@ -438,9 +440,9 @@ export const actions: Actions = {
         return { success: true, message: 'Friend request accepted!' };
     },
 
-    rejectFriend: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    rejectFriend: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const requestId = formData.get('request_id')?.toString();
@@ -450,23 +452,25 @@ export const actions: Actions = {
         }
 
         // Verify this is the recipient
-        const { error: deleteError } = await supabase
+        const { count: deleteCount, error: deleteError } = await supabase
             .from('friend_requests')
             .delete()
             .eq('id', requestId)
-            .eq('to_user_id', session.user.id);
+            .eq('to_user_id', user.id);
 
         if (deleteError) {
             console.error('Error rejecting request:', deleteError);
             return fail(500, { error: 'Failed to reject friend request' });
         }
 
+        if (!deleteCount || deleteCount === 0) return fail(403, { error: 'Request not found or insufficient permissions' });
+
         return { success: true, message: 'Friend request rejected' };
     },
 
-    removeFriend: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    removeFriend: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const friendshipId = formData.get('friendship_id')?.toString();
@@ -486,12 +490,12 @@ export const actions: Actions = {
             return fail(404, { error: 'Friendship not found' });
         }
 
-        if (friendship.user_id_1 !== session.user.id && friendship.user_id_2 !== session.user.id) {
+        if (friendship.user_id_1 !== user.id && friendship.user_id_2 !== user.id) {
             return fail(403, { error: 'Unauthorized' });
         }
 
         // Delete the friendship
-        const { error: deleteError } = await supabase
+        const { count: deleteCount, error: deleteError } = await supabase
             .from('friends')
             .delete()
             .eq('id', friendshipId);
@@ -501,12 +505,14 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to remove friend' });
         }
 
+        if (!deleteCount || deleteCount === 0) return fail(403, { error: 'Friendship not found or insufficient permissions' });
+
         return { success: true, message: 'Friend removed' };
     },
 
-    cancelFriendRequest: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    cancelFriendRequest: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const requestId = formData.get('request_id')?.toString();
@@ -516,23 +522,25 @@ export const actions: Actions = {
         }
 
         // Delete request if sent by this user
-        const { error } = await supabase
+        const { count, error } = await supabase
             .from('friend_requests')
             .delete()
             .eq('id', requestId)
-            .eq('from_user_id', session.user.id);
+            .eq('from_user_id', user.id);
 
         if (error) {
             console.error('Error canceling request:', error);
             return fail(500, { error: 'Failed to cancel friend request' });
         }
 
+        if (!count || count === 0) return fail(403, { error: 'Request not found or insufficient permissions' });
+
         return { success: true, message: 'Friend request canceled' };
     },
 
-    toggleHardenedMode: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    toggleHardenedMode: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         const formData = await request.formData();
         const enabled = formData.get('enabled') === 'true';
@@ -553,9 +561,9 @@ export const actions: Actions = {
         return { success: true, hardened_mode_enabled: enabled };
     },
 
-    emergencyUnlock: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    emergencyUnlock: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
 
         // Immediately disable hardened mode
         const { error } = await supabase

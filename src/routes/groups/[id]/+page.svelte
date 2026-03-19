@@ -1,130 +1,407 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import ForestRenderer from '$lib/components/ForestRenderer.svelte';
+    import SimpleTree from '$lib/components/SimpleTree.svelte';
 
     let { data } = $props();
 
-    let inviteEmail = $state('');
-    let inviteError = $state<string | null>(null);
-    let inviteSuccess = $state<string | null>(null);
-    let inviting = $state(false);
+    // Tab state
+    let activeTab = $state('notes');
 
-    let challengeTitle = $state('');
-    let challengeMetric = $state('sessions_completed');
-    let challengeTarget = $state('5');
-    let challengeEndDate = $state('');
-    let challengeError = $state<string | null>(null);
-    let challengeSuccess = $state<string | null>(null);
-    let creatingChallenge = $state(false);
+    // Notes form state
+    let newNoteTitle = $state('');
+    let newNoteContent = $state('');
+    let newNoteColor = $state('amber');
+    let addingNote = $state(false);
 
-    async function handleInvite() {
-        inviteError = null;
-        inviteSuccess = null;
+    // Focus session state
+    let focusTitle = $state('');
+    let focusDate = $state('');
+    let focusTime = $state('');
+    let focusDuration = $state('25');
+    let schedulingSession = $state(false);
 
-        if (!inviteEmail.trim()) {
-            inviteError = 'Please enter an email address';
-            return;
-        }
+    // Generated invite link
+    let inviteLinkOpen = $state(false);
+    let inviteLoading = $state(false);
+    let inviteLink = $state('');
 
-        inviting = true;
+    // Member color palette (deterministic from index)
+    const memberColors = [
+        '#f59e0b', // amber
+        '#10b981', // emerald
+        '#3b82f6', // blue
+        '#8b5cf6', // violet
+        '#ec4899', // pink
+        '#14b8a6', // teal
+        '#f97316'  // orange
+    ];
+
+    function getMemberColor(index: number): string {
+        return memberColors[index % memberColors.length];
+    }
+
+    async function handleAddNote() {
+        if (!newNoteTitle.trim() || !newNoteContent.trim()) return;
+
+        addingNote = true;
         const formData = new FormData();
-        formData.append('email', inviteEmail);
+        formData.append('title', newNoteTitle);
+        formData.append('content', newNoteContent);
+        formData.append('color', newNoteColor);
 
-        const response = await fetch(`?/invite`, {
+        const response = await fetch('?/addNote', {
             method: 'POST',
             body: formData
         });
 
-        inviting = false;
+        addingNote = false;
 
         if (response.ok) {
-            inviteSuccess = `Successfully invited ${inviteEmail}`;
-            inviteEmail = '';
-        } else {
-            const error = await response.json();
-            inviteError = error.data?.error || 'Failed to invite member';
+            newNoteTitle = '';
+            newNoteContent = '';
+            newNoteColor = 'amber';
         }
     }
 
-    async function handleCreateChallenge() {
-        challengeError = null;
-        challengeSuccess = null;
+    async function handleScheduleSession() {
+        if (!focusTitle.trim() || !focusDate || !focusTime) return;
 
-        if (!challengeTitle.trim()) {
-            challengeError = 'Challenge title is required';
-            return;
-        }
+        schedulingSession = true;
+        const startDateTime = new Date(`${focusDate}T${focusTime}`).toISOString();
 
-        creatingChallenge = true;
         const formData = new FormData();
-        formData.append('title', challengeTitle);
-        formData.append('metric', challengeMetric);
-        formData.append('target_value', challengeTarget);
-        if (challengeEndDate) formData.append('end_at', new Date(challengeEndDate).toISOString());
+        formData.append('title', focusTitle);
+        formData.append('start_time', startDateTime);
+        formData.append('duration_minutes', focusDuration);
 
-        const response = await fetch(`?/createChallenge`, {
+        const response = await fetch('?/scheduleSession', {
             method: 'POST',
             body: formData
         });
 
-        creatingChallenge = false;
+        schedulingSession = false;
 
         if (response.ok) {
-            challengeSuccess = 'Challenge created successfully!';
-            challengeTitle = '';
-            challengeTarget = '5';
-            challengeEndDate = '';
-        } else {
-            const error = await response.json();
-            challengeError = error.data?.error || 'Failed to create challenge';
+            focusTitle = '';
+            focusDate = '';
+            focusTime = '';
+            focusDuration = '25';
         }
     }
 
-    function getMetricLabel(metric: string): string {
-        const labels: Record<string, string> = {
-            'sessions_completed': 'Sessions Completed',
-            'stones': 'Total Stones',
-            'streak': 'Current Streak'
-        };
-        return labels[metric] || metric;
+    async function handleStartNow() {
+        const formData = new FormData();
+        formData.append('title', 'Group Focus Session');
+        formData.append('duration_minutes', '25');
+
+        await fetch('?/startNowSession', {
+            method: 'POST',
+            body: formData
+        });
     }
 
-    function formatDate(dateString: string): string {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    async function handleGenerateInvite() {
+        inviteLoading = true;
+        const formData = new FormData();
+
+        const response = await fetch('?/generateGroupInvite', {
+            method: 'POST',
+            body: formData
+        });
+
+        inviteLoading = false;
+
+        if (response.ok) {
+            const result = await response.json();
+            inviteLink = `${window.location.origin}${result.data.inviteUrl}`;
+        }
+    }
+
+    function formatDateTime(dateString: string): string {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
     }
 </script>
 
 <div class="group-detail-container">
     <!-- Header -->
-    <div class="group-detail-header">
-        <a href="/groups" class="back-button">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Groups
-        </a>
-        <div class="header-content">
-            <div class="header-top">
-                <div class="header-badge">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-                    </svg>
-                    {data.members.length} member{data.members.length !== 1 ? 's' : ''}
-                </div>
-                {#if data.userRole === 'admin'}
-                    <div class="admin-badge-header">👑 Admin</div>
-                {/if}
-            </div>
-            <h1 class="text-5xl font-serif font-bold text-resin-charcoal mb-3">{data.group.name}</h1>
-            {#if data.group.description}
-                <p class="text-resin-earth/60 text-lg max-w-2xl leading-relaxed">{data.group.description}</p>
+    <div class="group-header">
+        <div class="header-top">
+            <a href="/groups" class="back-button">← Back</a>
+            {#if data.userRole === 'admin'}
+                <button class="admin-badge" onclick={() => inviteLinkOpen = !inviteLinkOpen}>
+                    🔗 Share Group
+                </button>
             {/if}
         </div>
+        <h1 class="group-title">{data.group.name}</h1>
+        {#if data.group.description}
+            <p class="group-description">{data.group.description}</p>
+        {/if}
+        <div class="members-count">{data.members.length} member{data.members.length !== 1 ? 's' : ''}</div>
     </div>
 
-    <div class="group-detail-content">
-        <!-- Members Section -->
+    {#if inviteLinkOpen && data.userRole === 'admin'}
+        <div class="invite-modal">
+            <div class="invite-content">
+                <h3>Share Invite Link</h3>
+                <button
+                    class="btn-generate"
+                    onclick={handleGenerateInvite}
+                    disabled={inviteLoading}
+                >
+                    {inviteLoading ? 'Generating...' : 'Generate Link'}
+                </button>
+                {#if inviteLink}
+                    <div class="invite-link-box">
+                        <input type="text" readonly value={inviteLink} class="invite-link-input" />
+                        <button
+                            onclick={() => {
+                                navigator.clipboard.writeText(inviteLink);
+                            }}
+                            class="btn-copy"
+                        >
+                            Copy
+                        </button>
+                    </div>
+                {/if}
+                <button
+                    class="btn-close"
+                    onclick={() => {
+                        inviteLinkOpen = false;
+                        inviteLink = '';
+                    }}
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    {/if}
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button
+            class="tab-button {activeTab === 'notes' ? 'active' : ''}"
+            onclick={() => (activeTab = 'notes')}
+        >
+            📝 Notes
+        </button>
+        <button
+            class="tab-button {activeTab === 'forest' ? 'active' : ''}"
+            onclick={() => (activeTab = 'forest')}
+        >
+            🌲 Forest
+        </button>
+        <button
+            class="tab-button {activeTab === 'focus' ? 'active' : ''}"
+            onclick={() => (activeTab = 'focus')}
+        >
+            ⏱ Focus
+        </button>
+    </div>
+
+    <!-- TAB: NOTES -->
+    {#if activeTab === 'notes'}
+        <div class="tab-content">
+            <section class="notes-section">
+                <div class="section-title">Collaborative Notes</div>
+                <form class="add-note-form" onsubmit={(e) => { e.preventDefault(); handleAddNote(); }}>
+                    <input
+                        type="text"
+                        placeholder="Note title..."
+                        bind:value={newNoteTitle}
+                        class="note-input"
+                        disabled={addingNote}
+                    />
+                    <textarea
+                        placeholder="What's on your mind?"
+                        bind:value={newNoteContent}
+                        class="note-textarea"
+                        disabled={addingNote}
+                        rows="3"
+                    ></textarea>
+                    <div class="note-form-footer">
+                        <select bind:value={newNoteColor} class="note-color-select" disabled={addingNote}>
+                            <option value="amber">Amber</option>
+                            <option value="green">Green</option>
+                            <option value="blue">Blue</option>
+                            <option value="purple">Purple</option>
+                        </select>
+                        <button type="submit" class="btn-add-note" disabled={addingNote || !newNoteTitle.trim() || !newNoteContent.trim()}>
+                            {addingNote ? 'Adding...' : 'Add Note'}
+                        </button>
+                    </div>
+                </form>
+
+                <div class="notes-grid">
+                    {#each data.notes as note (note.id)}
+                        <div class="note-card note-{note.color}">
+                            <h3 class="note-title">{note.title}</h3>
+                            <p class="note-content">{note.content}</p>
+                            <div class="note-meta">
+                                <span class="note-author">{note.profiles?.email?.split('@')[0]}</span>
+                                <span class="note-date">{new Date(note.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </section>
+        </div>
+    {/if}
+
+    <!-- TAB: FOREST -->
+    {#if activeTab === 'forest'}
+        <div class="tab-content">
+            <section class="forest-section">
+                <div class="section-title">Shared Forest</div>
+
+                {#if data.members.length > 0}
+                    <div class="member-legend">
+                        <p class="legend-label">Member Colors</p>
+                        <div class="legend-items">
+                            {#each data.members as member, idx (member.userId)}
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background-color: {getMemberColor(idx)}"></div>
+                                    <span>{member.email.split('@')[0]}</span>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+
+                <div class="trees-grid">
+                    {#each data.members as member, memberIdx (member.userId)}
+                        <div class="member-section">
+                            <h3 class="member-name">{member.email}</h3>
+                            <div class="trees-container">
+                                {#if data.memberSessionsMap[member.userId]?.length > 0}
+                                    {#each data.memberSessionsMap[member.userId] as tree, idx (idx)}
+                                        <div class="tree-wrapper" style="border-color: {getMemberColor(memberIdx)}">
+                                            <SimpleTree tree={tree} />
+                                        </div>
+                                    {/each}
+                                {:else}
+                                    <div class="no-trees">No sessions yet</div>
+                                {/if}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </section>
+        </div>
+    {/if}
+
+    <!-- TAB: FOCUS -->
+    {#if activeTab === 'focus'}
+        <div class="tab-content">
+            <section class="focus-section">
+                <div class="section-title">Group Focus Sessions</div>
+
+                {#if data.userRole === 'admin'}
+                    <div class="focus-admin-panel">
+                        <button class="btn-start-now" onclick={handleStartNow}>⏱ Start Session Now</button>
+
+                        <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleScheduleSession(); }}>
+                            <h3>Schedule a Session</h3>
+                            <input
+                                type="text"
+                                placeholder="Session title..."
+                                bind:value={focusTitle}
+                                class="form-input"
+                                disabled={schedulingSession}
+                            />
+                            <input
+                                type="date"
+                                bind:value={focusDate}
+                                class="form-input"
+                                disabled={schedulingSession}
+                            />
+                            <input
+                                type="time"
+                                bind:value={focusTime}
+                                class="form-input"
+                                disabled={schedulingSession}
+                            />
+                            <select bind:value={focusDuration} class="form-input" disabled={schedulingSession}>
+                                <option value="15">15 minutes</option>
+                                <option value="25">25 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">1 hour</option>
+                            </select>
+                            <button type="submit" class="btn-schedule" disabled={schedulingSession || !focusTitle.trim() || !focusDate || !focusTime}>
+                                {schedulingSession ? 'Scheduling...' : 'Schedule'}
+                            </button>
+                        </form>
+                    </div>
+                {/if}
+
+                {#if data.activeFocusSessions.length > 0}
+                    <div class="sessions-list">
+                        <h3 class="sessions-heading">🔴 Active Sessions</h3>
+                        {#each data.activeFocusSessions as session (session.id)}
+                            <div class="session-card active">
+                                <div class="session-header">
+                                    <h4>{session.title}</h4>
+                                    <span class="badge-live">LIVE</span>
+                                </div>
+                                <p class="session-time">{formatDateTime(session.start_time)}</p>
+                                <p class="session-duration">{session.duration_minutes}m focus</p>
+                                <div class="session-participants">
+                                    {session.group_session_participants?.length || 0} joined
+                                </div>
+                                <form onsubmit={(e) => { e.preventDefault(); }} class="session-action">
+                                    <button
+                                        formaction="?/joinSession"
+                                        name="session_id"
+                                        value={session.id}
+                                        class="btn-join"
+                                    >
+                                        Join Now
+                                    </button>
+                                </form>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+
+                {#if data.scheduledFocusSessions.length > 0}
+                    <div class="sessions-list">
+                        <h3 class="sessions-heading">📅 Scheduled Sessions</h3>
+                        {#each data.scheduledFocusSessions as session (session.id)}
+                            <div class="session-card scheduled">
+                                <div class="session-header">
+                                    <h4>{session.title}</h4>
+                                </div>
+                                <p class="session-time">{formatDateTime(session.start_time)}</p>
+                                <p class="session-duration">{session.duration_minutes}m focus</p>
+                                <form onsubmit={(e) => { e.preventDefault(); }} class="session-action">
+                                    <button
+                                        formaction="?/joinSession"
+                                        name="session_id"
+                                        value={session.id}
+                                        class="btn-prejoin"
+                                    >
+                                        Pre-join
+                                    </button>
+                                </form>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+
+                {#if data.focusSessions.length === 0}
+                    <div class="empty-state">No sessions yet</div>
+                {/if}
+            </section>
+        </div>
+    {/if}
+
+    <!-- OLD CONTENT TO REMOVE -->
+    <div style="display: none;">
         <section class="members-section">
             <div class="section-header">
                 <div>
@@ -133,431 +410,492 @@
                 </div>
             </div>
 
-            <div class="members-grid">
-                {#each data.members as member (member.userId)}
-                    <div class="member-card">
-                        <div class="member-card-header">
-                            <div>
-                                <p class="member-email">{member.email}</p>
-                                {#if member.role === 'admin'}
-                                    <span class="role-badge">Admin</span>
-                                {/if}
-                            </div>
-                            <div class="member-status">
-                                <div class="status-dot"></div>
-                            </div>
-                        </div>
-
-                        <div class="member-forest">
-                            <ForestRenderer
-                                stones={member.total_stones || 0}
-                                streak={member.current_streak || 0}
-                                size="md"
-                            />
-                        </div>
-
-                        <div class="member-meta">
-                            <p class="member-joined">
-                                Joined {new Date(member.joinedAt).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric'
-                                })}
-                            </p>
-                        </div>
-                    </div>
-                {/each}
-            </div>
+            <!-- Placeholder - old content removed -->
         </section>
-
-        <!-- Leaderboard Section -->
-        <section class="leaderboard-section">
-            <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-6">Leaderboard</h2>
-            <div class="leaderboard-list">
-                {#each data.sortedMembers as member, index}
-                    <div class="leaderboard-row">
-                        <div class="rank-badge">#{index + 1}</div>
-                        <div class="member-info">
-                            <p class="member-name">{member.email.split('@')[0]}</p>
-                            <p class="member-email-small">{member.email}</p>
-                        </div>
-                        <div class="member-stats">
-                            <div class="stat">
-                                <span class="stat-value">{member.total_stones || 0}</span>
-                                <span class="stat-label">💎</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-value">{member.current_streak || 0}</span>
-                                <span class="stat-label">🔥</span>
-                            </div>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        </section>
-
-        <!-- Challenges Section (Admin Only) -->
-        {#if data.userRole === 'admin'}
-            <section class="challenges-section">
-                <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-6">Challenges</h2>
-
-                {#if challengeError}
-                    <div class="error-message">
-                        {challengeError}
-                    </div>
-                {/if}
-
-                {#if challengeSuccess}
-                    <div class="success-message">
-                        ✓ {challengeSuccess}
-                    </div>
-                {/if}
-
-                <form onsubmit={handleCreateChallenge} class="challenge-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="title" class="form-label">Challenge Title</label>
-                            <input
-                                id="title"
-                                type="text"
-                                bind:value={challengeTitle}
-                                placeholder="e.g., Weekly Focus Sprint"
-                                class="form-input"
-                                disabled={creatingChallenge}
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="metric" class="form-label">Metric</label>
-                            <select bind:value={challengeMetric} class="form-input" disabled={creatingChallenge}>
-                                <option value="sessions_completed">Sessions Completed</option>
-                                <option value="stones">Total Stones</option>
-                                <option value="streak">Current Streak</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="target" class="form-label">Target Value</label>
-                            <input
-                                id="target"
-                                type="number"
-                                bind:value={challengeTarget}
-                                min="1"
-                                class="form-input"
-                                disabled={creatingChallenge}
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="endDate" class="form-label">End Date (Optional)</label>
-                            <input
-                                id="endDate"
-                                type="date"
-                                bind:value={challengeEndDate}
-                                class="form-input"
-                                disabled={creatingChallenge}
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="submit-button"
-                        disabled={creatingChallenge || !challengeTitle.trim()}
-                    >
-                        {creatingChallenge ? 'Creating...' : 'Create Challenge'}
-                    </button>
-                </form>
-
-                {#if data.challenges && data.challenges.length > 0}
-                    <div class="active-challenges">
-                        <h3 class="text-lg font-semibold text-resin-charcoal mt-8 mb-4">Active Challenges</h3>
-                        {#each data.challenges as challenge}
-                            <div class="challenge-card">
-                                <div class="challenge-header">
-                                    <h4 class="challenge-title">{challenge.title}</h4>
-                                    <span class="metric-badge">{getMetricLabel(challenge.metric)}</span>
-                                </div>
-                                {#if challenge.description}
-                                    <p class="challenge-description">{challenge.description}</p>
-                                {/if}
-                                <div class="challenge-progress">
-                                    {#each data.sortedMembers as member}
-                                        <div class="progress-row">
-                                            <span class="progress-member">{member.email.split('@')[0]}</span>
-                                            <div class="progress-bar">
-                                                <div
-                                                    class="progress-fill"
-                                                    style="width: {Math.min(100, ((data.challengeProgress[challenge.id]?.[member.userId] || 0) / challenge.target_value) * 100)}%"
-                                                />
-                                            </div>
-                                            <span class="progress-value">
-                                                {data.challengeProgress[challenge.id]?.[member.userId] || 0} / {challenge.target_value}
-                                            </span>
-                                        </div>
-                                    {/each}
-                                </div>
-                                {#if challenge.end_at}
-                                    <p class="challenge-end">Ends {formatDate(challenge.end_at)}</p>
-                                {/if}
-                            </div>
-                        {/each}
-                    </div>
-                {/if}
-            </section>
-        {/if}
-
-        <!-- Invite Section (Admin Only) -->
-        {#if data.userRole === 'admin'}
-            <section class="invite-section">
-                <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-6">Invite Members</h2>
-
-                {#if inviteError}
-                    <div class="error-message">
-                        {inviteError}
-                    </div>
-                {/if}
-
-                {#if inviteSuccess}
-                    <div class="success-message">
-                        ✓ {inviteSuccess}
-                    </div>
-                {/if}
-
-                <form onsubmit={handleInvite} class="invite-form">
-                    <div class="form-group">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input
-                            id="email"
-                            type="email"
-                            bind:value={inviteEmail}
-                            placeholder="user@example.com"
-                            class="form-input"
-                            disabled={inviting}
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="submit-button"
-                        disabled={inviting || !inviteEmail.trim()}
-                    >
-                        {inviting ? 'Inviting...' : 'Send Invite'}
-                    </button>
-                </form>
-            </section>
-        {/if}
     </div>
 </div>
 
 <style>
     .group-detail-container {
-        max-width: 1000px;
+        max-width: 1200px;
         margin: 0 auto;
         padding: 40px 20px;
     }
 
-    .back-button {
-        display: inline-flex;
+    .group-header {
+        margin-bottom: 40px;
+    }
+
+    .header-top {
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
+        margin-bottom: 20px;
+    }
+
+    .back-button {
+        padding: 8px 12px;
         color: #2b4634;
         text-decoration: none;
-        border-radius: 8px;
-        transition: all 0.2s ease;
+        border-radius: 6px;
         font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s;
     }
 
     .back-button:hover {
         background: rgba(43, 70, 52, 0.1);
     }
 
-    .group-detail-header {
-        margin-bottom: 48px;
-    }
-
-    .header-top {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-    }
-
-    .header-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        background: rgba(43, 70, 52, 0.1);
-        color: #2b4634;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .admin-badge-header {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        background: rgba(217, 119, 6, 0.1);
+    .admin-badge {
+        padding: 8px 16px;
+        background: rgba(217, 119, 6, 0.15);
         color: #d97706;
-        border-radius: 20px;
-        font-size: 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .admin-badge:hover {
+        background: rgba(217, 119, 6, 0.25);
+    }
+
+    .group-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2b4634;
+        margin: 0 0 12px 0;
+        font-family: system-ui, -apple-system;
+    }
+
+    .group-description {
+        font-size: 16px;
+        color: rgba(43, 70, 52, 0.7);
+        margin: 0 0 16px 0;
+    }
+
+    .members-count {
+        font-size: 14px;
+        color: rgba(43, 70, 52, 0.6);
+    }
+
+    .invite-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+    }
+
+    .invite-content {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 400px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .invite-content h3 {
+        margin: 0 0 16px 0;
+        color: #2b4634;
+        font-size: 18px;
         font-weight: 600;
     }
 
-    .header-content {
-        margin-top: 16px;
+    .btn-generate {
+        width: 100%;
+        padding: 10px;
+        background: #2b4634;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 16px;
     }
 
-    .group-detail-content {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 48px;
+    .btn-generate:hover:not(:disabled) {
+        background: #1f3226;
     }
 
-    .section-header {
+    .btn-generate:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .invite-link-box {
         display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-        margin-bottom: 28px;
+        gap: 8px;
+        margin-bottom: 16px;
     }
 
-    .section-header h2 {
+    .invite-link-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid rgba(43, 70, 52, 0.2);
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: monospace;
+    }
+
+    .btn-copy {
+        padding: 10px 16px;
+        background: rgba(43, 70, 52, 0.1);
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-copy:hover {
+        background: rgba(43, 70, 52, 0.2);
+    }
+
+    .btn-close {
+        width: 100%;
+        padding: 10px;
+        background: rgba(43, 70, 52, 0.1);
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-close:hover {
+        background: rgba(43, 70, 52, 0.2);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 2px solid rgba(43, 70, 52, 0.1);
+        margin-bottom: 40px;
+    }
+
+    .tab-button {
+        padding: 12px 20px;
+        background: none;
+        border: none;
+        font-size: 16px;
+        font-weight: 600;
+        color: rgba(43, 70, 52, 0.5);
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+    }
+
+    .tab-button:hover {
+        color: #2b4634;
+    }
+
+    .tab-button.active {
+        color: #2b4634;
+        border-bottom-color: #d97706;
+    }
+
+    .tab-content {
+        animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #2b4634;
+        margin-bottom: 24px;
+    }
+
+    /* NOTES TAB */
+    .notes-section {
+    }
+
+    .add-note-form {
+        background: rgba(43, 70, 52, 0.03);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(43, 70, 52, 0.1);
+        margin-bottom: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .note-input {
+        padding: 10px 14px;
+        border: 1px solid rgba(43, 70, 52, 0.2);
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .note-input:focus {
+        outline: none;
+        border-color: #2b4634;
+        box-shadow: 0 0 0 3px rgba(43, 70, 52, 0.1);
+    }
+
+    .note-textarea {
+        padding: 10px 14px;
+        border: 1px solid rgba(43, 70, 52, 0.2);
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: none;
+    }
+
+    .note-textarea:focus {
+        outline: none;
+        border-color: #2b4634;
+        box-shadow: 0 0 0 3px rgba(43, 70, 52, 0.1);
+    }
+
+    .note-form-footer {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .note-color-select {
+        padding: 8px 12px;
+        border: 1px solid rgba(43, 70, 52, 0.2);
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .btn-add-note {
+        padding: 10px 20px;
+        background: #2b4634;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-add-note:hover:not(:disabled) {
+        background: #1f3226;
+        transform: translateY(-2px);
+    }
+
+    .btn-add-note:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .notes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    .note-card {
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        background: white;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .note-amber {
+        border-color: #f59e0b;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), white);
+    }
+
+    .note-green {
+        border-color: #10b981;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), white);
+    }
+
+    .note-blue {
+        border-color: #3b82f6;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), white);
+    }
+
+    .note-purple {
+        border-color: #8b5cf6;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), white);
+    }
+
+    .note-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #2b4634;
         margin: 0;
     }
 
-    .members-grid {
+    .note-content {
+        font-size: 14px;
+        color: rgba(43, 70, 52, 0.8);
+        margin: 0;
+        line-height: 1.5;
+        flex: 1;
+    }
+
+    .note-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: rgba(43, 70, 52, 0.5);
+        padding-top: 8px;
+        border-top: 1px solid rgba(43, 70, 52, 0.1);
+    }
+
+    /* FOREST TAB */
+    .forest-section {
+    }
+
+    .member-legend {
+        background: rgba(43, 70, 52, 0.03);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(43, 70, 52, 0.1);
+        margin-bottom: 32px;
+    }
+
+    .legend-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2b4634;
+        margin: 0 0 12px 0;
+        text-transform: uppercase;
+    }
+
+    .legend-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: #2b4634;
+    }
+
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .trees-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 24px;
     }
 
-    .member-card {
-        padding: 24px;
-        background: linear-gradient(135deg, #ffffff 0%, rgba(43, 70, 52, 0.02) 100%);
+    .member-section {
+        background: white;
         border: 1px solid rgba(43, 70, 52, 0.12);
-        border-radius: 14px;
-        text-align: center;
-        transition: all 0.3s ease;
+        border-radius: 12px;
+        padding: 20px;
     }
 
-    .member-card:hover {
-        border-color: rgba(43, 70, 52, 0.25);
-        box-shadow: 0 8px 16px rgba(43, 70, 52, 0.08);
+    .member-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2b4634;
+        margin: 0 0 16px 0;
     }
 
-    .member-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
+    .trees-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
-        margin-bottom: 16px;
     }
 
-    .member-status {
-        flex-shrink: 0;
+    .tree-wrapper {
+        border: 3px solid transparent;
+        border-radius: 8px;
+        padding: 12px;
+        background: rgba(43, 70, 52, 0.02);
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        background: #10b981;
-        border-radius: 50%;
-    }
-
-    .member-email {
+    .no-trees {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 20px;
+        color: rgba(43, 70, 52, 0.5);
         font-size: 14px;
-        font-weight: 600;
-        color: #2b4634;
-        margin: 0;
     }
 
-    .role-badge {
-        padding: 4px 10px;
-        background: rgba(217, 119, 6, 0.15);
-        color: #d97706;
-        border-radius: 16px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-top: 4px;
-        display: inline-block;
+    /* FOCUS TAB */
+    .focus-section {
     }
 
-    .member-forest {
-        margin: 20px 0;
+    .focus-admin-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .btn-start-now {
         padding: 16px;
-        background: linear-gradient(135deg, rgba(43, 70, 52, 0.05), rgba(217, 119, 6, 0.03));
-        border-radius: 10px;
-        border: 1px solid rgba(43, 70, 52, 0.08);
+        background: linear-gradient(135deg, #d97706, #f59e0b);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .member-meta {
-        padding-top: 16px;
-        border-top: 1px solid rgba(43, 70, 52, 0.08);
+    .btn-start-now:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3);
     }
 
-    .member-joined {
-        font-size: 12px;
-        color: rgba(43, 70, 52, 0.6);
-        margin: 0;
-    }
-
-    .invite-section {
-        background: linear-gradient(135deg, rgba(43, 70, 52, 0.03), rgba(217, 119, 6, 0.03));
-        padding: 32px;
-        border-radius: 16px;
+    .schedule-form {
+        background: rgba(43, 70, 52, 0.03);
+        padding: 20px;
+        border-radius: 12px;
         border: 1px solid rgba(43, 70, 52, 0.1);
-    }
-
-    .error-message {
-        padding: 12px 16px;
-        background: #fee2e2;
-        color: #991b1b;
-        border-radius: 8px;
-        font-size: 14px;
-        margin-bottom: 16px;
-        border-left: 4px solid #dc2626;
-    }
-
-    .success-message {
-        padding: 12px 16px;
-        background: #dcfce7;
-        color: #166534;
-        border-radius: 8px;
-        font-size: 14px;
-        margin-bottom: 16px;
-        border-left: 4px solid #22c55e;
-    }
-
-    .invite-form {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
     }
 
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-label {
-        font-weight: 600;
+    .schedule-form h3 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
         color: #2b4634;
-        font-size: 14px;
     }
 
     .form-input {
         padding: 10px 14px;
         border: 1px solid rgba(43, 70, 52, 0.2);
-        border-radius: 8px;
+        border-radius: 6px;
         font-size: 14px;
-        transition: border-color 0.2s ease;
+        font-family: inherit;
     }
 
     .form-input:focus {
@@ -566,261 +904,167 @@
         box-shadow: 0 0 0 3px rgba(43, 70, 52, 0.1);
     }
 
-    .form-input:disabled {
-        background: rgba(43, 70, 52, 0.05);
-        cursor: not-allowed;
-    }
-
-    .submit-button {
-        padding: 12px 24px;
+    .btn-schedule {
+        padding: 10px;
         background: #2b4634;
         color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 6px;
         font-weight: 600;
-        font-size: 14px;
         cursor: pointer;
-        transition: all 0.2s ease;
     }
 
-    .submit-button:hover:not(:disabled) {
-        background: #1f3025;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(43, 70, 52, 0.2);
+    .btn-schedule:hover:not(:disabled) {
+        background: #1f3226;
     }
 
-    .submit-button:disabled {
+    .btn-schedule:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
 
-    .leaderboard-section {
-        background: linear-gradient(135deg, rgba(43, 70, 52, 0.03), rgba(217, 119, 6, 0.03));
-        padding: 32px;
-        border-radius: 16px;
-        border: 1px solid rgba(43, 70, 52, 0.1);
+    .sessions-list {
+        margin-bottom: 32px;
     }
 
-    .leaderboard-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .leaderboard-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 16px;
-        background: white;
-        border: 1px solid rgba(43, 70, 52, 0.1);
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-
-    .leaderboard-row:hover {
-        background: rgba(43, 70, 52, 0.02);
-        border-color: rgba(43, 70, 52, 0.2);
-    }
-
-    .rank-badge {
-        min-width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #2b4634, #1f3025);
-        color: white;
-        border-radius: 50%;
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    .member-info {
-        flex: 1;
-    }
-
-    .member-name {
-        font-weight: 600;
-        color: #2b4634;
-        margin: 0;
-        font-size: 14px;
-    }
-
-    .member-email-small {
-        font-size: 12px;
-        color: rgba(43, 70, 52, 0.6);
-        margin: 2px 0 0 0;
-    }
-
-    .member-stats {
-        display: flex;
-        gap: 20px;
-    }
-
-    .stat {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .stat-value {
-        font-weight: 700;
-        color: #2b4634;
-        font-size: 16px;
-    }
-
-    .stat-label {
-        font-size: 18px;
-    }
-
-    .challenges-section {
-        background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), rgba(43, 70, 52, 0.02));
-        padding: 32px;
-        border-radius: 16px;
-        border: 1px solid rgba(217, 119, 6, 0.2);
-    }
-
-    .challenge-form {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .challenge-card {
-        background: white;
-        border: 1px solid rgba(43, 70, 52, 0.1);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 16px;
-    }
-
-    .challenge-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-
-    .challenge-title {
+    .sessions-heading {
         font-size: 16px;
         font-weight: 600;
         color: #2b4634;
-        margin: 0;
-    }
-
-    .metric-badge {
-        padding: 4px 12px;
-        background: rgba(217, 119, 6, 0.15);
-        color: #d97706;
-        border-radius: 16px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-
-    .challenge-description {
-        font-size: 14px;
-        color: rgba(43, 70, 52, 0.7);
         margin: 0 0 16px 0;
     }
 
-    .challenge-progress {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+    .session-card {
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid;
+        background: white;
+        margin-bottom: 12px;
+        transition: all 0.2s;
     }
 
-    .progress-row {
+    .session-card.active {
+        border-left-color: #ef4444;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), white);
+    }
+
+    .session-card.scheduled {
+        border-left-color: #3b82f6;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), white);
+    }
+
+    .session-header {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 12px;
+        margin-bottom: 12px;
     }
 
-    .progress-member {
-        min-width: 80px;
-        font-size: 12px;
-        font-weight: 600;
+    .session-header h4 {
+        margin: 0;
+        font-size: 16px;
         color: #2b4634;
     }
 
-    .progress-bar {
+    .badge-live {
+        padding: 4px 10px;
+        background: #ef4444;
+        color: white;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+
+    .session-time {
+        font-size: 14px;
+        color: rgba(43, 70, 52, 0.7);
+        margin: 0 0 4px 0;
+    }
+
+    .session-duration {
+        font-size: 14px;
+        color: rgba(43, 70, 52, 0.7);
+        margin: 0 0 8px 0;
+    }
+
+    .session-participants {
+        font-size: 12px;
+        color: rgba(43, 70, 52, 0.5);
+        margin-bottom: 12px;
+    }
+
+    .session-action {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-join,
+    .btn-prejoin {
         flex: 1;
-        height: 8px;
-        background: rgba(43, 70, 52, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #2b4634, #d97706);
-        border-radius: 4px;
-        transition: width 0.3s ease;
-    }
-
-    .progress-value {
-        min-width: 60px;
-        text-align: right;
-        font-size: 12px;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
         font-weight: 600;
-        color: #2b4634;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .challenge-end {
-        font-size: 12px;
-        color: rgba(43, 70, 52, 0.6);
-        margin: 12px 0 0 0;
+    .btn-join {
+        background: #ef4444;
+        color: white;
     }
 
-    .active-challenges {
-        margin-top: 24px;
+    .btn-join:hover {
+        background: #dc2626;
+    }
+
+    .btn-prejoin {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+    }
+
+    .btn-prejoin:hover {
+        background: rgba(59, 130, 246, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: rgba(43, 70, 52, 0.5);
+        font-size: 16px;
     }
 
     @media (max-width: 768px) {
-        .section-header {
-            flex-direction: column;
-            align-items: flex-start;
+        .tabs {
+            overflow-x: auto;
         }
 
-        .members-grid {
+        .focus-admin-panel {
             grid-template-columns: 1fr;
         }
 
-        .invite-form {
-            flex-direction: column;
-        }
-
-        .challenge-form {
-            flex-direction: column;
-        }
-
-        .form-row {
+        .notes-grid {
             grid-template-columns: 1fr;
         }
 
-        .leaderboard-row {
-            flex-direction: column;
-            text-align: center;
+        .trees-grid {
+            grid-template-columns: 1fr;
         }
 
-        .member-stats {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .challenge-header {
-            flex-direction: column;
-            align-items: flex-start;
+        .legend-items {
+            grid-template-columns: 1fr;
         }
     }
 </style>

@@ -26,7 +26,7 @@
 
     const config = $derived(sizeConfig[size]);
 
-    // Calculate opacity based on health
+    // Calculate opacity based on health (matches iOS TreeSVGView)
     const opacity = $derived(health < 30 ? 0.7 : health < 60 ? 0.85 : health < 80 ? 0.95 : 1);
 
     // Rarity styling

@@ -1043,9 +1043,9 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    clearDay: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return { success: false, error: 'Unauthorized' };
+    clearDay: async ({ request, locals: { supabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return { success: false, error: 'Unauthorized' };
 
         const data = await request.formData();
         const dateStr = data.get('date')?.toString();
@@ -1061,7 +1061,7 @@ export const actions: Actions = {
         const { data: sessionsData } = await supabase
             .from('amber_sessions')
             .select('id, created_at, amber_tasks(start_time, end_time, calendar_event_id)')
-            .eq('user_id', session.user.id);
+            .eq('user_id', user.id);
 
         const sessionIdsToDelete = (sessionsData || []).filter((s: any) => {
             const tasks = s.amber_tasks || [];
@@ -1084,7 +1084,7 @@ export const actions: Actions = {
         if (calendarEventIds.length > 0) {
             try {
                 const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
-                const gToken = await getGoogleAccessToken(session.user.id);
+                const gToken = await getGoogleAccessToken(user.id);
                 for (const eventId of calendarEventIds) {
                     await deleteCalendarEvent(gToken, eventId);
                 }
@@ -1098,7 +1098,7 @@ export const actions: Actions = {
             .from('amber_sessions')
             .delete()
             .in('id', sessionIdsToDelete)
-            .eq('user_id', session.user.id);
+            .eq('user_id', user.id);
 
         if (deleteError) {
             console.error('[Action: clearDay] Database delete error:', deleteError);

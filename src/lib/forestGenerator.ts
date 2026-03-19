@@ -18,12 +18,18 @@ export function generateForestTrees(
     forestHealth: number = 100
 ): ForestTreeData[] {
     return sessions
-        .filter(s => s.status === 'completed' || s.status === 'scheduled')
+        .filter(s => {
+            // Include all active sessions except drafts/failed
+            return !['draft', 'failed'].includes(s.status);
+        })
         .map((session: any, index: number) => {
-            const durationMinutes = session.amber_tasks?.reduce(
+            // Get duration from tasks if available, otherwise from estimated_total_duration
+            const taskDuration = session.amber_tasks?.reduce(
                 (sum: number, task: any) => sum + (task.estimated_minutes || 0),
                 0
             ) || 0;
+
+            const durationMinutes = taskDuration || session.estimated_total_duration || 0;
 
             // Skip sessions with no duration
             if (durationMinutes === 0) return null;

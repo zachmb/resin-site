@@ -267,10 +267,10 @@
 						></span>
 					</a>
 					<a
-						href="/boards"
+						href="/groups"
 						class="hover:text-resin-forest transition-colors relative group"
 					>
-						Boards
+						Groups
 						<span
 							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
 						></span>
@@ -390,6 +390,11 @@
 				href="/focus"
 				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
 				onclick={() => (isMobileMenuOpen = false)}>Focus</a
+			>
+			<a
+				href="/groups"
+				class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+				onclick={() => (isMobileMenuOpen = false)}>Groups</a
 			>
 			<a
 				href="/account"

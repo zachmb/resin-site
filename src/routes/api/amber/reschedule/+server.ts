@@ -28,6 +28,8 @@ export const POST = async ({ request }: RequestEvent) => {
         const body = await request.json();
         const { task_id, new_start_time, new_end_time } = body;
 
+        console.log('[api/amber/reschedule] Request:', { task_id, new_start_time, new_end_time, userId: user.id });
+
         if (!task_id || !new_start_time || !new_end_time) {
             return json(
                 { error: 'Missing required fields: task_id, new_start_time, new_end_time' },
@@ -38,9 +40,11 @@ export const POST = async ({ request }: RequestEvent) => {
         // 3. Fetch task with session info to verify ownership and get title
         const { data: taskData, error: taskError } = await admin
             .from('amber_tasks')
-            .select('id, title, calendar_event_id, start_time, end_time, session_id, amber_sessions(user_id, display_title)')
+            .select('id, title, calendar_event_id, start_time, end_time, amber_session_id, amber_sessions!amber_session_id(user_id, display_title)')
             .eq('id', task_id)
             .single();
+
+        console.log('[api/amber/reschedule] Task fetch:', { taskError, taskData: taskData ? { id: taskData.id, title: taskData.title } : null });
 
         if (taskError || !taskData) {
             return json({ error: 'Task not found' }, { status: 404 });
@@ -65,6 +69,7 @@ export const POST = async ({ request }: RequestEvent) => {
         let calendar_warning = false;
         if (taskData.calendar_event_id) {
             try {
+                console.log('[api/amber/reschedule] Updating calendar event:', taskData.calendar_event_id);
                 const gToken = await getGoogleAccessToken(user.id);
                 const success = await updateCalendarEvent(
                     gToken,
@@ -74,6 +79,7 @@ export const POST = async ({ request }: RequestEvent) => {
                     new_end_time,
                     timezone
                 );
+                console.log('[api/amber/reschedule] Calendar update result:', success);
                 if (!success) {
                     calendar_warning = true;
                 }
@@ -81,9 +87,12 @@ export const POST = async ({ request }: RequestEvent) => {
                 console.warn('[api/amber/reschedule] Calendar update warning:', calErr);
                 calendar_warning = true;
             }
+        } else {
+            console.log('[api/amber/reschedule] No calendar event ID, skipping calendar update');
         }
 
         // 6. Update task times in Supabase
+        console.log('[api/amber/reschedule] Updating task in database');
         const { data: updatedTask, error: updateError } = await admin
             .from('amber_tasks')
             .update({
@@ -94,6 +103,8 @@ export const POST = async ({ request }: RequestEvent) => {
             .eq('id', task_id)
             .select()
             .single();
+
+        console.log('[api/amber/reschedule] Database update result:', { updateError: updateError ? updateError.message : 'success', updatedTask: updatedTask ? { id: updatedTask.id } : null });
 
         if (updateError) {
             console.error('[api/amber/reschedule] Database update error:', updateError);
@@ -108,6 +119,8 @@ export const POST = async ({ request }: RequestEvent) => {
         });
     } catch (err) {
         console.error('[api/amber/reschedule] Error:', err);
-        return json({ error: String(err) }, { status: 500 });
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('[api/amber/reschedule] Stack:', err instanceof Error ? err.stack : 'no stack');
+        return json({ error: errorMessage }, { status: 500 });
     }
 };

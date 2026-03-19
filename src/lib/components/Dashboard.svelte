@@ -43,6 +43,7 @@
     let savingAmber = $state(false);
     let successNote = $state(false);
     let successAmber = $state(false);
+    let navigatingToAmber = $state(false);
     let startingFocus = $state(false);
     let autoDays = $state<Record<string, boolean>>({
         Mon: false,
@@ -541,12 +542,42 @@
                     >
                         Save Note
                     </a>
-                    <a
-                        href="/amber"
-                        class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all inline-block active:scale-95"
+                    <button
+                        onclick={async () => {
+                            navigatingToAmber = true;
+                            // Show loading state for 300ms then navigate
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                            goto('/amber');
+                        }}
+                        disabled={navigatingToAmber}
+                        class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 inline-flex items-center gap-2"
                     >
-                        Schedule Amber →
-                    </a>
+                        {#if navigatingToAmber}
+                            <svg
+                                class="w-4 h-4 animate-spin"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                />
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                            </svg>
+                            Preparing...
+                        {:else}
+                            Schedule Amber →
+                        {/if}
+                    </button>
                 {/if}
             </div>
         </div>

@@ -2,17 +2,14 @@ import { error, redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { generateForestTrees } from '$lib/forestGenerator';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
     try {
-        const session = await getSession();
-        if (!session) {
+        const user = await getUser();
+        if (!user) {
             throw redirect(303, '/login?next=/forest');
         }
 
-        const userId = session.user?.id;
-        if (!userId) {
-            throw redirect(303, '/login?next=/forest');
-        }
+        const userId = user.id;
 
         // Run all independent queries in parallel
         const [profileResult, sessionsResult, feedbackResult, achievementsResult] = await Promise.all([
@@ -224,13 +221,12 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
 };
 
 export const actions: Actions = {
-    unlockTree: async ({ request, locals: { supabase, getSession } }) => {
+    unlockTree: async ({ request, locals: { supabase, getUser } }) => {
         try {
-            const session = await getSession();
-            if (!session) return fail(401, { error: 'Unauthorized' });
+            const user = await getUser();
+            if (!user) return fail(401, { error: 'Unauthorized' });
 
-            const userId = session.user?.id;
-            if (!userId) return fail(401, { error: 'Unauthorized' });
+            const userId = user.id;
 
             const formData = await request.formData();
             const speciesId = formData.get('speciesId')?.toString();

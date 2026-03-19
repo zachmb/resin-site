@@ -387,13 +387,39 @@
         <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-5 gap-8 mb-24">
             <!-- Left: Compact Stats -->
             <div class="lg:col-span-2 space-y-4">
-                <div class="glass-card rounded-2xl p-4 flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-resin-amber/10 flex items-center justify-center text-resin-amber flex-shrink-0">
-                        <Gem size={20} />
+                <!-- Stones Stack Visual (matches iOS StonesStackView) -->
+                <div class="rounded-lg p-4 border border-stone-300/30 bg-gradient-to-br from-white/60 to-white/30">
+                    <div class="flex items-end gap-4">
+                        <!-- Stacked stones visual (matching iOS exactly) -->
+                        <div class="flex flex-col-reverse gap-1">
+                            {#each Array(Math.min(5, Math.ceil(totalStones / 200))) as _, i}
+                                <div
+                                    class="rounded-sm shadow"
+                                    style="
+                                        width: 28px;
+                                        height: 20px;
+                                        background: linear-gradient(180deg, rgb(214, 166, 80) 0%, rgb(166, 120, 46) 100%);
+                                        opacity: {0.6 + i * 0.08};
+                                        transform: translateY({i * 2}px);
+                                    "
+                                />
+                            {/each}
+                        </div>
+                        <!-- Stats text (matching iOS) -->
+                        <div class="flex-1">
+                            <p class="text-2xl font-bold" style="color: rgb(166, 120, 46);">{totalStones}</p>
+                            <p class="text-xs uppercase tracking-wider font-bold mt-1" style="color: rgb(166, 120, 46);">Petrified Stones</p>
+                            <p class="text-xs mt-2" style="color: rgb(166, 120, 46, 0.7);">
+                                {nextStoneMilestone - totalStones} to next milestone
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-2xl font-bold text-resin-charcoal">{totalStones}</p>
-                        <p class="text-xs uppercase tracking-widest text-resin-earth/50 font-bold">Stones</p>
+                    <!-- Progress bar (matching iOS) -->
+                    <div class="mt-4 h-1 rounded-sm overflow-hidden" style="background: rgba(214, 166, 80, 0.2);">
+                        <div
+                            class="h-full transition-all duration-500"
+                            style="width: {(stoneProgress * 100)}%; background: linear-gradient(90deg, rgb(214, 166, 80) 0%, rgb(198, 147, 61) 100%);"
+                        />
                     </div>
                 </div>
 

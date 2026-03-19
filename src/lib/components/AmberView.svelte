@@ -1122,12 +1122,17 @@
                     try {
                         // Get auth token from page data
                         const session = $page.data.session;
-                        if (!session?.access_token) {
-                            console.error('Not authenticated');
+                        if (!session || !session.access_token) {
+                            console.error('[AmberCalendar] Not authenticated. Session:', session);
                             return;
                         }
 
-                        const response = await fetch('/api/amber/reschedule', {
+                        const url = '/api/amber/reschedule';
+                        console.log('[AmberCalendar] Rescheduling task:', task.id, 'from', newStart, 'to', newEnd);
+                        console.log('[AmberCalendar] Fetch URL:', url);
+                        console.log('[AmberCalendar] Auth header:', `Bearer ${session.access_token.substring(0, 20)}...`);
+
+                        const response = await fetch(url, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1139,14 +1144,18 @@
                                 new_end_time: newEnd
                             })
                         });
+
+                        const responseData = await response.json();
+                        console.log('[AmberCalendar] Reschedule response:', response.status, responseData);
+
                         if (response.ok) {
-                            invalidateAll();
+                            console.log('[AmberCalendar] Reschedule successful, invalidating all');
+                            await invalidateAll();
                         } else {
-                            const errorText = await response.text();
-                            console.error('Reschedule failed:', response.status, errorText);
+                            console.error('[AmberCalendar] Reschedule failed:', response.status, responseData);
                         }
                     } catch (err) {
-                        console.error('Reschedule error:', err);
+                        console.error('[AmberCalendar] Reschedule error:', err);
                     }
                 }}
                 onClearDay={(day) => {
@@ -1192,13 +1201,12 @@
                     use:enhance={() => {
                         clearingDate = dateToClear?.toISOString() || null;
                         return async ({ result }) => {
-                            if (result.type === 'success') {
+                            clearingDate = null;
+                            if (result.type === 'success' && result.data?.success) {
                                 showClearConfirm = false;
-                                clearingDate = null;
                                 await invalidateAll();
                             } else {
-                                console.error('Clear day action failed:', result);
-                                clearingDate = null;
+                                console.error('Clear day action failed:', result.data);
                             }
                         };
                     }}

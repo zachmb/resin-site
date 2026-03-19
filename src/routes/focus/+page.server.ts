@@ -2,15 +2,15 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendPush } from '$lib/apns';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession }, setHeaders }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, getUser }, setHeaders }) => {
     // Disable server caching for fresh data
     setHeaders({
         'cache-control': 'no-cache, no-store, must-revalidate'
     });
 
-    const session = await getSession();
+    const user = await getUser();
 
-    if (!session) {
+    if (!user) {
         throw redirect(303, '/login?next=/focus');
     }
 
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession }, s
             const { data: automations } = await supabase
                 .from('focus_automations')
                 .select('*')
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .eq('enabled', true);
 
             if (!automations || automations.length === 0) return;

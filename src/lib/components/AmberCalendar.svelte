@@ -134,6 +134,12 @@
 
     // Drag handling
     function onMouseDown(task: AmberTask, dayIndex: number, e: MouseEvent) {
+        // Don't allow dragging focus session tasks (they have IDs like 'focus-xxx')
+        if (task.id.startsWith('focus-')) {
+            console.log('[AmberCalendar] Cannot reschedule focus session task');
+            return;
+        }
+
         dragging = {
             task,
             originY: e.clientY,
@@ -271,17 +277,19 @@
                         {@const durationMs = endDate.getTime() - startDate.getTime()}
                         {@const height = (durationMs / (30 * 60 * 1000)) * 40}
                         {@const dragOffset = dragging?.task.id === task.id ? dragging.dragY : 0}
+                        {@const isFocusTask = task.id.startsWith('focus-')}
                         <div
-                            class="task-block"
+                            class="task-block {isFocusTask ? 'focus-task' : 'draggable'}"
                             style="
                                 top: {offset + dragOffset}px;
                                 height: {height}px;
                                 background-color: {task.sessionColor};
-                                opacity: {dragging?.task.id === task.id ? 0.7 : 1};
+                                opacity: {dragging?.task.id === task.id ? 0.7 : isFocusTask ? 0.6 : 1};
                                 transform: {dragging?.task.id === task.id
                                     ? 'scale(1.02)'
                                     : 'scale(1)'};
                                 z-index: {dragging?.task.id === task.id ? 10 : 1};
+                                cursor: {isFocusTask ? 'not-allowed' : 'move'};
                             "
                             on:mousedown={(e) => onMouseDown(task, dayIndex, e)}
                             role="button"

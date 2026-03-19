@@ -69,6 +69,10 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
     if (url.pathname.startsWith('/api/')) {
         // API responses: short cache, revalidation required
         response.headers.set('Cache-Control', 'private, max-age=30, must-revalidate')
+        // Add API version header (v1 for /api/*, v2 for /api/v2/*, etc.)
+        const versionMatch = url.pathname.match(/^\/api\/(v\d+)/)
+        const apiVersion = versionMatch ? versionMatch[1] : 'v1'
+        response.headers.set('API-Version', apiVersion)
     } else if (
         url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2|woff|ttf|eot|ico)$/)
     ) {

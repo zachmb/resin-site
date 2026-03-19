@@ -38,6 +38,7 @@ import { executeNoteCommands } from '$lib/services/commandExecutor'
 import { computeUserInsights } from '$lib/amber_service'
 import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service'
 import type { RequestEvent } from '@sveltejs/kit'
+import type { ActivateRequest, ActivateResponse } from '@resin/contracts'
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }

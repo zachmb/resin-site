@@ -1,10 +1,10 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
-    const session = await getSession();
+export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
+    const user = await getUser();
 
-    if (!session) {
+    if (!user) {
         throw redirect(303, '/login?next=/groups');
     }
 
@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
                 created_at
             )
         `)
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .order('joined_at', { ascending: false });
 
     const groups = (userGroups || []).map((ug: any) => ({

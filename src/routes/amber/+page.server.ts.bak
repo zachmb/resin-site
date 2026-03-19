@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {
         throw redirect(303, '/login?next=/amber');
@@ -160,8 +160,8 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
 export const actions: Actions = {
     activate: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -299,8 +299,8 @@ export const actions: Actions = {
     },
 
     complete: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -393,8 +393,8 @@ export const actions: Actions = {
     },
 
     cancel: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -464,27 +464,21 @@ export const actions: Actions = {
     },
 
     delete: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
-            console.error('[Delete] Auth error:', authError);
-            return { success: false, error: "Unauthorized" };
-        }
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
-        console.log('[Delete] Attempting to delete session:', sessionId, 'for user:', user.id);
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
 
         // Try to find in amber_sessions first
-        const { data: amberSession, error: fetchError } = await supabase
+        const { data: amberSession } = await supabase
             .from('amber_sessions')
             .select('id, amber_tasks(calendar_event_id)')
             .eq('id', sessionId)
             .eq('user_id', user.id)
             .single();
-
-        console.log('[Delete] Fetch result - session found:', !!amberSession, 'error:', fetchError);
 
         if (amberSession) {
             // It's an amber session - clean up calendar events and delete
@@ -504,36 +498,25 @@ export const actions: Actions = {
                 }
             }
 
-            const { count, error: deleteError } = await supabase
+            const { error: deleteError } = await supabase
                 .from('amber_sessions')
                 .delete()
                 .eq('id', sessionId)
                 .eq('user_id', user.id);
 
-            console.log('[Delete] Delete result - count:', count, 'error:', deleteError);
-
             if (deleteError) {
-                console.error('[Delete] Database delete error:', deleteError);
-                return { success: false, error: 'Failed to delete from database', code: 'DB_ERROR' };
+                console.error('[Action: delete] Database delete error:', deleteError);
+                return { success: false, error: 'Failed to delete from database' };
             }
-
-            // RLS SILENT FAILURE DETECTION
-            if (!count || count === 0) {
-                console.error('[Delete] RLS silent failure - no rows affected');
-                return { success: false, error: 'Could not delete session. Check your permissions.', code: 'RLS_SILENT_FAILURE' };
-            }
-
-            console.log('[Delete] Successfully deleted session from database');
 
             // Recalculate stones
             try {
                 const { syncStonesFromNotes } = await import('$lib/gamification_service');
                 await syncStonesFromNotes(user.id, { force: true });
             } catch (syncError) {
-                console.error('[Delete] Stone sync error:', syncError);
+                console.error('[Action: delete] Stone sync error:', syncError);
             }
 
-            console.log('[Delete] Action completed successfully');
             return { success: true };
         }
 
@@ -547,37 +530,27 @@ export const actions: Actions = {
 
         if (focusSession) {
             // It's a focus session - just delete it
-            const { count, error: deleteError } = await supabase
+            const { error: deleteError } = await supabase
                 .from('blocking_sessions')
                 .delete()
                 .eq('id', sessionId)
                 .eq('user_id', user.id);
 
-            console.log('[Delete] Focus session delete - count:', count, 'error:', deleteError);
-
             if (deleteError) {
-                console.error('[Delete] Database delete error:', deleteError);
-                return { success: false, error: 'Failed to delete session', code: 'DB_ERROR' };
+                console.error('[Action: delete] Database delete error:', deleteError);
+                return { success: false, error: 'Failed to delete from database' };
             }
 
-            // RLS SILENT FAILURE DETECTION
-            if (!count || count === 0) {
-                console.error('[Delete] RLS silent failure on focus session - no rows affected');
-                return { success: false, error: 'Could not delete focus session. Check your permissions.', code: 'RLS_SILENT_FAILURE' };
-            }
-
-            console.log('[Delete] Focus session deleted successfully');
             return { success: true };
         }
 
         // Session not found in either table
-        console.warn('[Delete] Session not found in either table');
-        return { success: false, error: 'Session not found or unauthorized', code: 'NOT_FOUND' };
+        return { success: false, error: 'Session not found or unauthorized' };
     },
 
     acceptJointPlan: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const planId = data.get('plan_id') as string;
@@ -599,8 +572,8 @@ export const actions: Actions = {
     },
 
     declineJointPlan: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const planId = data.get('plan_id') as string;
@@ -622,8 +595,8 @@ export const actions: Actions = {
     },
 
     activateJointPlan: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const planId = data.get('plan_id') as string;
@@ -668,8 +641,8 @@ export const actions: Actions = {
     },
 
     cancelJointPlan: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const planId = data.get('plan_id') as string;
@@ -691,8 +664,8 @@ export const actions: Actions = {
     },
 
     updateTask: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -739,8 +712,8 @@ export const actions: Actions = {
     },
 
     shiftSingleTask: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -781,8 +754,8 @@ export const actions: Actions = {
     },
 
     updateIntensity: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -826,8 +799,8 @@ export const actions: Actions = {
     },
 
     scaleDurations: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -876,8 +849,8 @@ export const actions: Actions = {
     },
 
     shiftStartTimes: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -945,8 +918,8 @@ export const actions: Actions = {
     },
 
     markFailed: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -982,8 +955,8 @@ export const actions: Actions = {
     },
 
     extendSession: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -1043,8 +1016,8 @@ export const actions: Actions = {
     },
 
     bulkDelete: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return { success: false, error: "Unauthorized" };
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionIds = JSON.parse(data.get('sessionIds')?.toString() || '[]');

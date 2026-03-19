@@ -194,7 +194,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser, sessio
 };
 
 export const actions: Actions = {
-    scheduleSession: async ({ request, locals: { supabase, getSession } }) => {
+    scheduleSession: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -259,7 +259,7 @@ export const actions: Actions = {
         }
     },
 
-    cancelSession: async ({ request, locals: { supabase, getSession } }) => {
+    cancelSession: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -302,7 +302,7 @@ export const actions: Actions = {
         }
     },
 
-    createAutomation: async ({ request, locals: { supabase, getSession } }) => {
+    createAutomation: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -339,7 +339,7 @@ export const actions: Actions = {
         }
     },
 
-    deleteAutomation: async ({ request, locals: { supabase, getSession } }) => {
+    deleteAutomation: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -364,7 +364,7 @@ export const actions: Actions = {
         }
     },
 
-    updateSession: async ({ request, locals: { supabase, getSession } }) => {
+    updateSession: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -423,7 +423,7 @@ export const actions: Actions = {
         }
     },
 
-    makeRecurring: async ({ request, locals: { supabase, getSession } }) => {
+    makeRecurring: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -543,7 +543,7 @@ export const actions: Actions = {
         }
     },
 
-    inviteFriendToFocus: async ({ request, locals: { supabase, getSession } }) => {
+    inviteFriendToFocus: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -621,7 +621,7 @@ export const actions: Actions = {
         }
     },
 
-    acceptSharedFocus: async ({ request, locals: { supabase, getSession } }) => {
+    acceptSharedFocus: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -712,7 +712,7 @@ export const actions: Actions = {
         }
     },
 
-    declineSharedFocus: async ({ request, locals: { supabase, getSession } }) => {
+    declineSharedFocus: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -748,7 +748,7 @@ export const actions: Actions = {
         }
     },
 
-    completeSharedFocus: async ({ request, locals: { supabase, getSession } }) => {
+    completeSharedFocus: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -837,7 +837,7 @@ export const actions: Actions = {
         }
     },
 
-    cancelSharedFocus: async ({ request, locals: { supabase, getSession } }) => {
+    cancelSharedFocus: async ({ request, locals: { supabase } }) => {
         const session = await getSession();
         if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -914,7 +914,7 @@ export const actions: Actions = {
         }
     },
 
-    refresh: async ({ locals: { supabase, getSession } }) => {
+    refresh: async ({ locals: { supabase } }) => {
         // This action is called by the client to refresh data
         // SvelteKit will automatically invalidate the page data
         const session = await getSession();

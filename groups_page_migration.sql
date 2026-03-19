@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS group_invites (
 -- 4. Enable RLS on group_invites
 ALTER TABLE group_invites ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Members can view invites" ON group_invites;
 CREATE POLICY "Members can view invites" ON group_invites FOR SELECT
   USING (
     EXISTS (
@@ -35,6 +36,7 @@ CREATE POLICY "Members can view invites" ON group_invites FOR SELECT
     )
   );
 
+DROP POLICY IF EXISTS "Admins can create invites" ON group_invites;
 CREATE POLICY "Admins can create invites" ON group_invites FOR INSERT WITH CHECK (
   EXISTS (
     SELECT 1 FROM focus_group_members

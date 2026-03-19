@@ -44,10 +44,10 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
         .single();
 };
 
-export const load: PageServerLoad = async ({ locals }) => {
-    const session = await locals.getSession();
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (error || !user) {
         return {
             session: null,
             profile: null,
@@ -58,7 +58,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         };
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
@@ -69,14 +69,14 @@ export const load: PageServerLoad = async ({ locals }) => {
     startOfWeek.setHours(0, 0, 0, 0);
 
     // 1. Profile
-    const { data: profile } = await locals.supabase
+    const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
     // 2. Recent Notes (amber_sessions)
-    const { data: recentNotes } = await locals.supabase
+    const { data: recentNotes } = await supabase
         .from('amber_sessions')
         .select('*')
         .eq('user_id', userId)
@@ -84,7 +84,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .limit(6);
 
     // 3. Today's Tasks
-    const { data: todayTasks } = await locals.supabase
+    const { data: todayTasks } = await supabase
         .from('amber_tasks')
         .select(`
             *,
@@ -96,7 +96,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .order('start_time', { ascending: true });
 
     // 4. All sessions this week (for heatmap + stats)
-    const { data: weekSessions } = await locals.supabase
+    const { data: weekSessions } = await supabase
         .from('amber_sessions')
         .select('id, display_title, status, created_at')
         .eq('user_id', userId)
@@ -104,7 +104,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .order('created_at', { ascending: true });
 
     // 5. All tasks this week (for focus minutes)
-    const { data: weekTasks } = await locals.supabase
+    const { data: weekTasks } = await supabase
         .from('amber_tasks')
         .select('id, title, estimated_minutes, requires_focus, start_time, end_time, amber_sessions!inner(user_id)')
         .eq('amber_sessions.user_id', userId)
@@ -112,7 +112,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .order('start_time', { ascending: true });
 
     // 6. Recent feedback (for taste insights)
-    const { data: feedback } = await locals.supabase
+    const { data: feedback } = await supabase
         .from('amber_task_feedback')
         .select('*')
         .eq('user_id', userId)
@@ -120,7 +120,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .limit(20);
 
     // 7. Focus automations
-    const { data: automations } = await locals.supabase
+    const { data: automations } = await supabase
         .from('focus_automations')
         .select('*')
         .eq('user_id', userId)
@@ -183,7 +183,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     const isNewUser = !profile?.web_onboarded;
 
     // Fetch user's focus groups
-    const { data: userGroups } = await locals.supabase
+    const { data: userGroups } = await supabase
         .from('focus_group_members')
         .select(`
             group_id,
@@ -232,9 +232,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-    quickNote: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    quickNote: async ({ request, locals: { supabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
         const data = await request.formData();
         const content = data.get('content')?.toString() || '';
@@ -245,7 +245,7 @@ export const actions: Actions = {
 
         const title = extractTitle(content);
         const { data: note, error } = await insertNote(supabase, {
-            user_id: session.user.id,
+            user_id: user.id,
             title: title,
             content: content,
             created_at: new Date().toISOString()
@@ -257,15 +257,15 @@ export const actions: Actions = {
         }
 
         // Sync profile to update stone count and streak after saving a note
-        await syncStonesFromNotes(session.user.id);
-        await recordDailyActivity(session.user.id);
+        await syncStonesFromNotes(user.id);
+        await recordDailyActivity(user.id);
 
         return { success: true, noteId: note.id, redirectTo: `/notes?id=${note.id}` };
     },
 
-    quickSchedule: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    quickSchedule: async ({ request, locals: { supabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
         const data = await request.formData();
         const content = data.get('content')?.toString() || '';
@@ -276,7 +276,7 @@ export const actions: Actions = {
 
         const title = extractTitle(content);
         const { data: note, error } = await insertNote(supabase, {
-            user_id: session.user.id,
+            user_id: user.id,
             title: title,
             content: content,
             created_at: new Date().toISOString()
@@ -288,15 +288,15 @@ export const actions: Actions = {
         }
 
         // Sync profile to update stone count and streak after scheduling a note
-        await syncStonesFromNotes(session.user.id);
-        await recordDailyActivity(session.user.id);
+        await syncStonesFromNotes(user.id);
+        await recordDailyActivity(user.id);
 
         return { success: true, noteId: note.id, redirectTo: `/amber` };
     },
 
-    createAutomation: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    createAutomation: async ({ request, locals: { supabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
         const data = await request.formData();
         const title = data.get('title')?.toString() || '';
@@ -312,7 +312,7 @@ export const actions: Actions = {
             const { data: automation, error } = await supabase
                 .from('focus_automations')
                 .insert({
-                    user_id: session.user.id,
+                    user_id: user.id,
                     title: title,
                     time: time,
                     duration_minutes: duration,
@@ -331,9 +331,9 @@ export const actions: Actions = {
         }
     },
 
-    deleteAutomation: async ({ request, locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    deleteAutomation: async ({ request, locals: { supabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
         const data = await request.formData();
         const automationId = data.get('automationId')?.toString();
@@ -345,7 +345,7 @@ export const actions: Actions = {
                 .from('focus_automations')
                 .delete()
                 .eq('id', automationId)
-                .eq('user_id', session.user.id);
+                .eq('user_id', user.id);
 
             if (error) throw error;
 
@@ -356,15 +356,15 @@ export const actions: Actions = {
         }
     },
 
-    markWebOnboarded: async ({ locals: { supabase, getSession } }) => {
-        const session = await getSession();
-        if (!session) return fail(401, { error: 'Unauthorized' });
+    markWebOnboarded: async ({ locals: { supabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return fail(401, { error: 'Unauthorized' });
 
         try {
             const { error } = await supabase
                 .from('profiles')
                 .update({ web_onboarded: true })
-                .eq('id', session.user.id);
+                .eq('id', user.id);
 
             if (error) throw error;
             return { success: true };

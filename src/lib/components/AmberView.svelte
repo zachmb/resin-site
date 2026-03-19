@@ -12,11 +12,18 @@
     import AmberCalendar from './AmberCalendar.svelte';
     import { setCache, invalidateCache, clearCache } from '$lib/cache';
 
-    let { profile, recentSessions = [], externalEvents = [], executionStats = null } = $props<{
+    let {
+        profile,
+        recentSessions = [],
+        externalEvents = [],
+        executionStats = null,
+        onDelete
+    } = $props<{
         profile: any;
         recentSessions: any[];
         externalEvents?: any[];
         executionStats?: any;
+        onDelete?: (sessionId: string) => Promise<void>;
     }>();
 
     let selectedSessionId = $state<string | null>(null);
@@ -1033,15 +1040,36 @@
                             action="?/delete"
                             bind:this={deleteFormRef}
                             use:enhance={() => {
+                                // Capture the session ID before the enhance handler modifies state
+                                const deletedSessionId = selectedSession?.id;
                                 return async ({ result }) => {
+                                    console.log('[Delete] Action result:', result);
                                     if (result.type === 'success') {
-                                        selectedSessionId = null;
-                                        clearCache();
-                                        await invalidateAll();
+                                        if (result.data?.success) {
+                                            console.log('[Delete] Server confirmed deletion, updating UI');
+                                            showDeleteModal = false;
+                                            selectedSessionId = null;
+                                            clearCache();
+                                            invalidateCache('amber-sessions');
+
+                                            // Call parent delete handler to update local state and sync
+                                            if (onDelete && deletedSessionId) {
+                                                console.log('[Delete] Calling parent onDelete handler for:', deletedSessionId);
+                                                await onDelete(deletedSessionId);
+                                            } else {
+                                                console.log('[Delete] No onDelete handler, falling back to invalidateAll');
+                                                await invalidateAll();
+                                            }
+                                        } else {
+                                            console.error('Delete failed:', result.data?.error);
+                                            showDeleteModal = false;
+                                        }
                                     } else if (result.type === 'failure') {
                                         console.error('Delete failed:', result.data?.error);
+                                        showDeleteModal = false;
                                     } else if (result.type === 'error') {
                                         console.error('Delete error:', result.error?.message);
+                                        showDeleteModal = false;
                                     }
                                 };
                             }}
@@ -1053,7 +1081,10 @@
                             />
                             <button
                                 type="button"
-                                onclick={() => (showDeleteModal = true)}
+                                onclick={() => {
+                                    console.log('[Delete] Delete button clicked for session:', selectedSession?.id);
+                                    showDeleteModal = true;
+                                }}
                                 class="px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-1.5"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1487,8 +1518,11 @@
     title="Delete This Plan?"
     message="Deleting this plan will permanently remove it and all its tasks. This action cannot be undone."
     onConfirm={() => {
+        console.log('[Delete] Modal confirmed, submitting form...');
         showDeleteModal = false;
+        console.log('[Delete] deleteFormRef:', deleteFormRef);
         deleteFormRef?.requestSubmit();
+        console.log('[Delete] Form submitted');
     }}
     onCancel={() => (showDeleteModal = false)}
 />

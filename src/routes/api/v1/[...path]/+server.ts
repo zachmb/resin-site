@@ -39,9 +39,9 @@ const forwardRequest = async (event: RequestEvent): Promise<Response> => {
 			body: ['GET', 'HEAD'].includes(event.request.method)
 				? undefined
 				: event.request.body,
-			// duplex: 'half' required for streaming request bodies
+			// @ts-ignore - duplex is needed for internal streaming in some environments
 			duplex: 'half'
-		});
+		} as any);
 
 		// Add API version header to response
 		const headers = new Headers(response.headers);

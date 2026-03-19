@@ -26,7 +26,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerContainer['c
     }
 }
 
-function handleServiceWorkerMessage(event: ExtendableMessageEvent) {
+function handleServiceWorkerMessage(event: any) {
     const { data } = event;
 
     if (data.type === 'SYNC_SUCCESS') {

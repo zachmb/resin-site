@@ -406,7 +406,7 @@
                                         savingNote = false;
                                         successNote = false;
                                         composeText = "";
-                                        goto(result.data?.redirectTo || "/notes");
+                                        goto((result.data as any)?.redirectTo || "/notes");
                                     }, 800);
                                 } else {
                                     savingNote = false;
@@ -476,7 +476,7 @@
                                         savingAmber = false;
                                         successAmber = false;
                                         composeText = "";
-                                        goto(result.data?.redirectTo || "/amber");
+                                        goto((result.data as any)?.redirectTo || "/amber");
                                     }, 800);
                                 } else {
                                     savingAmber = false;

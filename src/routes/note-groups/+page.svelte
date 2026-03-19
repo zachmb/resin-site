@@ -2,7 +2,11 @@
     import { createSupabaseClient } from '$lib/supabase';
 
     let { data } = $props<{ groups: any[] }>();
-    let groups = $derived(data.groups || []);
+    let groups = $state(data.groups || []);
+
+    $effect(() => {
+        groups = data.groups || [];
+    });
 
     let showCreateGroup = $state(false);
     let newGroupName = $state('');
@@ -60,7 +64,7 @@
                 .eq('id', groupId);
 
             if (err) throw err;
-            groups = groups.filter(g => g.id !== groupId);
+            groups = groups.filter((g: any) => g.id !== groupId);
         } catch (e) {
             console.error('Error deleting group:', e);
         }

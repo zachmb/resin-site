@@ -7,6 +7,10 @@
     let profile = $state(data.profile);
     const insights = data.insights;
 
+    $effect(() => {
+        profile = data.profile;
+    });
+
     const getStreakEmoji = (streak: number) => {
         if (streak === 0) return '🌱';
         if (streak < 7) return '🔥';

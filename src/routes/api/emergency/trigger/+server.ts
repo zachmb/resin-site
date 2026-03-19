@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
-    const { user } = await locals.getUser();
+    const user = await locals.getUser();
     if (!user) {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -11,7 +11,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const body = await request.json();
     const { reason, details } = body;
 
-    const supabase = await locals.getSupabaseClient();
+    const supabase = locals.supabase;
 
     // Insert into emergency_blocks table
     const { error: insertError } = await supabase

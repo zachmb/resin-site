@@ -77,14 +77,15 @@ export const actions: Actions = {
         }
 
         // Increment uses_count on invite
-        await supabase.rpc('increment_invite_uses', { token_input: token }).catch(() => {
+        const { error: rpcError } = await supabase.rpc('increment_invite_uses', { token_input: token });
+        
+        if (rpcError) {
             // If RPC doesn't exist, do it manually
-            supabase
+            await supabase
                 .from('group_invites')
-                .update({ uses_count: Math.min((new Date().getTime() % 1000) + 1, 100) })
-                .eq('token', token)
-                .then();
-        });
+                .update({ uses_count: 1 }) // fallback
+                .eq('token', token);
+        }
 
         throw redirect(303, `/groups/${groupId}`);
     }

@@ -58,7 +58,7 @@
                             setActiveNote(result.data.note);
                             createError = '';
                         } else if (result.type === "failure") {
-                            createError = result.data?.error || 'Failed to create note';
+                            createError = (result.data as any)?.error || 'Failed to create note';
                             console.error('[SavedNotesList] Create error:', result.data);
                         } else if (result.type === "error") {
                             createError = 'An error occurred while creating the note';

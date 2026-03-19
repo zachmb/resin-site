@@ -2,9 +2,8 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { DEEPSEEK_API_KEY } from '$env/static/private';
 
-export const POST = async ({ request, locals: { supabase, getSession } }: RequestEvent) => {
+export const POST = async ({ request, locals: { supabase, session } }: RequestEvent) => {
     try {
-        const session = await getSession();
         if (!session) {
             return error(401, 'Unauthorized');
         }
@@ -42,19 +41,19 @@ export const POST = async ({ request, locals: { supabase, getSession } }: Reques
         }
 
         // Calculate actual time spent
-        const tasks = amberSession.amber_tasks || [];
-        const insights = generateInsights(amberSession, tasks);
+        const tasks = (amberSession.amber_tasks as any[]) || [];
+        const insightsData = generateInsights(amberSession as any, tasks);
 
         // Call DeepSeek to generate AI insights
-        const aiInsights = await generateAIInsights(amberSession, tasks, insights);
+        const aiInsights = await generateAIInsights(amberSession as any, tasks, insightsData);
 
         return json({
             success: true,
-            insights,
+            insights: insightsData,
             aiInsights
         });
 
-    } catch (err) {
+    } catch (err: any) {
         console.error('[insights/generate] Error:', err);
         return error(500, 'Failed to generate insights');
     }
@@ -68,14 +67,14 @@ interface Task {
     description?: string;
 }
 
-interface Session {
+interface MiniSession {
     display_title: string;
     raw_text: string;
     status: string;
     created_at: string;
 }
 
-function generateInsights(session: Session, tasks: Task[]) {
+function generateInsights(session: MiniSession, tasks: Task[]) {
     let totalEstimated = 0;
     let totalActual = 0;
     let completedTasks = 0;
@@ -105,7 +104,7 @@ function generateInsights(session: Session, tasks: Task[]) {
     };
 }
 
-async function generateAIInsights(session: Session, tasks: Task[], metrics: any) {
+async function generateAIInsights(session: MiniSession, tasks: Task[], metrics: any) {
     const taskSummary = tasks.map((t, i) => `
 ${i + 1}. ${t.title} (Est: ${t.estimated_minutes}m${t.start_time && t.end_time ? `, Actual: ${Math.round((new Date(t.end_time).getTime() - new Date(t.start_time).getTime()) / 60000)}m` : ', Not started'})
 ${t.description ? `   Details: ${t.description}` : ''}`).join('\n');

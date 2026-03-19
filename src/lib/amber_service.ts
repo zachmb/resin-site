@@ -8,6 +8,7 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { sendPush } from './apns';
 import { syncStonesFromNotes } from './gamification_service';
+import type { Chronotype } from './types';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
@@ -332,6 +333,7 @@ export async function callDeepSeek(
     endHour: number,
     timezone: string,
     userPreferences: string,
+    chronotype: Chronotype | string = 'neutral',
     focusSuccessRate: number = 0.5
 ): Promise<DeepSeekTask> {
     const now = new Date().toLocaleString('en-US', { timeZone: timezone, hour12: false });
@@ -415,8 +417,9 @@ Steps should be:
 ✗ AVOID: Scheduling during user's lull hours (opposite of ${chronotype} peak)
 
 # CALENDAR ANALYSIS
-PREFERRED WINDOW: ${startHour}:00–${endHour}:00
+PREFEERED WINDOW: ${startHour}:00–${endHour}:00
 CURRENT TIME: ${now} (timezone: ${timezone})
+CHRONOTYPE: ${chronotype}
 FREE/BUSY:
 ${freeBusy}${prefsAppend}${energyProfileSection}`;
 
@@ -493,7 +496,8 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             : 0.5;
 
         // 3. Call DeepSeek with enhanced user context
-        const plan = await callDeepSeek(rawText, freeBusy, intensity, dayStartHour, dayEndHour, timezone, enrichedPreferences, focusSuccessRate);
+        const chronotype = (profile as any)?.chronotype || 'neutral';
+        const plan = await callDeepSeek(rawText, freeBusy, intensity, dayStartHour, dayEndHour, timezone, enrichedPreferences, chronotype, focusSuccessRate);
 
         // 4. Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone);

@@ -19,7 +19,7 @@
 
 	let { outgoing = [], incoming = [], onNavigateToNote }: Props = $props();
 
-	const hasConnections = outgoing.length > 0 || incoming.length > 0;
+	const hasConnections = $derived(outgoing.length > 0 || incoming.length > 0);
 </script>
 
 {#if hasConnections}

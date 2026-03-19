@@ -98,7 +98,7 @@
                             {#if canAfford(selectedTree.unlockCost)}
                                 <button
                                     class="unlock-btn unlock-btn-enabled"
-                                    onclick={() => handleUnlock(selectedTree.id)}
+                                    onclick={() => selectedTree && handleUnlock(selectedTree.id)}
                                     disabled={isUnlocking}
                                 >
                                     {isUnlocking ? 'Unlocking...' : `Unlock for ${selectedTree.unlockCost} 🪨`}

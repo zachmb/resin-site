@@ -5,7 +5,11 @@ const config = {
 	kit: {
 		adapter: adapter({
 			runtime: 'nodejs20.x'
-		})
+		}),
+		alias: {
+			'@resin/contracts': './src/lib/contracts/index.ts',
+			'@resin/core': './src/lib/core/index.ts'
+		}
 	}
 };
 

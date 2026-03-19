@@ -68,7 +68,7 @@
     // Auto-remove from scheduling when tasks appear, show success state
     $effect(() => {
         for (const sessionId of schedulingSessionIds) {
-            const session = recentSessions.find(s => s.id === sessionId);
+            const session = recentSessions.find((s: any) => s.id === sessionId);
             if (session?.amber_tasks?.length > 0) {
                 schedulingSessionIds.delete(sessionId);
                 justCompletedSessionId = sessionId;
@@ -1202,10 +1202,10 @@
                         clearingDate = dateToClear?.toISOString() || null;
                         return async ({ result }) => {
                             clearingDate = null;
-                            if (result.type === 'success' && result.data?.success) {
+                            if (result.type === 'success' && (result.data as any)?.success) {
                                 showClearConfirm = false;
                                 await invalidateAll();
-                            } else {
+                            } else if (result.type === 'success' || result.type === 'failure') {
                                 console.error('Clear day action failed:', result.data);
                             }
                         };

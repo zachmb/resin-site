@@ -140,6 +140,13 @@
         }))
     );
 
+    const totalStones = $derived(profileData?.total_stones || 0);
+    const currentStreak = $derived(profileData?.current_streak || 0);
+    const longestStreak = $derived(profileData?.longest_streak || 0);
+    const longestStreakAt = $derived(profileData?.longest_streak_at || null);
+    const forestHealth = $derived(profileData?.forest_health ?? 100);
+    const unlockedSpecies = $derived(getUnlockedSpecies(totalStones));
+
     // Milestone progress for stones
     const stoneMilestones = [50, 100, 250, 500, 1000, 2500, 5000];
     const nextStoneMilestone = $derived(stoneMilestones.find((m) => m > totalStones) ?? totalStones + 50);
@@ -155,13 +162,6 @@
     const streakProgress = $derived(
         (currentStreak - prevStreakMilestone) / (nextStreakMilestone - prevStreakMilestone)
     );
-
-    const totalStones = $derived(profileData?.total_stones || 0);
-    const currentStreak = $derived(profileData?.current_streak || 0);
-    const longestStreak = $derived(profileData?.longest_streak || 0);
-    const longestStreakAt = $derived(profileData?.longest_streak_at || null);
-    const forestHealth = $derived(profileData?.forest_health ?? 100);
-    const unlockedSpecies = $derived(getUnlockedSpecies(totalStones));
 
     // Get forest health status
     function getForestStatus() {
@@ -179,9 +179,11 @@
 
     // Tree unlock handler
     const handleUnlock = async (speciesId: string) => {
+        const formData = new FormData();
+        formData.append('speciesId', speciesId);
         const response = await fetch('?/unlockTree', {
             method: 'POST',
-            body: new FormData().append('speciesId', speciesId)
+            body: formData
         });
 
         if (!response.ok) {

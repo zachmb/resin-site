@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   try {
-    const { user } = await locals.getUser();
+    const user = await locals.getUser();
     if (!user) {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -20,7 +20,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     } = body;
 
     // Log to database via Supabase
-    const supabase = await locals.getSupabaseClient();
+    const supabase = locals.supabase;
 
     const { error: logError } = await supabase
       .from('time_sync_audit')

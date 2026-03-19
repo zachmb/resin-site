@@ -20,6 +20,7 @@
         onBack,
         onSaveSuccess,
         onSelectNote,
+        onDeleteNote,
     } = $props<{
         activeNote: any;
         notes: any[];
@@ -31,6 +32,7 @@
         onBack: () => void;
         onSaveSuccess: (result: { note: any; isNew: boolean }) => void;
         onSelectNote: (note: any) => void;
+        onDeleteNote?: (noteId: string) => void;
     }>();
 
     let isSidebarOpen = $state(true);

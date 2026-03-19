@@ -281,7 +281,7 @@
                                 {#if data.memberSessionsMap[member.userId]?.length > 0}
                                     {#each data.memberSessionsMap[member.userId] as tree, idx (idx)}
                                         <div class="tree-wrapper" style="border-color: {getMemberColor(memberIdx)}">
-                                            <SimpleTree tree={tree} />
+                                            <SimpleTree species={tree} />
                                         </div>
                                     {/each}
                                 {:else}

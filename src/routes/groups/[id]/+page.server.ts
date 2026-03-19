@@ -108,7 +108,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, getUser
         .eq('status', 'scheduled')
         .lte('start_time', now);
 
-    if ((scheduledSessions || []).length > 0) {
+    if (scheduledSessions && scheduledSessions.length > 0) {
         const sessionIds = scheduledSessions.map((s: any) => s.id);
         await supabase
             .from('group_focus_sessions')
@@ -208,7 +208,7 @@ export const actions: Actions = {
             .eq('user_id', user.id)
             .single();
 
-        if (!membership?.role === 'admin') return fail(403, { error: 'Only admins can edit notes' });
+        if (membership?.role !== 'admin') return fail(403, { error: 'Only admins can edit notes' });
 
         const data = await request.formData();
         const noteId = data.get('id')?.toString();
@@ -243,7 +243,7 @@ export const actions: Actions = {
             .eq('user_id', user.id)
             .single();
 
-        if (!membership?.role === 'admin') return fail(403, { error: 'Only admins can delete notes' });
+        if (membership?.role !== 'admin') return fail(403, { error: 'Only admins can delete notes' });
 
         const data = await request.formData();
         const noteId = data.get('id')?.toString();

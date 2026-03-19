@@ -435,7 +435,7 @@ export const POST = async ({ request }: RequestEvent) => {
         const enrichedPreferences = [learnedInsights, user_preferences].filter(Boolean).join('\n\n')
 
         // 4. Generate system prompt and call DeepSeek (with Gemini fallback)
-        const systemPrompt = getSystemPrompt(start_hour, end_hour, timezone, freeBusy, enrichedPreferences)
+        const systemPrompt = getSystemPrompt(start_hour ?? 16, end_hour ?? 22, timezone, freeBusy, enrichedPreferences)
         const { task: plan, service } = await callDeepSeekWithFallback(raw_text, systemPrompt)
         console.log(`[activate] Used ${service} for plan generation`)
 

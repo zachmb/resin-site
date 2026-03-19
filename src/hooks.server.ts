@@ -38,7 +38,7 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
     }
 
     // Refresh the session if it exists to ensure cookies are synchronized
-    await event.locals.getSession()
+    event.locals.session = await event.locals.getSession()
 
     return resolve(event, {
         filterSerializedResponseHeaders(name) {

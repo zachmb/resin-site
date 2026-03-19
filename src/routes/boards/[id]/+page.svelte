@@ -172,9 +172,9 @@
                     {#each data.members as member (member.user_id)}
                         <div
                             class="w-8 h-8 rounded-full bg-resin-forest text-white flex items-center justify-center text-xs font-bold"
-                            title={member.profiles?.email}
+                            title={(member.profiles as any)?.email || (member.profiles as any)?.[0]?.email}
                         >
-                            {getInitials(member.profiles?.email || 'U')}
+                            {getInitials(((member.profiles as any)?.email || (member.profiles as any)?.[0]?.email) || 'U')}
                         </div>
                     {/each}
                 </div>

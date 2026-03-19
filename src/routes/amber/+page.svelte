@@ -26,4 +26,8 @@
     };
 </script>
 
+<svelte:head>
+    <title>Amber | Resin</title>
+</svelte:head>
+
 <AmberView {profile} recentSessions={notes} {executionStats} />

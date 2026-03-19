@@ -9,9 +9,25 @@ export const GET: RequestHandler = async ({ url }) => {
     // Generate SVG that matches TreeSVG.svelte exactly
     const svg = generateTreeSVG(species, size, health);
 
-    return new Response(svg, {
+    // Wrap SVG in HTML for WKWebView (iOS) compatibility
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; }
+        svg { display: block; }
+    </style>
+</head>
+<body>
+    ${svg}
+</body>
+</html>`;
+
+    return new Response(html, {
         headers: {
-            'Content-Type': 'image/svg+xml',
+            'Content-Type': 'text/html; charset=utf-8',
             'Cache-Control': 'public, max-age=3600'
         }
     });

@@ -46,6 +46,10 @@
     };
 </script>
 
+<svelte:head>
+    <title>Map | Resin</title>
+</svelte:head>
+
 <div class="flex h-screen w-full overflow-hidden bg-resin-bg pt-[72px]">
     <!-- Sidebar for Unmapped Notes -->
     <div

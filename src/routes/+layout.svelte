@@ -19,9 +19,24 @@
 	// Compute page title based on current route
 	let pageTitle = $derived.by(() => {
 		const path = $page.url.pathname;
-		// Home/dashboard pages
 		if (path === '/') return 'Resin';
-		// Default to Resin for all other pages (they can override)
+		if (path === '/forest') return 'Petrified Forest | Resin';
+		if (path === '/map') return 'Map | Resin';
+		if (path === '/amber') return 'Amber | Resin';
+		if (path === '/focus') return 'Focus | Resin';
+		if (path === '/account') return 'Account | Resin';
+		if (path === '/notes') return 'Notes | Resin';
+		if (path === '/groups') return 'Groups | Resin';
+		if (path === '/login') return 'Login | Resin';
+		
+		// Fallback for subpaths or unhandled paths
+		const segments = path.split('/').filter(Boolean);
+		if (segments.length > 0) {
+			const first = segments[0];
+			const title = first.charAt(0).toUpperCase() + first.slice(1);
+			return `${title} | Resin`;
+		}
+		
 		return 'Resin';
 	});
 

@@ -5,6 +5,10 @@
     let { data } = $props();
 </script>
 
+<svelte:head>
+    <title>Resin</title>
+</svelte:head>
+
 {#if data.session}
     <Dashboard
         session={data.session}

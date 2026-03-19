@@ -175,6 +175,10 @@
     };
 </script>
 
+<svelte:head>
+    <title>Focus | Resin</title>
+</svelte:head>
+
 <main class="w-full min-h-screen pt-28 pb-20 px-4 sm:px-6 max-w-6xl mx-auto">
     <!-- Header -->
     <div class="mb-12">

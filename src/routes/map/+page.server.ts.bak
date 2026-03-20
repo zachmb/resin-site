@@ -43,7 +43,7 @@ async function rebuildConnectionsSection(noteId: string, supabase: any, userId: 
         .eq("id", noteId).eq("user_id", userId);
 }
 
-export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getSession } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
 
@@ -100,7 +100,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
 };
 
 export const actions: Actions = {
-    updateNodePosition: async ({ request, locals: { getAuthenticatedSupabase, getSession } }) => {
+    updateNodePosition: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
@@ -124,7 +124,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    removeFromMap: async ({ request, locals: { getAuthenticatedSupabase, getSession } }) => {
+    removeFromMap: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
@@ -144,7 +144,7 @@ export const actions: Actions = {
         return { success: true, removedId: id };
     },
 
-    createEdge: async ({ request, locals: { getAuthenticatedSupabase, getSession } }) => {
+    createEdge: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
@@ -178,7 +178,7 @@ export const actions: Actions = {
         return { success: true, edge };
     },
 
-    deleteEdge: async ({ request, locals: { getAuthenticatedSupabase, getSession } }) => {
+    deleteEdge: async ({ request, locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
@@ -207,7 +207,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    clearMap: async ({ locals: { getAuthenticatedSupabase, getSession } }) => {
+    clearMap: async ({ locals: { supabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 

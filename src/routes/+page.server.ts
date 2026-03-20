@@ -15,39 +15,49 @@ const extractTitle = (content: string) => {
 };
 
 const insertNote = async (supabase: any, row: { user_id: string; title: string; content: string; created_at: string }) => {
-    const result = await supabase
+    const now = new Date().toISOString();
+
+    const insertResult = await supabase
         .from('amber_sessions')
         .insert({
             user_id: row.user_id,
             raw_text: row.content,
             display_title: row.title,
             status: 'draft',
-            created_at: row.created_at
+            created_at: row.created_at,
+            updated_at: now
         })
-        .select()
-        .single();
+        .select('id');
 
-    if (!result.error) return result;
+    if (insertResult.error) {
+        console.error('[home] Insert failed:', insertResult.error.message);
+        throw insertResult.error;
+    }
 
-    // Fallback for older schema
-    console.warn('[home] Preferred schema insert failed, trying fallback...', result.error.message);
-    return await supabase
-        .from('amber_sessions')
-        .insert({
+    // Check if the insert actually returned an ID
+    if (!insertResult.data || insertResult.data.length === 0) {
+        throw new Error('Insert failed to return ID (RLS may have blocked it)');
+    }
+
+    // Return the inserted row with the data we know
+    return {
+        data: {
+            id: insertResult.data[0].id,
             user_id: row.user_id,
-            content: row.content,
-            title: row.title,
+            raw_text: row.content,
+            display_title: row.title,
             status: 'draft',
-            created_at: row.created_at
-        })
-        .select()
-        .single();
+            created_at: row.created_at,
+            updated_at: now
+        },
+        error: null
+    };
 };
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-    const { data: { user }, error } = await supabase.auth.getUser();
+export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
+    const user = await getUser();
 
-    if (error || !user) {
+    if (!user) {
         return {
             session: null,
             profile: null,
@@ -219,7 +229,6 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
     }
 
     return {
-        session,
         profile,
         recentNotes: recentNotes || [],
         todayTasks: todayTasks || [],
@@ -232,9 +241,10 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 };
 
 export const actions: Actions = {
-    quickNote: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return fail(401, { error: 'Unauthorized' });
+    quickNote: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const content = data.get('content')?.toString() || '';
@@ -263,9 +273,10 @@ export const actions: Actions = {
         return { success: true, noteId: note.id, redirectTo: `/notes?id=${note.id}` };
     },
 
-    quickSchedule: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return fail(401, { error: 'Unauthorized' });
+    quickSchedule: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const content = data.get('content')?.toString() || '';
@@ -294,9 +305,10 @@ export const actions: Actions = {
         return { success: true, noteId: note.id, redirectTo: `/amber` };
     },
 
-    createAutomation: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return fail(401, { error: 'Unauthorized' });
+    createAutomation: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const title = data.get('title')?.toString() || '';
@@ -331,9 +343,10 @@ export const actions: Actions = {
         }
     },
 
-    deleteAutomation: async ({ request, locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return fail(401, { error: 'Unauthorized' });
+    deleteAutomation: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const automationId = data.get('automationId')?.toString();
@@ -356,9 +369,10 @@ export const actions: Actions = {
         }
     },
 
-    markWebOnboarded: async ({ locals: { supabase } }) => {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) return fail(401, { error: 'Unauthorized' });
+    markWebOnboarded: async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
+        const user = await getUser();
+        if (!user) return fail(401, { error: 'Unauthorized' });
+        const supabase = await getAuthenticatedSupabase();
 
         try {
             const { error } = await supabase

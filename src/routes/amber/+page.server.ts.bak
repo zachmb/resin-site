@@ -161,11 +161,9 @@ export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticated
 };
 
 export const actions: Actions = {
-    activate: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
-        const user = await getUser();
-        if (!user) return { success: false, error: "Unauthorized" };
-
-        const supabase = await getAuthenticatedSupabase();
+    activate: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -302,11 +300,9 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    complete: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
-        const user = await getUser();
-        if (!user) return { success: false, error: "Unauthorized" };
-
-        const supabase = await getAuthenticatedSupabase();
+    complete: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -398,11 +394,9 @@ export const actions: Actions = {
         }
     },
 
-    cancel: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
-        const user = await getUser();
-        if (!user) return { success: false, error: "Unauthorized" };
-
-        const supabase = await getAuthenticatedSupabase();
+    cancel: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -471,14 +465,12 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    delete: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
-        const user = await getUser();
-        if (!user) {
-            console.error('[Delete] Auth error: User not authenticated');
+    delete: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            console.error('[Delete] Auth error:', authError);
             return { success: false, error: "Unauthorized" };
         }
-
-        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -1104,7 +1096,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    clearDay: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    clearDay: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 

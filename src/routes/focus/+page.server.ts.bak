@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendPush } from '$lib/apns';
 
-export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser, session }, setHeaders }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, getUser, session }, setHeaders }) => {
     // Disable server caching for fresh data
     setHeaders({
         'cache-control': 'no-cache, no-store, must-revalidate'
@@ -194,7 +194,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
 };
 
 export const actions: Actions = {
-    scheduleSession: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    scheduleSession: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -259,7 +259,7 @@ export const actions: Actions = {
         }
     },
 
-    cancelSession: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    cancelSession: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -303,7 +303,7 @@ export const actions: Actions = {
         }
     },
 
-    createAutomation: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    createAutomation: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -340,7 +340,7 @@ export const actions: Actions = {
         }
     },
 
-    deleteAutomation: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    deleteAutomation: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -366,7 +366,7 @@ export const actions: Actions = {
         }
     },
 
-    updateSession: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    updateSession: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -425,7 +425,7 @@ export const actions: Actions = {
         }
     },
 
-    makeRecurring: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    makeRecurring: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -545,7 +545,7 @@ export const actions: Actions = {
         }
     },
 
-    inviteFriendToFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    inviteFriendToFocus: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -623,7 +623,7 @@ export const actions: Actions = {
         }
     },
 
-    acceptSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    acceptSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -714,7 +714,7 @@ export const actions: Actions = {
         }
     },
 
-    declineSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    declineSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -750,7 +750,7 @@ export const actions: Actions = {
         }
     },
 
-    completeSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    completeSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -839,7 +839,7 @@ export const actions: Actions = {
         }
     },
 
-    cancelSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    cancelSharedFocus: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
@@ -916,7 +916,7 @@ export const actions: Actions = {
         }
     },
 
-    refresh: async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
+    refresh: async ({ locals: { supabase, getUser } }) => {
         // This action is called by the client to refresh data
         // SvelteKit will automatically invalidate the page data
         const user = await getUser();

@@ -317,13 +317,6 @@ export const actions: Actions = {
         const content = data.get('content') as string;
         const providedTitle = (data.get('title') as string)?.trim();
 
-        console.log('[saveNote] Received form data:', {
-            id,
-            contentLength: content?.length,
-            contentPreview: content?.substring(0, 100),
-            title: providedTitle
-        });
-
         // Use provided title if available, otherwise extract from content
         const title = providedTitle || extractTitle(content);
 
@@ -373,15 +366,7 @@ export const actions: Actions = {
                 console.warn('[notes] Background streak update failed:', err)
             );
 
-            const normalizedResult = normalizeNote(updatedNote);
-            console.log('[saveNote] Returning from server:', {
-                id: normalizedResult.id,
-                contentLength: normalizedResult.content?.length,
-                contentPreview: normalizedResult.content?.substring(0, 100),
-                title: normalizedResult.title
-            });
-
-            return { success: true, note: normalizedResult, isNew: false };
+            return { success: true, note: normalizeNote(updatedNote), isNew: false };
         }
     },
 

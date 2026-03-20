@@ -91,22 +91,27 @@
                 // Cache the new note list
                 setCache('notes-list', notes, 5 * 60 * 1000);
             }
+            // Reload from server only for new notes
+            await invalidateAll();
         } else {
-            // For existing notes, update in place to show changes immediately
+            // For existing notes, update in place immediately with the fresh data from server
             const noteIndex = notes.findIndex((n: any) => n.id === note.id);
             if (noteIndex !== -1) {
+                // Replace the entire note object with the fresh data from server
                 notes[noteIndex] = {
-                    ...notes[noteIndex],
-                    ...note,
+                    id: note.id,
+                    title: note.title || notes[noteIndex].title || 'Untitled',
+                    content: note.content || notes[noteIndex].content || '',
+                    status: note.status || notes[noteIndex].status || 'draft',
+                    created_at: notes[noteIndex].created_at,
                     updated_at: note.updated_at || new Date().toISOString()
                 };
-                // Force reactivity
+                // Force reactivity by creating new array reference
                 notes = [...notes];
             }
+            // Don't invalidateAll for existing notes - the local update is sufficient
+            // This avoids the race condition where stale data overwrites the fresh update
         }
-
-        // Always reload from server to stay in sync (for both new and existing notes)
-        await invalidateAll();
     };
 
     const handleSelectNote = (note: any) => {

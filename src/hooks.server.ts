@@ -30,11 +30,47 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
     /**
      * getUser() authenticates with the Supabase server to verify the user is genuine.
      * Use this for sensitive operations instead of getSession().
+     * Also returns the user with their JWT token for RLS to work on server side.
      */
     event.locals.getUser = async () => {
         const { data: { user }, error } = await event.locals.supabase.auth.getUser()
         if (error) return null
         return user
+    }
+
+    /**
+     * getAuthenticatedSupabase() returns a Supabase client configured with the user's JWT
+     * This makes RLS policies work on the server side by passing auth.uid() context
+     * Use this for all database operations that need RLS authentication
+     */
+    event.locals.getAuthenticatedSupabase = async () => {
+        const { data: { session }, error } = await event.locals.supabase.auth.getSession()
+
+        if (error || !session?.access_token) {
+            // No session - return the unauthenticated client
+            return event.locals.supabase
+        }
+
+        // Create a new client instance with the user's JWT in the Authorization header
+        // This ensures auth.uid() in RLS policies can see the authenticated user
+        const authenticatedClient = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+            cookies: {
+                get: (key) => event.cookies.get(key),
+                set: (key, value, options) => {
+                    event.cookies.set(key, value, { ...options, path: '/' })
+                },
+                remove: (key, options) => {
+                    event.cookies.delete(key, { ...options, path: '/' })
+                },
+            },
+            global: {
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`
+                }
+            }
+        })
+
+        return authenticatedClient
     }
 
     // Refresh the session if it exists to ensure cookies are synchronized

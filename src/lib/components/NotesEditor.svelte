@@ -482,7 +482,15 @@
                                 action="?/saveNote"
                                 class="contents"
                                 use:enhance={() => {
-                                    return async ({ result }) => {
+                                    return async ({ formData, result }) => {
+                                        // Log what's being sent
+                                        console.log('[NotesEditor] Save form data:', {
+                                            id: formData.get('id'),
+                                            content: formData.get('content')?.toString().substring(0, 100),
+                                            title: formData.get('title')
+                                        });
+                                        console.log('[NotesEditor] Server response:', result);
+
                                         if (result.type === "success" && result.data?.success) {
                                             if ((result as any).data?.note) {
                                                 setCache(`note-${(result as any).data.note.id}`, (result as any).data.note, 60000);

@@ -63,9 +63,9 @@ self.addEventListener('fetch', (event) => {
 		return event.respondWith(networkFirstStrategy(request));
 	}
 
-	// POST/PUT requests: attempt network, queue for sync if offline
+	// POST/PUT requests: just try network, let app handle errors
 	if (request.method === 'POST' || request.method === 'PUT') {
-		return event.respondWith(queueForSync(request));
+		return event.respondWith(networkFirstStrategy(request));
 	}
 
 	// Static assets: cache first, fallback to network
@@ -168,16 +168,32 @@ async function queueForSync(request: Request): Promise<Response> {
 
 		// Store request in IndexedDB for retry
 		if ('indexedDB' in self) {
-			const db = await openIndexedDB();
-			const tx = db.transaction('pendingRequests', 'readwrite');
-			const store = tx.objectStore('pendingRequests');
-			await store.add({
-				url: request.url,
-				method: request.method,
-				headers: Object.fromEntries(request.headers.entries()),
-				body: await request.clone().text(),
-				timestamp: Date.now()
-			});
+			try {
+				const db = await openIndexedDB();
+				const tx = db.transaction('pendingRequests', 'readwrite');
+				const store = tx.objectStore('pendingRequests');
+
+				// Read body only if request has one
+				let bodyText = '';
+				if (request.method !== 'GET' && request.method !== 'HEAD') {
+					try {
+						bodyText = await request.clone().text();
+					} catch (bodyErr) {
+						// Body already consumed or not readable - skip it
+						console.warn('Could not read request body for sync:', bodyErr);
+					}
+				}
+
+				await store.add({
+					url: request.url,
+					method: request.method,
+					headers: Object.fromEntries(request.headers.entries()),
+					body: bodyText,
+					timestamp: Date.now()
+				});
+			} catch (dbErr) {
+				console.warn('Could not store request for sync:', dbErr);
+			}
 		}
 
 		// Return 202 Accepted - request will be synced later

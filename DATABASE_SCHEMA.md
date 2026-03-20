@@ -7,8 +7,8 @@
 
 ## 📊 Core Tables
 
-### `amber_sessions` — Personal Notes & Plans
-Stores all user notes and plans. Status determines whether it's a draft note or an activated amber plan.
+### `amber_sessions` — All Notes & Plans (Personal & Group)
+Unified table storing all user notes and plans. Status determines lifecycle. board_id distinguishes personal vs group notes.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -16,7 +16,9 @@ Stores all user notes and plans. Status determines whether it's a draft note or 
 | `user_id` | uuid | Foreign key to profiles(id) |
 | `raw_text` | text | Full note content (markdown) |
 | `display_title` | text | Note title |
-| `status` | text | `'draft'` (saved note), `'scheduled'` (activated), `'completed'`, `'failed'`, `'canceled'`, `'processing'` |
+| `status` | text | `'draft'` (saved), `'scheduled'` (activated), `'completed'`, `'failed'`, `'canceled'`, `'processing'` |
+| `board_id` | uuid | Foreign key to boards(id) — NULL = personal note, NOT NULL = group note |
+| `color` | text | Sticky note color (amber, green, blue, purple) — for group notes |
 | `created_at` | timestamp | Created time |
 | `updated_at` | timestamp | Last modified time |
 | `intensity` | numeric | Focus intensity (0.0-1.0) |
@@ -33,9 +35,10 @@ Stores all user notes and plans. Status determines whether it's a draft note or 
 | `description` | text | Additional description |
 
 **Key Queries:**
-- Draft notes (saved): `WHERE status = 'draft'`
-- Amber plans (scheduled+): `WHERE status IN ('scheduled', 'completed', 'processing', 'failed')`
-- User's notes: `WHERE user_id = $1 ORDER BY created_at DESC`
+- Personal draft notes: `WHERE status = 'draft' AND board_id IS NULL`
+- Personal amber plans: `WHERE status IN ('scheduled', 'completed', 'processing', 'failed') AND board_id IS NULL`
+- Group notes on board: `WHERE board_id = $1 ORDER BY created_at DESC`
+- User's all notes: `WHERE user_id = $1 ORDER BY created_at DESC`
 
 ---
 
@@ -50,25 +53,6 @@ Related to `amber_sessions` via `session_id`. Represents individual tasks/subtas
 | `start_time` | timestamp | Scheduled start |
 | `end_time` | timestamp | Scheduled end |
 | `calendar_event_id` | text | Google Calendar event ID |
-
----
-
-### `board_notes` — Collaborative Group Notes
-Stores sticky notes for collaborative group boards. Part of the group feature.
-
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid | Primary key |
-| `board_id` | uuid | Foreign key to boards(id) |
-| `user_id` | uuid | Author (profiles.id) |
-| `title` | text | Note title |
-| `content` | text | Note content |
-| `color` | text | Display color (amber, green, blue, purple) |
-| `created_at` | timestamp | Created time |
-| `updated_at` | timestamp | Last modified time |
-
-**Key Relationship:**
-- `boards` → `focus_groups.board_id` (each group has one board for collaborative notes)
 
 ---
 

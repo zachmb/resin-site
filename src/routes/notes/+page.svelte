@@ -2,7 +2,7 @@
     import NotesEditor from "$lib/components/NotesEditor.svelte";
     import { page } from "$app/stores";
     import { fade } from "svelte/transition";
-    import { setCache } from "$lib/cache";
+    import { setCache, clearCache, invalidateCache } from "$lib/cache";
     import { invalidateAll } from "$app/navigation";
     import { onMount } from "svelte";
 
@@ -22,24 +22,44 @@
 
     // Force fresh data load when page mounts
     onMount(() => {
+        // Clear all local drafts on page load to ensure we show fresh data
+        localDrafts = {};
+
+        // Restore selected note from localStorage
+        const savedNoteId = localStorage.getItem('selectedNoteId');
+        if (savedNoteId) {
+            selectedNoteId = savedNoteId;
+        }
+
         invalidateAll();
     });
 
-    // Sync server data to local state whenever data changes
-    $effect(() => {
-        notes = data?.notes || [];
+    // Sync server data to local state once when data changes
+    $effect.pre(() => {
+        if (data?.notes) {
+            notes = data.notes;
+        }
     });
 
-    // Open specific note by ID from URL, or reset to first note
+    // Open specific note by ID from URL, or restore from localStorage
     $effect(() => {
         if ($page.url.pathname === "/notes") {
             const idParam = $page.url.searchParams.get("id");
             if (idParam) {
                 selectedNoteId = idParam;
+                localStorage.setItem('selectedNoteId', idParam);
             } else if ($page.url.searchParams.has("reset")) {
                 selectedNoteId = notes[0]?.id || "mock";
+                localStorage.removeItem('selectedNoteId');
                 localDrafts = {};
             }
+        }
+    });
+
+    // Save selected note ID to localStorage whenever it changes
+    $effect(() => {
+        if (selectedNoteId && selectedNoteId !== "mock") {
+            localStorage.setItem('selectedNoteId', selectedNoteId);
         }
     });
 
@@ -75,43 +95,37 @@
         selectedNoteId = note.id;
         showToast("Note saved!");
 
-        if (isNew) {
-            // Optimistically add the new note to the list immediately
-            if (!notes.some((n: any) => n.id === note.id)) {
-                notes = [
-                    {
-                        id: note.id,
-                        title: note.title || 'Untitled',
-                        content: note.content || '',
-                        created_at: note.created_at || new Date().toISOString(),
-                        status: note.status || 'draft'
-                    },
-                    ...notes
-                ];
-                // Cache the new note list
-                setCache('notes-list', notes, 5 * 60 * 1000);
-            }
-            // Reload from server only for new notes
-            await invalidateAll();
-        } else {
-            // For existing notes, update in place immediately with the fresh data from server
-            const noteIndex = notes.findIndex((n: any) => n.id === note.id);
-            if (noteIndex !== -1) {
-                // Replace the entire note object with the fresh data from server
-                notes[noteIndex] = {
+        // Update the notes array with the fresh data from server
+        const noteIndex = notes.findIndex((n: any) => n.id === note.id);
+        if (noteIndex !== -1) {
+            notes[noteIndex] = {
+                id: note.id,
+                title: note.title || notes[noteIndex].title || 'Untitled',
+                content: note.content || notes[noteIndex].content || '',
+                status: note.status || notes[noteIndex].status || 'draft',
+                created_at: notes[noteIndex].created_at,
+                updated_at: note.updated_at || new Date().toISOString()
+            };
+        } else if (isNew) {
+            // New note
+            notes = [
+                {
                     id: note.id,
-                    title: note.title || notes[noteIndex].title || 'Untitled',
-                    content: note.content || notes[noteIndex].content || '',
-                    status: note.status || notes[noteIndex].status || 'draft',
-                    created_at: notes[noteIndex].created_at,
-                    updated_at: note.updated_at || new Date().toISOString()
-                };
-                // Force reactivity by creating new array reference
-                notes = [...notes];
-            }
-            // Don't invalidateAll for existing notes - the local update is sufficient
-            // This avoids the race condition where stale data overwrites the fresh update
+                    title: note.title || 'Untitled',
+                    content: note.content || '',
+                    created_at: note.created_at || new Date().toISOString(),
+                    status: note.status || 'draft'
+                },
+                ...notes
+            ];
         }
+
+        // Create new array reference to trigger reactivity
+        notes = [...notes];
+
+        // Clear caches
+        clearCache();
+        invalidateCache('notes');
     };
 
     const handleSelectNote = (note: any) => {

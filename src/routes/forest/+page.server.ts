@@ -10,6 +10,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         }
 
         const userId = user.id;
+        const supabase = await getAuthenticatedSupabase();
 
         // Run all independent queries in parallel
         const [profileResult, sessionsResult, feedbackResult, achievementsResult] = await Promise.all([

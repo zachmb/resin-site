@@ -492,9 +492,12 @@
                                         console.log('[NotesEditor] Server response:', result);
 
                                         if (result.type === "success" && result.data?.success) {
+                                            // Clear all notes-related caches to ensure fresh data on next load
+                                            invalidateCache('notes');
+                                            clearCache(); // Clear entire cache to be safe
+
                                             if ((result as any).data?.note) {
-                                                setCache(`note-${(result as any).data.note.id}`, (result as any).data.note, 60000);
-                                                invalidateCache('notes-list');
+                                                setCache(`note-${(result as any).data.note.id}`, (result as any).data.note, 1000); // Very short TTL
                                             }
                                             const now = Date.now();
                                             if (result.data.isNew && now - lastRewardTime > 60000) {

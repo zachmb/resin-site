@@ -69,6 +69,22 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
 
 const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; title: string; content: string }) => {
     const now = new Date().toISOString();
+    console.log(`[updateNoteRow] Starting update for note ${row.id.substring(0, 8)} by user ${row.user_id.substring(0, 8)}`);
+    console.log(`[updateNoteRow] Content: "${row.content.substring(0, 50)}..." (${row.content.length} chars)`);
+
+    // First check if note exists before updating
+    const checkResult = await supabase
+        .from('amber_sessions')
+        .select('id, raw_text')
+        .eq('id', row.id)
+        .eq('user_id', row.user_id)
+        .single();
+
+    console.log(`[updateNoteRow] Pre-update check:`, {
+        exists: !!checkResult.data,
+        currentContent: checkResult.data?.raw_text?.substring(0, 50)
+    });
+
     // Update amber_sessions with raw_text and display_title
     const updateResult = await supabase
         .from('amber_sessions')
@@ -77,14 +93,60 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         .eq('user_id', row.user_id)
         .select('id');
 
+    console.log(`[updateNoteRow] Update result:`, {
+        hasError: !!updateResult.error,
+        errorMsg: updateResult.error?.message,
+        dataLength: updateResult.data?.length
+    });
+
     if (updateResult.error) {
+        console.error(`[updateNoteRow] Update error:`, updateResult.error);
         return { data: null, error: updateResult.error };
     }
 
     // Check if any rows were actually updated (detects RLS silent failures)
     if (!updateResult.data || updateResult.data.length === 0) {
+        console.error(`[updateNoteRow] No rows updated - RLS likely blocked it`);
         return { data: null, error: new Error('RLS blocked update (no rows matched policy)') };
     }
+
+    console.log(`[updateNoteRow] Update successful, now verifying...`);
+
+    // Add delay to ensure database has committed
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Verify the update actually worked by fetching the updated row
+    const verifyResult = await supabase
+        .from('amber_sessions')
+        .select('raw_text, display_title')
+        .eq('id', row.id)
+        .eq('user_id', row.user_id)
+        .single();
+
+    console.log(`[updateNoteRow] Verify fetch result:`, {
+        hasError: !!verifyResult.error,
+        hasData: !!verifyResult.data,
+        contentLength: verifyResult.data?.raw_text?.length,
+        content: verifyResult.data?.raw_text?.substring(0, 50)
+    });
+
+    if (verifyResult.error || !verifyResult.data) {
+        console.error('[updateNoteRow] Verification fetch failed:', verifyResult.error);
+        return { data: null, error: new Error('Failed to verify update') };
+    }
+
+    // Verify the content actually changed
+    if (verifyResult.data.raw_text !== row.content) {
+        console.error('[updateNoteRow] CONTENT MISMATCH - Database has different content!', {
+            sentLength: row.content.length,
+            storedLength: verifyResult.data.raw_text?.length,
+            sent: row.content.substring(0, 100),
+            stored: verifyResult.data.raw_text?.substring(0, 100)
+        });
+        return { data: null, error: new Error('Update verification failed - content not saved') };
+    }
+
+    console.log(`[updateNoteRow] Verification successful!`);
 
     // Return the updated row with known data
     return {
@@ -100,9 +162,11 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
 };
 
 export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticatedSupabase }, setHeaders }) => {
-    // Disable caching to ensure fresh notes every time
+    // Disable ALL caching - force fresh load every time
     setHeaders({
-        'cache-control': 'no-cache, no-store, must-revalidate'
+        'cache-control': 'no-cache, no-store, must-revalidate',
+        'pragma': 'no-cache',
+        'expires': '0'
     });
 
     const user = await getUser();
@@ -215,6 +279,12 @@ export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticated
 
         connections[note.id] = { outgoing, incoming };
     }
+
+    console.log('[notes load] Returning data:', {
+        notesCount: normalizedUserNotes.length,
+        firstNoteContent: normalizedUserNotes[0]?.content?.substring(0, 50),
+        timestamp: new Date().toISOString()
+    });
 
     return {
         notes: normalizedUserNotes,
@@ -381,7 +451,17 @@ export const actions: Actions = {
                 title: normalizedResult.title
             });
 
-            return { success: true, note: normalizedResult, isNew: false };
+            // Small delay to ensure database commit is complete
+            // This prevents load function from seeing stale data due to transaction isolation
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Return with cache control to prevent caching stale data
+            return {
+                success: true,
+                note: normalizedResult,
+                isNew: false,
+                timestamp: Date.now() // Add timestamp so client knows this is fresh
+            };
         }
     },
 

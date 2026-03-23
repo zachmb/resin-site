@@ -788,7 +788,7 @@
 
             <div class="space-y-2 mb-6">
                 {#each friends as friend (friend.id)}
-                    <form method="POST" action="?/shareNote" use:enhance={() => {
+                    <form method="POST" action="/notes?/shareNote" use:enhance={() => {
                         showShareModal = false;
                         showToast('Note shared!');
                     }}>

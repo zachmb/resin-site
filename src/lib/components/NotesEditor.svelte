@@ -241,7 +241,7 @@
                 />
 
                 <!-- New Note Button -->
-                <form method="POST" action="?/createNote" class="w-full" use:enhance={() => {
+                <form method="POST" action="/notes?/createNote" class="w-full" use:enhance={() => {
                     return async ({ result }) => {
                         if (result.type === "success" && result.data?.success) {
                             const newNote = result.data.note;
@@ -420,7 +420,7 @@
                             <!-- Scheduled: Cancel & Delete -->
                             <form
                                 method="POST"
-                                action="?/cancelNote"
+                                action="/notes?/cancelNote"
                                 class="contents"
                                 use:enhance={() => {
                                     return async ({ result }) => {
@@ -443,7 +443,7 @@
                             </form>
                             <form
                                 method="POST"
-                                action="?/deleteNote"
+                                action="/notes?/deleteNote"
                                 bind:this={deleteScheduledFormRef}
                                 class="contents"
                                 use:enhance={() => {
@@ -479,7 +479,7 @@
                             <!-- Draft: Save, Activate & Delete -->
                             <form
                                 method="POST"
-                                action="?/saveNote"
+                                action="/notes?/saveNote"
                                 class="contents"
                                 use:enhance={() => {
                                     return async ({ formData, result }) => {
@@ -535,7 +535,7 @@
                             </form>
                             <form
                                 method="POST"
-                                action="?/activateNote"
+                                action="/notes?/activateNote"
                                 class="contents"
                                 use:enhance={() => {
                                     // Show working modal immediately
@@ -580,7 +580,7 @@
                             </form>
                             <form
                                 method="POST"
-                                action="?/deleteNote"
+                                action="/notes?/deleteNote"
                                 bind:this={deleteDraftFormRef}
                                 class="contents"
                                 use:enhance={() => {
@@ -685,7 +685,7 @@
                         </button>
                     </div>
                     <div class="flex gap-2 mt-3">
-                        <form method="POST" action="?/activateNote" class="flex-1" use:enhance={() => {
+                        <form method="POST" action="/notes?/activateNote" class="flex-1" use:enhance={() => {
                             isRetryingActivation = true;
                             return async ({ result }) => {
                                 isRetryingActivation = false;

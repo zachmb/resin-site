@@ -8,6 +8,7 @@
     import { setCache, invalidateCache, clearCache } from "$lib/cache";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
+    import RichNoteEditor from "./RichNoteEditor.svelte";
 
     let {
         activeNote,
@@ -609,21 +610,20 @@
                 </div>
             </div>
 
-            <!-- svelte-ignore a11y_autofocus -->
-            <textarea
+            <!-- Rich Text Editor with URL Detection -->
+            <RichNoteEditor
                 autofocus
-                class="flex-1 w-full bg-transparent resize-none font-sans text-[17px] leading-relaxed text-[#2B4634] focus:outline-none p-6 sm:p-10 placeholder:text-[#5C4B3C]/60"
-                placeholder="What's on your mind? Start a note, a plan, anything..."
                 value={activeNote?.content ===
                 "Dump your chaotic thoughts, code snippets, and scattered ideas here..."
                     ? ""
                     : activeNote?.content}
-                oninput={(e) => {
-                    const newVal = e.currentTarget.value;
+                placeholder="What's on your mind? Start a note, a plan, anything..."
+                oninput={(newVal) => {
                     updateActiveNoteContent(newVal);
                     autoSave(newVal);
                 }}
-            ></textarea>
+                class="flex-1"
+            />
 
             <!-- Automation Commands Section -->
             {#if parsedCommands.hasCommands}

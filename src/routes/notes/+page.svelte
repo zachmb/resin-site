@@ -3,13 +3,21 @@
     import { page } from "$app/stores";
     import { fade } from "svelte/transition";
     import { setCache, clearCache, invalidateCache } from "$lib/cache";
-    import { invalidateAll } from "$app/navigation";
     import { onMount } from "svelte";
+    import { createNotesDataManager } from "$lib/services/DataManager";
+    import type { DataManager } from "$lib/services/DataManager";
 
     let { data } = $props();
+
+    // Data manager for notes - handles cache + sync
+    let dataManager: DataManager;
+
+    // Initialize state from cache
     let notes = $state<any[]>([]);
-    let profile = $derived(data.profile || null);
-    let connections = $derived(data.connections || {});
+    let profile = $state<any>(null);
+    let connections = $state<any>({});
+    let sharedWithMe = $state<any[]>([]);
+    let friends = $state<any[]>([]);
 
     let toastMessage = $state("");
     const showToast = (msg: string) => {
@@ -20,9 +28,9 @@
     let selectedNoteId = $state<string | null>(null);
     let localDrafts = $state<Record<string, string>>({});
 
-    // Force fresh data load when page mounts
+    // Initialize data manager and load cached data on mount
     onMount(() => {
-        // Clear all local drafts on page load to ensure we show fresh data
+        // Clear drafts
         localDrafts = {};
 
         // Restore selected note from localStorage
@@ -31,14 +39,38 @@
             selectedNoteId = savedNoteId;
         }
 
-        invalidateAll();
-    });
+        // Create data manager with callbacks
+        dataManager = createNotesDataManager(
+            // onDataUpdate callback - called when fresh data arrives
+            (freshData) => {
+                console.log('[notes:page] Received fresh data from DataManager');
+                notes = freshData.notes || [];
+                profile = freshData.profile || null;
+                connections = freshData.connections || {};
+                sharedWithMe = freshData.sharedWithMe || [];
+                friends = freshData.friends || [];
+            },
+            // onError callback - called if sync fails
+            (error) => {
+                console.error('[notes:page] DataManager sync error:', error);
+                showToast(`Failed to sync: ${error.message}`);
+            }
+        );
 
-    // Sync server data to local state once when data changes
-    $effect.pre(() => {
-        if (data?.notes) {
-            notes = data.notes;
+        // Load initial data from cache (instant)
+        const cachedData = dataManager.getInitialData();
+        if (cachedData) {
+            console.log('[notes:page] Loaded from cache');
+            notes = cachedData.notes || [];
+            profile = cachedData.profile || null;
+            connections = cachedData.connections || {};
+            sharedWithMe = cachedData.sharedWithMe || [];
+            friends = cachedData.friends || [];
         }
+
+        // Start background sync (silent)
+        console.log('[notes:page] Starting background sync...');
+        dataManager.syncInBackground();
     });
 
     // Open specific note by ID from URL, or restore from localStorage

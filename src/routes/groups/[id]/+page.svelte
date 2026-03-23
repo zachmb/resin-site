@@ -1,6 +1,5 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import SimpleTree from '$lib/components/SimpleTree.svelte';
 
     let { data } = $props();
 
@@ -281,7 +280,6 @@
                                 {#if data.memberSessionsMap[member.userId]?.length > 0}
                                     {#each data.memberSessionsMap[member.userId] as tree, idx (idx)}
                                         <div class="tree-wrapper" style="border-color: {getMemberColor(memberIdx)}">
-                                            <SimpleTree species={tree} />
                                         </div>
                                     {/each}
                                 {:else}

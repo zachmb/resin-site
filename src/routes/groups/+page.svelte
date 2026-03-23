@@ -1,6 +1,4 @@
 <script lang="ts">
-    import UnifiedForestRenderer from '$lib/components/UnifiedForestRenderer.svelte';
-
     let { data } = $props();
     let groups = $derived(data.groups || []);
 
@@ -172,22 +170,18 @@
                             </div>
                         </div>
 
-                        <div class="group-forests">
-                            <p class="text-xs font-semibold text-resin-earth/50 uppercase tracking-wider mb-3">Member Progress</p>
-                            <div class="forests-grid">
+                        <div class="group-stats-secondary">
+                            <p class="text-xs font-semibold text-resin-earth/50 uppercase tracking-wider mb-3">Member Streaks</p>
+                            <div class="member-streaks-list">
                                 {#each group.members.slice(0, 4) as member (member.userId)}
-                                    <div class="member-forest-item">
-                                        <UnifiedForestRenderer
-                                            stones={member.total_stones || 0}
-                                            streak={member.current_streak || 0}
-                                            size="sm"
-                                        />
+                                    <div class="member-streak-item">
                                         <p class="member-name-short">{member.email.split('@')[0]}</p>
+                                        <span class="streak-badge">{member.current_streak || 0}🔥</span>
                                     </div>
                                 {/each}
                                 {#if group.members.length > 4}
-                                    <div class="member-forest-item placeholder">
-                                        <span>+{group.members.length - 4}</span>
+                                    <div class="member-streak-item placeholder">
+                                        <span>+{group.members.length - 4} more</span>
                                     </div>
                                 {/if}
                             </div>
@@ -476,30 +470,28 @@
         color: #2b4634;
     }
 
-    .group-forests {
+    .group-stats-secondary {
         flex: 1;
         margin-top: 8px;
     }
 
-    .forests-grid {
+    .member-streaks-list {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
     }
 
-    .member-forest-item {
+    .member-streak-item {
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
-        gap: 6px;
-        padding: 8px;
+        padding: 8px 12px;
         background: linear-gradient(135deg, rgba(43, 70, 52, 0.03), rgba(217, 119, 6, 0.02));
         border-radius: 8px;
         border: 1px solid rgba(43, 70, 52, 0.08);
-        text-align: center;
     }
 
-    .member-forest-item.placeholder {
+    .member-streak-item.placeholder {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -508,17 +500,26 @@
         font-size: 12px;
         font-weight: 600;
         color: rgba(43, 70, 52, 0.5);
+        padding: 12px;
     }
 
     .member-name-short {
-        font-size: 11px;
-        color: rgba(43, 70, 52, 0.6);
+        font-size: 12px;
+        color: rgba(43, 70, 52, 0.8);
         font-weight: 500;
         margin: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        width: 100%;
+        flex: 1;
+    }
+
+    .streak-badge {
+        font-size: 13px;
+        font-weight: 600;
+        color: #d97706;
+        white-space: nowrap;
+        margin-left: 4px;
     }
 
     .card-footer {

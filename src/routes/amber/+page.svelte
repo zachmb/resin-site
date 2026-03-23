@@ -1,16 +1,48 @@
 <script lang="ts">
     import AmberView from "$lib/components/AmberView.svelte";
-    import { invalidateAll } from "$app/navigation";
-    import { setCache } from "$lib/cache";
+    import { onMount } from "svelte";
+    import { createAmberDataManager } from "$lib/services/DataManager";
+    import type { DataManager } from "$lib/services/DataManager";
 
-    let { data } = $props();
+    // Data manager for amber - handles cache + sync
+    let dataManager: DataManager;
+
+    // Initialize state from cache
     let notes = $state<any[]>([]);
-    let profile = $derived(data.profile);
-    let executionStats = $derived(data.executionStats);
+    let profile = $state<any>(null);
+    let executionStats = $state<any>(null);
+    let jointPlans = $state<any[]>([]);
 
-    // Sync server data to local state whenever data changes
-    $effect(() => {
-        notes = data?.notes || [];
+    // Load cached data and start background sync on mount
+    onMount(() => {
+        // Create data manager with callbacks
+        dataManager = createAmberDataManager(
+            // onDataUpdate callback - called when fresh data arrives
+            (freshData) => {
+                console.log('[amber:page] Received fresh data from DataManager');
+                notes = freshData.sessions || [];
+                profile = freshData.profile || null;
+                jointPlans = freshData.jointPlans || [];
+                executionStats = null; // Computed server-side, skipping for now
+            },
+            // onError callback - called if sync fails
+            (error) => {
+                console.error('[amber:page] DataManager sync error:', error);
+            }
+        );
+
+        // Load initial data from cache (instant)
+        const cachedData = dataManager.getInitialData();
+        if (cachedData) {
+            console.log('[amber:page] Loaded from cache');
+            notes = cachedData.sessions || [];
+            profile = cachedData.profile || null;
+            jointPlans = cachedData.jointPlans || [];
+        }
+
+        // Start background sync (silent)
+        console.log('[amber:page] Starting background sync...');
+        dataManager.syncInBackground();
     });
 
     // Helper function called by AmberView when a new session is created
@@ -18,29 +50,28 @@
         // Optimistically add the new session to the list
         if (!notes.some((n: any) => n.id === session.id)) {
             notes = [session, ...notes];
-            // Cache the updated sessions list
-            setCache('amber-sessions', notes, 5 * 60 * 1000);
+            console.log('[amber:page] Optimistically added new session:', session.id);
         }
-        // Reload from server to stay in sync
-        await invalidateAll();
+        // Sync fresh data in background
+        if (dataManager) {
+            dataManager.syncInBackground();
+        }
     };
 
-    // Optimistic delete: remove from local state immediately, sync with server
+    // Optimistic delete: remove from local state immediately, sync in background
     export const deleteSession = async (sessionId: string) => {
-        // Store the deleted item in case we need to rollback
         const deletedIndex = notes.findIndex((n: any) => n.id === sessionId);
-        const deletedNote = notes[deletedIndex];
 
         if (deletedIndex > -1) {
             // Optimistic update: remove from UI immediately
             notes = notes.filter((n: any) => n.id !== sessionId);
-            setCache('amber-sessions', notes, 5 * 60 * 1000);
-            console.log('[Page] Optimistically deleted session:', sessionId);
+            console.log('[amber:page] Optimistically deleted session:', sessionId);
         }
 
-        // Sync with server - invalidateAll will re-run load and fetch fresh data
-        await invalidateAll();
-        console.log('[Page] Invalidated all data after delete');
+        // Sync fresh data in background
+        if (dataManager) {
+            dataManager.syncInBackground();
+        }
     };
 </script>
 

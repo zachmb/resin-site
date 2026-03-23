@@ -1,162 +1,21 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticatedSupabase } }) => {
+export const load: PageServerLoad = async ({ locals: { getUser } }) => {
     const user = await getUser();
 
     if (!user) {
         throw redirect(303, '/login?next=/amber');
     }
 
-    const supabase = await getAuthenticatedSupabase();
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-    const { data: notes } = await supabase
-        .from('amber_sessions')
-        .select(`
-            *,
-            amber_tasks (*)
-        `)
-        .eq('user_id', user.id)
-        .neq('status', 'draft')
-        .order('created_at', { ascending: false });
-
-    // Fetch blocking sessions (focus sessions from focus automations)
-    const { data: focusSessions } = await supabase
-        .from('blocking_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_time', { ascending: false });
-
-    const normalizedNotes = (notes || []).map((note: any) => ({
-        ...note,
-        sessionType: 'amber',
-        title: note.display_title ?? note.title ?? '',
-        content: note.raw_text ?? note.content ?? '',
-        amber_tasks: (note.amber_tasks || []).sort((a: any, b: any) => {
-            if (a.start_time && b.start_time) {
-                return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-            }
-            return 0;
-        })
-    }));
-
-    // Convert blocking sessions to amber session format for display
-    const normalizedFocusSessions = (focusSessions || []).map((fs: any) => ({
-        id: fs.id,
-        user_id: fs.user_id,
-        sessionType: 'focus',
-        title: fs.title || 'Focus Session',
-        display_title: fs.title || 'Focus Session',
-        content: '',
-        raw_text: '',
-        status: new Date(fs.end_time) < new Date() ? 'completed' :
-                new Date(fs.start_time) <= new Date() ? 'scheduled' : 'scheduled',
-        intensity: 1,
-        created_at: fs.start_time,
-        updated_at: fs.updated_at,
-        start_time: fs.start_time,
-        end_time: fs.end_time,
-        is_device_scheduled: fs.device_scheduled,
-        amber_tasks: [{
-            id: `focus-${fs.id}`,
-            amber_session_id: fs.id,
-            title: fs.title || 'Focus',
-            estimated_minutes: Math.round((new Date(fs.end_time).getTime() - new Date(fs.start_time).getTime()) / 60000),
-            start_time: fs.start_time,
-            end_time: fs.end_time,
-            order: 1
-        }]
-    }));
-
-    // Merge both types and sort by start time
-    const allSessions = [...normalizedNotes, ...normalizedFocusSessions].sort((a, b) => {
-        const aTime = a.amber_tasks?.[0]?.start_time || a.created_at;
-        const bTime = b.amber_tasks?.[0]?.start_time || b.created_at;
-        return new Date(bTime).getTime() - new Date(aTime).getTime();
-    });
-
-    // Load joint amber plans
-    const { data: jointPlans } = await supabase
-        .from('joint_amber_plans')
-        .select('*')
-        .or(`initiator_id.eq.${user.id},collaborator_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-
-    // Auto-fail past scheduled amber sessions (focus sessions auto-complete)
-    const now = new Date().toISOString();
-    const pastScheduled = normalizedNotes.filter((n: any) => {
-        if (n.status !== 'scheduled') return false;
-        const tasks = n.amber_tasks || [];
-        if (tasks.length === 0) return false;
-        const lastEnd = tasks.at(-1)?.end_time;
-        return lastEnd && lastEnd < now;
-    });
-
-    if (pastScheduled.length > 0) {
-        await supabase
-            .from('amber_sessions')
-            .update({ status: 'failed' })
-            .in('id', pastScheduled.map((n: any) => n.id))
-            .eq('user_id', user.id);
-        // Update in-memory before returning
-        for (const n of pastScheduled) {
-            n.status = 'failed';
-        }
-    }
-
-    // Compute execution stats from recently completed sessions (both types)
-    let executionStats = null;
-    const completedNotes = allSessions.filter((n: any) => n.status === 'completed');
-    if (completedNotes.length >= 1) {
-        const recentCompleted = completedNotes.slice(0, 20);
-        let totalEst = 0, totalActual = 0, taskCount = 0;
-
-        for (const note of recentCompleted) {
-            for (const task of (note.amber_tasks || [])) {
-                if (task.start_time && task.end_time && task.estimated_minutes) {
-                    const actual = Math.round((new Date(task.end_time).getTime() - new Date(task.start_time).getTime()) / 60000);
-                    totalEst += task.estimated_minutes;
-                    totalActual += actual;
-                    taskCount++;
-                }
-            }
-        }
-
-        if (taskCount >= 3) {
-            const ratio = Math.round((totalActual / totalEst) * 100);
-            executionStats = {
-                accuracyPct: ratio,
-                label: ratio > 110 ? `You tend to take ${ratio - 100}% longer than planned`
-                     : ratio < 85  ? `You finish ${100 - ratio}% faster than planned`
-                     : 'Your time estimates are accurate'
-            };
-        }
-    }
-
-    // Load external events if connected
-    let externalEvents: any[] = [];
-    try {
-        const { getGoogleAccessToken, listCalendarEvents } = await import('$lib/amber_service');
-        const gToken = await getGoogleAccessToken(user.id);
-        const timeMin = new Date(Date.now() - 7 * 86400000).toISOString();
-        const timeMax = new Date(Date.now() + 14 * 86400000).toISOString();
-        externalEvents = await listCalendarEvents(gToken, timeMin, timeMax, profile?.timezone || 'UTC');
-    } catch (e) {
-        // Silently fail if not connected or error
-    }
-
+    // Return minimal data immediately - full data fetched in background on client
     return {
-        profile,
-        notes: allSessions,
-        jointPlans: jointPlans || [],
-        executionStats,
-        externalEvents
+        profile: null,
+        notes: [],
+        jointPlans: [],
+        executionStats: null,
+        externalEvents: [],
+        shouldFetchData: true
     };
 };
 

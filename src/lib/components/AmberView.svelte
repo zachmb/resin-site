@@ -6,7 +6,6 @@
     import { onDestroy } from "svelte";
     import SessionCelebration from './SessionCelebration.svelte';
     import AmberIgniteRitual from './AmberIgniteRitual.svelte';
-    import ForestDecayAnimation from './ForestDecayAnimation.svelte';
     import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
     import CalendarVisualizer from './CalendarVisualizer.svelte';
     import AmberCalendar from './AmberCalendar.svelte';
@@ -31,8 +30,6 @@
     let celebrationData = $state<any>(null);
     let showRecoverySuggestion = $state(false);
     let showIgniteRitual = $state(false);
-    let showDecayAnimation = $state(false);
-    let decayAnimationData = $state<any>(null);
     let pendingSessionFailure = $state<string | null>(null);
     let pendingSessionCompletion = $state<string | null>(null);
     let viewMode = $state<'list' | 'calendar'>('list');
@@ -209,17 +206,6 @@
 
     const handleSessionMissed = () => {
         if (!selectedSession) return;
-        // Show decay animation with estimated losses
-        const estimatedDecay = 15; // base decay amount
-        const estimatedStonesLost = Math.floor(Math.random() * 3) + 1; // 1-3 stones
-
-        showDecayAnimation = true;
-        decayAnimationData = {
-            decayAmount: estimatedDecay,
-            stonesLost: estimatedStonesLost
-        };
-
-        // Submit form after animation completes
         pendingSessionFailure = selectedSession.id;
     };
 
@@ -1485,16 +1471,6 @@
     />
 {/if}
 
-<!-- Decay animation overlay on session failure -->
-{#if decayAnimationData}
-    <ForestDecayAnimation
-        visible={showDecayAnimation}
-        decayAmount={decayAnimationData.decayAmount}
-        stonesLost={decayAnimationData.stonesLost}
-        message="Session missed — your forest weakens..."
-        onComplete={submitSessionFailure}
-    />
-{/if}
 
 <!-- Recovery suggestion toast -->
 {#if showRecoverySuggestion}

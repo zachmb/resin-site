@@ -162,136 +162,25 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
 };
 
 export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticatedSupabase }, setHeaders }) => {
-    // Disable ALL caching - force fresh load every time
+    const user = await getUser();
+    if (!user) throw redirect(303, '/login');
+
+    // Return minimal data immediately - fetch full data in background
+    // This allows the page to render instantly with cached data if available
     setHeaders({
         'cache-control': 'no-cache, no-store, must-revalidate',
         'pragma': 'no-cache',
         'expires': '0'
     });
 
-    const user = await getUser();
-    if (!user) throw redirect(303, '/login');
-
-    const userId = user.id;
-    const supabase = await getAuthenticatedSupabase();
-
-    // Fetch user profile for scheduling preferences
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-    // Fetch notes shared with me
-    const { data: sharedNotes } = await supabase
-        .from('shared_notes')
-        .select('note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id, created_at)')
-        .eq('shared_with_id', userId);
-
-    const normalizedSharedNotes = (sharedNotes || []).map((share: any) => {
-        const note = share.amber_sessions;
-        return {
-            id: note.id,
-            user_id: note.user_id,
-            title: note.display_title ?? '',
-            content: note.raw_text ?? '',
-            status: note.status,
-            owner_id: share.owner_id,
-            shared_note_id: share.id,
-            created_at: note.created_at
-        };
-    });
-
-    // Fetch accepted friends
-    const { data: friendships } = await supabase
-        .from('friendships')
-        .select('id, requester_id, addressee_id, status')
-        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-        .eq('status', 'accepted');
-
-    const friends = await Promise.all(
-        (friendships || []).map(async (friendship: any) => {
-            const otherId =
-                friendship.requester_id === userId ? friendship.addressee_id : friendship.requester_id;
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('id', otherId)
-                .single();
-
-            return {
-                id: otherId,
-                friendship_id: friendship.id
-            };
-        })
-    );
-
-    // Fetch mind map edges (connections) for all user notes
-    const { data: edges } = await supabase
-        .from('mind_map_edges')
-        .select('*')
-        .eq('user_id', userId);
-
-    // Fetch user's own notes for building connection metadata AND for display
-    const { data: userNotes, error: notesError } = await supabase
-        .from('amber_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-    if (notesError) {
-        console.error('[notes] Error fetching user notes:', notesError);
-    }
-
-    // Normalize user's own notes for display
-    const normalizedUserNotes = (userNotes || []).map((n: any) => ({
-        id: n.id,
-        title: n.display_title || n.title || 'Untitled',
-        content: n.raw_text || n.content || '',
-        created_at: n.created_at,
-        status: n.status
-    }));
-
-    // Build allNotes for connection metadata (just title, used for mapping)
-    const allNotes = normalizedUserNotes.map(n => ({
-        id: n.id,
-        title: n.title
-    }));
-
-    // Build connection metadata
-    const connections: Record<string, any> = {};
-    const noteMap = new Map(allNotes.map(n => [n.id, n]));
-
-    for (const note of allNotes) {
-        const outgoing = (edges || [])
-            .filter(e => e.source_id === note.id)
-            .map(e => ({
-                ...e,
-                targetTitle: noteMap.get(e.target_id)?.title || 'Untitled'
-            }));
-
-        const incoming = (edges || [])
-            .filter(e => e.target_id === note.id)
-            .map(e => ({
-                ...e,
-                sourceTitle: noteMap.get(e.source_id)?.title || 'Untitled'
-            }));
-
-        connections[note.id] = { outgoing, incoming };
-    }
-
-    console.log('[notes load] Returning data:', {
-        notesCount: normalizedUserNotes.length,
-        firstNoteContent: normalizedUserNotes[0]?.content?.substring(0, 50),
-        timestamp: new Date().toISOString()
-    });
-
     return {
-        notes: normalizedUserNotes,
-        sharedWithMe: normalizedSharedNotes,
-        friends,
-        connections,
-        profile
+        notes: [],
+        sharedWithMe: [],
+        friends: [],
+        connections: {},
+        profile: null,
+        // Signal that client should fetch full data in background
+        shouldFetchData: true
     };
 };
 

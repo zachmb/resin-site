@@ -139,13 +139,27 @@
 			const pollInterval = setInterval(async () => {
 				if (profileData?.id) {
 					try {
-						const { data: updatedProfile } = await supabase
+						// Safe select without longest_streak
+						const { data: updatedProfile, error: pollError } = await supabase
 							.from('profiles')
-							.select('id, total_stones, current_streak, longest_streak, updated_at')
+							.select('id, total_stones, current_streak, updated_at, last_session_date')
 							.eq('id', profileData.id)
 							.single();
 
-						if (updatedProfile) {
+						if (pollError) {
+							// If 400 (undefined column), try even more minimal subset
+							if (pollError.code === '42703') {
+								const { data: minimalProfile } = await supabase
+									.from('profiles')
+									.select('id, updated_at')
+									.eq('id', profileData.id)
+									.single();
+								
+								if (minimalProfile) {
+									profileData = { ...profileData, ...minimalProfile };
+								}
+							}
+						} else if (updatedProfile) {
 							// Check if values changed since last poll
 							if (updatedProfile.total_stones !== profileData.total_stones ||
 								updatedProfile.current_streak !== profileData.current_streak) {
@@ -153,8 +167,8 @@
 									stones: updatedProfile.total_stones,
 									streak: updatedProfile.current_streak
 								});
-								profileData = updatedProfile;
-								data.profile = updatedProfile;
+								profileData = { ...profileData, ...updatedProfile };
+								data.profile = profileData;
 							}
 						}
 					} catch (err) {

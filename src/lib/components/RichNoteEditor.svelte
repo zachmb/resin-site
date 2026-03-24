@@ -156,7 +156,7 @@
     <!-- Rich text display layer (behind textarea) -->
     <div
         bind:this={displayLayer}
-        class="absolute inset-0 overflow-hidden whitespace-pre-wrap break-words font-sans text-[17px] leading-relaxed text-[#2B4634] p-6 sm:p-10 pointer-events-none"
+        class="absolute inset-0 overflow-hidden whitespace-pre-wrap break-words font-sans text-[17px] leading-relaxed text-[#2B4634] px-8 sm:px-12 py-6 pointer-events-none"
         aria-hidden="true"
     >
         {@html htmlContent}
@@ -171,7 +171,7 @@
         oninput={handleInput}
         onchange={handleChange}
         onscroll={handleScroll}
-        class="relative z-10 w-full h-full resize-none font-sans text-[17px] leading-relaxed bg-transparent focus:outline-none p-6 sm:p-10 placeholder:text-[#5C4B3C]/60 {classList}"
+        class="relative z-10 w-full h-full resize-none font-sans text-[17px] leading-relaxed bg-transparent focus:outline-none px-8 sm:px-12 py-6 placeholder:text-[#5C4B3C]/60 {classList}"
         style="color: rgba(43, 70, 52, 0.5); caret-color: #2B4634;"
     ></textarea>
 </div>

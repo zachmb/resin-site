@@ -6,6 +6,7 @@ declare global {
 			supabase: SupabaseClient
 			getSession(): Promise<Session | null>
 			getUser(): Promise<User | null>
+			getAuthenticatedSupabase(): Promise<SupabaseClient>
 			session: Session | null
 		}
 		interface PageData {

@@ -1,7 +1,11 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { createClient } from '@supabase/supabase-js';
 
-export const load: PageServerLoad = async ({ params, url, locals: { supabase, getUser } }) => {
+export const load: PageServerLoad = async ({ params, url, locals: { getAuthenticatedSupabase, getUser } }) => {
+    const supabase = await getAuthenticatedSupabase();
     const token = url.searchParams.get('token');
 
     if (!token) {
@@ -37,7 +41,10 @@ export const load: PageServerLoad = async ({ params, url, locals: { supabase, ge
 };
 
 export const actions: Actions = {
-    joinGroup: async ({ params, url, locals: { supabase, getUser } }) => {
+    joinGroup: async ({ params, url, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+            auth: { persistSession: false }
+        });
         const user = await getUser();
         if (!user) {
             return fail(401, { error: 'Unauthorized' });

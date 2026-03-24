@@ -74,8 +74,18 @@
         if (timeUpdateInterval) clearInterval(timeUpdateInterval);
     });
 
+    let lastActiveId = $state<string | null>(null);
+
     $effect(() => {
-        activeTitle = activeNote?.title || '';
+        // Only update activeTitle if the note ID has actually changed to a DIFFERENT real note
+        // Don't overwrite if we're transitioning from 'mock' to a real ID (preserving typed title)
+        if (activeNote?.id !== lastActiveId) {
+            if (lastActiveId !== "mock" || !activeTitle) {
+                activeTitle = activeNote?.title || '';
+            }
+            lastActiveId = activeNote?.id;
+        }
+        
         // Update lastSaved to show the actual last update time of the active note
         if (activeNote?.updated_at) {
             lastSaved = new Date(activeNote.updated_at);
@@ -110,7 +120,11 @@
     );
 
     const autoSave = (content: string) => {
-        if (!activeNote || activeNote.id === "mock") return;
+        if (!activeNote) return;
+        // Update draft in parent immediately regardless of ID (handles 'mock')
+        updateActiveNoteContent(content);
+        
+        if (activeNote.id === "mock") return;
         clearTimeout(saveTimeout);
         isSaving = true;
         saveTimeout = setTimeout(async () => {
@@ -122,7 +136,7 @@
                 const updatedNote = { ...activeNote, content };
                 setCache(`note-${activeNote.id}`, updatedNote, 60000);
 
-                const response = await fetch("?/updateNote", {
+                const response = await fetch("/notes?/updateNote", {
                     method: "POST",
                     body: formData,
                 });
@@ -382,9 +396,9 @@
         >
             <!-- Editor Header: Mobile Back Button + Title + Action Buttons -->
             <div
-                class="flex-shrink-0 px-4 sm:px-8 py-3 border-b border-resin-forest/5 bg-white/40"
+                class="flex-shrink-0 px-4 sm:px-8 py-3 border-b border-resin-forest/5 bg-white/40 h-fit min-h-[60px]"
             >
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center justify-between gap-3 h-full">
                     <!-- Mobile Back Button -->
                     <button
                         onclick={() => {
@@ -412,7 +426,12 @@
                         type="text"
                         placeholder="Untitled Note"
                         bind:value={activeTitle}
-                        class="flex-1 text-lg sm:text-xl font-serif font-bold text-resin-charcoal bg-transparent focus:outline-none placeholder:text-resin-earth/30 min-w-0"
+                        oninput={() => {
+                            // Trigger autosave when title is typed, even if note is 'mock'
+                            // note: content is passed to preserve it while title is being edited
+                            autoSave(activeNote?.content || "");
+                        }}
+                        class="flex-1 text-lg sm:text-xl font-serif font-bold text-resin-charcoal bg-transparent focus:outline-none placeholder:text-resin-earth/30 min-w-0 line-clamp-2 overflow-hidden"
                     />
 
                     <!-- Action Buttons (Compact) -->

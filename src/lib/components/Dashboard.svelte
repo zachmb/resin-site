@@ -99,19 +99,19 @@
         const refreshProfileImmediately = async () => {
             if (supabase && profile?.id) {
                 try {
-                    const { data } = await supabase
+                    const { data, error } = await supabase
                         .from('profiles')
-                        .select('id, total_stones, current_streak, longest_streak')
+                        .select('id, total_stones, current_streak, updated_at')
                         .eq('id', profile.id)
                         .single();
 
-                    if (data) {
+                    if (!error && data) {
                         // Update only if values actually changed
                         if (data.total_stones !== syncedProfile?.total_stones ||
                             data.current_streak !== syncedProfile?.current_streak) {
                             syncedProfile = { ...syncedProfile, ...data };
                             // Cache the fresh data for next visit
-                            localStorage.setItem('resin_profile', JSON.stringify({ ...syncedProfile, ...data }));
+                            localStorage.setItem('resin_profile', JSON.stringify(syncedProfile));
                         }
                     }
                 } catch (err) {
@@ -128,19 +128,19 @@
             pollInterval = setInterval(async () => {
                 if (supabase && profile?.id) {
                     try {
-                        const { data } = await supabase
+                        const { data, error } = await supabase
                             .from('profiles')
-                            .select('id, total_stones, current_streak, longest_streak')
+                            .select('id, total_stones, current_streak, updated_at')
                             .eq('id', profile.id)
                             .single();
 
-                        if (data) {
+                        if (!error && data) {
                             // Only update if values changed
                             if (data.total_stones !== syncedProfile?.total_stones ||
                                 data.current_streak !== syncedProfile?.current_streak) {
                                 syncedProfile = { ...syncedProfile, ...data };
                                 // Cache the fresh data
-                                localStorage.setItem('resin_profile', JSON.stringify({ ...syncedProfile, ...data }));
+                                localStorage.setItem('resin_profile', JSON.stringify(syncedProfile));
                             }
                         }
                     } catch (err) {

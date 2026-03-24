@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
+    const supabase = await getAuthenticatedSupabase();
     const user = await getUser();
 
     if (!user) {

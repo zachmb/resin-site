@@ -21,10 +21,10 @@ export const load: PageServerLoad = async ({ locals: { getUser } }) => {
 
 export const actions: Actions = {
     activate: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return { success: false, error: "Unauthorized" };
 
-        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -162,10 +162,10 @@ export const actions: Actions = {
     },
 
     complete: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return { success: false, error: "Unauthorized" };
 
-        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -258,10 +258,10 @@ export const actions: Actions = {
     },
 
     cancel: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return { success: false, error: "Unauthorized" };
 
-        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -331,13 +331,13 @@ export const actions: Actions = {
     },
 
     delete: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) {
             console.error('[Delete] Auth error: User not authenticated');
             return { success: false, error: "Unauthorized" };
         }
 
-        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -445,6 +445,7 @@ export const actions: Actions = {
     },
 
     acceptJointPlan: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -468,6 +469,7 @@ export const actions: Actions = {
     },
 
     declineJointPlan: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -491,6 +493,7 @@ export const actions: Actions = {
     },
 
     activateJointPlan: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -537,6 +540,7 @@ export const actions: Actions = {
     },
 
     cancelJointPlan: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -560,6 +564,7 @@ export const actions: Actions = {
     },
 
     updateTask: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -608,6 +613,7 @@ export const actions: Actions = {
     },
 
     shiftSingleTask: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -650,6 +656,7 @@ export const actions: Actions = {
     },
 
     updateIntensity: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -695,6 +702,7 @@ export const actions: Actions = {
     },
 
     scaleDurations: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -745,6 +753,7 @@ export const actions: Actions = {
     },
 
     shiftStartTimes: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -814,6 +823,7 @@ export const actions: Actions = {
     },
 
     markFailed: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -851,6 +861,7 @@ export const actions: Actions = {
     },
 
     extendSession: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -912,6 +923,7 @@ export const actions: Actions = {
     },
 
     bulkDelete: async ({ request, locals: { getAuthenticatedSupabase } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
@@ -964,6 +976,7 @@ export const actions: Actions = {
     },
 
     clearDay: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 

@@ -11,6 +11,7 @@ async function getAdminClient() {
 }
 
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getSession } }) => {
+    const supabase = await getAuthenticatedSupabase();
 	const session = await getSession();
 	if (!session) {
 		throw redirect(303, '/login?next=/friends');
@@ -91,6 +92,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
 
 export const actions: Actions = {
 	searchUser: async ({ locals: { getAuthenticatedSupabase, getSession }, request }) => {
+        const supabase = await getAuthenticatedSupabase();
 		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
@@ -182,6 +184,7 @@ export const actions: Actions = {
 	},
 
 	sendRequest: async ({ locals: { getAuthenticatedSupabase, getSession }, request }) => {
+        const supabase = await getAuthenticatedSupabase();
 		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
@@ -213,6 +216,7 @@ export const actions: Actions = {
 	},
 
 	acceptRequest: async ({ locals: { getAuthenticatedSupabase, getSession }, request }) => {
+        const supabase = await getAuthenticatedSupabase();
 		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
@@ -238,6 +242,7 @@ export const actions: Actions = {
 	},
 
 	declineRequest: async ({ locals: { getAuthenticatedSupabase, getSession }, request }) => {
+        const supabase = await getAuthenticatedSupabase();
 		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
@@ -261,6 +266,7 @@ export const actions: Actions = {
 	},
 
 	removeFriend: async ({ locals: { getAuthenticatedSupabase, getSession }, request }) => {
+        const supabase = await getAuthenticatedSupabase();
 		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });
@@ -284,6 +290,7 @@ export const actions: Actions = {
 	},
 
 	createJointPlan: async ({ locals: { getAuthenticatedSupabase, getSession }, request }) => {
+        const supabase = await getAuthenticatedSupabase();
 		const session = await getSession();
 		if (!session) {
 			return fail(401, { error: 'Unauthorized' });

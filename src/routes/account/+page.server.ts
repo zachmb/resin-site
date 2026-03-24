@@ -1,17 +1,33 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
 	const user = await getUser();
 	if (!user) {
 		throw redirect(303, '/login?next=/account');
 	}
 
-	const { data: profile } = await supabase
+    // Fetch profile with resilience to missing streak columns in production
+	const { data: profile, error: profileError } = await supabase
 		.from('profiles')
-		.select('*')
+		.select('id, username, full_name, avatar_url, total_stones, current_streak, sync_notes')
 		.eq('id', user.id)
 		.single();
+
+    let finalProfile = profile;
+    if (profileError) {
+        console.warn('[account:load] Initial profile fetch failed, retrying with minimal columns:', profileError.message);
+        const { data: minimalProfile } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url, sync_notes')
+            .eq('id', user.id)
+            .single();
+        finalProfile = minimalProfile ? { 
+            ...minimalProfile, 
+            total_stones: null, 
+            current_streak: null 
+        } as any : null;
+    }
 
 	const { data: feedback } = await supabase
 		.from('amber_task_feedback')
@@ -111,7 +127,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
 	});
 
 	return {
-		profile,
+		profile: finalProfile,
 		deviceTokens: deviceTokens || [],
 		commandConfigs: commandConfigs || [],
 		tasteData: {
@@ -159,7 +175,7 @@ export const actions: Actions = {
         }
     },
 
-    updateProfile: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    updateProfile: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -201,7 +217,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    generateToken: async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
+    generateToken: async ({ locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -219,7 +235,7 @@ export const actions: Actions = {
         return { success: true, token: newKey };
     },
 
-    removeDevice: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    removeDevice: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -239,7 +255,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    saveCommandConfig: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    saveCommandConfig: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -278,7 +294,7 @@ export const actions: Actions = {
         }
     },
 
-    toggleCommandConfig: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    toggleCommandConfig: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -300,7 +316,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    deleteCommandConfig: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    deleteCommandConfig: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -322,7 +338,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    addFriend: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    addFriend: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -387,7 +403,7 @@ export const actions: Actions = {
         return { success: true, message: 'Friend request sent!' };
     },
 
-    acceptFriend: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    acceptFriend: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -440,7 +456,7 @@ export const actions: Actions = {
         return { success: true, message: 'Friend request accepted!' };
     },
 
-    rejectFriend: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    rejectFriend: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -468,7 +484,7 @@ export const actions: Actions = {
         return { success: true, message: 'Friend request rejected' };
     },
 
-    removeFriend: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    removeFriend: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -510,7 +526,7 @@ export const actions: Actions = {
         return { success: true, message: 'Friend removed' };
     },
 
-    cancelFriendRequest: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    cancelFriendRequest: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -538,7 +554,7 @@ export const actions: Actions = {
         return { success: true, message: 'Friend request canceled' };
     },
 
-    toggleHardenedMode: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    toggleHardenedMode: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -551,7 +567,7 @@ export const actions: Actions = {
                 hardened_mode_enabled: enabled,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', session.user.id);
+            .eq('id', user.id);
 
         if (error) {
             console.error('Error updating hardened mode:', error);
@@ -561,7 +577,7 @@ export const actions: Actions = {
         return { success: true, hardened_mode_enabled: enabled };
     },
 
-    emergencyUnlock: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
+    emergencyUnlock: async ({ request, locals: { supabase, getUser } }) => {
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -572,7 +588,7 @@ export const actions: Actions = {
                 hardened_mode_enabled: false,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', session.user.id);
+            .eq('id', user.id);
 
         if (error) {
             console.error('Error emergency unlocking:', error);
@@ -584,7 +600,7 @@ export const actions: Actions = {
             const { data: tokens } = await supabase
                 .from('device_tokens')
                 .select('token')
-                .eq('user_id', session.user.id)
+                .eq('user_id', user.id)
                 .eq('platform', 'apns');
 
             if (tokens && tokens.length > 0) {

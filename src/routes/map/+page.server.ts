@@ -47,6 +47,8 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
     const session = await getSession();
     if (!session) throw redirect(303, '/login');
 
+    const supabase = await getAuthenticatedSupabase();
+
     const [notesResponse, edgesResponse] = await Promise.all([
         supabase
             .from('amber_sessions')
@@ -104,6 +106,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const id = data.get('id') as string;
         const x = parseFloat(data.get('position_x') as string);
@@ -128,6 +132,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const id = data.get('id') as string;
 
@@ -147,6 +153,8 @@ export const actions: Actions = {
     createEdge: async ({ request, locals: { getAuthenticatedSupabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const source_id = data.get('source_id') as string;
@@ -182,6 +190,8 @@ export const actions: Actions = {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const id = data.get('id') as string;
 
@@ -210,6 +220,8 @@ export const actions: Actions = {
     clearMap: async ({ locals: { getAuthenticatedSupabase, getSession } }) => {
         const session = await getSession();
         if (!session) return fail(401, { error: 'Unauthorized' });
+
+        const supabase = await getAuthenticatedSupabase();
 
         const { error } = await supabase
             .from('amber_sessions')

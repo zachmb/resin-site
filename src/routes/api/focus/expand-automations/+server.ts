@@ -1,11 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ locals: { supabase, session, getSession } }) => {
+export const POST: RequestHandler = async ({ locals: { getAuthenticatedSupabase, session, getSession } }) => {
     try {
         if (!session) {
             return json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const supabase = await getAuthenticatedSupabase();
 
         // Fetch all enabled automations for this user
         const { data: automations, error: fetchError } = await supabase

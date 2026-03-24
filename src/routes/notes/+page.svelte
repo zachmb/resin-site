@@ -138,26 +138,44 @@
                 created_at: notes[noteIndex].created_at,
                 updated_at: note.updated_at || new Date().toISOString()
             };
-        } else if (isNew) {
-            // New note
+        }
+        if (isNew) {
+            // New note - merge from mock draft if exists
+            const mockDraft = localDrafts["mock"];
+            const mergedContent = mockDraft || note.content || '';
+            
             notes = [
                 {
                     id: note.id,
                     title: note.title || 'Untitled',
-                    content: note.content || '',
+                    content: mergedContent,
                     created_at: note.created_at || new Date().toISOString(),
                     status: note.status || 'draft'
                 },
                 ...notes
             ];
+            
+            if (mockDraft) {
+                delete localDrafts["mock"];
+            }
         }
 
         // Create new array reference to trigger reactivity
         notes = [...notes];
 
-        // Clear caches
+        // Clear caches and update localStorage immediately
         clearCache();
         invalidateCache('notes');
+        
+        if (dataManager) {
+            dataManager.updateCache({
+                notes,
+                profile,
+                connections,
+                sharedWithMe,
+                friends
+            });
+        }
     };
 
     const handleSelectNote = (note: any) => {

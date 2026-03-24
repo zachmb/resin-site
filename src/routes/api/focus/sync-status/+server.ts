@@ -1,10 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ url, locals: { supabase, session } }) => {
+export const GET: RequestHandler = async ({ url, locals: { getAuthenticatedSupabase, session } }) => {
     if (!session) {
         return json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = await getAuthenticatedSupabase();
 
     const id = url.searchParams.get('id');
     if (!id) {

@@ -278,7 +278,7 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
 
     const { data: profile } = await admin
         .from('profiles')
-        .select('current_streak, longest_streak, longest_streak_at, last_active_date, timezone')
+        .select('current_streak, last_active_date, timezone')
         .eq('id', userId)
         .single();
 
@@ -291,19 +291,8 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
     const todayStr = dateStringInTimeZone(now, timeZone);
 
     const history = await calculateLongestStreakFromHistory(userId, timeZone);
-    const existingLongest = profile.longest_streak || 0;
-    const historyLongest = history.longestStreak || 0;
-
-    // Never decrease `longest_streak` during recalculation; preserve the matching date.
-    let newLongest = existingLongest >= historyLongest ? existingLongest : historyLongest;
-    let longestStreakAt: string | null = profile.longest_streak_at ?? null;
-
-    if (historyLongest > existingLongest) {
-        longestStreakAt = history.longestStreakAt ?? longestStreakAt;
-    } else if (!longestStreakAt) {
-        // If we don't have a date stored, fall back to history without changing the streak value.
-        longestStreakAt = history.longestStreakAt ?? null;
-    }
+    let newLongest = history.longestStreak || 0;
+    let longestStreakAt: string | null = history.longestStreakAt ?? null;
 
     const lastActive = profile.last_active_date ? new Date(profile.last_active_date) : null;
     const lastActiveStr = lastActive ? dateStringInTimeZone(lastActive, timeZone) : null;
@@ -311,21 +300,7 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
     let newStreak = profile.current_streak || 0;
 
     if (lastActiveStr === todayStr) {
-        // Already recorded today: don't change current streak, but still persist any
-        // historical longest-streak correction we computed above.
-        if (
-            newLongest !== existingLongest ||
-            (longestStreakAt && longestStreakAt !== (profile.longest_streak_at ?? null))
-        ) {
-            await admin
-                .from('profiles')
-                .update({
-                    longest_streak: newLongest,
-                    longest_streak_at: longestStreakAt,
-                    updated_at: now.toISOString()
-                })
-                .eq('id', userId);
-        }
+        // Already recorded today: don't change current streak
         return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt };
     }
 
@@ -349,8 +324,6 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
         .from('profiles')
         .update({
             current_streak: newStreak,
-            longest_streak: newLongest,
-            longest_streak_at: longestStreakAt,
             last_active_date: now.toISOString(),
             updated_at: now.toISOString()
         })
@@ -498,7 +471,6 @@ export async function applySessionReward(
             forest_health: newForestHealth,
             total_stones: stonesCount,
             current_streak: currentStreak,
-            longest_streak: longestStreak,
             updated_at: now.toISOString()
         })
         .eq('id', userId);

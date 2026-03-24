@@ -2,7 +2,8 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { generateForestTrees } from '$lib/forestGenerator';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, getUser } }) => {
+export const load: PageServerLoad = async ({ params, locals: { getAuthenticatedSupabase, getUser } }) => {
+    const supabase = await getAuthenticatedSupabase();
     const user = await getUser();
 
     if (!user) {
@@ -146,7 +147,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, getUser
 
 export const actions: Actions = {
     // ==================== NOTES ACTIONS ====================
-    addNote: async ({ params, request, locals: { supabase, getUser } }) => {
+    addNote: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -194,7 +196,8 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    updateNote: async ({ params, request, locals: { supabase, getUser } }) => {
+    updateNote: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -229,7 +232,8 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    deleteNote: async ({ params, request, locals: { supabase, getUser } }) => {
+    deleteNote: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -262,7 +266,8 @@ export const actions: Actions = {
     },
 
     // ==================== INVITE ACTIONS ====================
-    generateGroupInvite: async ({ params, locals: { supabase, getUser } }) => {
+    generateGroupInvite: async ({ params, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -306,7 +311,8 @@ export const actions: Actions = {
     },
 
     // ==================== FOCUS SESSION ACTIONS ====================
-    scheduleSession: async ({ params, request, locals: { supabase, getUser } }) => {
+    scheduleSession: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -354,7 +360,8 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    startNowSession: async ({ params, request, locals: { supabase, getUser } }) => {
+    startNowSession: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -396,7 +403,8 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    joinSession: async ({ params, request, locals: { supabase, getUser } }) => {
+    joinSession: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 
@@ -433,7 +441,8 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    leaveSession: async ({ params, request, locals: { supabase, getUser } }) => {
+    leaveSession: async ({ params, request, locals: { getAuthenticatedSupabase, getUser } }) => {
+        const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) return fail(401, { error: 'Unauthorized' });
 

@@ -14,6 +14,8 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         throw redirect(303, '/login?next=/focus');
     }
 
+    const supabase = await getAuthenticatedSupabase();
+
     // Expand focus automations into blocking sessions for next 7 days
     // This ensures coverage whether user opened the app or not
     const expandPromise = (async () => {
@@ -198,6 +200,8 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const title = data.get('title')?.toString() || '';
         const date = data.get('date')?.toString() || '';
@@ -263,6 +267,8 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
 
@@ -307,6 +313,8 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const title = data.get('title')?.toString() || '';
         const time = data.get('time')?.toString() || '';
@@ -344,6 +352,8 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const automationId = data.get('automationId')?.toString();
 
@@ -369,6 +379,8 @@ export const actions: Actions = {
     updateSession: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
+
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -428,6 +440,8 @@ export const actions: Actions = {
     makeRecurring: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
+
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
@@ -549,6 +563,8 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const collaboratorId = data.get('collaboratorId')?.toString();
         const title = data.get('title')?.toString() || '';
@@ -626,6 +642,8 @@ export const actions: Actions = {
     acceptSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
+
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
@@ -718,6 +736,8 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
 
+        const supabase = await getAuthenticatedSupabase();
+
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
 
@@ -753,6 +773,8 @@ export const actions: Actions = {
     completeSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
+
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();
@@ -842,6 +864,8 @@ export const actions: Actions = {
     cancelSharedFocus: async ({ request, locals: { getAuthenticatedSupabase, getUser } }) => {
         const user = await getUser();
         if (!user) return { success: false, error: 'Unauthorized' };
+
+        const supabase = await getAuthenticatedSupabase();
 
         const data = await request.formData();
         const sharedSessionId = data.get('sharedSessionId')?.toString();

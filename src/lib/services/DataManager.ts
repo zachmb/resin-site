@@ -171,6 +171,16 @@ export class DataManager {
     }
 
     /**
+     * Manually update the cache with new data
+     * Useful for optimistic updates or after successful form submissions
+     */
+    updateCache(freshData: any): void {
+        console.log(`[DataManager:${this.options.cacheKey}] 💾 Manually updating cache`);
+        setCacheData(this.options.cacheKey, freshData);
+        this.syncStatus.lastSync = Date.now();
+    }
+
+    /**
      * Clear cache for this data type
      */
     clearCache(): void {

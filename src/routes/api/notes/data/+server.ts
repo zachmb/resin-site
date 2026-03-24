@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedSupabase } }) => {
+export const GET: RequestHandler = async ({ locals: { getUser, supabase } }) => {
     try {
         const user = await getUser();
         if (!user) {
@@ -9,7 +9,6 @@ export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedS
         }
 
         const userId = user.id;
-        const supabase = await getAuthenticatedSupabase();
 
         // Helper functions from notes +page.server.ts
         const extractTitle = (content: string) => {
@@ -32,12 +31,27 @@ export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedS
             status: note.status
         });
 
-        // Fetch user profile
-        const { data: profile } = await supabase
+        // Fetch user profile with resilience to schema drift
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, username, full_name, avatar_url, total_stones, current_streak, sync_notes')
             .eq('id', userId)
             .single();
+
+        let finalProfile = profile;
+        if (profileError) {
+            console.warn('[api/notes/data] Initial profile fetch failed, retrying with minimal columns:', profileError.message);
+            const { data: minimalProfile } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url, sync_notes')
+                .eq('id', userId)
+                .single();
+            finalProfile = minimalProfile ? { 
+                ...minimalProfile, 
+                total_stones: null, 
+                current_streak: null 
+            } as any : null;
+        }
 
         // Fetch shared notes
         const { data: sharedNotes } = await supabase
@@ -135,7 +149,7 @@ export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedS
             sharedWithMe: normalizedSharedNotes,
             friends,
             connections,
-            profile,
+            profile: finalProfile,
             timestamp: Date.now()
         });
     } catch (error) {

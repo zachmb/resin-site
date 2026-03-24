@@ -236,6 +236,8 @@ export const actions: Actions = {
                 return fail(400, { error: 'Missing species ID' });
             }
 
+            const supabase = await getAuthenticatedSupabase();
+
             // Fetch current profile data
             const { data: profile, error: fetchError } = await supabase
                 .from('profiles')

@@ -2,11 +2,13 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { DEEPSEEK_API_KEY } from '$env/static/private';
 
-export const POST = async ({ request, locals: { supabase, session } }: RequestEvent) => {
+export const POST = async ({ request, locals: { getAuthenticatedSupabase, session } }: RequestEvent) => {
     try {
         if (!session) {
             return error(401, 'Unauthorized');
         }
+
+        const supabase = await getAuthenticatedSupabase();
 
         const body = await request.json();
         const { sessionId } = body;

@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ locals: { getUser, supabase } }) => 
         // Fetch user profile with resilience to schema drift
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('id, username, full_name, avatar_url, total_stones, current_streak, sync_notes')
+            .select('id, username, full_name, avatar_url, total_stones, current_streak')
             .eq('id', userId)
             .single();
 
@@ -43,7 +43,7 @@ export const GET: RequestHandler = async ({ locals: { getUser, supabase } }) => 
             console.warn('[api/notes/data] Initial profile fetch failed, retrying with minimal columns:', profileError.message);
             const { data: minimalProfile } = await supabase
                 .from('profiles')
-                .select('id, username, full_name, avatar_url, sync_notes')
+                .select('id, username, full_name, avatar_url')
                 .eq('id', userId)
                 .single();
             finalProfile = minimalProfile ? { 

@@ -172,7 +172,7 @@ export async function syncStonesFromNotes(
     const force = opts?.force === true;
     const { count, error } = await admin
         .from('amber_sessions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', userId);
 
     if (error) {

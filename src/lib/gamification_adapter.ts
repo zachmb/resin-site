@@ -56,7 +56,7 @@ export function createSupabaseGamificationAdapter(): DatabaseAdapter {
         async fetchSessionCount(userId: string): Promise<number> {
             const { count, error } = await admin
                 .from('amber_sessions')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('status', 'completed');
 

@@ -24,7 +24,15 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
         const {
             data: { session },
         } = await event.locals.supabase.auth.getSession()
-        return session
+        
+        if (!session) return null;
+        
+        // Authenticate the user to avoid the Insecure Session warning
+        const { data: { user }, error } = await event.locals.supabase.auth.getUser()
+        if (error || !user) return null;
+        
+        session.user = user;
+        return session;
     }
 
     /**

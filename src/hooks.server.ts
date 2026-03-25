@@ -125,7 +125,7 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
     } else if (
         url.pathname === '/' ||
         url.pathname.startsWith('/amber') ||
-        url.pathname.startsWith('/forest') ||
+        url.pathname.startsWith('/rewards') ||
         url.pathname.startsWith('/focus') ||
         url.pathname.startsWith('/map') ||
         url.pathname.startsWith('/friends') ||

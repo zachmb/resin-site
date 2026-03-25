@@ -16,6 +16,7 @@
     let loading = $state(false);
     let successMessage = $state("");
     let showDocs = $state(false);
+    let mobileShowContent = $state(false);
     let activeCategory = $state<
         "profile" | "preferences" | "friends" | "integrations" | "api" | "privacy" | "taste" | "devices" | "hardened"
     >("profile");
@@ -182,9 +183,9 @@
 
     <!-- Two-Panel Layout -->
     <div class="flex gap-6 flex-1 relative min-h-[600px]">
-        <!-- Left Panel: Settings Navigation -->
+        <!-- Left Panel: Settings Navigation (full width on mobile when not showing content) -->
         <div
-            class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
+            class="flex-shrink-0 w-full sm:w-80 flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden {mobileShowContent ? 'hidden sm:flex' : 'flex'}"
         >
             <!-- Profile Card at Top -->
             <div
@@ -211,7 +212,7 @@
             <div class="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
                 {#each categories as category (category.id)}
                     <button
-                        onclick={() => (activeCategory = category.id)}
+                        onclick={() => { activeCategory = category.id; mobileShowContent = true; }}
                         class="w-full text-left p-4 rounded-lg transition-all duration-200 border border-transparent {activeCategory ===
                         category.id
                             ? 'bg-resin-forest/5 border-resin-forest/10 relative before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-8 before:bg-resin-forest before:rounded-r-md'
@@ -254,10 +255,18 @@
             </div>
         </div>
 
-        <!-- Right Panel: Settings Content -->
+        <!-- Right Panel: Settings Content (full width on mobile when content is shown) -->
         <div
-            class="flex-1 hidden sm:flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
+            class="flex-1 flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden {mobileShowContent ? 'flex' : 'hidden sm:flex'}"
         >
+            <!-- Mobile back button -->
+            <button
+                class="sm:hidden flex items-center gap-2 p-4 text-sm font-semibold text-resin-forest border-b border-resin-forest/5"
+                onclick={() => (mobileShowContent = false)}
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                Back
+            </button>
             {#if activeCategory === "profile"}
                 <!-- Profile Content -->
                 <div
@@ -398,52 +407,12 @@
                             </div>
                         </section>
 
-                        <!-- Sync Settings -->
-                        <section class="border-t border-resin-forest/5 pt-6">
-                            <h3
-                                class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4"
-                            >
-                                Sync Settings
-                            </h3>
-                            <label
-                                class="flex items-start gap-4 cursor-pointer group"
-                            >
-                                <div
-                                    class="relative flex items-center justify-center pt-1"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        name="sync_notes"
-                                        class="peer sr-only"
-                                        checked={profile?.sync_notes ?? true}
-                                    />
-                                    <div
-                                        class="w-11 h-6 bg-resin-earth/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-resin-forest shadow-inner"
-                                    ></div>
-                                </div>
-                                <div class="space-y-1 flex-1">
-                                    <div
-                                        class="text-sm font-semibold text-resin-charcoal group-hover:text-resin-forest transition-colors"
-                                    >
-                                        Sync Notes to Mobile App
-                                    </div>
-                                    <p
-                                        class="text-xs text-resin-earth/70 font-light leading-relaxed"
-                                    >
-                                        Allow the Resin app to read and edit
-                                        your notes. If disabled, notes only
-                                        exist on the web.
-                                    </p>
-                                </div>
-                            </label>
-                        </section>
-
                         <!-- Widget Settings -->
-                        <section class="border-t border-resin-forest/5 pt-6">
+                        <section class="pt-6">
                             <h3
                                 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-4"
                             >
-                                Home Screen Widget
+                                App Settings
                             </h3>
                             <label
                                 class="flex items-start gap-4 cursor-pointer group"

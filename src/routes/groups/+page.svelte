@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { UserPlus, Users } from "lucide-svelte";
+    
     let { data } = $props();
     let groups = $derived(data.groups || []);
 
@@ -63,9 +65,7 @@
                     onclick={() => (showCreateForm = !showCreateForm)}
                     title="Create a new group"
                 >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
+                    <UserPlus class="w-5 h-5" />
                     Create Group
                 </button>
             </div>
@@ -130,10 +130,8 @@
 
     {#if groups.length === 0}
         <div class="empty-state">
-            <div class="text-center space-y-4">
-                <svg class="w-16 h-16 mx-auto text-resin-earth/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a6 6 0 11-12 0 6 6 0 0112 0z" />
-                </svg>
+            <div class="text-center space-y-4 flex flex-col items-center">
+                <Users class="w-16 h-16 text-resin-earth/30" />
                 <div>
                     <p class="text-lg font-semibold text-resin-charcoal">No groups yet</p>
                     <p class="text-sm text-resin-earth/60 mt-1">Create one or ask a friend to invite you</p>

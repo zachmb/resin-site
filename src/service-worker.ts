@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
 ];
 
 // Cache strategies
-const NETWORK_FIRST_ROUTES = ['/api/notes', '/amber/', '/forest/', '/focus/'];
+const NETWORK_FIRST_ROUTES = ['/api/notes', '/amber/', '/rewards/', '/focus/'];
 const CACHE_FIRST_ROUTES = ['.js', '.css', '.woff2', '.png', '.svg', '.jpg'];
 
 self.addEventListener('install', (event) => {

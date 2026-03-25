@@ -20,7 +20,7 @@
 	let pageTitle = $derived.by(() => {
 		const path = $page.url.pathname;
 		if (path === '/') return 'Resin';
-		if (path === '/forest') return 'Petrified Forest | Resin';
+		if (path === '/rewards') return 'Rewards | Resin';
 		if (path === '/map') return 'Map | Resin';
 		if (path === '/amber') return 'Amber | Resin';
 		if (path === '/focus') return 'Focus | Resin';
@@ -51,7 +51,16 @@
 
 	// Update profileData when data prop changes (e.g. navigation)
 	$effect(() => {
-		profileData = data.profile;
+		if (!profileData || !data.profile) {
+			profileData = data.profile;
+		} else {
+			// Merge ensuring we never downgrade stones/streak due to stale SvelteKit navigation cache
+			profileData = {
+				...data.profile,
+				total_stones: Math.max(data.profile.total_stones || 0, profileData.total_stones || 0),
+				current_streak: Math.max(data.profile.current_streak || 0, profileData.current_streak || 0),
+			};
+		}
 	});
 
 	// Subscribe to reward events
@@ -278,7 +287,7 @@
 						></span>
 					</a>
 					<a
-						href="/forest"
+						href="/rewards"
 						class="hover:text-resin-forest transition-colors relative group"
 					>
 						Forest
@@ -411,7 +420,7 @@
 					onclick={() => (isMobileMenuOpen = false)}>Amber</a
 				>
 				<a
-					href="/forest"
+					href="/rewards"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
 					onclick={() => (isMobileMenuOpen = false)}>Forest</a
 				>
@@ -461,6 +470,7 @@
 			class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4"
 		>
 			<p class="text-sm text-resin-earth/70">
+							<span class="font-medium text-[15px]">Rewards</span>
 				&copy; {new Date().getFullYear()} Resin App. All rights reserved.
 			</p>
 

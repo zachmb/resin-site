@@ -344,7 +344,7 @@
 
             <div class="w-px h-8 bg-resin-forest/10"></div>
 
-            <a href="/forest" class="text-center group">
+            <a href="/rewards" class="text-center group">
                 <p
                     class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1 group-hover:text-resin-amber transition-colors"
                 >
@@ -355,7 +355,7 @@
                 </p>
             </a>
             <div class="w-px h-8 bg-resin-forest/10"></div>
-            <a href="/forest" class="text-center group">
+            <a href="/rewards" class="text-center group">
                 <p
                     class="text-[10px] font-bold text-resin-earth/50 uppercase tracking-widest mb-1 group-hover:text-resin-amber transition-colors"
                 >
@@ -1063,7 +1063,7 @@
         <div class="lg:col-span-5 space-y-8">
             <!-- Forest & Rewards Card -->
             <a
-                href="/forest"
+                href="/rewards"
                 class="glass-card rounded-[2.5rem] p-8 border border-resin-forest/20 shadow-premium bg-gradient-to-br from-resin-forest/10 to-transparent hover:shadow-lg transition-all group block"
             >
                 <div class="flex items-center justify-between mb-6">
@@ -1329,7 +1329,7 @@
             {#if weeklyStats}
                 <div class="grid grid-cols-2 gap-4">
                     <a
-                        href="/forest"
+                        href="/rewards"
                         class="glass-card rounded-2xl p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
                     >
                         <p
@@ -1344,7 +1344,7 @@
                         </p>
                     </a>
                     <a
-                        href="/forest"
+                        href="/rewards"
                         class="glass-card rounded-2xl p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
                     >
                         <p

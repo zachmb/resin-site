@@ -6,7 +6,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
     try {
         const user = await getUser();
         if (!user) {
-            throw redirect(303, '/login?next=/forest');
+            throw redirect(303, '/login?next=/rewards');
         }
 
         const userId = user.id;

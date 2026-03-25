@@ -370,8 +370,6 @@
     bind:this={wrapper}
     class="w-full h-full relative"
     in:fade={{ duration: 300 }}
-    ondragover={onDragOver}
-    ondrop={onDrop}
 >
     <!-- Action Buttons -->
     <div class="absolute top-6 right-6 z-10 flex gap-2 items-center">
@@ -460,6 +458,8 @@
         onconnect={onConnect}
         ondelete={onDelete}
         onnodeclick={onNodeClick}
+        ondragover={onDragOver}
+        ondrop={onDrop}
         fitView
     >
         <Controls />

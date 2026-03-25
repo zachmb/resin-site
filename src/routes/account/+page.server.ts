@@ -7,10 +7,10 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 		throw redirect(303, '/login?next=/account');
 	}
 
-    // Fetch profile with resilience to missing streak columns in production
+    // Fetch profile - resilient to missing optional columns in production
 	const { data: profile, error: profileError } = await supabase
 		.from('profiles')
-		.select('id, username, full_name, avatar_url, total_stones, current_streak, sync_notes')
+		.select('id, username, full_name, avatar_url, total_stones, current_streak, hardened_mode_enabled, openclaw_api_key, openclaw_url, widget_enabled, availability_schedule')
 		.eq('id', user.id)
 		.single();
 
@@ -19,13 +19,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
         console.warn('[account:load] Initial profile fetch failed, retrying with minimal columns:', profileError.message);
         const { data: minimalProfile } = await supabase
             .from('profiles')
-            .select('id, username, full_name, avatar_url, sync_notes')
+            .select('id, username, full_name, avatar_url, total_stones, current_streak')
             .eq('id', user.id)
             .single();
         finalProfile = minimalProfile ? { 
-            ...minimalProfile, 
-            total_stones: null, 
-            current_streak: null 
+            ...minimalProfile,
+            hardened_mode_enabled: false,
+            openclaw_api_key: null,
+            openclaw_url: null,
+            widget_enabled: true,
+            availability_schedule: null
         } as any : null;
     }
 
@@ -114,10 +117,17 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 		.eq('from_user_id', user.id)
 		.order('created_at', { ascending: false });
 
-	// Transform friends data to include friend info more clearly
+	// Transform friends data - Supabase joins with FK aliases return array or single object
 	const friendsList = (friends || []).map((friendship: any) => {
 		const isFriend1 = friendship.user_id_1 === user.id;
-		const friendProfile = isFriend1 ? friendship.profiles_user_id_2 : friendship.profiles_user_id_1;
+		// Supabase returns FK joins as the table name or the alias key
+		const p1 = Array.isArray(friendship['profiles!friends_user_id_1_fkey'])
+			? friendship['profiles!friends_user_id_1_fkey'][0]
+			: friendship['profiles!friends_user_id_1_fkey'];
+		const p2 = Array.isArray(friendship['profiles!friends_user_id_2_fkey'])
+			? friendship['profiles!friends_user_id_2_fkey'][0]
+			: friendship['profiles!friends_user_id_2_fkey'];
+		const friendProfile = isFriend1 ? p2 : p1;
 		return {
 			id: friendship.id,
 			friendId: isFriend1 ? friendship.user_id_2 : friendship.user_id_1,
@@ -136,18 +146,28 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 			ratingHistory: ratingHistory.reverse() // chronological
 		},
 		friends: friendsList,
-		incomingRequests: (incomingRequests || []).map((req: any) => ({
-			id: req.id,
-			fromUserId: req.from_user_id,
-			fromEmail: req.profiles?.email || 'Unknown',
-			createdAt: req.created_at
-		})),
-		outgoingRequests: (outgoingRequests || []).map((req: any) => ({
-			id: req.id,
-			toUserId: req.to_user_id,
-			toEmail: req.profiles?.email || 'Unknown',
-			createdAt: req.created_at
-		}))
+		incomingRequests: (incomingRequests || []).map((req: any) => {
+			const fromProfile = Array.isArray(req['profiles!friend_requests_from_user_id_fkey'])
+				? req['profiles!friend_requests_from_user_id_fkey'][0]
+				: req['profiles!friend_requests_from_user_id_fkey'];
+			return {
+				id: req.id,
+				fromUserId: req.from_user_id,
+				fromEmail: fromProfile?.email || 'Unknown',
+				createdAt: req.created_at
+			};
+		}),
+		outgoingRequests: (outgoingRequests || []).map((req: any) => {
+			const toProfile = Array.isArray(req['profiles!friend_requests_to_user_id_fkey'])
+				? req['profiles!friend_requests_to_user_id_fkey'][0]
+				: req['profiles!friend_requests_to_user_id_fkey'];
+			return {
+				id: req.id,
+				toUserId: req.to_user_id,
+				toEmail: toProfile?.email || 'Unknown',
+				createdAt: req.created_at
+			};
+		})
 	};
 };
 
@@ -182,7 +202,6 @@ export const actions: Actions = {
         const formData = await request.formData();
         const openclaw_url = formData.get('openclaw_url') as string;
         const openclaw_api_key = formData.get('openclaw_api_key') as string;
-        const sync_notes = formData.get('sync_notes') === 'on';
         const widget_enabled = formData.get('widget_enabled') === 'on';
 
         // Build per-day availability schedule
@@ -206,7 +225,6 @@ export const actions: Actions = {
             openclaw_url,
             openclaw_api_key,
             availability_schedule: availabilitySchedule,
-            sync_notes,
             widget_enabled,
             updated_at: new Date().toISOString(),
         };
@@ -349,20 +367,36 @@ export const actions: Actions = {
             return fail(400, { error: 'Email address required' });
         }
 
-        // Find user by email
-        const { data: friendUser, error: searchError } = await supabase
+        // Find user by email - check profiles table first, then fallback to email field
+        let friendUserId: string | null = null;
+
+        // Try profiles with email column (may not exist on all deployments)
+        const { data: profileByEmail } = await supabase
             .from('profiles')
             .select('id')
-            .eq('email', friendEmail)
+            .ilike('username', friendEmail.split('@')[0])
+            .limit(1)
             .single();
 
-        if (searchError || !friendUser) {
-            return fail(404, { error: 'User not found' });
+        if (!profileByEmail) {
+            // Use RPC to look up by email securely
+            const { data: emailLookup } = await supabase.rpc('get_user_id_by_email', {
+                email_input: friendEmail
+            }).single();
+            friendUserId = emailLookup as string | null;
+        } else {
+            friendUserId = profileByEmail.id;
         }
 
-        if (friendUser.id === user.id) {
+        if (!friendUserId) {
+            return fail(404, { error: 'User not found. Make sure you have the correct email address.' });
+        }
+
+        if (friendUserId === user.id) {
             return fail(400, { error: 'Cannot add yourself as a friend' });
         }
+
+        const friendUser = { id: friendUserId };
 
         // Check if already friends
         const { data: existingFriendship } = await supabase

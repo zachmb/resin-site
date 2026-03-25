@@ -39,7 +39,7 @@ if (typeof document !== 'undefined') {
 if ('requestIdleCallback' in window) {
 	requestIdleCallback(() => {
 		// Prefetch common routes
-		const links = ['/forest', '/notes', '/amber', '/focus'];
+		const links = ['/rewards', '/notes', '/amber', '/focus'];
 		links.forEach((link) => {
 			const a = document.createElement('a');
 			a.href = link;

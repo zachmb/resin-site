@@ -159,11 +159,11 @@
                     <!-- Bottom buttons (exact app styling) -->
                     <div class="px-4 py-3 space-y-3 border-t border-resin-earth/10 bg-white/50">
                         <div class="flex gap-2">
-                            <button class="flex-1 text-resin-forest font-semibold text-xs py-3 px-2 rounded-lg border border-resin-forest/30 bg-resin-forest/10 flex items-center justify-center gap-1.5">
+                            <button onclick={() => window.location.href = '/login'} class="flex-1 text-resin-forest font-semibold text-xs py-3 px-2 rounded-lg border border-resin-forest/30 bg-resin-forest/10 flex items-center justify-center gap-1.5 hover:bg-resin-forest/20 transition-colors cursor-pointer" title="Sign in to save notes">
                                 <span class="text-sm">↓</span>
                                 Save
                             </button>
-                            <button class="flex-1 bg-resin-forest text-white font-bold text-xs py-3 px-2 rounded-lg flex items-center justify-center gap-1.5">
+                            <button onclick={() => window.location.href = '/login'} class="flex-1 bg-resin-forest text-white font-bold text-xs py-3 px-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-resin-forest/90 transition-colors cursor-pointer" title="Sign in to activate plans">
                                 <span class="text-sm">✨</span>
                                 Activate
                             </button>

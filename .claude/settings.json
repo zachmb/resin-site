@@ -24,7 +24,11 @@
       "Bash(npx @dev-blinq/cucumber-js 'features/**/*.feature')",
       "Bash(npx @dev-blinq/cucumber-js 'features/**/*.feature' --fail-fast)",
       "Bash(curl -s http://localhost:5173/)",
-      "Bash(npx @dev-blinq/cucumber-js 'features/notes.feature:4' --fail-fast)"
+      "Bash(npx @dev-blinq/cucumber-js 'features/notes.feature:4' --fail-fast)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/authenticated-notes.feature' --fail-fast)",
+      "Bash(npx @dev-blinq/cucumber-js --fail-fast)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/authenticated-notes.feature:10' --fail-fast)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/authenticated-notes.feature')"
     ]
   }
 }

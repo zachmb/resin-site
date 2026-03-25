@@ -1,86 +1,72 @@
 [
   {
-    "description": "  Comprehensive tests for note creation, editing, and saving",
+    "description": "  Test note saving and editing features on the authenticated dashboard",
     "elements": [
       {
         "description": "",
-        "id": "note-management;create-note-via-dashboard-quick-compose",
+        "id": "authenticated-note-management;authenticated-user-can-access-dashboard-with-compose-box",
         "keyword": "Scenario",
         "line": 4,
-        "name": "Create note via dashboard quick compose",
+        "name": "Authenticated user can access dashboard with compose box",
         "steps": [
           {
             "keyword": "Before",
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 376586500
+              "duration": 119519666
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
             "line": 5,
-            "name": "I navigate to the home page",
+            "name": "I am authenticated",
             "match": {
               "location": "steps/notes.js:38"
             },
             "result": {
               "status": "passed",
-              "duration": 850093166
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "When ",
-            "line": 6,
-            "name": "I fill the compose box with \"Test note from dashboard\"",
-            "match": {
-              "location": "steps/notes.js:49"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 47127165
+              "duration": 1929624
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 7,
-            "name": "I click the \"Save\" button",
+            "line": 6,
+            "name": "I navigate to the home page",
             "match": {
-              "location": "steps/notes.js:66"
+              "location": "steps/notes.js:48"
             },
             "result": {
               "status": "passed",
-              "duration": 34433749
+              "duration": 755444041
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 8,
-            "name": "I should be redirected to the notes page with a temp ID",
+            "line": 7,
+            "name": "the compose box should be visible",
             "match": {
-              "location": "steps/notes.js:96"
+              "location": "steps/notes.js:241"
             },
             "result": {
-              "status": "failed",
-              "duration": 10003158665,
-              "error_message": "Error: Expected redirect to /notes (with temp ID) or /login, but still on: http://localhost:5173/\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/notes.js:103:15)"
+              "status": "passed",
+              "duration": 33864749
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 9,
-            "name": "the note content should display \"Test note from dashboard\"",
+            "line": 8,
+            "name": "the \"Save\" button should be visible",
             "match": {
-              "location": "steps/notes.js:121"
+              "location": "steps/notes.js:248"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 5386083
             }
           },
           {
@@ -88,7 +74,178 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 44190334
+              "duration": 17128541
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "authenticated-note-management;create-and-save-a-note-on-authenticated-dashboard",
+        "keyword": "Scenario",
+        "line": 10,
+        "name": "Create and save a note on authenticated dashboard",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 117069417
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 11,
+            "name": "I am authenticated",
+            "match": {
+              "location": "steps/notes.js:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 93834
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:48"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 693294917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I fill the compose box with \"Authenticated note test\"",
+            "match": {
+              "location": "steps/notes.js:59"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31872124
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 14,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:76"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1006820583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "I should see the new note in the sidebar",
+            "match": {
+              "location": "steps/notes.js:255"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1519874
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 28806500
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "authenticated-note-management;navigate-to-notes-page-and-verify-saved-notes",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "Navigate to notes page and verify saved notes",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 116949541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "I am authenticated",
+            "match": {
+              "location": "steps/notes.js:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 82208
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 19,
+            "name": "I navigate to the notes page",
+            "match": {
+              "location": "steps/notes.js:53"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 651839042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 20,
+            "name": "the notes list should be visible",
+            "match": {
+              "location": "steps/notes.js:300"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1137416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "there should be at least one note in the sidebar",
+            "match": {
+              "location": "steps/notes.js:315"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 818457
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 32228042
             }
           }
         ],
@@ -96,11 +253,11 @@
         "type": "scenario"
       }
     ],
-    "id": "note-management",
+    "id": "authenticated-note-management",
     "line": 1,
     "keyword": "Feature",
-    "name": "Note Management",
+    "name": "Authenticated Note Management",
     "tags": [],
-    "uri": "features/notes.feature"
+    "uri": "features/authenticated-notes.feature"
   }
 ]

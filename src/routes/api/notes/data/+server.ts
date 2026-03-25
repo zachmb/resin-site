@@ -1,7 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedSupabase } }) => {
+export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedSupabase }, setHeaders }) => {
+    setHeaders({
+        'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'pragma': 'no-cache',
+        'expires': '0'
+    });
     try {
         const user = await getUser();
         if (!user) {
@@ -109,7 +114,7 @@ export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedS
             .from('amber_sessions')
             .select('*')
             .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+            .order('updated_at', { ascending: false });
 
         if (notesError) {
             console.error('[api/notes/data] Error fetching user notes:', notesError);

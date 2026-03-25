@@ -20,6 +20,7 @@
         updateActiveNoteContent,
         onBack,
         onSaveSuccess,
+        onAutoSaveUpdate,
         onSelectNote,
         onDeleteNote,
     } = $props<{
@@ -32,6 +33,7 @@
         updateActiveNoteContent: (content: string) => void;
         onBack: () => void;
         onSaveSuccess: (result: { note: any; isNew: boolean }) => void;
+        onAutoSaveUpdate?: (data: { noteId: string; title: string }) => void;
         onSelectNote: (note: any) => void;
         onDeleteNote?: (noteId: string) => void;
     }>();
@@ -132,7 +134,7 @@
         if (!activeNote) return;
         // Update draft in parent immediately regardless of ID (handles 'mock')
         updateActiveNoteContent(content);
-        
+
         if (activeNote.id === "mock") return;
         clearTimeout(saveTimeout);
         isSaving = true;
@@ -141,8 +143,30 @@
             formData.append("id", activeNote.id);
             formData.append("content", content);
             try {
+                // Extract title from content before sending
+                let extractedTitle = '';
+                const lines = content.split("\n");
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed) {
+                        extractedTitle = trimmed
+                            .replace(/^#+\s*/, "")
+                            .substring(0, 60);
+                        break;
+                    }
+                }
+
+                // Update local state
+                const titleChanged = extractedTitle !== activeTitle;
+                activeTitle = extractedTitle;
+
+                // Notify parent of title change for sidebar update
+                if (titleChanged && onAutoSaveUpdate) {
+                    onAutoSaveUpdate({ noteId: activeNote.id, title: extractedTitle });
+                }
+
                 // Update cache immediately for snappy UI
-                const updatedNote = { ...activeNote, content };
+                const updatedNote = { ...activeNote, content, title: extractedTitle };
                 setCache(`note-${activeNote.id}`, updatedNote, 60000);
 
                 const response = await fetch("/notes?/updateNote", {
@@ -156,19 +180,9 @@
                 }
                 lastSaved = new Date();
                 isSaving = false;
-                const lines = content.split("\n");
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (trimmed) {
-                        activeNote.title = trimmed
-                            .replace(/^#+\s*/, "")
-                            .substring(0, 60);
-                        activeTitle = activeNote.title;
-                        break;
-                    }
-                }
-                // Cache the updated note title
-                const finalNote = { ...activeNote, content };
+
+                // Cache the updated note with title
+                const finalNote = { ...activeNote, content, title: extractedTitle };
                 setCache(`note-${activeNote.id}`, finalNote, 60000);
             } catch (error) {
                 console.error("Auto-save failed:", error);

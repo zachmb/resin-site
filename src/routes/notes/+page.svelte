@@ -12,12 +12,20 @@
     // Data manager for notes - handles cache + sync
     let dataManager: DataManager;
 
-    // Initialize state from server data (SSR-provided) 
-    let notes = $state<any[]>(data.notes || []);
-    let profile = $state<any>(data.profile || null);
-    let connections = $state<any>(data.connections || {});
-    let sharedWithMe = $state<any[]>(data.sharedWithMe || []);
-    let friends = $state<any[]>(data.friends || []);
+    let notes = $state<any[]>([]);
+    let profile = $state<any>(null);
+    let connections = $state<any>({});
+    let sharedWithMe = $state<any[]>([]);
+    let friends = $state<any[]>([]);
+
+    // Sync SSR data when navigation occurs
+    $effect(() => {
+        if (data.notes) notes = data.notes;
+        if (data.profile) profile = data.profile;
+        if (data.connections) connections = data.connections;
+        if (data.sharedWithMe) sharedWithMe = data.sharedWithMe;
+        if (data.friends) friends = data.friends;
+    });
 
     let toastMessage = $state("");
     const showToast = (msg: string) => {
@@ -45,6 +53,13 @@
             (freshData) => {
                 console.log('[notes:page] Received fresh data from DataManager');
                 if (freshData.notes?.length > 0) {
+                    // Logic to prevent stale background sync from overwriting fresh SSR data
+                    // If we have an 'id' in the URL, the data must contain that ID to be considered 'fresh'
+                    const idParam = $page.url.searchParams.get("id");
+                    if (idParam && !freshData.notes.some((n: any) => n.id === idParam)) {
+                        console.warn('[notes:page] Stale background sync detected (missing URL ID). Ignoring component update.');
+                        return;
+                    }
                     notes = freshData.notes;
                 }
                 if (freshData.profile) profile = freshData.profile;
@@ -178,6 +193,16 @@
         // Cache the updated list
         setCache('notes-list', notes, 5 * 60 * 1000);
     };
+
+    const handleAutoSaveUpdate = ({ noteId, title }: { noteId: string; title: string }) => {
+        // Update the note's title in the sidebar when autosave detects a title change
+        const noteIndex = notes.findIndex((n: any) => n.id === noteId);
+        if (noteIndex !== -1) {
+            notes[noteIndex].title = title;
+            // Trigger reactivity
+            notes = [...notes];
+        }
+    };
 </script>
 
 <NotesEditor
@@ -190,6 +215,7 @@
     {updateActiveNoteContent}
     onBack={() => (selectedNoteId = null)}
     onSaveSuccess={handleSaveSuccess}
+    onAutoSaveUpdate={handleAutoSaveUpdate}
     onSelectNote={handleSelectNote}
     onDeleteNote={handleDeleteNote}
 />

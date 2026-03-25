@@ -257,7 +257,7 @@
 
         <!-- Right Panel: Settings Content (full width on mobile when content is shown) -->
         <div
-            class="flex-1 flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden {mobileShowContent ? 'flex' : 'hidden sm:flex'}"
+            class="flex-1 flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden sm:flex {mobileShowContent ? 'flex' : 'hidden'}"
         >
             <!-- Mobile back button -->
             <button

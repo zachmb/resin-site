@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"lib": ["webworker"],
+		"skipLibCheck": true,
+		"moduleResolution": "bundler"
+	},
+	"include": ["src/service-worker.ts"]
+}

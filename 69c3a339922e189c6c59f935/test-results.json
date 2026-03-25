@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 316519125
+              "duration": 117956708
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 9131653040
+              "duration": 3824946875
             }
           },
           {
@@ -40,7 +40,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 28803041
+              "duration": 32237500
             }
           },
           {
@@ -53,7 +53,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 1006382375
+              "duration": 1005491750
             }
           },
           {
@@ -66,7 +66,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 544792,
+              "duration": 1841082,
               "error_message": "Error: CRITICAL ERROR FOUND: Background save request not being made!\n\n    This indicates:\n    1. The fetch('/?/quickNote', ...) call may not be executing\n    2. There's likely a JavaScript error preventing the fetch\n    3. The save button click may not be triggering the async code\n\n    Need to investigate:\n    - Browser console for JavaScript errors\n    - Check if fetch is being called at all\n    - Verify the save button onclick handler is working\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:35:11)"
             }
           },
@@ -88,7 +88,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 29696292
+              "duration": 36330332
             }
           }
         ],

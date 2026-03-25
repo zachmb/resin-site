@@ -33,7 +33,8 @@
       "Bash(ls /Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/*.js)",
       "Bash(npx @dev-blinq/cucumber-js 'features/comprehensive-testing.feature:4' --fail-fast)",
       "Bash(npx svelte-kit:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(curl -s http://localhost:5173/service-worker.js)"
     ]
   }
 }

@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Dashboard Background Save Integration - Real Database', () => {
-	let testNoteId: string;
+	let testNoteId: string | null;
 	let testTimestamp: number;
 
 	test.beforeEach(async ({ page }) => {

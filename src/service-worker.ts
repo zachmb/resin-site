@@ -1,4 +1,6 @@
 /// <reference lib="webworker" />
+
+type ServiceWorkerContext = typeof self;
 declare const self: ServiceWorkerGlobalScope;
 
 const CACHE_NAME = 'resin-v1';
@@ -102,7 +104,7 @@ async function cacheFirstWithSync(request: Request): Promise<Response> {
 		const response = await fetch(request);
 		if (response.ok) {
 			const cache = await caches.open(NOTES_CACHE);
-			cache.put(request, response.clone());
+			await cache.put(request, response.clone());
 		}
 		return response;
 	} catch (error) {
@@ -122,7 +124,7 @@ async function networkFirstStrategy(request: Request): Promise<Response> {
 		// Cache successful GET responses
 		if (cacheName && response.ok && request.method === 'GET') {
 			const cache = await caches.open(cacheName);
-			cache.put(request, response.clone());
+			await cache.put(request, response.clone());
 		}
 
 		return response;
@@ -146,7 +148,7 @@ async function cacheFirstStrategy(request: Request): Promise<Response> {
 
 		if (response.ok) {
 			const cache = await caches.open(ASSETS_CACHE);
-			cache.put(request, response.clone());
+			await cache.put(request, response.clone());
 		}
 
 		return response;
@@ -281,7 +283,7 @@ self.addEventListener('message', (event) => {
 					const response = new Response(JSON.stringify(note), {
 						headers: { 'Content-Type': 'application/json' }
 					});
-					cache.put(new Request(`/api/notes/${note.id}`), response);
+					await cache.put(new Request(`/api/notes/${note.id}`), response);
 				}
 			})()
 		);

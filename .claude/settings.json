@@ -32,7 +32,8 @@
       "Bash(npx @dev-blinq/cucumber-js 'features/comprehensive-testing.feature' --fail-fast)",
       "Bash(ls /Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/*.js)",
       "Bash(npx @dev-blinq/cucumber-js 'features/comprehensive-testing.feature:4' --fail-fast)",
-      "Bash(npx svelte-kit:*)"
+      "Bash(npx svelte-kit:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

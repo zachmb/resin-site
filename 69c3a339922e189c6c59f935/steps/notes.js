@@ -18,6 +18,18 @@ Before(async function() {
         page = await context.newPage();
         page.setDefaultTimeout(30000);
         page.setDefaultNavigationTimeout(30000);
+
+        // Capture console messages for debugging
+        page.on('console', msg => {
+            if (msg.type() === 'error' || msg.type() === 'warning') {
+                console.log(`🔴 ${msg.type().toUpperCase()}: ${msg.text()}`);
+            }
+        });
+
+        // Capture page errors
+        page.on('pageerror', error => {
+            console.log(`🔴 PAGE ERROR: ${error.message}`);
+        });
     } catch (error) {
         console.error('Browser launch error:', error.message);
         throw error;

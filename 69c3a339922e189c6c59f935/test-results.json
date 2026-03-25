@@ -1,164 +1,86 @@
 [
   {
-    "description": "  Test note saving and editing features on the authenticated dashboard",
+    "description": "  Tests that verify actual network requests, responses, and data persistence",
     "elements": [
       {
         "description": "",
-        "id": "authenticated-note-management;authenticated-user-can-access-dashboard-with-compose-box",
+        "id": "comprehensive-background-save-validation;background-save-request-succeeds-with-valid-response",
         "keyword": "Scenario",
         "line": 4,
-        "name": "Authenticated user can access dashboard with compose box",
+        "name": "Background save request succeeds with valid response",
         "steps": [
           {
             "keyword": "Before",
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 119519666
+              "duration": 316519125
             }
           },
           {
             "arguments": [],
             "keyword": "Given ",
             "line": 5,
-            "name": "I am authenticated",
-            "match": {
-              "location": "steps/notes.js:38"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 1929624
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 6,
             "name": "I navigate to the home page",
             "match": {
-              "location": "steps/notes.js:48"
+              "location": "steps/notes.js:60"
             },
             "result": {
               "status": "passed",
-              "duration": 755444041
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
-            "line": 7,
-            "name": "the compose box should be visible",
-            "match": {
-              "location": "steps/notes.js:241"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 33864749
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 8,
-            "name": "the \"Save\" button should be visible",
-            "match": {
-              "location": "steps/notes.js:248"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 5386083
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 17128541
-            }
-          }
-        ],
-        "tags": [],
-        "type": "scenario"
-      },
-      {
-        "description": "",
-        "id": "authenticated-note-management;create-and-save-a-note-on-authenticated-dashboard",
-        "keyword": "Scenario",
-        "line": 10,
-        "name": "Create and save a note on authenticated dashboard",
-        "steps": [
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 117069417
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Given ",
-            "line": 11,
-            "name": "I am authenticated",
-            "match": {
-              "location": "steps/notes.js:38"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 93834
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 12,
-            "name": "I navigate to the home page",
-            "match": {
-              "location": "steps/notes.js:48"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 693294917
+              "duration": 9131653040
             }
           },
           {
             "arguments": [],
             "keyword": "When ",
-            "line": 13,
-            "name": "I fill the compose box with \"Authenticated note test\"",
+            "line": 6,
+            "name": "I fill the compose box with \"Test background save\"",
             "match": {
-              "location": "steps/notes.js:59"
+              "location": "steps/notes.js:71"
             },
             "result": {
               "status": "passed",
-              "duration": 31872124
+              "duration": 28803041
             }
           },
           {
             "arguments": [],
             "keyword": "And ",
-            "line": 14,
+            "line": 7,
             "name": "I click the \"Save\" button",
             "match": {
-              "location": "steps/notes.js:76"
+              "location": "steps/notes.js:88"
             },
             "result": {
               "status": "passed",
-              "duration": 1006820583
+              "duration": 1006382375
             }
           },
           {
             "arguments": [],
             "keyword": "Then ",
-            "line": 15,
-            "name": "I should see the new note in the sidebar",
+            "line": 8,
+            "name": "the background save request should complete successfully",
             "match": {
-              "location": "steps/notes.js:255"
+              "location": "steps/comprehensive.js:32"
             },
             "result": {
-              "status": "passed",
-              "duration": 1519874
+              "status": "failed",
+              "duration": 544792,
+              "error_message": "Error: CRITICAL ERROR FOUND: Background save request not being made!\n\n    This indicates:\n    1. The fetch('/?/quickNote', ...) call may not be executing\n    2. There's likely a JavaScript error preventing the fetch\n    3. The save button click may not be triggering the async code\n\n    Need to investigate:\n    - Browser console for JavaScript errors\n    - Check if fetch is being called at all\n    - Verify the save button onclick handler is working\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:35:11)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the response should contain a valid note ID",
+            "match": {
+              "location": "steps/comprehensive.js:48"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
             }
           },
           {
@@ -166,86 +88,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 28806500
-            }
-          }
-        ],
-        "tags": [],
-        "type": "scenario"
-      },
-      {
-        "description": "",
-        "id": "authenticated-note-management;navigate-to-notes-page-and-verify-saved-notes",
-        "keyword": "Scenario",
-        "line": 17,
-        "name": "Navigate to notes page and verify saved notes",
-        "steps": [
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 116949541
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Given ",
-            "line": 18,
-            "name": "I am authenticated",
-            "match": {
-              "location": "steps/notes.js:38"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 82208
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 19,
-            "name": "I navigate to the notes page",
-            "match": {
-              "location": "steps/notes.js:53"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 651839042
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "Then ",
-            "line": 20,
-            "name": "the notes list should be visible",
-            "match": {
-              "location": "steps/notes.js:300"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 1137416
-            }
-          },
-          {
-            "arguments": [],
-            "keyword": "And ",
-            "line": 21,
-            "name": "there should be at least one note in the sidebar",
-            "match": {
-              "location": "steps/notes.js:315"
-            },
-            "result": {
-              "status": "passed",
-              "duration": 818457
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 32228042
+              "duration": 29696292
             }
           }
         ],
@@ -253,11 +96,11 @@
         "type": "scenario"
       }
     ],
-    "id": "authenticated-note-management",
+    "id": "comprehensive-background-save-validation",
     "line": 1,
     "keyword": "Feature",
-    "name": "Authenticated Note Management",
+    "name": "Comprehensive Background Save Validation",
     "tags": [],
-    "uri": "features/authenticated-notes.feature"
+    "uri": "features/comprehensive-testing.feature"
   }
 ]

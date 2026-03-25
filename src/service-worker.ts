@@ -85,9 +85,10 @@ async function cacheFirstWithSync(request: Request): Promise<Response> {
 	if (cached) {
 		// Update cache in background without blocking response
 		fetch(request)
-			.then(response => {
+			.then(async response => {
 				if (response.ok) {
-					const cache = caches.open(NOTES_CACHE).then(c => c.put(request, response.clone()));
+					const cache = await caches.open(NOTES_CACHE);
+					await cache.put(request, response.clone());
 				}
 			})
 			.catch(() => {

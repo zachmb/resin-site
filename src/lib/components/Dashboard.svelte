@@ -327,7 +327,7 @@
                         }}
                         disabled={startingFocus}
                         class="px-5 py-2.5 bg-resin-amber text-white rounded-xl text-xs font-bold hover:bg-resin-amber/90 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed"
-                        title="Start a 1-hour focus block on your phone"
+                        title="Start a 1-hour focus block"
                     >
                         {#if startingFocus}
                             <span class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -394,80 +394,91 @@
             ></textarea>
             <div class="flex items-center justify-end gap-3 mt-6">
                 {#if composeText.trim()}
-                    <form
-                        method="POST"
-                        action="?/quickNote"
-                        use:enhance={() => {
+                    <button
+                        type="button"
+                        disabled={savingNote}
+                        onclick={async () => {
+                            if (savingNote) return;
                             savingNote = true;
-                            return async ({ result }) => {
-                                if (result.type === "success") {
-                                    successNote = true;
+                            const content = composeText;
+
+                            // Generate temporary ID for immediate navigation
+                            const tempId = 'temp_' + Date.now();
+
+                            // Immediately navigate to note editor with temp ID
+                            await goto(`/notes?id=${tempId}&content=${encodeURIComponent(content)}`);
+
+                            // Clear compose and show success briefly
+                            successNote = true;
+                            composeText = "";
+                            setTimeout(() => {
+                                successNote = false;
+                                savingNote = false;
+                            }, 500);
+
+                            // Save to server in background (non-blocking)
+                            try {
+                                const formData = new FormData();
+                                formData.append('content', content);
+
+                                const res = await fetch('?/quickNote', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+
+                                if (res.ok) {
+                                    const result = await res.json();
+                                    // Invalidate caches for fresh data on next load
                                     if (typeof window !== 'undefined') {
                                         localStorage.removeItem('resin_cache_notes_data');
                                         localStorage.removeItem('resin_cache_amber_data');
                                     }
                                     await invalidateAll();
-                                    setTimeout(() => {
-                                        savingNote = false;
-                                        successNote = false;
-                                        composeText = "";
-                                        goto((result.data as any)?.redirectTo || "/notes");
-                                    }, 800);
-                                } else {
-                                    savingNote = false;
                                 }
-                            };
+                            } catch (err) {
+                                console.error('Background save failed:', err);
+                            }
                         }}
+                        class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
                     >
-                        <input
-                            type="hidden"
-                            name="content"
-                            value={composeText}
-                        />
-                        <button
-                            type="submit"
-                            disabled={savingNote}
-                            class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
-                        >
-                            {#if savingNote}
-                                <svg
-                                    class="w-4 h-4 animate-spin"
-                                    fill="none"
+                        {#if savingNote}
+                            <svg
+                                class="w-4 h-4 animate-spin"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
                                     stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        class="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        stroke-width="4"
-                                    />
-                                    <path
-                                        class="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    />
-                                </svg>
-                            {:else if successNote}
-                                <svg
-                                    class="w-4 h-4 animate-bounce"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M5 13l4 4L19 7"
-                                    />
-                                </svg>
-                            {/if}
-                            {successNote ? "Saving..." : "Save Note"}
-                        </button>
-                    </form>
+                                    stroke-width="4"
+                                />
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                            </svg>
+                        {:else if successNote}
+                            <svg
+                                class="w-4 h-4 animate-bounce"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                        {/if}
+                        {successNote ? "Saving..." : "Save Note"}
+                    </button>
                     <form
                         method="POST"
                         action="?/quickSchedule"

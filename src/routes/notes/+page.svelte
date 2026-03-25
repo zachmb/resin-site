@@ -102,10 +102,11 @@
 
     let activeNote = $derived.by(() => {
         const id = selectedNoteId || (notes.length > 0 ? notes[0].id : "mock");
+        const urlContent = $page.url.searchParams.get("content");
         const baseNote = notes.find((n: any) => n.id === id) || {
-            id: "mock",
+            id: id === "mock" ? "mock" : id,
             title: "New Note",
-            content: "# New Note\n\nStart typing to create a note...",
+            content: urlContent ? decodeURIComponent(urlContent) : "# New Note\n\nStart typing to create a note...",
             created_at: new Date().toISOString(),
         };
 
@@ -127,8 +128,16 @@
         note: any;
         isNew: boolean;
     }) => {
-        // Clear draft for the saved note
-        delete localDrafts[note.id];
+        // Handle temp ID replacement (from optimistic navigation)
+        const tempIdMatch = selectedNoteId?.match(/^temp_/);
+        if (tempIdMatch) {
+            // Replace temp ID with real ID
+            delete localDrafts[selectedNoteId!];
+            localDrafts[note.id] = localDrafts[selectedNoteId!] || '';
+        } else {
+            delete localDrafts[note.id];
+        }
+
         selectedNoteId = note.id;
         showToast("Note saved!");
 
@@ -145,10 +154,10 @@
             };
         }
         if (isNew) {
-            // New note - merge from mock draft if exists
-            const mockDraft = localDrafts["mock"];
-            const mergedContent = mockDraft || note.content || '';
-            
+            // New note - check for existing temp or mock draft
+            const tempDraft = tempIdMatch ? localDrafts[selectedNoteId!] : localDrafts["mock"];
+            const mergedContent = tempDraft || note.content || '';
+
             notes = [
                 {
                     id: note.id,
@@ -159,10 +168,10 @@
                 },
                 ...notes
             ];
-            
-            if (mockDraft) {
-                delete localDrafts["mock"];
-            }
+
+            // Clean up drafts
+            if (tempIdMatch && selectedNoteId) delete localDrafts[selectedNoteId];
+            if (localDrafts["mock"]) delete localDrafts["mock"];
         }
 
         // Create new array reference to trigger reactivity
@@ -171,7 +180,7 @@
         // Clear caches and update localStorage immediately
         clearCache();
         invalidateCache('notes');
-        
+
         if (dataManager) {
             dataManager.updateCache({
                 notes,

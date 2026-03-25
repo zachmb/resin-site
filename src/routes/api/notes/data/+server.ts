@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ locals: { getUser, supabase } }) => {
+export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedSupabase } }) => {
     try {
         const user = await getUser();
         if (!user) {
@@ -9,6 +9,7 @@ export const GET: RequestHandler = async ({ locals: { getUser, supabase } }) => 
         }
 
         const userId = user.id;
+        const supabase = await getAuthenticatedSupabase();
 
         // Helper functions from notes +page.server.ts
         const extractTitle = (content: string) => {

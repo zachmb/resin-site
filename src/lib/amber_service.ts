@@ -455,9 +455,15 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
     await admin.from('amber_sessions').update({ status: 'processing' }).eq('id', sessionId).eq('user_id', userId);
 
     try {
-        // 2. Refresh Google tokens
-        const gToken = await getGoogleAccessToken(userId);
-        const freeBusy = await getFreeBusy(gToken, timezone);
+        // 2. Refresh Google tokens (Optional)
+        let gToken: string | null = null;
+        let freeBusy = '';
+        try {
+            gToken = await getGoogleAccessToken(userId);
+            freeBusy = await getFreeBusy(gToken!, timezone);
+        } catch (authErr) {
+            console.warn(`[amber_service] Skipping calendar sync for user ${userId} (no token/access)`);
+        }
 
         // 2.5. Compute learned insights from past sessions
         const learnedInsights = await computeUserInsights(userId);
@@ -499,8 +505,15 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         const chronotype = (profile as any)?.chronotype || 'neutral';
         const plan = await callDeepSeek(rawText, freeBusy, intensity, dayStartHour, dayEndHour, timezone, enrichedPreferences, chronotype, focusSuccessRate);
 
-        // 4. Calendar event
-        const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone);
+        // 4. Calendar event (if token exists)
+        let calEventId = null;
+        if (gToken) {
+            try {
+                calEventId = await createCalendarEvent(gToken!, plan, plan.display_title, timezone);
+            } catch (calErr) {
+                console.warn(`[amber_service] Calendar creation failed (non-fatal):`, calErr);
+            }
+        }
 
         // 5. Update amber_session
         await admin.from('amber_sessions').upsert({

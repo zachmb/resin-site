@@ -425,17 +425,15 @@ export const actions: Actions = {
         }
 
         try {
-            // Create initial amber_sessions entry with 'processing' status
+            // Update amber_sessions entry with 'processing' status
             // This gives immediate visual feedback on the amber page while AI runs
-            await supabase.from('amber_sessions').insert({
-                id: sessionId,
-                user_id: userId,
-                raw_text: content,
-                display_title: title || 'Processing...',
+            await supabase.from('amber_sessions').update({
                 status: 'processing',
                 intensity: 0.5,
-                created_at: new Date().toISOString()
-            });
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', sessionId)
+            .eq('user_id', userId);
 
             // Fire the background activation without awaiting
             // This will update the entry with full details once AI responds

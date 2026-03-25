@@ -421,7 +421,7 @@
                                 const formData = new FormData();
                                 formData.append('content', content);
 
-                                const res = await fetch('?/quickNote', {
+                                const res = await fetch('/?/quickNote', {
                                     method: 'POST',
                                     body: formData
                                 });
@@ -481,7 +481,7 @@
                     </button>
                     <form
                         method="POST"
-                        action="?/quickSchedule"
+                        action="/?/quickSchedule"
                         use:enhance={() => {
                             savingAmber = true;
                             return async ({ result }) => {

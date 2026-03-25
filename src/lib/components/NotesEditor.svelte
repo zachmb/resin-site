@@ -130,12 +130,47 @@
         parseCommands(activeNote?.content || '')
     );
 
+    const persistDraft = (noteId: string, content: string) => {
+        if (noteId.startsWith('temp_')) return;
+        try {
+            localStorage.setItem(`resin:draft:${noteId}`, JSON.stringify({
+                content,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.warn('Failed to persist draft:', e);
+        }
+    };
+
+    const loadDraft = (noteId: string): string | null => {
+        if (noteId.startsWith('temp_')) return null;
+        try {
+            const raw = localStorage.getItem(`resin:draft:${noteId}`);
+            return raw ? JSON.parse(raw).content : null;
+        } catch (e) {
+            console.warn('Failed to load draft:', e);
+            return null;
+        }
+    };
+
+    const clearDraft = (noteId: string) => {
+        try {
+            localStorage.removeItem(`resin:draft:${noteId}`);
+        } catch (e) {
+            console.warn('Failed to clear draft:', e);
+        }
+    };
+
     const autoSave = (content: string) => {
         if (!activeNote) return;
         // Update draft in parent immediately regardless of ID (handles 'mock')
         updateActiveNoteContent(content);
 
         if (activeNote.id === "mock") return;
+
+        // Persist draft to localStorage immediately for safety
+        persistDraft(activeNote.id, content);
+
         clearTimeout(saveTimeout);
         isSaving = true;
         saveTimeout = setTimeout(async () => {
@@ -180,6 +215,9 @@
                 }
                 lastSaved = new Date();
                 isSaving = false;
+
+                // Clear draft from localStorage after successful save
+                clearDraft(activeNote.id);
 
                 // Cache the updated note with title
                 const finalNote = { ...activeNote, content, title: extractedTitle };
@@ -581,22 +619,27 @@
                                 action="/notes?/activateNote"
                                 class="contents"
                                 use:enhance={() => {
-                                    // Show working modal immediately
+                                    // Generate temp session ID and navigate IMMEDIATELY
+                                    const tempSessionId = 'temp_' + crypto.randomUUID();
                                     isActivating = true;
                                     activatingNoteTitle = activeTitle || 'Your Plan';
+
+                                    // Navigate immediately before server responds
+                                    goto(`/amber?scheduling=${tempSessionId}`, { replaceState: true });
+
                                     return async ({ result }) => {
                                         if (result.type === "success") {
-                                            showToast((result as any).data?.message || "Plan created! DeepSeek is generating your schedule...");
-                                            const sessionId = (result as any).data?.sessionId;
+                                            const realSessionId = (result as any).data?.sessionId;
                                             const now = Date.now();
                                             localStorage.setItem('recentReward', JSON.stringify({
                                                 text: 'Plan activated! DeepSeek generating...',
                                                 icon: '🚀',
                                                 timestamp: now
                                             }));
-                                            // Navigate to amber page with scheduling indicator
-                                            if (sessionId) {
-                                                await goto(`/amber?scheduling=${sessionId}`);
+                                            // Replace temp ID with real session ID in URL
+                                            if (realSessionId) {
+                                                history.replaceState({}, '', `/amber?scheduling=${realSessionId}`);
+                                                showToast("Plan created! DeepSeek is generating your schedule...");
                                             }
                                             // Keep modal visible while AI is working
                                             // It will be dismissed when the note's tasks are populated
@@ -604,6 +647,8 @@
                                             activationError = (result as any).data?.error || "Failed to activate.";
                                             showToast(activationError);
                                             isActivating = false;
+                                            // Go back to notes on error
+                                            history.back();
                                         }
                                     };
                                 }}

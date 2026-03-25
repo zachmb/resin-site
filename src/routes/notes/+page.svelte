@@ -110,9 +110,23 @@
             created_at: new Date().toISOString(),
         };
 
+        // Check for local draft first, then localStorage, then base note
+        let content = localDrafts[id];
+        if (!content && !id.startsWith('temp_')) {
+            try {
+                const saved = localStorage.getItem(`resin:draft:${id}`);
+                if (saved) {
+                    const draft = JSON.parse(saved);
+                    content = draft.content;
+                }
+            } catch (e) {
+                console.warn('Failed to load draft from localStorage:', e);
+            }
+        }
+
         return {
             ...baseNote,
-            content: localDrafts[id] ?? baseNote.content,
+            content: content ?? baseNote.content,
         };
     });
 

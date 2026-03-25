@@ -4,7 +4,11 @@
       "Bash(__NEW_LINE_08ea584f88035f12__ grep:*)",
       "Bash(ls -la test*)",
       "Bash(tee /tmp/test-output.log)",
-      "Bash(__NEW_LINE_933e4cbb1dcb0cd2__ cp:*)"
+      "Bash(__NEW_LINE_933e4cbb1dcb0cd2__ cp:*)",
+      "Bash(/tmp/arch_analysis.sh:*)",
+      "Bash(__NEW_LINE_812eb1accc5b7e2f__ chmod:*)",
+      "Bash(/tmp/arch_analysis.sh)",
+      "Bash(/tmp/EXECUTIVE_SUMMARY.txt:*)"
     ]
   }
 }

@@ -242,11 +242,27 @@
             : recentSessions.filter((s: any) => s.status === activeFilter)
     );
 
-    const selectedSession = $derived(
-        filteredSessions.find((s: any) => s.id === selectedSessionId)
-        ?? filteredSessions[0]
-        ?? null
-    );
+    const selectedSession = $derived.by(() => {
+        // Check for real session first
+        const realSession = filteredSessions.find((s: any) => s.id === selectedSessionId);
+        if (realSession) return realSession;
+
+        // If selectedSessionId is a temp ID (still being scheduled), create a placeholder
+        if (selectedSessionId?.startsWith('temp_')) {
+            return {
+                id: selectedSessionId,
+                title: 'New Plan',
+                raw_text: 'Creating your plan...',
+                status: 'processing',
+                amber_tasks: [],
+                created_at: new Date().toISOString(),
+                _isTemporary: true
+            };
+        }
+
+        // Fallback to first session or null
+        return filteredSessions[0] ?? null;
+    });
 
     const isSelectedSessionScheduling = $derived(
         selectedSession &&
@@ -495,24 +511,50 @@
                     </div>
                 </div>
 
-                <!-- Daily Focus Window -->
-                {#if profile?.availability_start && profile?.availability_end}
-                    <section
-                        class="flex-shrink-0 px-6 py-4 border-b border-resin-forest/5 bg-white/30"
-                    >
-                        <div class="flex items-center gap-4">
-                            <div class="text-xs">
-                                <div class="text-resin-earth/40 font-semibold mb-1">Focus Window</div>
-                                <div class="font-semibold text-resin-charcoal">
-                                    {formatTime(profile.availability_start)} – {formatTime(profile.availability_end)}
+                <!-- Loading State for Temporary Sessions -->
+                {#if selectedSession._isTemporary || (schedulingSessionIds.has(selectedSession.id) && (!selectedSession.amber_tasks || selectedSession.amber_tasks.length === 0))}
+                    <div class="flex-1 flex items-center justify-center p-6">
+                        <div class="text-center space-y-4">
+                            <div class="flex justify-center">
+                                <div class="relative w-16 h-16">
+                                    <svg class="animate-spin h-16 w-16 text-resin-forest" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
                                 </div>
                             </div>
+                            <div>
+                                {#each SCHEDULING_STEPS.slice(0, schedulingStep + 1) as step, idx}
+                                    <p class="text-sm {idx === schedulingStep ? 'font-semibold text-resin-charcoal' : 'text-resin-earth/60'} flex items-center justify-center gap-2 mb-1">
+                                        <span>{step.icon}</span>
+                                        <span>{step.label}</span>
+                                    </p>
+                                {/each}
+                            </div>
+                            <p class="text-xs text-resin-earth/50 max-w-xs">
+                                DeepSeek is analyzing your note and creating your schedule. This may take a moment...
+                            </p>
                         </div>
-                    </section>
-                {/if}
+                    </div>
+                {:else}
+                    <!-- Daily Focus Window -->
+                    {#if profile?.availability_start && profile?.availability_end}
+                        <section
+                            class="flex-shrink-0 px-6 py-4 border-b border-resin-forest/5 bg-white/30"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div class="text-xs">
+                                    <div class="text-resin-earth/40 font-semibold mb-1">Focus Window</div>
+                                    <div class="font-semibold text-resin-charcoal">
+                                        {formatTime(profile.availability_start)} – {formatTime(profile.availability_end)}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    {/if}
 
-                <!-- Content Scroll -->
-                <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
+                    <!-- Content Scroll -->
+                    <div class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar">
                     <!-- Brain Dump -->
                     <section>
                         <h3 class="text-xs font-bold text-resin-earth/40 uppercase tracking-widest mb-3">
@@ -923,7 +965,8 @@
                         </section>
                     {/if}
 
-                </div>
+                    </div>
+                {/if}
 
                 <!-- Action Bar -->
                 <div class="flex-shrink-0 px-6 py-4 border-t border-resin-forest/5 bg-white/30 flex items-center justify-between gap-3">

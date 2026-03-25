@@ -215,7 +215,10 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
             userAchievements: userAchievements || [],
             newlyNotifiedAchievements: unnotified
         };
-    } catch (err) {
+    } catch (err: any) {
+        // Re-throw SvelteKit redirects and HTTP errors - they must not be swallowed
+        if (err?.status && err?.location) throw err; // redirect()
+        if (err?.status && err?.body) throw err;     // error()
         console.error('[Forest Load Error]', err);
         throw error(500, 'Failed to load forest page. Please try again.');
     }

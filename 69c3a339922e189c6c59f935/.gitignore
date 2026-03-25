@@ -1,0 +1,9 @@
+node_modules
+__temp_features*/
+runs
+reports
+*.env
+logs
+.DS_Store
+.memory.json
+/*.zip

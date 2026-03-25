@@ -27,10 +27,27 @@
 		"vite": "^7.3.1"
 	},
 	"dependencies": {
+		"@dev-blinq/cucumber-js": "^1.0.141",
 		"@supabase/ssr": "^0.8.0",
 		"@supabase/supabase-js": "^2.97.0",
 		"@xyflow/svelte": "^1.5.1",
 		"lucide-svelte": "^0.575.0",
 		"pg": "^8.20.0"
-	}
+	},
+	"description": "Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).",
+	"main": "svelte.config.js",
+	"directories": {
+		"test": "tests"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/zachmb/resin-site.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/zachmb/resin-site/issues"
+	},
+	"homepage": "https://github.com/zachmb/resin-site#readme"
 }

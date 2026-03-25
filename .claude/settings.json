@@ -8,7 +8,14 @@
       "Bash(/tmp/arch_analysis.sh:*)",
       "Bash(__NEW_LINE_812eb1accc5b7e2f__ chmod:*)",
       "Bash(/tmp/arch_analysis.sh)",
-      "Bash(/tmp/EXECUTIVE_SUMMARY.txt:*)"
+      "Bash(/tmp/EXECUTIVE_SUMMARY.txt:*)",
+      "Bash(grep -n \"insertNote\\\\|export const insertNote\" /Users/zachbas/resinsite/src/lib/db/*.ts)",
+      "Bash(find /Users/zachbas/resinsite -name *blinq* -o -name *Blinq*)",
+      "Bash(npx @dev-blinq/cucumber-js --help)",
+      "Bash(find /Users/zachbas -name cucumber.js -o -name .cucumberrc* -o -name blinq.json)",
+      "Bash(npx playwright:*)",
+      "Bash(grep -r \"localStorage\\\\|sessionStorage\\\\|auth\" tests/*.spec.ts)",
+      "Bash(find /Users/zachbas/resinsite -name playwright.config.* -o -name *.auth.*)"
     ]
   }
 }

@@ -45,6 +45,7 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
             id: insertResult.data[0].id,
             user_id: row.user_id,
             raw_text: row.content,
+            content: row.content,
             display_title: row.title,
             status: 'draft',
             created_at: row.created_at,

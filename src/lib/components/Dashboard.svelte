@@ -28,11 +28,12 @@
         burnoutRisk?: boolean;
     }>();
 
-    const firstName =
+    const firstName = $derived(
         session?.user?.user_metadata?.full_name?.split(" ")[0] ||
         session?.user?.user_metadata?.name?.split(" ")[0] ||
         profile?.email?.split("@")[0] ||
-        "explorer";
+        "explorer"
+    );
 
     let composeText = $state("");
     let showAddAutomation = $state(false);
@@ -390,7 +391,7 @@
                 placeholder="What's on your mind? Start a note, a plan, anything..."
                 class="w-full bg-white/50 border border-white/30 rounded-2xl p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
                 rows="3"
-            />
+            ></textarea>
             <div class="flex items-center justify-end gap-3 mt-6">
                 {#if composeText.trim()}
                     <form
@@ -401,6 +402,10 @@
                             return async ({ result }) => {
                                 if (result.type === "success") {
                                     successNote = true;
+                                    if (typeof window !== 'undefined') {
+                                        localStorage.removeItem('resin_cache_notes_data');
+                                        localStorage.removeItem('resin_cache_amber_data');
+                                    }
                                     await invalidateAll();
                                     setTimeout(() => {
                                         savingNote = false;
@@ -471,6 +476,10 @@
                             return async ({ result }) => {
                                 if (result.type === "success") {
                                     successAmber = true;
+                                    if (typeof window !== 'undefined') {
+                                        localStorage.removeItem('resin_cache_notes_data');
+                                        localStorage.removeItem('resin_cache_amber_data');
+                                    }
                                     await invalidateAll();
                                     setTimeout(() => {
                                         savingAmber = false;

@@ -59,7 +59,6 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 
     if (!user) {
         return {
-            session: null,
             profile: null,
             recentNotes: [],
             todayTasks: [],

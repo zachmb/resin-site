@@ -3,7 +3,7 @@
     import { parseCommands } from "$lib/utils/commandParser";
     import CommandPalette from "./CommandPalette.svelte";
     import ConfirmDeleteModal from "./ConfirmDeleteModal.svelte";
-    import { onDestroy } from "svelte";
+    import { onDestroy, untrack } from "svelte";
     import { invalidateAll, goto } from "$app/navigation";
     import { setCache, invalidateCache, clearCache } from "$lib/cache";
 
@@ -77,21 +77,30 @@
     let lastActiveId = $state<string | null>(null);
 
     $effect(() => {
-        // Only update activeTitle if the note ID has actually changed to a DIFFERENT real note
-        // Don't overwrite if we're transitioning from 'mock' to a real ID (preserving typed title)
-        if (activeNote?.id !== lastActiveId) {
-            if (lastActiveId !== "mock" || !activeTitle) {
-                activeTitle = activeNote?.title || '';
+        // Read dependencies upfront so changes trigger the effect
+        const currentId = activeNote?.id;
+        const currentTitle = activeNote?.title;
+        const currentUpdatedAt = activeNote?.updated_at;
+        const currentCreatedAt = activeNote?.created_at;
+
+        // Untrack the writes to prevent cyclic triggers when updating local state 
+        untrack(() => {
+            // Only update activeTitle if the note ID has actually changed to a DIFFERENT real note
+            // Don't overwrite if we're transitioning from 'mock' to a real ID (preserving typed title)
+            if (currentId !== lastActiveId) {
+                if (lastActiveId !== "mock" || !activeTitle) {
+                    activeTitle = currentTitle || '';
+                }
+                lastActiveId = currentId;
             }
-            lastActiveId = activeNote?.id;
-        }
-        
-        // Update lastSaved to show the actual last update time of the active note
-        if (activeNote?.updated_at) {
-            lastSaved = new Date(activeNote.updated_at);
-        } else if (activeNote?.created_at) {
-            lastSaved = new Date(activeNote.created_at);
-        }
+            
+            // Update lastSaved to show the actual last update time of the active note
+            if (currentUpdatedAt) {
+                lastSaved = new Date(currentUpdatedAt);
+            } else if (currentCreatedAt) {
+                lastSaved = new Date(currentCreatedAt);
+            }
+        });
     });
 
     const toggleSidebar = () => {

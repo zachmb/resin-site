@@ -24,7 +24,7 @@ const forward = async (event: RequestEvent): Promise<Response> => {
 		headers: event.request.headers,
 		body: ['GET', 'HEAD'].includes(event.request.method) ? undefined : event.request.body,
 		duplex: 'half'
-	});
+	} as any);
 
 	// Copy response headers and add version marker
 	const headers = new Headers(res.headers);

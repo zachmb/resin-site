@@ -1,0 +1,2155 @@
+
+> tempapp@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: /Users/zachbas/resinsite
+Getting Svelte diagnostics...
+
+/Users/zachbas/resinsite/src/lib/stores/amberStore.ts:123:30
+Error: Property 'amber_tasks' does not exist on type 'never'. 
+                // Clean up calendar events if any
+                if (snapshot.amber_tasks?.length) {
+                    await this.cleanupCalendarEvents(snapshot.amber_tasks);
+
+/Users/zachbas/resinsite/src/lib/stores/amberStore.ts:124:63
+Error: Property 'amber_tasks' does not exist on type 'never'. 
+                if (snapshot.amber_tasks?.length) {
+                    await this.cleanupCalendarEvents(snapshot.amber_tasks);
+                }
+
+/Users/zachbas/resinsite/src/lib/stores/amberStore.ts:299:25
+Error: Type '(AmberSession | { [key: string]: any; })[]' is not assignable to type 'AmberSession[]'.
+  Type 'AmberSession | { [key: string]: any; }' is not assignable to type 'AmberSession'.
+    Type '{ [key: string]: any; }' is missing the following properties from type 'AmberSession': id, user_id, display_title, title, and 6 more. 
+                    this.sessions.update((sessions) =>
+                        sessions.map((s) => (s.id === payload.new.id ? payload.new : s))
+                    );
+
+/Users/zachbas/resinsite/src/routes/api/v1/[...path]/+server.ts:26:3
+Error: No overload matches this call.
+  Overload 1 of 2, '(input: string | URL | Request, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Object literal may only specify known properties, and 'duplex' does not exist in type 'RequestInit'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Object literal may only specify known properties, and 'duplex' does not exist in type 'RequestInit'. 
+		body: ['GET', 'HEAD'].includes(event.request.method) ? undefined : event.request.body,
+		duplex: 'half'
+	});
+
+/Users/zachbas/resinsite/src/lib/components/AccountView.svelte:290:33
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                            <div>
+                                <label
+                                    class="text-xs text-resin-earth/60 font-semibold"
+                                    >Email Address</label
+                                >
+                                <div
+
+/Users/zachbas/resinsite/src/lib/components/AccountView.svelte:301:33
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                            <div class="border-t border-resin-forest/5 pt-3">
+                                <label
+                                    class="text-xs text-resin-earth/60 font-semibold"
+                                    >Member Since</label
+                                >
+                                <div class="text-sm text-resin-charcoal mt-1">
+
+/Users/zachbas/resinsite/src/lib/components/AccountView.svelte:1059:49
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                            <div>
+                                                <label
+                                                    class="block text-xs font-bold text-resin-earth mb-1"
+                                                >
+                                                    {fieldLabels[field] || field}
+                                                </label>
+                                                <input
+
+/Users/zachbas/resinsite/src/lib/components/AchievementBadge.svelte:64:13
+Warn: `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated (svelte)
+        >
+            <svelte:component this={IconComp} size={32} class="text-resin-amber" />
+        </div>
+
+/Users/zachbas/resinsite/src/lib/components/AchievementBadge.svelte:74:17
+Warn: `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated (svelte)
+            <div class="relative">
+                <svelte:component this={IconComp} size={32} class="text-resin-earth opacity-20" />
+                <div class="absolute inset-0 flex items-center justify-center">
+
+/Users/zachbas/resinsite/src/lib/components/AchievementBadge.svelte:76:21
+Warn: `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated (svelte)
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <svelte:component this={LockIcon} size={16} class="text-resin-earth opacity-30" />
+                </div>
+
+/Users/zachbas/resinsite/src/lib/components/AmberCalendar.svelte:226:17
+Warn: Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated (svelte)
+    <div class="calendar-header">
+        <button on:click={() => (weekOffset -= 1)} class="week-nav">← Prev</button>
+        <span class="week-label">
+
+/Users/zachbas/resinsite/src/lib/components/AmberCalendar.svelte:231:17
+Warn: Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated (svelte)
+        </span>
+        <button on:click={() => (weekOffset += 1)} class="week-nav">Next →</button>
+    </div>
+
+/Users/zachbas/resinsite/src/lib/components/AmberCalendar.svelte:258:25
+Warn: Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated (svelte)
+                    <button
+                        on:click={() => handleClearDay(dayIndex)}
+                        class="clear-day-btn"
+
+/Users/zachbas/resinsite/src/lib/components/AmberCalendar.svelte:294:29
+Warn: Using `on:mousedown` to listen to the mousedown event is deprecated. Use the event attribute `onmousedown` instead
+https://svelte.dev/e/event_directive_deprecated (svelte)
+                            "
+                            on:mousedown={(e) => onMouseDown(task, dayIndex, e)}
+                            role="button"
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:40:9
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+        <!-- Dark overlay -->
+        <div class="absolute inset-0 bg-black/40 pointer-events-auto" onclick={handleIgnite} />
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:40:9
+Warn: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+        <!-- Dark overlay -->
+        <div class="absolute inset-0 bg-black/40 pointer-events-auto" onclick={handleIgnite} />
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:40:9
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+        <!-- Dark overlay -->
+        <div class="absolute inset-0 bg-black/40 pointer-events-auto" onclick={handleIgnite} />
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:52:21
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+                    <!-- Outer glow rings -->
+                    <div
+                        class="absolute inset-0 rounded-full bg-gradient-to-br from-resin-amber/30 to-transparent blur-3xl animate-pulse"
+                        style="animation: pulse-glow 2s ease-in-out infinite;"
+                    />
+                    <div
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:56:21
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+                    />
+                    <div
+                        class="absolute inset-4 rounded-full bg-gradient-to-br from-resin-amber/20 to-transparent blur-2xl"
+                        style="animation: pulse-glow 2s ease-in-out infinite 0.3s;"
+                    />
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:67:25
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+                        <!-- Inner light reflection -->
+                        <div
+                            class="absolute inset-2 rounded-full bg-gradient-to-br from-yellow-200/60 to-transparent"
+                            style="animation: shimmer 3s ease-in-out infinite;"
+                        />
+                    </div>
+
+/Users/zachbas/resinsite/src/lib/components/AmberIgniteRitual.svelte:76:29
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+                        {#each Array.from({ length: 12 }) as _, i}
+                            <div
+                                class="absolute w-2 h-2 rounded-full bg-resin-amber"
+                                style="--delay: {i * 30}ms; animation: burst-particle 0.8s ease-out forwards;"
+                                style:--x="{Math.cos((i / 12) * Math.PI * 2) * 80}px"
+                                style:--y="{Math.sin((i / 12) * Math.PI * 2) * 80}px"
+                            />
+                        {/each}
+
+/Users/zachbas/resinsite/src/lib/components/SessionCelebration.svelte:58:13
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+            <!-- Glow effect -->
+            <div class="absolute inset-0 rounded-2xl -z-10" />
+
+/Users/zachbas/resinsite/src/lib/components/ConfirmDeleteModal.svelte:17:2
+Warn: Elements with the 'dialog' interactive role must have a tabindex value
+https://svelte.dev/e/a11y_interactive_supports_focus (svelte)
+{#if isOpen}
+	<div
+		class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+		transition:fade={{ duration: 200 }}
+		onmousedown={(e) => {
+			if (e.target === e.currentTarget) onCancel();
+		}}
+		role="dialog"
+		aria-modal="true"
+	>
+		<div
+			class="bg-resin-bg rounded-2xl shadow-xl max-w-sm w-full border border-resin-forest/10 overflow-hidden"
+			transition:fade={{ duration: 200 }}
+		>
+			<!-- Header -->
+			<div class="px-6 py-6 border-b border-resin-earth/10 bg-gradient-to-r from-resin-forest/5 to-resin-amber/5">
+				<h2 class="text-lg font-bold text-resin-charcoal">{title}</h2>
+			</div>
+
+			<!-- Content -->
+			<div class="px-6 py-6">
+				<p class="text-sm text-resin-earth/70 leading-relaxed">{message}</p>
+			</div>
+
+			<!-- Actions -->
+			<div class="px-6 py-4 bg-white/40 flex gap-3">
+				<button
+					onclick={onCancel}
+					disabled={isLoading}
+					class="flex-1 px-4 py-2 rounded-lg font-bold text-sm text-resin-forest bg-white hover:bg-white/80 border border-resin-forest/20 transition-all disabled:opacity-50"
+				>
+					Keep It
+				</button>
+				<button
+					onclick={onConfirm}
+					disabled={isLoading}
+					class="flex-1 px-4 py-2 rounded-lg font-bold text-sm text-white bg-red-600 hover:bg-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+				>
+					{#if isLoading}
+						<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+					{/if}
+					Delete
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+/Users/zachbas/resinsite/src/lib/components/CalendarVisualizer.svelte:279:5
+Warn: Unused CSS selector ".custom-scrollbar::-webkit-scrollbar"
+https://svelte.dev/e/css_unused_selector (svelte)
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+
+/Users/zachbas/resinsite/src/lib/components/CalendarVisualizer.svelte:283:5
+Warn: Unused CSS selector ".custom-scrollbar::-webkit-scrollbar-track"
+https://svelte.dev/e/css_unused_selector (svelte)
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+
+/Users/zachbas/resinsite/src/lib/components/CalendarVisualizer.svelte:286:5
+Warn: Unused CSS selector ".custom-scrollbar::-webkit-scrollbar-thumb"
+https://svelte.dev/e/css_unused_selector (svelte)
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(43, 70, 52, 0.1);
+
+/Users/zachbas/resinsite/src/lib/components/CalendarVisualizer.svelte:290:5
+Warn: Unused CSS selector ".custom-scrollbar::-webkit-scrollbar-thumb:hover"
+https://svelte.dev/e/css_unused_selector (svelte)
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(43, 70, 52, 0.2);
+
+/Users/zachbas/resinsite/src/lib/components/AmberView.svelte:576:49
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Title</label>
+                                                <input
+
+/Users/zachbas/resinsite/src/lib/components/AmberView.svelte:584:49
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Description (Optional)</label>
+                                                <textarea
+
+/Users/zachbas/resinsite/src/lib/components/AmberView.svelte:585:49
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Description (Optional)</label>
+                                                <textarea
+                                                    bind:value={editingDescription}
+                                                    class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm text-resin-charcoal focus:outline-none focus:border-resin-forest/30 resize-none"
+                                                    style="min-height: auto; height: {Math.min(200, Math.max(50, editingDescription.split('\n').length * 20 + 30))}px"
+                                                />
+                                            </div>
+
+/Users/zachbas/resinsite/src/lib/components/AmberView.svelte:593:49
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
+                                                    Length: <span class="font-mono text-resin-forest">{editingDuration}m</span>
+                                                </label>
+                                                <input type="range" min="5" max="240" step="5" bind:value={editingDuration}
+
+/Users/zachbas/resinsite/src/lib/components/AmberView.svelte:602:49
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                            <div>
+                                                <label class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
+                                                    When: <span class="font-mono text-amber-600">{editingTaskOffset === 0 ? 'Original' : editingTaskOffset > 0 ? `${editingTaskOffset}m later` : `${Math.abs(editingTaskOffset)}m earlier`}</span>
+                                                </label>
+                                                <input type="range" min="-120" max="120" step="5" bind:value={editingTaskOffset}
+
+/Users/zachbas/resinsite/src/lib/components/Dashboard.svelte:32:9
+Warn: This reference only captures the initial value of `session`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    const firstName =
+        session?.user?.user_metadata?.full_name?.split(" ")[0] ||
+        session?.user?.user_metadata?.name?.split(" ")[0] ||
+
+/Users/zachbas/resinsite/src/lib/components/Dashboard.svelte:33:9
+Warn: This reference only captures the initial value of `session`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        session?.user?.user_metadata?.full_name?.split(" ")[0] ||
+        session?.user?.user_metadata?.name?.split(" ")[0] ||
+        profile?.email?.split("@")[0] ||
+
+/Users/zachbas/resinsite/src/lib/components/Dashboard.svelte:34:9
+Warn: This reference only captures the initial value of `profile`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        session?.user?.user_metadata?.name?.split(" ")[0] ||
+        profile?.email?.split("@")[0] ||
+        "explorer";
+
+/Users/zachbas/resinsite/src/lib/components/Dashboard.svelte:388:13
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+        >
+            <textarea
+                bind:value={composeText}
+                placeholder="What's on your mind? Start a note, a plan, anything..."
+                class="w-full bg-white/50 border border-white/30 rounded-2xl p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
+                rows="3"
+            />
+            <div class="flex items-center justify-end gap-3 mt-6">
+
+/Users/zachbas/resinsite/src/lib/components/FossilizationCeremony.svelte:107:5
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+			{#each Array(8) as _, i}
+				<div class="shard" style="--index: {i}; --duration: {config.duration}ms" />
+			{/each}
+
+/Users/zachbas/resinsite/src/lib/components/FossilizationCeremony.svelte:113:4
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+		<div class="fossilization-core" style="--duration: {config.duration}ms">
+			<div class="glow" style="--color: {config.color}; --duration: {config.duration}ms" />
+			<div class="crystallize" style="--duration: {config.duration}ms">
+
+/Users/zachbas/resinsite/src/lib/components/LandingPage.svelte:588:37
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                <div>
+                                    <label class="text-sm font-semibold text-resin-charcoal block mb-2">How did it go?</label>
+                                    <textarea class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:outline-none focus:border-resin-forest" placeholder="What went well? Any blockers? What would you do differently?" rows="4"></textarea>
+
+/Users/zachbas/resinsite/src/lib/components/LandingPage.svelte:592:37
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                <div>
+                                    <label class="text-sm font-semibold text-resin-charcoal block mb-2">Tasks completed</label>
+                                    <div class="space-y-2">
+
+/Users/zachbas/resinsite/src/lib/components/MindMap.svelte:410:21
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                <div>
+                    <label class="block text-xs font-medium text-resin-earth/60 mb-2">From</label>
+                    <select
+
+/Users/zachbas/resinsite/src/lib/components/MindMap.svelte:423:21
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                <div>
+                    <label class="block text-xs font-medium text-resin-earth/60 mb-2">To</label>
+                    <select
+
+/Users/zachbas/resinsite/src/lib/components/NoteUrls.svelte:53:9
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+    <div class="flex items-center justify-between">
+        <label class="text-xs font-bold text-resin-earth/60 uppercase">Bookmarked URLs</label>
+        {#if urls.length > 0}
+
+/Users/zachbas/resinsite/src/lib/components/NoteUrls.svelte:99:17
+Warn: Avoid using autofocus
+https://svelte.dev/e/a11y_autofocus (svelte)
+                class="w-full px-2 py-1.5 text-xs rounded border border-resin-forest/20 bg-white focus:outline-none focus:border-resin-forest/50"
+                autofocus
+            />
+
+/Users/zachbas/resinsite/src/lib/components/RichNoteEditor.svelte:170:9
+Warn: Avoid using autofocus
+https://svelte.dev/e/a11y_autofocus (svelte)
+        {placeholder}
+        {autofocus}
+        oninput={handleInput}
+
+/Users/zachbas/resinsite/src/lib/components/NotesEditor.svelte:412:21
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                    <!-- Mobile Back Button -->
+                    <button
+                        onclick={() => {
+                            isSidebarOpen = true;
+                            onBack();
+                        }}
+                        class="sm:hidden flex items-center text-resin-earth/70 hover:text-resin-charcoal font-medium text-sm transition-colors shrink-0"
+                    >
+                        <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            ><path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 19l-7-7 7-7"
+                            ></path></svg
+                        >
+                    </button>
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:20:5
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+{#if isOpen}
+    <div
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
+        transition:fade={{ duration: 200 }}
+        onclick={close}
+    >
+        <div
+            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
+            onclick={(e) => e.stopPropagation()}
+            transition:slide={{ duration: 300 }}
+        >
+            <!-- Header -->
+            <div
+                class="px-8 py-6 border-b border-resin-forest/10 flex items-center justify-between bg-white/40"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-resin-charcoal flex items-center justify-center shadow-lg"
+                    >
+                        <img
+                            src="/resinext-logo.png"
+                            alt="Resin Web Shield"
+                            class="w-6 h-6 object-contain"
+                        />
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-resin-charcoal">
+                            Install Resin Web Shield
+                        </h2>
+                        <p
+                            class="text-xs text-resin-earth/60 font-medium uppercase tracking-wider"
+                        >
+                            Sync your browser focus
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onclick={close}
+                    class="w-10 h-10 rounded-full hover:bg-resin-earth/10 flex items-center justify-center text-resin-earth/60 hover:text-resin-charcoal transition-all"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                <!-- Step 1 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >1</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Download Shield
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p
+                            class="text-sm text-resin-earth/80 leading-relaxed mb-3"
+                        >
+                            Clone the <code
+                                class="bg-resin-forest/5 px-1.5 py-0.5 rounded text-resin-forest font-semibold"
+                                >resinext</code
+                            > repository from GitHub to your local machine.
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4 group"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >git clone
+                                https://github.com/zachmb/resinext.git</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "git clone https://github.com/zachmb/resinext.git",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >2</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Prepare Build
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open your terminal inside the folder and run the
+                            build process:
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >npm install && npm run build</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "npm install && npm run build",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >3</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Load Extension
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80">
+                            1. Open <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >chrome://extensions/</code
+                            >
+                            in Chrome.<br />
+                            2. Turn on <b>Developer Mode</b> in the top right.<br
+                            />
+                            3. Click <b>Load Unpacked</b> and select the
+                            <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >/dist</code
+                            > folder.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Step 4 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >4</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Connect & Activate
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open the extension popup from your toolbar, sign in
+                            with your Resin account, and your focus sessions
+                            will sync automatically.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Identity Setup -->
+                <div
+                    class="bg-resin-amber/5 border border-resin-amber/20 rounded-2xl p-6 mt-4"
+                >
+                    <h4
+                        class="text-sm font-bold text-resin-charcoal mb-2 flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-4 h-4 text-resin-amber"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        Identity Setup (Supabase)
+                    </h4>
+                    <p class="text-xs text-resin-earth/70 mb-4 leading-relaxed">
+                        If you are using Google Sign-In, ensure you add the
+                        Extension's Redirect URI (found in the extension
+                        settings) to your Supabase <b>'Allowed Redirect URLs'</b
+                        > to enable seamless syncing.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex-1 bg-white/50 border border-resin-amber/10 rounded-lg px-3 py-2 text-[10px] font-mono text-resin-charcoal truncate"
+                        >
+                            {redirectUri}
+                        </div>
+                        <button
+                            onclick={() => copyToClipboard(redirectUri)}
+                            class="px-3 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all uppercase tracking-wide"
+                        >
+                            Copy URI
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+                class="px-8 py-6 border-t border-resin-forest/10 bg-white/40 flex justify-end"
+            >
+                <button
+                    onclick={close}
+                    class="px-8 py-3 bg-resin-charcoal text-white rounded-2xl font-bold text-sm hover:bg-resin-forest transition-all shadow-lg active:scale-95"
+                >
+                    Got it, I'm ready
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:20:5
+Warn: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+{#if isOpen}
+    <div
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
+        transition:fade={{ duration: 200 }}
+        onclick={close}
+    >
+        <div
+            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
+            onclick={(e) => e.stopPropagation()}
+            transition:slide={{ duration: 300 }}
+        >
+            <!-- Header -->
+            <div
+                class="px-8 py-6 border-b border-resin-forest/10 flex items-center justify-between bg-white/40"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-resin-charcoal flex items-center justify-center shadow-lg"
+                    >
+                        <img
+                            src="/resinext-logo.png"
+                            alt="Resin Web Shield"
+                            class="w-6 h-6 object-contain"
+                        />
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-resin-charcoal">
+                            Install Resin Web Shield
+                        </h2>
+                        <p
+                            class="text-xs text-resin-earth/60 font-medium uppercase tracking-wider"
+                        >
+                            Sync your browser focus
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onclick={close}
+                    class="w-10 h-10 rounded-full hover:bg-resin-earth/10 flex items-center justify-center text-resin-earth/60 hover:text-resin-charcoal transition-all"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                <!-- Step 1 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >1</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Download Shield
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p
+                            class="text-sm text-resin-earth/80 leading-relaxed mb-3"
+                        >
+                            Clone the <code
+                                class="bg-resin-forest/5 px-1.5 py-0.5 rounded text-resin-forest font-semibold"
+                                >resinext</code
+                            > repository from GitHub to your local machine.
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4 group"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >git clone
+                                https://github.com/zachmb/resinext.git</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "git clone https://github.com/zachmb/resinext.git",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >2</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Prepare Build
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open your terminal inside the folder and run the
+                            build process:
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >npm install && npm run build</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "npm install && npm run build",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >3</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Load Extension
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80">
+                            1. Open <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >chrome://extensions/</code
+                            >
+                            in Chrome.<br />
+                            2. Turn on <b>Developer Mode</b> in the top right.<br
+                            />
+                            3. Click <b>Load Unpacked</b> and select the
+                            <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >/dist</code
+                            > folder.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Step 4 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >4</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Connect & Activate
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open the extension popup from your toolbar, sign in
+                            with your Resin account, and your focus sessions
+                            will sync automatically.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Identity Setup -->
+                <div
+                    class="bg-resin-amber/5 border border-resin-amber/20 rounded-2xl p-6 mt-4"
+                >
+                    <h4
+                        class="text-sm font-bold text-resin-charcoal mb-2 flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-4 h-4 text-resin-amber"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        Identity Setup (Supabase)
+                    </h4>
+                    <p class="text-xs text-resin-earth/70 mb-4 leading-relaxed">
+                        If you are using Google Sign-In, ensure you add the
+                        Extension's Redirect URI (found in the extension
+                        settings) to your Supabase <b>'Allowed Redirect URLs'</b
+                        > to enable seamless syncing.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex-1 bg-white/50 border border-resin-amber/10 rounded-lg px-3 py-2 text-[10px] font-mono text-resin-charcoal truncate"
+                        >
+                            {redirectUri}
+                        </div>
+                        <button
+                            onclick={() => copyToClipboard(redirectUri)}
+                            class="px-3 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all uppercase tracking-wide"
+                        >
+                            Copy URI
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+                class="px-8 py-6 border-t border-resin-forest/10 bg-white/40 flex justify-end"
+            >
+                <button
+                    onclick={close}
+                    class="px-8 py-3 bg-resin-charcoal text-white rounded-2xl font-bold text-sm hover:bg-resin-forest transition-all shadow-lg active:scale-95"
+                >
+                    Got it, I'm ready
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:25:9
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+    >
+        <div
+            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
+            onclick={(e) => e.stopPropagation()}
+            transition:slide={{ duration: 300 }}
+        >
+            <!-- Header -->
+            <div
+                class="px-8 py-6 border-b border-resin-forest/10 flex items-center justify-between bg-white/40"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-resin-charcoal flex items-center justify-center shadow-lg"
+                    >
+                        <img
+                            src="/resinext-logo.png"
+                            alt="Resin Web Shield"
+                            class="w-6 h-6 object-contain"
+                        />
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-resin-charcoal">
+                            Install Resin Web Shield
+                        </h2>
+                        <p
+                            class="text-xs text-resin-earth/60 font-medium uppercase tracking-wider"
+                        >
+                            Sync your browser focus
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onclick={close}
+                    class="w-10 h-10 rounded-full hover:bg-resin-earth/10 flex items-center justify-center text-resin-earth/60 hover:text-resin-charcoal transition-all"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                <!-- Step 1 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >1</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Download Shield
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p
+                            class="text-sm text-resin-earth/80 leading-relaxed mb-3"
+                        >
+                            Clone the <code
+                                class="bg-resin-forest/5 px-1.5 py-0.5 rounded text-resin-forest font-semibold"
+                                >resinext</code
+                            > repository from GitHub to your local machine.
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4 group"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >git clone
+                                https://github.com/zachmb/resinext.git</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "git clone https://github.com/zachmb/resinext.git",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >2</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Prepare Build
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open your terminal inside the folder and run the
+                            build process:
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >npm install && npm run build</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "npm install && npm run build",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >3</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Load Extension
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80">
+                            1. Open <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >chrome://extensions/</code
+                            >
+                            in Chrome.<br />
+                            2. Turn on <b>Developer Mode</b> in the top right.<br
+                            />
+                            3. Click <b>Load Unpacked</b> and select the
+                            <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >/dist</code
+                            > folder.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Step 4 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >4</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Connect & Activate
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open the extension popup from your toolbar, sign in
+                            with your Resin account, and your focus sessions
+                            will sync automatically.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Identity Setup -->
+                <div
+                    class="bg-resin-amber/5 border border-resin-amber/20 rounded-2xl p-6 mt-4"
+                >
+                    <h4
+                        class="text-sm font-bold text-resin-charcoal mb-2 flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-4 h-4 text-resin-amber"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        Identity Setup (Supabase)
+                    </h4>
+                    <p class="text-xs text-resin-earth/70 mb-4 leading-relaxed">
+                        If you are using Google Sign-In, ensure you add the
+                        Extension's Redirect URI (found in the extension
+                        settings) to your Supabase <b>'Allowed Redirect URLs'</b
+                        > to enable seamless syncing.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex-1 bg-white/50 border border-resin-amber/10 rounded-lg px-3 py-2 text-[10px] font-mono text-resin-charcoal truncate"
+                        >
+                            {redirectUri}
+                        </div>
+                        <button
+                            onclick={() => copyToClipboard(redirectUri)}
+                            class="px-3 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all uppercase tracking-wide"
+                        >
+                            Copy URI
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+                class="px-8 py-6 border-t border-resin-forest/10 bg-white/40 flex justify-end"
+            >
+                <button
+                    onclick={close}
+                    class="px-8 py-3 bg-resin-charcoal text-white rounded-2xl font-bold text-sm hover:bg-resin-forest transition-all shadow-lg active:scale-95"
+                >
+                    Got it, I'm ready
+                </button>
+            </div>
+        </div>
+    </div>
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:25:9
+Warn: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+    >
+        <div
+            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
+            onclick={(e) => e.stopPropagation()}
+            transition:slide={{ duration: 300 }}
+        >
+            <!-- Header -->
+            <div
+                class="px-8 py-6 border-b border-resin-forest/10 flex items-center justify-between bg-white/40"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-resin-charcoal flex items-center justify-center shadow-lg"
+                    >
+                        <img
+                            src="/resinext-logo.png"
+                            alt="Resin Web Shield"
+                            class="w-6 h-6 object-contain"
+                        />
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-resin-charcoal">
+                            Install Resin Web Shield
+                        </h2>
+                        <p
+                            class="text-xs text-resin-earth/60 font-medium uppercase tracking-wider"
+                        >
+                            Sync your browser focus
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onclick={close}
+                    class="w-10 h-10 rounded-full hover:bg-resin-earth/10 flex items-center justify-center text-resin-earth/60 hover:text-resin-charcoal transition-all"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                <!-- Step 1 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >1</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Download Shield
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p
+                            class="text-sm text-resin-earth/80 leading-relaxed mb-3"
+                        >
+                            Clone the <code
+                                class="bg-resin-forest/5 px-1.5 py-0.5 rounded text-resin-forest font-semibold"
+                                >resinext</code
+                            > repository from GitHub to your local machine.
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4 group"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >git clone
+                                https://github.com/zachmb/resinext.git</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "git clone https://github.com/zachmb/resinext.git",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >2</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Prepare Build
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open your terminal inside the folder and run the
+                            build process:
+                        </p>
+                        <div
+                            class="bg-resin-charcoal rounded-xl p-4 flex items-center justify-between gap-4"
+                        >
+                            <code class="text-xs text-white/80 font-mono"
+                                >npm install && npm run build</code
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "npm install && npm run build",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >3</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Load Extension
+                        </h3>
+                    </div>
+                    <div class="pl-9 space-y-3">
+                        <p class="text-sm text-resin-earth/80">
+                            1. Open <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >chrome://extensions/</code
+                            >
+                            in Chrome.<br />
+                            2. Turn on <b>Developer Mode</b> in the top right.<br
+                            />
+                            3. Click <b>Load Unpacked</b> and select the
+                            <code
+                                class="bg-resin-forest/5 px-1 py-0.5 rounded font-mono text-xs"
+                                >/dist</code
+                            > folder.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Step 4 -->
+                <section class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="w-6 h-6 rounded-full bg-resin-amber text-white text-xs font-bold flex items-center justify-center"
+                            >4</span
+                        >
+                        <h3 class="font-bold text-resin-charcoal">
+                            Connect & Activate
+                        </h3>
+                    </div>
+                    <div class="pl-9">
+                        <p class="text-sm text-resin-earth/80 leading-relaxed">
+                            Open the extension popup from your toolbar, sign in
+                            with your Resin account, and your focus sessions
+                            will sync automatically.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Identity Setup -->
+                <div
+                    class="bg-resin-amber/5 border border-resin-amber/20 rounded-2xl p-6 mt-4"
+                >
+                    <h4
+                        class="text-sm font-bold text-resin-charcoal mb-2 flex items-center gap-2"
+                    >
+                        <svg
+                            class="w-4 h-4 text-resin-amber"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        Identity Setup (Supabase)
+                    </h4>
+                    <p class="text-xs text-resin-earth/70 mb-4 leading-relaxed">
+                        If you are using Google Sign-In, ensure you add the
+                        Extension's Redirect URI (found in the extension
+                        settings) to your Supabase <b>'Allowed Redirect URLs'</b
+                        > to enable seamless syncing.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex-1 bg-white/50 border border-resin-amber/10 rounded-lg px-3 py-2 text-[10px] font-mono text-resin-charcoal truncate"
+                        >
+                            {redirectUri}
+                        </div>
+                        <button
+                            onclick={() => copyToClipboard(redirectUri)}
+                            class="px-3 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all uppercase tracking-wide"
+                        >
+                            Copy URI
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+                class="px-8 py-6 border-t border-resin-forest/10 bg-white/40 flex justify-end"
+            >
+                <button
+                    onclick={close}
+                    class="px-8 py-3 bg-resin-charcoal text-white rounded-2xl font-bold text-sm hover:bg-resin-forest transition-all shadow-lg active:scale-95"
+                >
+                    Got it, I'm ready
+                </button>
+            </div>
+        </div>
+    </div>
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:55:17
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                </div>
+                <button
+                    onclick={close}
+                    class="w-10 h-10 rounded-full hover:bg-resin-earth/10 flex items-center justify-center text-resin-earth/60 hover:text-resin-charcoal transition-all"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:104:29
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "git clone https://github.com/zachmb/resinext.git",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+/Users/zachbas/resinsite/src/lib/components/ResinShieldModal.svelte:151:29
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                            >
+                            <button
+                                onclick={() =>
+                                    copyToClipboard(
+                                        "npm install && npm run build",
+                                    )}
+                                class="text-white/40 hover:text-white transition-colors p-1"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+/Users/zachbas/resinsite/src/routes/+layout.svelte:44:27
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	// FIX: Make profile reactive so real-time updates propagate
+	let profileData = $state(data.profile);
+	let hasStreak = $derived(profileData?.current_streak > 0);
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:14:23
+Error: Property 'session' does not exist on type 'never'. (ts)
+    <Dashboard
+        session={data.session}
+        profile={data.profile}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:15:23
+Error: Property 'profile' does not exist on type 'never'. (ts)
+        session={data.session}
+        profile={data.profile}
+        recentNotes={data.recentNotes}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:16:27
+Error: Property 'recentNotes' does not exist on type 'never'. (ts)
+        profile={data.profile}
+        recentNotes={data.recentNotes}
+        todayTasks={data.todayTasks}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:17:26
+Error: Property 'todayTasks' does not exist on type 'never'. (ts)
+        recentNotes={data.recentNotes}
+        todayTasks={data.todayTasks}
+        weeklyStats={data.weeklyStats}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:18:27
+Error: Property 'weeklyStats' does not exist on type 'never'. (ts)
+        todayTasks={data.todayTasks}
+        weeklyStats={data.weeklyStats}
+        automations={data.automations}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:19:27
+Error: Property 'automations' does not exist on type 'never'. (ts)
+        weeklyStats={data.weeklyStats}
+        automations={data.automations}
+        isNewUser={data.isNewUser}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:20:25
+Error: Property 'isNewUser' does not exist on type 'never'. (ts)
+        automations={data.automations}
+        isNewUser={data.isNewUser}
+        groups={data.groups}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:21:22
+Error: Property 'groups' does not exist on type 'never'. (ts)
+        isNewUser={data.isNewUser}
+        groups={data.groups}
+        burnoutRisk={data.burnoutRisk}
+
+/Users/zachbas/resinsite/src/routes/+page.svelte:22:27
+Error: Property 'burnoutRisk' does not exist on type 'never'. (ts)
+        groups={data.groups}
+        burnoutRisk={data.burnoutRisk}
+    />
+
+/Users/zachbas/resinsite/src/routes/extension-settings/+page.svelte:116:17
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                </div>
+                <button
+                    onclick={() => { extensionEnabled = !extensionEnabled; }}
+                    class="w-14 h-8 rounded-full transition-colors {extensionEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {extensionEnabled ? 'justify-end' : 'justify-start'} p-1"
+                >
+                    <div class="w-6 h-6 rounded-full bg-white shadow-md"></div>
+                </button>
+            </div>
+
+/Users/zachbas/resinsite/src/routes/extension-settings/+page.svelte:140:17
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                </div>
+                <button
+                    onclick={() => { blockingEnabled = !blockingEnabled; }}
+                    class="w-12 h-7 rounded-full transition-colors {blockingEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {blockingEnabled ? 'justify-end' : 'justify-start'} p-0.5"
+                >
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md"></div>
+                </button>
+            </div>
+
+/Users/zachbas/resinsite/src/routes/extension-settings/+page.svelte:154:17
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                </div>
+                <button
+                    onclick={() => { autoBlockSessions = !autoBlockSessions; }}
+                    class="w-12 h-7 rounded-full transition-colors {autoBlockSessions ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {autoBlockSessions ? 'justify-end' : 'justify-start'} p-0.5"
+                >
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md"></div>
+                </button>
+            </div>
+
+/Users/zachbas/resinsite/src/routes/extension-settings/+page.svelte:168:17
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                </div>
+                <button
+                    onclick={() => { notificationsEnabled = !notificationsEnabled; }}
+                    class="w-12 h-7 rounded-full transition-colors {notificationsEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {notificationsEnabled ? 'justify-end' : 'justify-start'} p-0.5"
+                >
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md"></div>
+                </button>
+            </div>
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:12:33
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    let activeSessions = $state(data.activeSessions || []);
+    let scheduledSessions = $state(data.scheduledSessions || []);
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:13:36
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let activeSessions = $state(data.activeSessions || []);
+    let scheduledSessions = $state(data.scheduledSessions || []);
+    let deviceCount = $state(data.deviceCount || 0);
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:14:30
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let scheduledSessions = $state(data.scheduledSessions || []);
+    let deviceCount = $state(data.deviceCount || 0);
+    let groups = $state(data.groups || []);
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:15:25
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let deviceCount = $state(data.deviceCount || 0);
+    let groups = $state(data.groups || []);
+    let showScheduleForm = $state(false);
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:32:26
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    let friends = $state(data.friends || []);
+    let sharedSessions = $state(data.sharedSessions || []);
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:33:33
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let friends = $state(data.friends || []);
+    let sharedSessions = $state(data.sharedSessions || []);
+    let showInviteForm = $state(false);
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:423:25
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                    <div>
+                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                            What are you focusing on?
+                        </label>
+                        <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:438:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Date
+                            </label>
+                            <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:451:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Time
+                            </label>
+                            <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:465:25
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                    <div>
+                        <label class="block text-xs font-bold text-resin-charcoal mb-3">
+                            Duration: {scheduleDuration} minutes
+                        </label>
+                        <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:523:37
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                <div>
+                                    <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                        Title
+                                    </label>
+                                    <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:537:41
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                    <div>
+                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                            Date
+                                        </label>
+                                        <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:550:41
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                    <div>
+                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                            Time
+                                        </label>
+                                        <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:564:37
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                <div>
+                                    <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                        Duration: {editSessionData[session.id].duration} min
+                                    </label>
+                                    <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:640:41
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                                    <div>
+                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                            Repeat On
+                                        </label>
+                                        <div class="flex flex-wrap gap-2">
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:762:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Invite Friend
+                            </label>
+                            <select
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:779:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Focus Title
+                            </label>
+                            <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:794:33
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                            <div>
+                                <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                    Date
+                                </label>
+                                <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:807:33
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                            <div>
+                                <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                    Time
+                                </label>
+                                <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:821:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-3">
+                                Duration: {inviteDuration} minutes
+                            </label>
+                            <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:952:25
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                    <div>
+                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                            Automation Name
+                        </label>
+                        <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:966:25
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                    <div>
+                        <label class="block text-xs font-bold text-resin-charcoal mb-3">
+                            Repeats On
+                        </label>
+                        <div class="flex flex-wrap gap-2">
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:986:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Time
+                            </label>
+                            <input
+
+/Users/zachbas/resinsite/src/routes/focus/+page.svelte:999:29
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+                        <div>
+                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
+                                Duration (min)
+                            </label>
+                            <input
+
+/Users/zachbas/resinsite/src/routes/forest/+page.svelte:9:23
+Warn: This reference only captures the initial value of `profile`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    const dayStreak = profile.current_streak ?? 0;
+    const longestStreak = profile.longest_streak ?? 0;
+
+/Users/zachbas/resinsite/src/routes/forest/+page.svelte:10:27
+Warn: This reference only captures the initial value of `profile`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    const dayStreak = profile.current_streak ?? 0;
+    const longestStreak = profile.longest_streak ?? 0;
+    const totalStones = profile.total_stones ?? 0;
+
+/Users/zachbas/resinsite/src/routes/forest/+page.svelte:11:25
+Warn: This reference only captures the initial value of `profile`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    const longestStreak = profile.longest_streak ?? 0;
+    const totalStones = profile.total_stones ?? 0;
+</script>
+
+/Users/zachbas/resinsite/src/routes/friends/+page.svelte:281:2
+Warn: Elements with the 'dialog' interactive role must have a tabindex value
+https://svelte.dev/e/a11y_interactive_supports_focus (svelte)
+{#if showJointPlanModal && jointPlanCollaborator}
+	<div
+		class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+		on:click={closeJointPlanModal}
+		on:keydown={(e) => e.key === 'Escape' && closeJointPlanModal()}
+		role="dialog"
+		aria-modal="true"
+	>
+		<div
+			class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
+			on:click={(e) => e.stopPropagation()}
+		>
+			<h3 class="text-2xl font-bold text-resin-charcoal mb-2">
+				Joint Plan with {jointPlanCollaborator.email.split('@')[0]}
+			</h3>
+			<p class="text-resin-earth/60 text-sm mb-6">
+				Create a collaborative plan that works with both of your schedules
+			</p>
+
+			<form action="?/createJointPlan" method="POST" use:enhance on:submit={closeJointPlanModal}>
+				<input type="hidden" name="collaborator_id" value={jointPlanCollaborator.id} />
+
+				<div class="mb-4">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
+					<textarea
+						name="raw_text"
+						bind:value={jointPlanText}
+						placeholder="Describe what you want to plan together..."
+						class="w-full px-4 py-3 rounded-lg border border-resin-earth/20 bg-white focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 resize-none"
+						rows="4"
+						required
+					/>
+				</div>
+
+				<div class="mb-6">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">
+						Intensity: <span class="text-resin-amber">{jointPlanIntensity}%</span>
+					</label>
+					<input
+						type="range"
+						name="intensity"
+						bind:value={jointPlanIntensity}
+						min="0"
+						max="100"
+						class="w-full"
+					/>
+				</div>
+
+				<div class="flex gap-3">
+					<button
+						type="button"
+						on:click={closeJointPlanModal}
+						class="flex-1 px-4 py-2 rounded-lg border border-resin-earth/20 text-resin-charcoal font-medium hover:bg-black/5 transition-all"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-medium hover:bg-resin-forest/90 transition-all"
+					>
+						Create Plan
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+/Users/zachbas/resinsite/src/routes/friends/+page.svelte:288:3
+Warn: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+	>
+		<div
+			class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
+			on:click={(e) => e.stopPropagation()}
+		>
+			<h3 class="text-2xl font-bold text-resin-charcoal mb-2">
+				Joint Plan with {jointPlanCollaborator.email.split('@')[0]}
+			</h3>
+			<p class="text-resin-earth/60 text-sm mb-6">
+				Create a collaborative plan that works with both of your schedules
+			</p>
+
+			<form action="?/createJointPlan" method="POST" use:enhance on:submit={closeJointPlanModal}>
+				<input type="hidden" name="collaborator_id" value={jointPlanCollaborator.id} />
+
+				<div class="mb-4">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
+					<textarea
+						name="raw_text"
+						bind:value={jointPlanText}
+						placeholder="Describe what you want to plan together..."
+						class="w-full px-4 py-3 rounded-lg border border-resin-earth/20 bg-white focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 resize-none"
+						rows="4"
+						required
+					/>
+				</div>
+
+				<div class="mb-6">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">
+						Intensity: <span class="text-resin-amber">{jointPlanIntensity}%</span>
+					</label>
+					<input
+						type="range"
+						name="intensity"
+						bind:value={jointPlanIntensity}
+						min="0"
+						max="100"
+						class="w-full"
+					/>
+				</div>
+
+				<div class="flex gap-3">
+					<button
+						type="button"
+						on:click={closeJointPlanModal}
+						class="flex-1 px-4 py-2 rounded-lg border border-resin-earth/20 text-resin-charcoal font-medium hover:bg-black/5 transition-all"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-medium hover:bg-resin-forest/90 transition-all"
+					>
+						Create Plan
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+/Users/zachbas/resinsite/src/routes/friends/+page.svelte:288:3
+Warn: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+	>
+		<div
+			class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
+			on:click={(e) => e.stopPropagation()}
+		>
+			<h3 class="text-2xl font-bold text-resin-charcoal mb-2">
+				Joint Plan with {jointPlanCollaborator.email.split('@')[0]}
+			</h3>
+			<p class="text-resin-earth/60 text-sm mb-6">
+				Create a collaborative plan that works with both of your schedules
+			</p>
+
+			<form action="?/createJointPlan" method="POST" use:enhance on:submit={closeJointPlanModal}>
+				<input type="hidden" name="collaborator_id" value={jointPlanCollaborator.id} />
+
+				<div class="mb-4">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
+					<textarea
+						name="raw_text"
+						bind:value={jointPlanText}
+						placeholder="Describe what you want to plan together..."
+						class="w-full px-4 py-3 rounded-lg border border-resin-earth/20 bg-white focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 resize-none"
+						rows="4"
+						required
+					/>
+				</div>
+
+				<div class="mb-6">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">
+						Intensity: <span class="text-resin-amber">{jointPlanIntensity}%</span>
+					</label>
+					<input
+						type="range"
+						name="intensity"
+						bind:value={jointPlanIntensity}
+						min="0"
+						max="100"
+						class="w-full"
+					/>
+				</div>
+
+				<div class="flex gap-3">
+					<button
+						type="button"
+						on:click={closeJointPlanModal}
+						class="flex-1 px-4 py-2 rounded-lg border border-resin-earth/20 text-resin-charcoal font-medium hover:bg-black/5 transition-all"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="flex-1 px-4 py-2 rounded-lg bg-resin-forest text-white font-medium hover:bg-resin-forest/90 transition-all"
+					>
+						Create Plan
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+/Users/zachbas/resinsite/src/routes/friends/+page.svelte:303:6
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+				<div class="mb-4">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
+					<textarea
+
+/Users/zachbas/resinsite/src/routes/friends/+page.svelte:304:6
+Warn: Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag (svelte)
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
+					<textarea
+						name="raw_text"
+						bind:value={jointPlanText}
+						placeholder="Describe what you want to plan together..."
+						class="w-full px-4 py-3 rounded-lg border border-resin-earth/20 bg-white focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 resize-none"
+						rows="4"
+						required
+					/>
+				</div>
+
+/Users/zachbas/resinsite/src/routes/friends/+page.svelte:315:6
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+				<div class="mb-6">
+					<label class="block text-sm font-medium text-resin-charcoal mb-2">
+						Intensity: <span class="text-resin-amber">{jointPlanIntensity}%</span>
+					</label>
+					<input
+
+/Users/zachbas/resinsite/src/routes/groups/[id]/+page.svelte:624:5
+Warn: Do not use empty rulesets (css)
+    /* NOTES TAB */
+    .notes-section {
+    }
+
+/Users/zachbas/resinsite/src/routes/groups/[id]/+page.svelte:763:5
+Warn: Do not use empty rulesets (css)
+    /* FOREST TAB */
+    .forest-section {
+    }
+
+/Users/zachbas/resinsite/src/routes/groups/[id]/+page.svelte:848:5
+Warn: Do not use empty rulesets (css)
+    /* FOCUS TAB */
+    .focus-section {
+    }
+
+/Users/zachbas/resinsite/src/routes/insights/+page.svelte:7:26
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let { data } = $props();
+    let profile = $state(data.profile);
+    const insights = data.insights;
+
+/Users/zachbas/resinsite/src/routes/insights/+page.svelte:8:22
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let profile = $state(data.profile);
+    const insights = data.insights;
+
+/Users/zachbas/resinsite/src/routes/note-groups/+page.svelte:5:25
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let { data } = $props<{ groups: any[] }>();
+    let groups = $state(data.groups || []);
+
+====================================
+svelte-check found 13 errors and 93 warnings in 27 files

@@ -85,16 +85,17 @@ class AmberStore {
         }
 
         // Find and snapshot the session for rollback
-        let snapshot: AmberSession | null = null;
+        let localSnapshot: AmberSession | null = null;
         this.sessions.update((sessions) => {
             const index = sessions.findIndex((s) => s.id === sessionId);
             if (index > -1) {
-                snapshot = sessions[index];
+                localSnapshot = sessions[index];
                 // Remove from display immediately (optimistic)
                 return sessions.filter((s) => s.id !== sessionId);
             }
             return sessions;
         });
+        const snapshot = localSnapshot as AmberSession | null;
 
         if (!snapshot) {
             console.error('[AmberStore] Delete: Session not found locally');
@@ -295,8 +296,9 @@ class AmberStore {
                 },
                 (payload) => {
                     console.log('[AmberStore] Realtime UPDATE on amber_sessions:', payload.new.id);
+                    const newSession = payload.new as AmberSession;
                     this.sessions.update((sessions) =>
-                        sessions.map((s) => (s.id === payload.new.id ? payload.new : s))
+                        sessions.map((s) => (s.id === newSession.id ? newSession : s))
                     );
                 }
             )

@@ -3,30 +3,23 @@
  * Register service worker and initialize caching
  */
 
-// Register service worker
+// SvelteKit automatically registers the service-worker.js in production and safely in dev 
 if ('serviceWorker' in navigator) {
-	navigator.serviceWorker
-		.register('/service-worker.js', {
-			scope: '/'
-		})
-		.then(() => {
-			console.log('Service Worker registered successfully');
-		})
-		.catch((error) => {
-			console.error('Service Worker registration failed:', error);
-		});
-
 	// Listen for controller change (service worker updates)
 	navigator.serviceWorker.addEventListener('controllerchange', () => {
 		console.log('Service Worker updated');
 	});
 
-	// Request periodic sync for offline data
-	if ('periodicSync' in navigator.serviceWorker.controller!) {
-		navigator.serviceWorker.controller!.postMessage({
-			type: 'INIT_PERIODIC_SYNC'
-		});
-	}
+	// Request periodic sync for offline data when SW is fully ready
+	navigator.serviceWorker.ready.then(() => {
+		if (navigator.serviceWorker.controller && 'periodicSync' in navigator.serviceWorker.controller) {
+			navigator.serviceWorker.controller.postMessage({
+				type: 'INIT_PERIODIC_SYNC'
+			});
+		}
+	}).catch((err) => {
+		console.error('SW ready failed:', err);
+	});
 }
 
 // Handle page visibility to optimize resource usage

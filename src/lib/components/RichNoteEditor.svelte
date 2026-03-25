@@ -19,7 +19,7 @@
     }
 
     let {
-        value = "",
+        value = $bindable(""),
         placeholder = "",
         onchange = (val: string) => {},
         oninput = (val: string) => {},

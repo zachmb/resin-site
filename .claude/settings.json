@@ -15,7 +15,16 @@
       "Bash(find /Users/zachbas -name cucumber.js -o -name .cucumberrc* -o -name blinq.json)",
       "Bash(npx playwright:*)",
       "Bash(grep -r \"localStorage\\\\|sessionStorage\\\\|auth\" tests/*.spec.ts)",
-      "Bash(find /Users/zachbas/resinsite -name playwright.config.* -o -name *.auth.*)"
+      "Bash(find /Users/zachbas/resinsite -name playwright.config.* -o -name *.auth.*)",
+      "Bash(timeout 60 npx @dev-blinq/cucumber-js)",
+      "Bash(npx @dev-blinq/cucumber-js)",
+      "Bash(npx @dev-blinq/cucumber-js --no-strict)",
+      "Bash(npx @dev-blinq/cucumber-js --format progress)",
+      "Bash(npx @dev-blinq/cucumber-js features/notes.feature:1 --dry-run)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/**/*.feature')",
+      "Bash(npx @dev-blinq/cucumber-js 'features/**/*.feature' --fail-fast)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/notes.feature:4' --fail-fast)"
     ]
   }
 }

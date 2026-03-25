@@ -1,0 +1,106 @@
+[
+  {
+    "description": "  Comprehensive tests for note creation, editing, and saving",
+    "elements": [
+      {
+        "description": "",
+        "id": "note-management;create-note-via-dashboard-quick-compose",
+        "keyword": "Scenario",
+        "line": 4,
+        "name": "Create note via dashboard quick compose",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 376586500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 5,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 850093166
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 6,
+            "name": "I fill the compose box with \"Test note from dashboard\"",
+            "match": {
+              "location": "steps/notes.js:49"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 47127165
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 7,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34433749
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 8,
+            "name": "I should be redirected to the notes page with a temp ID",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 10003158665,
+              "error_message": "Error: Expected redirect to /notes (with temp ID) or /login, but still on: http://localhost:5173/\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/notes.js:103:15)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "the note content should display \"Test note from dashboard\"",
+            "match": {
+              "location": "steps/notes.js:121"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 44190334
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "note-management",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Note Management",
+    "tags": [],
+    "uri": "features/notes.feature"
+  }
+]

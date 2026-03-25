@@ -4,7 +4,7 @@ Feature: Note Management
   Scenario: Create note via dashboard quick compose
     Given I navigate to the home page
     When I fill the compose box with "Test note from dashboard"
-    And I click the "Save Note" button
+    And I click the "Save" button
     Then I should be redirected to the notes page with a temp ID
     And the note content should display "Test note from dashboard"
 

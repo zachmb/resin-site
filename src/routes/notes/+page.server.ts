@@ -165,22 +165,53 @@ export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticated
     const user = await getUser();
     if (!user) throw redirect(303, '/login');
 
-    // Return minimal data immediately - fetch full data in background
-    // This allows the page to render instantly with cached data if available
     setHeaders({
         'cache-control': 'no-cache, no-store, must-revalidate',
         'pragma': 'no-cache',
         'expires': '0'
     });
 
+    const supabase = await getAuthenticatedSupabase();
+    const userId = user.id;
+
+    // Fetch notes directly server-side - most reliable approach
+    let notes: any[] = [];
+    try {
+        const { data: rawNotes, error: notesError } = await supabase
+            .from('amber_sessions')
+            .select('id, display_title, raw_text, status, created_at, updated_at, user_id')
+            .eq('user_id', userId)
+            .order('updated_at', { ascending: false });
+
+        if (notesError) {
+            console.error('[notes:load] Error fetching notes:', notesError.message);
+        } else {
+            notes = (rawNotes || []).map(normalizeNote);
+        }
+    } catch (err) {
+        console.error('[notes:load] Unexpected error:', err);
+    }
+
+    // Fetch profile with resilience
+    let profile: any = null;
+    try {
+        const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url, total_stones, current_streak')
+            .eq('id', userId)
+            .single();
+        profile = profileData;
+    } catch (err) {
+        // Non-critical, profile will be null
+    }
+
     return {
-        notes: [],
+        notes,
         sharedWithMe: [],
         friends: [],
         connections: {},
-        profile: null,
-        // Signal that client should fetch full data in background
-        shouldFetchData: true
+        profile,
+        shouldFetchData: false
     };
 };
 

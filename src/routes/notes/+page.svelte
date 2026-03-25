@@ -12,12 +12,12 @@
     // Data manager for notes - handles cache + sync
     let dataManager: DataManager;
 
-    // Initialize state from cache
-    let notes = $state<any[]>([]);
-    let profile = $state<any>(null);
-    let connections = $state<any>({});
-    let sharedWithMe = $state<any[]>([]);
-    let friends = $state<any[]>([]);
+    // Initialize state from server data (SSR-provided) 
+    let notes = $state<any[]>(data.notes || []);
+    let profile = $state<any>(data.profile || null);
+    let connections = $state<any>(data.connections || {});
+    let sharedWithMe = $state<any[]>(data.sharedWithMe || []);
+    let friends = $state<any[]>(data.friends || []);
 
     let toastMessage = $state("");
     const showToast = (msg: string) => {
@@ -39,37 +39,27 @@
             selectedNoteId = savedNoteId;
         }
 
-        // Create data manager with callbacks
+        // Create data manager with callbacks - used for background sync only
         dataManager = createNotesDataManager(
-            // onDataUpdate callback - called when fresh data arrives
+            // onDataUpdate callback - called when fresh data arrives from API
             (freshData) => {
                 console.log('[notes:page] Received fresh data from DataManager');
-                notes = freshData.notes || [];
-                profile = freshData.profile || null;
-                connections = freshData.connections || {};
-                sharedWithMe = freshData.sharedWithMe || [];
-                friends = freshData.friends || [];
+                if (freshData.notes?.length > 0) {
+                    notes = freshData.notes;
+                }
+                if (freshData.profile) profile = freshData.profile;
+                if (freshData.connections) connections = freshData.connections;
+                if (freshData.sharedWithMe) sharedWithMe = freshData.sharedWithMe;
+                if (freshData.friends) friends = freshData.friends;
             },
-            // onError callback - called if sync fails
+            // onError callback - silent, we already have server data
             (error) => {
-                console.error('[notes:page] DataManager sync error:', error);
-                showToast(`Failed to sync: ${error.message}`);
+                console.warn('[notes:page] DataManager sync error (non-critical):', error);
             }
         );
 
-        // Load initial data from cache (instant)
-        const cachedData = dataManager.getInitialData();
-        if (cachedData) {
-            console.log('[notes:page] Loaded from cache');
-            notes = cachedData.notes || [];
-            profile = cachedData.profile || null;
-            connections = cachedData.connections || {};
-            sharedWithMe = cachedData.sharedWithMe || [];
-            friends = cachedData.friends || [];
-        }
-
-        // Start background sync (silent)
-        console.log('[notes:page] Starting background sync...');
+        // Only run background sync - server already gave us initial data
+        console.log('[notes:page] Server provided', notes.length, 'notes. Starting background sync...');
         dataManager.syncInBackground();
     });
 

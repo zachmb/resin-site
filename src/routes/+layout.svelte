@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { invalidate } from "$app/navigation";
 	import { page } from "$app/stores";
-	import { onMount } from "svelte";
+	import { onMount, untrack } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
 	import { flushQueue } from "$lib/offline_queue";
 	import { rewardTriggered } from "$lib/rewardStore";
@@ -49,16 +49,22 @@
 		return daysDiff;
 	});
 
+
 	// Update profileData when data prop changes (e.g. navigation)
+	// IMPORTANT: Read profileData inside untrack() to avoid the Svelte 5 cycle
+	// where writing to profileData triggers a re-read of profileData inside the same effect
 	$effect(() => {
-		if (!profileData || !data.profile) {
-			profileData = data.profile;
+		const newProfile = data.profile; // reactive: re-runs when data changes
+		if (!newProfile) return;
+		const current = untrack(() => profileData);
+		if (!current) {
+			profileData = newProfile;
 		} else {
 			// Merge ensuring we never downgrade stones/streak due to stale SvelteKit navigation cache
 			profileData = {
-				...data.profile,
-				total_stones: Math.max(data.profile.total_stones || 0, profileData.total_stones || 0),
-				current_streak: Math.max(data.profile.current_streak || 0, profileData.current_streak || 0),
+				...newProfile,
+				total_stones: Math.max(newProfile.total_stones || 0, current.total_stones || 0),
+				current_streak: Math.max(newProfile.current_streak || 0, current.current_streak || 0),
 			};
 		}
 	});

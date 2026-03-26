@@ -1,63 +1,20 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { createSupabaseClient } from "$lib/supabase";
     import { Share2, Copy, Users, Gift, Zap } from "lucide-svelte";
+    import type { PageData } from './$types';
 
-    let supabase = createSupabaseClient();
-    let profile = $state<any>(null);
-    let referralCode = $state("");
-    let referralCount = $state(0);
-    let isFree = $state(true);
+    // Data from +page.server.ts load function — no more direct Supabase calls
+    let { data }: { data: PageData } = $props();
+
     let copied = $state(false);
-    let referrals = $state<any[]>([]);
-
-    onMount(async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Load profile with referral data
-        const { data } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .single();
-
-        if (data) {
-            profile = data;
-            referralCode = data.referral_code || generateCode();
-            referralCount = data.referral_count || 0;
-            isFree = data.account_type === "free";
-        }
-
-        // Load referral history
-        const { data: referralData } = await supabase
-            .from("referral_rewards")
-            .select("*, profiles!referred_user_id(email)")
-            .eq("referrer_id", user.id)
-            .order("referral_date", { ascending: false });
-
-        if (referralData) {
-            referrals = referralData;
-        }
-    });
-
-    function generateCode(): string {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let code = "RESIN_";
-        for (let i = 0; i < 6; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
-    }
 
     function copyCode() {
-        navigator.clipboard.writeText(referralCode);
+        navigator.clipboard.writeText(data.referralCode);
         copied = true;
         setTimeout(() => (copied = false), 2000);
     }
 
     function getShareText(): string {
-        return `Join me on Resin! Use code ${referralCode} to get free premium. Let's focus together! 🌲`;
+        return `Join me on Resin! Use code ${data.referralCode} to get free premium. Let's focus together! 🌲`;
     }
 
     function shareVia(platform: string) {
@@ -89,45 +46,45 @@
                 Earn Free Premium
             </h1>
             <p class="text-lg text-resin-earth/70">
-                {isFree
+                {data.isFree
                     ? "Invite 3 friends and get 1 month of free premium!"
                     : "Thanks for being a premium member!"}
             </p>
         </div>
 
         <!-- Free Tier Status -->
-        {#if isFree}
+        {#if data.isFree}
             <div class="glass-card rounded-2xl p-8 mb-8 border-2 border-resin-forest/30 bg-gradient-to-br from-resin-forest/5 to-transparent shadow-premium">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-resin-charcoal">Your Free Tier Progress</h2>
-                    <span class="text-3xl font-bold text-resin-forest">{referralCount}/3</span>
+                    <span class="text-3xl font-bold text-resin-forest">{data.referralCount}/3</span>
                 </div>
 
                 <div class="space-y-4">
                     {#each [1, 2, 3] as i}
                         <div class="flex items-center gap-3">
                             <div
-                                class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold {i <= referralCount
+                                class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold {i <= data.referralCount
                                     ? 'bg-resin-forest'
                                     : 'bg-resin-earth/20'}"
                             >
                                 {i}
                             </div>
                             <span
-                                class="flex-1 text-sm font-medium {i <= referralCount
+                                class="flex-1 text-sm font-medium {i <= data.referralCount
                                     ? 'text-resin-charcoal'
                                     : 'text-resin-earth/50'}"
                             >
-                                {i <= referralCount ? "✓ Friend referred" : `Refer friend #${i}`}
+                                {i <= data.referralCount ? "✓ Friend referred" : `Refer friend #${i}`}
                             </span>
-                            {#if i <= referralCount}
+                            {#if i <= data.referralCount}
                                 <span class="text-xs font-bold text-resin-forest">Completed</span>
                             {/if}
                         </div>
                     {/each}
                 </div>
 
-                {#if referralCount >= 3}
+                {#if data.referralCount >= 3}
                     <div class="mt-6 p-4 rounded-lg bg-resin-forest/10 border border-resin-forest/30">
                         <p class="text-sm font-bold text-resin-forest">🎉 You've unlocked free premium! Your access has been activated.</p>
                     </div>
@@ -143,7 +100,7 @@
             </h2>
 
             <div class="flex items-center gap-3 p-4 bg-resin-amber/10 rounded-lg border-2 border-dashed border-resin-amber/30">
-                <code class="flex-1 text-lg font-mono font-bold text-resin-charcoal">{referralCode}</code>
+                <code class="flex-1 text-lg font-mono font-bold text-resin-charcoal">{data.referralCode}</code>
                 <button
                     onclick={copyCode}
                     class="px-4 py-2 rounded-lg {copied
@@ -190,7 +147,7 @@
         </div>
 
         <!-- Referral History -->
-        {#if referrals.length > 0}
+        {#if data.referrals.length > 0}
             <div class="glass-card rounded-2xl p-8 border border-white/20 shadow-premium">
                 <h2 class="text-xl font-bold text-resin-charcoal mb-4 flex items-center gap-2">
                     <Users size={20} class="text-resin-forest" />
@@ -198,7 +155,7 @@
                 </h2>
 
                 <div class="space-y-2">
-                    {#each referrals as referral}
+                    {#each data.referrals as referral}
                         <div class="flex items-center justify-between p-3 bg-white/50 rounded-lg border border-resin-forest/10">
                             <div>
                                 <p class="text-sm font-semibold text-resin-charcoal">{referral.profiles?.email || "User"}</p>

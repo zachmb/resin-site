@@ -1,4 +1,4 @@
-const { Given, When, Then, Before, After, setDefaultTimeout } = require('@dev-blinq/cucumber-js');
+const { Given, When, Then, Before, After, setDefaultTimeout, defineStep } = require('@dev-blinq/cucumber-js');
 const { chromium } = require('playwright');
 
 setDefaultTimeout(60 * 1000);
@@ -64,6 +64,31 @@ Given('I navigate to the home page', async function() {
 
 Given('I navigate to the notes page', async function() {
     await page.goto(`${BASE_URL}/notes`);
+    await page.waitForLoadState('networkidle');
+});
+
+defineStep('I navigate to the amber page', async function() {
+    await page.goto(`${BASE_URL}/amber`);
+    await page.waitForLoadState('networkidle');
+});
+
+defineStep('I navigate to the map page', async function() {
+    await page.goto(`${BASE_URL}/map`);
+    await page.waitForLoadState('networkidle');
+});
+
+Given('I navigate to the rewards page', async function() {
+    await page.goto(`${BASE_URL}/rewards`);
+    await page.waitForLoadState('networkidle');
+});
+
+Given('I navigate to the focus page', async function() {
+    await page.goto(`${BASE_URL}/focus`);
+    await page.waitForLoadState('networkidle');
+});
+
+Given('I navigate to the login page', async function() {
+    await page.goto(`${BASE_URL}/login`);
     await page.waitForLoadState('networkidle');
 });
 
@@ -207,6 +232,23 @@ When('I save the note', async function() {
 When('I refresh the page', async function() {
     await page.reload();
     await page.waitForLoadState('networkidle');
+});
+
+Then('the notes page should reload correctly', async function() {
+    const currentUrl = page.url();
+
+    // If redirected to login, that's expected for unauthenticated users
+    if (currentUrl.includes('/login')) {
+        console.log('✅ Unauthenticated user correctly redirected to login after page reload');
+        return;
+    }
+
+    if (!currentUrl.includes('/notes')) {
+        throw new Error(`Expected to be on notes page, but on: ${currentUrl}`);
+    }
+
+    // Page should load on the notes URL
+    console.log('✅ Page refresh successful');
 });
 
 When('I select the first note in the sidebar', async function() {

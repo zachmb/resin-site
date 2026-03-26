@@ -1,64 +1,21 @@
 <script lang="ts">
-    import { onMount } from "svelte";
-    import { createSupabaseClient } from "$lib/supabase";
-    import { Settings, Shield, ToggleRight, RefreshCw, Trash2 } from "lucide-svelte";
+    import { enhance } from "$app/forms";
+    import { Settings, Shield, ToggleRight, Trash2, RefreshCw } from "lucide-svelte";
+    import type { PageData, ActionData } from './$types';
 
-    let supabase = createSupabaseClient();
-    let profile = $state<any>(null);
-    let extensionEnabled = $state(false);
-    let blockingEnabled = $state(false);
-    let autoBlockSessions = $state(false);
-    let notificationsEnabled = $state(true);
-    let blockedDomains = $state<string[]>([]);
+    // Data from +page.server.ts load function
+    let { data }: { data: PageData } = $props();
+    let form: ActionData = $state(null);
+
+    // Local state
+    let extensionEnabled = $state<boolean>(data?.extensionEnabled ?? false);
+    let blockingEnabled = $state<boolean>(data?.blockingEnabled ?? false);
+    let autoBlockSessions = $state<boolean>(data?.autoBlockSessions ?? false);
+    let notificationsEnabled = $state<boolean>(data?.notificationsEnabled ?? true);
+    let blockedDomains = $state<string[]>(data?.blockedDomains ?? []);
     let newDomain = $state("");
     let saving = $state(false);
     let message = $state("");
-
-    onMount(async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .single();
-
-        if (data) {
-            profile = data;
-            extensionEnabled = data.extension_enabled ?? true;
-            blockingEnabled = data.blocking_enabled ?? true;
-            autoBlockSessions = data.auto_block_sessions ?? false;
-            notificationsEnabled = data.extension_notifications ?? true;
-            blockedDomains = data.blocked_domains ?? [];
-        }
-    });
-
-    async function saveSettings() {
-        if (!profile) return;
-        saving = true;
-        message = "";
-
-        try {
-            await supabase
-                .from("profiles")
-                .update({
-                    extension_enabled: extensionEnabled,
-                    blocking_enabled: blockingEnabled,
-                    auto_block_sessions: autoBlockSessions,
-                    extension_notifications: notificationsEnabled,
-                    blocked_domains: blockedDomains
-                })
-                .eq("id", profile.id);
-
-            message = "✓ Settings saved! Changes will sync to your extension within 60 seconds.";
-            setTimeout(() => (message = ""), 5000);
-        } catch (error) {
-            message = "Error saving settings";
-        } finally {
-            saving = false;
-        }
-    }
 
     function addDomain() {
         if (!newDomain.trim()) return;
@@ -213,17 +170,41 @@
             </div>
         </div>
 
-        <!-- Save Button -->
-        <div class="flex gap-3">
-            <button
-                onclick={saveSettings}
-                disabled={saving}
-                class="flex-1 px-6 py-3 bg-resin-forest text-white rounded-lg font-bold hover:bg-resin-forest/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-            >
-                <RefreshCw size={16} />
-                {saving ? "Saving..." : "Save Settings"}
-            </button>
-        </div>
+        <!-- Save Button Form -->
+        <form
+            method="POST"
+            action="?/saveSettings"
+            use:enhance={() => {
+                saving = true;
+                return async ({ result }) => {
+                    if (result.type === 'success' && result.data) {
+                        message = (result.data as any).message || '✓ Settings saved!';
+                    } else if (result.type === 'failure' && result.data) {
+                        message = (result.data as any).error || 'Error saving settings';
+                    }
+                    saving = false;
+                    setTimeout(() => (message = ""), 5000);
+                };
+            }}
+        >
+            <!-- Hidden inputs for form data -->
+            <input type="hidden" name="extensionEnabled" value={extensionEnabled ? 'on' : 'off'} />
+            <input type="hidden" name="blockingEnabled" value={blockingEnabled ? 'on' : 'off'} />
+            <input type="hidden" name="autoBlockSessions" value={autoBlockSessions ? 'on' : 'off'} />
+            <input type="hidden" name="notificationsEnabled" value={notificationsEnabled ? 'on' : 'off'} />
+            <input type="hidden" name="blockedDomains" value={JSON.stringify(blockedDomains)} />
+
+            <div class="flex gap-3">
+                <button
+                    type="submit"
+                    disabled={saving}
+                    class="flex-1 px-6 py-3 bg-resin-forest text-white rounded-lg font-bold hover:bg-resin-forest/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                >
+                    <RefreshCw size={16} />
+                    {saving ? "Saving..." : "Save Settings"}
+                </button>
+            </div>
+        </form>
 
         <!-- Info Box -->
         <div class="mt-10 p-6 bg-resin-forest/5 rounded-lg border border-resin-forest/10">

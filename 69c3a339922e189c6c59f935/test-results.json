@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 117956708
+              "duration": 355148167
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3824946875
+              "duration": 944439291
             }
           },
           {
@@ -36,11 +36,11 @@
             "line": 6,
             "name": "I fill the compose box with \"Test background save\"",
             "match": {
-              "location": "steps/notes.js:71"
+              "location": "steps/notes.js:96"
             },
             "result": {
               "status": "passed",
-              "duration": 32237500
+              "duration": 37187625
             }
           },
           {
@@ -49,11 +49,11 @@
             "line": 7,
             "name": "I click the \"Save\" button",
             "match": {
-              "location": "steps/notes.js:88"
+              "location": "steps/notes.js:113"
             },
             "result": {
               "status": "passed",
-              "duration": 1005491750
+              "duration": 1007271499
             }
           },
           {
@@ -66,7 +66,7 @@
             },
             "result": {
               "status": "failed",
-              "duration": 1841082,
+              "duration": 2256916,
               "error_message": "Error: CRITICAL ERROR FOUND: Background save request not being made!\n\n    This indicates:\n    1. The fetch('/?/quickNote', ...) call may not be executing\n    2. There's likely a JavaScript error preventing the fetch\n    3. The save button click may not be triggering the async code\n\n    Need to investigate:\n    - Browser console for JavaScript errors\n    - Check if fetch is being called at all\n    - Verify the save button onclick handler is working\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:35:11)"
             }
           },
@@ -88,7 +88,1143 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 36330332
+              "duration": 44258499
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;navigation-happens-before-background-save-completes",
+        "keyword": "Scenario",
+        "line": 11,
+        "name": "Navigation happens before background save completes",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 143802499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 12,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 761425792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I fill the compose box with \"Fast navigation test\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 33042249
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 14,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1006102332
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "I should navigate to notes page within 1 second",
+            "match": {
+              "location": "steps/comprehensive.js:57"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 953999,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'url')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:63:93)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 16,
+            "name": "the background save can complete independently",
+            "match": {
+              "location": "steps/comprehensive.js:67"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 32824249
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;compose-box-clears-after-successful-save",
+        "keyword": "Scenario",
+        "line": 18,
+        "name": "Compose box clears after successful save",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 144208042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 19,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 713716582
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "the compose box contains \"Test content\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "the compose box should be empty",
+            "match": {
+              "location": "steps/comprehensive.js:71"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "the success indicator should briefly appear",
+            "match": {
+              "location": "steps/comprehensive.js:80"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 38792416
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;multiple-rapid-saves-don't-conflict",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "Multiple rapid saves don't conflict",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 119612082
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 26,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 697972667
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 27,
+            "name": "I fill the compose box with \"First note\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34031250
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1005835791
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 29,
+            "name": "I wait for 500 milliseconds",
+            "match": {
+              "location": "steps/comprehensive.js:53"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1836624,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'waitForTimeout')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:54:16)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 30,
+            "name": "I fill the compose box with \"Second note\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 31,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "both notes should be created successfully",
+            "match": {
+              "location": "steps/comprehensive.js:90"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 32875750
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;empty-content-is-rejected",
+        "keyword": "Scenario",
+        "line": 34,
+        "name": "Empty content is rejected",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 129187041
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 35,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 689521374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 36,
+            "name": "I click the \"Save\" button with empty content",
+            "match": {
+              "location": "steps/comprehensive.js:94"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 2264332,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'getByRole')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:96:25)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 37,
+            "name": "the save action should fail with validation error",
+            "match": {
+              "location": "steps/comprehensive.js:100"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 38,
+            "name": "the compose box should still be visible",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 35150958
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;network-errors-don't-break-the-ui",
+        "keyword": "Scenario",
+        "line": 40,
+        "name": "Network errors don't break the UI",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 117755333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 41,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 708285541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 42,
+            "name": "the server is simulating a network error",
+            "match": {
+              "location": "steps/comprehensive.js:116"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 812167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 43,
+            "name": "I fill the compose box with \"Test error handling\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29930458
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 44,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1004626374
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 45,
+            "name": "the UI should remain functional",
+            "match": {
+              "location": "steps/comprehensive.js:120"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1505957,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'locator')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:121:29)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 46,
+            "name": "I should be able to try saving again",
+            "match": {
+              "location": "steps/comprehensive.js:127"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 39784749
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;save-button-disabled-while-saving",
+        "keyword": "Scenario",
+        "line": 48,
+        "name": "Save button disabled while saving",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 114655542
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 49,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 704684541
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 50,
+            "name": "I fill the compose box with \"Test button state\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34377792
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 51,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1006534333
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 52,
+            "name": "the \"Save\" button should be disabled during save",
+            "match": {
+              "location": "steps/comprehensive.js:134"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2497916
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 53,
+            "name": "it should re-enable after completion or failure",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 38295958
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;note-content-is-preserved-during-optimistic-navigation",
+        "keyword": "Scenario",
+        "line": 55,
+        "name": "Note content is preserved during optimistic navigation",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 119368833
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 56,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 749829207
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 57,
+            "name": "I fill the compose box with \"Multi-line test\\nWith multiple\\nLines of content\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34297209
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 58,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1005238292
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 59,
+            "name": "the notes editor should display the exact same content",
+            "match": {
+              "location": "steps/comprehensive.js:139"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1642791,
+              "error_message": "Error: function uses multiple asynchronous interfaces: callback and promise\nto use the callback interface: do not return a promise\nto use the promise interface: remove the last argument to the function\n    at Object.run (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/user_code_runner.js:35:24)\n    at Object.run (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/step_runner.js:51:59)\n    at async TestCaseRunner.invokeStep (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/test_case_runner.js:98:16)\n    at async TestCaseRunner.runStep (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/test_case_runner.js:260:26)\n    at async /Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/test_case_runner.js:185:44\n    at async TestCaseRunner.aroundTestStep (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/test_case_runner.js:123:32)\n    at async TestCaseRunner.runAttempt (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/test_case_runner.js:168:13)\n    at async TestCaseRunner.run (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/test_case_runner.js:139:35)\n    at async Worker.runTestCase (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/parallel/worker.js:82:9)\n    at async Worker.receiveMessage (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/node_modules/@dev-blinq/cucumber-js/lib/runtime/parallel/worker.js:64:13)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 60,
+            "name": "no content should be lost during save",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "failed",
+              "duration": 878625,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'locator')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:140:25)"
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;form-action-(quickschedule)-also-uses-correct-path",
+        "keyword": "Scenario",
+        "line": 62,
+        "name": "Form action (quickSchedule) also uses correct path",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 134391042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 63,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 701849083
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 64,
+            "name": "I fill the compose box with \"Schedule test\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32126084
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 65,
+            "name": "I click the \"Activate\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 4070707,
+              "error_message": "TypeError: (intermediate value).catch is not a function\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/notes.js:145:46)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 66,
+            "name": "the form should POST to the correct endpoint",
+            "match": {
+              "location": "steps/comprehensive.js:145"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 67,
+            "name": "the response should indicate success or proper redirect",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 22602750
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;cache-invalidation-works-after-save",
+        "keyword": "Scenario",
+        "line": 69,
+        "name": "Cache invalidation works after save",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 119906917
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 70,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 691100375
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 71,
+            "name": "I fill the compose box with \"Cache test\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32576999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 72,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1004315708
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 73,
+            "name": "localStorage cache keys should be cleared",
+            "match": {
+              "location": "steps/comprehensive.js:154"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1363124,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'evaluate')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:155:34)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 74,
+            "name": "next data fetch should retrieve fresh data from server",
+            "match": {
+              "location": "steps/comprehensive.js:172"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 28491041
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;unsaved-changes-warning-if-user-leaves-during-save",
+        "keyword": "Scenario",
+        "line": 76,
+        "name": "Unsaved changes warning if user leaves during save",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 118796167
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 77,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 703972042
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 78,
+            "name": "I fill the compose box with \"Unsaved test\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 35097583
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 79,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1006364958
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 80,
+            "name": "I try to navigate away before save completes",
+            "match": {
+              "location": "steps/comprehensive.js:176"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1387707,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'goto')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:178:16)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 81,
+            "name": "the browser should warn about unsaved changes",
+            "match": {
+              "location": "steps/comprehensive.js:181"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 38760417
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;load-indicator-shows-during-save",
+        "keyword": "Scenario",
+        "line": 83,
+        "name": "Load indicator shows during save",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 119406750
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 84,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 694020959
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 85,
+            "name": "I fill the compose box with \"Loading indicator test\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27188416
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 86,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1005668832
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 87,
+            "name": "a loading spinner should appear",
+            "match": {
+              "location": "steps/comprehensive.js:186"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1066082,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'locator')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:187:26)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 88,
+            "name": "it should disappear when save completes",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 31523707
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "comprehensive-background-save-validation;error-message-shows-on-save-failure",
+        "keyword": "Scenario",
+        "line": 90,
+        "name": "Error message shows on save failure",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 117004499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 91,
+            "name": "I navigate to the home page",
+            "match": {
+              "location": "steps/notes.js:60"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 754123958
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 92,
+            "name": "the server will reject the request",
+            "match": {
+              "location": "steps/comprehensive.js:195"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 937290
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 93,
+            "name": "I fill the compose box with \"Error test\"",
+            "match": {
+              "location": "steps/notes.js:96"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 27153624
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 94,
+            "name": "I click the \"Save\" button",
+            "match": {
+              "location": "steps/notes.js:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1006213666
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 95,
+            "name": "an error message should be displayed to the user",
+            "match": {
+              "location": "steps/comprehensive.js:199"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 1231999,
+              "error_message": "TypeError: Cannot read properties of undefined (reading 'locator')\n    at World.<anonymous> (/Users/zachbas/resinsite/69c3a339922e189c6c59f935/steps/comprehensive.js:200:31)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 96,
+            "name": "the user should be able to retry",
+            "match": {
+              "location": "steps/comprehensive.js:208"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 36236000
             }
           }
         ],

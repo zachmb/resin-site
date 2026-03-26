@@ -4,13 +4,11 @@ dotenv.config();
 
 import {
   After,
-  setDefaultTimeout,
   Before,
   AfterStep,
   BeforeStep,
 } from "@dev-blinq/cucumber-js";
 import { closeContext, initContext, navigate, executeBrunoRequest, verifyFileExists } from "automation_model";
-setDefaultTimeout(60 * 1000);
 
 const url = null;
 

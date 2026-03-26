@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { invalidate } from "$app/navigation";
+	import { setContext } from "svelte";
 	import { page } from "$app/stores";
 	import { onMount, untrack } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
 	import { flushQueue } from "$lib/offline_queue";
 	import { rewardTriggered } from "$lib/rewardStore";
 	import { registerServiceWorker } from "$lib/offline";
+	import { createNotesDataManager, createAmberDataManager } from "$lib/services/DataManager";
 	import DailyRitualPrompt from "$lib/components/DailyRitualPrompt.svelte";
 	import OfflineIndicator from "$lib/components/OfflineIndicator.svelte";
 	import "./layout.css";
@@ -77,6 +79,35 @@
 			}
 		});
 		return unsubscribe;
+	});
+
+	// Setup DataManager context for child components
+	// Provides local-first cache + background sync for notes and amber data
+	$effect.pre(() => {
+		if (session?.user?.id) {
+			const notesManager = createNotesDataManager(
+				(data: any) => {
+					console.log('[DataManager] Notes updated:', data);
+				},
+				(error: Error) => {
+					console.error('[DataManager] Notes sync error:', error);
+				}
+			);
+
+			const amberManager = createAmberDataManager(
+				(data: any) => {
+					console.log('[DataManager] Amber updated:', data);
+				},
+				(error: Error) => {
+					console.error('[DataManager] Amber sync error:', error);
+				}
+			);
+
+			setContext('dataManager', {
+				notes: notesManager,
+				amber: amberManager
+			});
+		}
 	});
 
 	onMount(() => {

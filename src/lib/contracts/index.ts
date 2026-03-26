@@ -80,28 +80,48 @@ export interface UserProfile {
 
 /**
  * Amber Session — a user's activated brain dump/plan
+ * ⚠️ Known issue: web code writes `display_title` to Supabase; DB column is `title`.
+ * Migration needed: https://github.com/zachmb/resinsite/issues/XXX
  */
 export interface AmberSession {
   id: string; // UUID
   user_id: string; // UUID
-  raw_text: string; // Original brain dump
-  display_title: string;
+  raw_text: string; // Original brain dump (DB column: raw_text)
+  title: string; // DB column: title (NOT display_title — web code currently writes display_title, needs migration)
   status: SessionStatus;
   intensity: number; // 0-1
-  energy_demand: EnergyDemand;
+  energy_demand?: EnergyDemand;
+
+  // Scheduling details
+  session_type?: string; // 'amber' | 'focus' or task type
+  start_hour?: number;
+  end_hour?: number;
+  estimated_minutes?: number;
+
+  // Content metadata
+  rich_text_html?: string; // HTML version of raw_text
+  stored_urls?: string[]; // URLs extracted from note
+  group_id?: string; // If part of a group note (amber_sessions.status = 'draft' + group_id = group session)
+
+  // Execution metadata
+  rating?: number; // Post-completion rating
+  reflection?: string; // Post-completion reflection
+  scheduling_error?: string;
+  notes?: string;
 
   // Timestamps
   created_at: string; // ISO8601
+  updated_at: string; // ISO8601
   scheduled_at?: string; // ISO8601
   completed_at?: string; // ISO8601
 
-  // Metadata
-  scheduling_error?: string;
-  notes?: string;
+  // Related data
+  amber_tasks?: AmberTask[]; // Subtasks generated from this session
 }
 
 /**
  * Amber Task — individual task within a session
+ * Stored as JSON in amber_sessions.tasks_json (iOS) or as individual rows in amber_tasks table (web)
  */
 export interface AmberTask {
   id: string; // UUID
@@ -110,6 +130,9 @@ export interface AmberTask {
   description: string;
   estimated_minutes: number;
   sequence_order: number;
+
+  // Status
+  status?: 'pending' | 'completed' | 'skipped';
 
   // Scheduling
   calendar_event_id?: string;
@@ -134,6 +157,10 @@ export interface AmberTask {
   // Reflection
   reflection?: string;
   estimate_accuracy?: 'much_shorter' | 'spot_on' | 'way_longer';
+
+  // Timestamps
+  created_at?: string; // ISO8601
+  updated_at?: string; // ISO8601
 }
 
 /**
@@ -183,16 +210,30 @@ export interface FocusAutomation {
 
 /**
  * Saved Note
+ * Stored as rows in amber_sessions table with status='draft'
+ * Uses DB columns: id, user_id, status, content, title, created_at, updated_at, rich_text_html, stored_urls, group_id
  */
 export interface SavedNote {
   id: string; // UUID
   user_id: string; // UUID
-  title: string;
-  content: string;
-  tags: string[];
+  status: 'draft'; // Discriminator: only draft status rows are notes (not plans)
+  title: string; // Display title (stored in DB title column)
+  content: string; // Note body text (DB column: content)
+
+  // Optional content formats
+  rich_text_html?: string;
+  stored_urls?: string[];
+
+  // Sharing
+  group_id?: string; // If shared as group note
+
+  // Metadata
+  tags?: string[];
+  pinned?: boolean;
+
+  // Timestamps
   created_at: string; // ISO8601
   updated_at: string; // ISO8601
-  pinned: boolean;
 }
 
 /**
@@ -239,6 +280,31 @@ export interface UserAchievement {
   user_id: string; // UUID
   achievement_id: string;
   unlocked_at: string; // ISO8601
+}
+
+// ============================================================================
+// DATA MANAGER & CONTEXT TYPES
+// ============================================================================
+
+/**
+ * Data Manager interface for SvelteKit context
+ * Provides local-first cache + background sync for feature-specific data
+ */
+export interface DataManager {
+  getInitialData(): any;
+  syncInBackground(): Promise<void>;
+  getStatus(): { isSyncing: boolean; lastSync: number | null; error: string | null };
+  forceRefresh(): Promise<any>;
+  updateCache(freshData: any): void;
+  clearCache(): void;
+}
+
+/**
+ * App Data Manager context — provides access to feature-specific DataManagers
+ */
+export interface AppDataManager {
+  notes: DataManager;
+  amber: DataManager;
 }
 
 // ============================================================================

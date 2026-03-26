@@ -34,7 +34,24 @@
       "Bash(npx @dev-blinq/cucumber-js 'features/comprehensive-testing.feature:4' --fail-fast)",
       "Bash(npx svelte-kit:*)",
       "Bash(npx tsc:*)",
-      "Bash(curl -s http://localhost:5173/service-worker.js)"
+      "Bash(curl -s http://localhost:5173/service-worker.js)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/extended-coverage.feature' --fail-fast)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/extended-coverage.feature')",
+      "Bash(npx @dev-blinq/cucumber-js '69c3a339922e189c6c59f935/features/extended-coverage.feature')",
+      "Bash(__NEW_LINE_caed517c464a08b2__ mv:*)",
+      "Bash(npx @dev-blinq/cucumber-js 'features/notes.feature')",
+      "Bash(npx @dev-blinq/cucumber-js 'features/comprehensive-testing.feature')",
+      "Bash(__NEW_LINE_39eb99b8925f3c8e__ mv:*)",
+      "Bash(ls -1 src/lib/components/*.svelte)",
+      "Bash(find /Users/zachbas/resin-core -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.swift \\\\\\))",
+      "Bash(find /Users/zachbas/resin-core/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(find /Users/zachbas -maxdepth 5 -name *.swift)",
+      "Bash(find /Users/zachbas -maxdepth 6 -name *.swift)",
+      "Bash(find /Users/zachbas -maxdepth 8 -type d -name Resin* -o -type d -name resin*)",
+      "Bash(find /Users/zachbas/resin/resin -type f -name *.swift)",
+      "Bash(find /Users/zachbas/resinsite -name *.test.ts -o -name *.spec.ts -o -name *.test.js -o -name *.spec.js)",
+      "Bash(ls -la /Users/zachbas/resinsite/*.config.*)",
+      "Bash(tee test-results.log)"
     ]
   }
 }

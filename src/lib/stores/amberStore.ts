@@ -1,22 +1,20 @@
+/**
+ * @deprecated Use src/lib/state/amber.svelte.ts instead
+ * This file uses Svelte 4 stores (writable/derived).
+ * New code should use Svelte 5 runes via amberState from $lib/state/amber.svelte
+ *
+ * Migration path:
+ * 1. Replace: import { amberStore } from '$lib/stores/amberStore'
+ * 2. With:   import { amberState } from '$lib/state/amber.svelte'
+ * 3. API is identical, but now uses $state/$derived internally
+ */
+
 import { writable, derived } from 'svelte/store';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { AmberSession } from '$lib/types';
 
-export interface AmberSession {
-    id: string;
-    user_id: string;
-    display_title: string;
-    title: string;
-    raw_text: string;
-    content: string;
-    status: 'draft' | 'scheduled' | 'completed' | 'failed' | 'canceled' | 'processing';
-    intensity: number;
-    created_at: string;
-    updated_at: string;
-    start_time?: string;
-    end_time?: string;
-    sessionType?: 'amber' | 'focus';
-    amber_tasks?: any[];
-}
+// Re-export type from contracts (not defined locally anymore)
+export type { AmberSession };
 
 interface DeleteState {
     id: string;

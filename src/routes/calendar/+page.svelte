@@ -1,14 +1,13 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { createSupabaseClient } from '$lib/supabase';
     import { ChevronLeft, ChevronRight, Flame, Zap, Gem } from 'lucide-svelte';
 
-    let supabase = createSupabaseClient();
     let activities: any[] = $state([]);
     let monthStats: any = $state({});
     let selectedDate: Date | null = $state(null);
     let currentMonth = $state(new Date());
     let isLoading = $state(false);
+    let error = $state('');
 
     const months = ['January', 'February', 'March', 'April', 'May', 'June',
                     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -52,24 +51,30 @@
     }
 
     async function loadData() {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         isLoading = true;
+        error = '';
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth() + 1;
+        const dayInMonth = getDaysInMonth(currentMonth);
+
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const endDate = `${year}-${String(month).padStart(2, '0')}-${String(dayInMonth).padStart(2, '0')}`;
 
         try {
-            // Fetch activities for month
-            const { data: activitiesData } = await supabase
-                .from('daily_activity')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('activity_date', `${year}-${String(month).padStart(2, '0')}-01`)
-                .lte('activity_date', `${year}-${String(month).padStart(2, '0')}-${String(getDaysInMonth(currentMonth)).padStart(2, '0')}`)
-                .order('activity_date', { ascending: false });
+            // Fetch activities from API endpoint instead of direct Supabase
+            const response = await fetch(`/api/calendar/activity?start=${startDate}&end=${endDate}`);
 
-            activities = activitiesData || [];
+            if (!response.ok) {
+                throw new Error(`API error: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.error) {
+                throw new Error(result.error);
+            }
+
+            activities = result.activities || [];
 
             // Calculate stats
             const totalFocus = activities.reduce((sum, a) => sum + (a.focus_minutes || 0), 0);
@@ -78,11 +83,14 @@
             const productiveDays = activities.filter(a => getActivityLevel(a) >= 5).length;
 
             monthStats = { totalFocus, totalPlans, totalStones, productiveDays };
-        } catch (error) {
-            console.error('Error loading calendar:', error);
+        } catch (err) {
+            error = err instanceof Error ? err.message : 'Failed to load calendar data';
+            console.error('[Calendar] Error loading data:', err);
+            activities = [];
+            monthStats = {};
+        } finally {
+            isLoading = false;
         }
-
-        isLoading = false;
     }
 
     onMount(() => loadData());

@@ -1,10 +1,13 @@
 <script lang="ts">
-    import { createSupabaseClient } from '$lib/supabase';
+    import { enhance } from '$app/forms';
+    import type { PageData, ActionData } from './$types';
 
-    let { data } = $props<{ groups: any[] }>();
+    let { data }: { data: PageData } = $props();
     let groups = $state(data.groups || []);
+    let form: ActionData = $state(null);
 
     $effect(() => {
+        // Update local state when data changes (for realtime updates)
         groups = data.groups || [];
     });
 
@@ -14,60 +17,36 @@
     let isSubmitting = $state(false);
     let error = $state('');
 
-    const supabase = createSupabaseClient();
-
     const colors = [
         { value: 'resin-forest', label: 'Forest', hex: '#2d7f54' },
         { value: 'resin-amber', label: 'Amber', hex: '#d9a830' },
         { value: 'resin-earth', label: 'Earth', hex: '#8a6f54' }
     ];
 
-    async function createGroup() {
-        if (!newGroupName.trim()) return;
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        isSubmitting = true;
-        try {
-            const { data: newGroup, error: err } = await supabase
-                .from('note_groups')
-                .insert({
-                    user_id: user.id,
-                    name: newGroupName,
-                    color: selectedColor
-                })
-                .select()
-                .single();
-
-            if (err) throw err;
-
-            groups = [...groups, newGroup];
+    function handleCreateResponse({ result }: any) {
+        if (result.type === 'success' && result.data?.group) {
+            groups = [...groups, result.data.group];
             newGroupName = '';
             selectedColor = 'resin-forest';
             showCreateGroup = false;
-        } catch (e) {
-            error = 'Failed to create group. Please try again.';
-            console.error(e);
-        } finally {
-            isSubmitting = false;
+            error = '';
+        } else if (result.type === 'failure') {
+            error = (result.data as any)?.error || 'Failed to create group';
+        }
+        isSubmitting = false;
+    }
+
+    function handleDeleteResponse({ result }: any, groupId: string) {
+        if (result.type === 'success') {
+            groups = groups.filter((g: any) => g.id !== groupId);
         }
     }
 
-    async function deleteGroup(groupId: string) {
+    function confirmDelete(groupId: string) {
         if (!confirm('Delete this group? Notes in the group will not be deleted.')) return;
-
-        try {
-            const { error: err } = await supabase
-                .from('note_groups')
-                .delete()
-                .eq('id', groupId);
-
-            if (err) throw err;
-            groups = groups.filter((g: any) => g.id !== groupId);
-        } catch (e) {
-            console.error('Error deleting group:', e);
-        }
+        // Form will submit after confirmation
+        const form = document.getElementById(`delete-form-${groupId}`) as HTMLFormElement;
+        form?.submit();
     }
 </script>
 
@@ -105,57 +84,71 @@
                 <div class="create-form">
                     <h2 class="text-2xl font-serif font-bold text-resin-charcoal mb-6">Create New Group</h2>
 
-                    <div class="form-group">
-                        <label for="groupName" class="form-label">Group Name *</label>
-                        <input
-                            id="groupName"
-                            type="text"
-                            class="form-input"
-                            placeholder="e.g., Project Ideas, Learning"
-                            bind:value={newGroupName}
-                            disabled={isSubmitting}
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="color-picker" class="form-label">Color</label>
-                        <div class="color-picker" id="color-picker">
-                            {#each colors as color (color.value)}
-                                <button
-                                    type="button"
-                                    onclick={() => selectedColor = color.value}
-                                    class="color-button"
-                                    style="background-color: {color.hex}; border-color: {selectedColor === color.value ? '#000' : 'transparent'}"
-                                    title={color.label}
-                                ></button>
-                            {/each}
+                    <form
+                        method="POST"
+                        action="?/createGroup"
+                        use:enhance={() => {
+                            isSubmitting = true;
+                            return async ({ result }) => {
+                                handleCreateResponse({ result });
+                            };
+                        }}
+                    >
+                        <div class="form-group">
+                            <label for="groupName" class="form-label">Group Name *</label>
+                            <input
+                                id="groupName"
+                                type="text"
+                                name="name"
+                                class="form-input"
+                                placeholder="e.g., Project Ideas, Learning"
+                                bind:value={newGroupName}
+                                disabled={isSubmitting}
+                            />
                         </div>
-                    </div>
 
-                    {#if error}
-                        <div class="error-message">{error}</div>
-                    {/if}
+                        <div class="form-group">
+                            <label for="color-picker" class="form-label">Color</label>
+                            <div class="color-picker" id="color-picker">
+                                {#each colors as color (color.value)}
+                                    <button
+                                        type="button"
+                                        onclick={() => selectedColor = color.value}
+                                        class="color-button"
+                                        style="background-color: {color.hex}; border-color: {selectedColor === color.value ? '#000' : 'transparent'}"
+                                        title={color.label}
+                                    ></button>
+                                {/each}
+                            </div>
+                            <input type="hidden" name="color" value={selectedColor} />
+                        </div>
 
-                    <div class="form-actions">
-                        <button
-                            class="btn-cancel"
-                            onclick={() => {
-                                showCreateGroup = false;
-                                error = '';
-                                newGroupName = '';
-                            }}
-                            disabled={isSubmitting}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            class="btn-submit"
-                            onclick={createGroup}
-                            disabled={isSubmitting || !newGroupName.trim()}
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Group'}
-                        </button>
-                    </div>
+                        {#if error}
+                            <div class="error-message">{error}</div>
+                        {/if}
+
+                        <div class="form-actions">
+                            <button
+                                type="button"
+                                class="btn-cancel"
+                                onclick={() => {
+                                    showCreateGroup = false;
+                                    error = '';
+                                    newGroupName = '';
+                                }}
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn-submit"
+                                disabled={isSubmitting || !newGroupName.trim()}
+                            >
+                                {isSubmitting ? 'Creating...' : 'Create Group'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         {/if}
@@ -183,15 +176,32 @@
                                 <p class="group-description">{group.description}</p>
                             {/if}
                         </div>
-                        <button
-                            class="delete-btn"
-                            onclick={() => deleteGroup(group.id)}
-                            title="Delete group"
+                        <form
+                            id="delete-form-{group.id}"
+                            method="POST"
+                            action="?/deleteGroup"
+                            use:enhance={() => {
+                                return async ({ result }) => {
+                                    handleDeleteResponse({ result }, group.id);
+                                };
+                            }}
                         >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                            <input type="hidden" name="groupId" value={group.id} />
+                            <button
+                                type="submit"
+                                class="delete-btn"
+                                onclick={(e) => {
+                                    if (!confirm('Delete this group? Notes in the group will not be deleted.')) {
+                                        e.preventDefault();
+                                    }
+                                }}
+                                title="Delete group"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </form>
                     </div>
                 {/each}
             </div>

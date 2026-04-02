@@ -58,57 +58,30 @@
 
 <!-- Main Content -->
 <main class="flex-grow pt-20 pb-20 px-6 relative z-10 w-full overflow-hidden">
-    <!-- Grainy orange blur orb - top left -->
+    <!-- Top-right grain + glow orb -->
     <div
         class="pointer-events-none absolute"
-        style="top: -100px; left: -120px; width: 600px; height: 600px; z-index: 0;"
+        style="top: 0; right: 0; width: 900px; height: 900px; z-index: 0;"
         aria-hidden="true"
     >
-        <!-- Layer 1: blurred orange glow blob -->
+        <!-- Orange glow blob -->
         <div style="
             position: absolute;
             inset: 0;
-            border-radius: 50%;
-            background: radial-gradient(ellipse at 38% 42%, rgba(234, 118, 20, 0.45) 0%, rgba(245, 158, 50, 0.25) 38%, rgba(251, 185, 80, 0.10) 62%, transparent 80%);
-            filter: blur(52px);
+            background: radial-gradient(ellipse at 100% 0%, rgba(234, 118, 20, 0.52) 0%, rgba(245, 158, 50, 0.28) 28%, rgba(251, 185, 80, 0.10) 54%, transparent 78%);
+            filter: blur(72px);
         "></div>
-        <!-- Layer 2: heavy grain pass 1 (overlay) -->
+        <!-- Grain tile — masked from the top-right corner outward, seamless fade -->
         <div style="
             position: absolute;
             inset: 0;
-            border-radius: 50%;
-            background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E&quot;);
+            background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23grain)' opacity='1'/%3E%3C/svg%3E&quot;);
             background-repeat: repeat;
-            background-size: 160px 160px;
-            opacity: 0.85;
-            mix-blend-mode: overlay;
-            filter: contrast(1.8) brightness(1.2);
-        "></div>
-        <!-- Layer 3: heavy grain pass 2 (multiply) -->
-        <div style="
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n2)' opacity='1'/%3E%3C/svg%3E&quot;);
-            background-repeat: repeat;
-            background-size: 100px 100px;
-            opacity: 0.65;
-            mix-blend-mode: multiply;
-            mask-image: radial-gradient(ellipse at 38% 42%, black 25%, transparent 72%);
-            -webkit-mask-image: radial-gradient(ellipse at 38% 42%, black 25%, transparent 72%);
-        "></div>
-        <!-- Layer 4: fine grain pass 3 (screen) for sparkle -->
-        <div style="
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n3'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n3)' opacity='1'/%3E%3C/svg%3E&quot;);
-            background-repeat: repeat;
-            background-size: 70px 70px;
+            background-size: 200px 200px;
             opacity: 0.55;
-            mix-blend-mode: screen;
-            mask-image: radial-gradient(ellipse at 38% 42%, black 20%, transparent 65%);
-            -webkit-mask-image: radial-gradient(ellipse at 38% 42%, black 20%, transparent 65%);
+            mix-blend-mode: soft-light;
+            mask-image: radial-gradient(ellipse 900px 900px at 100% 0%, black 0%, rgba(0,0,0,0.85) 15%, rgba(0,0,0,0.55) 32%, rgba(0,0,0,0.25) 52%, rgba(0,0,0,0.07) 68%, transparent 82%);
+            -webkit-mask-image: radial-gradient(ellipse 900px 900px at 100% 0%, black 0%, rgba(0,0,0,0.85) 15%, rgba(0,0,0,0.55) 32%, rgba(0,0,0,0.25) 52%, rgba(0,0,0,0.07) 68%, transparent 82%);
         "></div>
     </div>
     <!-- Hero Section -->

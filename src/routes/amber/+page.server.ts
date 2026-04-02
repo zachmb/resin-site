@@ -153,6 +153,31 @@ export const actions: Actions = {
                     });
                 }
             }
+
+            // Sync with Extension (real-time blocks)
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            
+            if (token) {
+                await supabase.functions.invoke('create-block-from-session', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: {
+                        session_id: sessionId,
+                        category_ids: ['youtube', 'reddit', 'social', 'video'],
+                        block_entire_session: true
+                    }
+                });
+            } else {
+                await supabase.functions.invoke('create-block-from-session', {
+                    body: {
+                        session_id: sessionId,
+                        category_ids: ['youtube', 'reddit', 'social', 'video'],
+                        block_entire_session: true
+                    }
+                });
+            }
         } catch (blockingErr) {
             // Non-critical: blocking session creation failure doesn't fail the activation
             console.warn('[Activate] Warning: blocking session creation failed', blockingErr);
@@ -224,6 +249,13 @@ export const actions: Actions = {
                         .eq('is_active', true);
                 }
             }
+
+            // Cancel active blocks for real-time extension Sync
+            await supabase
+                .from('active_blocks')
+                .update({ cancelled_by_user_at: new Date().toISOString() })
+                .eq('session_id', sessionId)
+                .is('cancelled_by_user_at', null);
         } catch (blockingErr) {
             console.warn('[Complete] Warning: blocking session update failed', blockingErr);
         }
@@ -314,6 +346,13 @@ export const actions: Actions = {
                         .eq('is_active', true);
                 }
             }
+
+            // Cancel active blocks for real-time extension Sync
+            await supabase
+                .from('active_blocks')
+                .update({ cancelled_by_user_at: new Date().toISOString() })
+                .eq('session_id', sessionId)
+                .is('cancelled_by_user_at', null);
         } catch (blockingErr) {
             console.warn('[Cancel] Warning: blocking session cleanup failed', blockingErr);
         }

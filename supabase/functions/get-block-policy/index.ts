@@ -112,59 +112,84 @@ async function handler(req: Request): Promise<Response> {
       device_id?: string
     }
 
-    // 3. Query active_blocks for this user from Supabase
-    // The query uses server_start_time and server_end_time (set by server, not client)
+    // 3. Query active_blocks for this user
     const now = new Date()
 
-    let query = supabase
+    const { data: blocks, error: blocksError } = await supabase
       .from('active_blocks')
       .select('id, category_id, server_start_time, server_end_time')
       .eq('user_id', userId)
-      .is('cancelled_by_user_at', null)  // Don't return cancelled blocks
+      .is('cancelled_by_user_at', null)
+      .lte('server_start_time', now.toISOString())
+      .gt('server_end_time', now.toISOString())
 
-    // If specific categories requested, filter
-    if (categories_requested && categories_requested.length > 0) {
-      query = query.in('category_id', categories_requested)
+    if (blocksError) {
+      console.error('[get-block-policy] active_blocks error:', blocksError)
     }
 
-    const { data: blocks, error } = await query
+    // 4. Query blocking_sessions for this user (Focus sessions)
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('blocking_sessions')
+      .select('id, start_time, end_time, title')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .lte('start_time', now.toISOString())
+      .gt('end_time', now.toISOString())
 
-    if (error) {
-      console.error('[get-block-policy] Database error:', error)
-      return new Response(
-        JSON.stringify({ error: 'Internal server error', details: error.message }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      )
+    if (sessionsError) {
+      console.error('[get-block-policy] blocking_sessions error:', sessionsError)
     }
 
-    // 4. Compute which blocks are currently active (server-side)
-    const activeBlocks: BlockPolicy[] = (blocks || [])
-      .filter(block => {
-        const startTime = new Date(block.server_start_time)
-        const endTime = new Date(block.server_end_time)
-        return now >= startTime && now < endTime
-      })
-      .map(block => {
-        const endTime = new Date(block.server_end_time)
-        const secondsRemaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000))
+    // 5. Combine and compute active blocks
+    const results: BlockPolicy[] = []
 
-        return {
+    // A. Add explicit blocks from active_blocks table
+    if (blocks) {
+      for (const block of blocks) {
+        const endTime = new Date(block.server_end_time)
+        results.push({
           id: block.id,
           category_id: block.category_id,
-          is_active: true,  // Already filtered above
+          is_active: true,
           server_start_time: block.server_start_time,
           server_end_time: block.server_end_time,
-          seconds_remaining: secondsRemaining
-        }
-      })
+          seconds_remaining: Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000))
+        })
+      }
+    }
 
-    // 5. Log the policy request for audit trail
+    // B. Add "Focus Mode" blocks from matching sessions 
+    // (If a session is active, we block all major categories by default)
+    if (sessions && sessions.length > 0) {
+      const defaultCategories = ['youtube', 'social', 'video', 'news', 'shopping']
+      for (const session of sessions) {
+        const endTime = new Date(session.end_time)
+        const secondsRemaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000))
+
+        for (const cat of defaultCategories) {
+          // Avoid duplicates if already in active_blocks
+          if (!results.some(r => r.category_id === cat)) {
+            results.push({
+              id: `session-${session.id}-${cat}`,
+              category_id: cat,
+              is_active: true,
+              server_start_time: session.start_time,
+              server_end_time: session.end_time,
+              seconds_remaining: secondsRemaining
+            })
+          }
+        }
+      }
+    }
+
+
+    // 6. Log the policy request for audit trail
     const auditEvent = {
       user_id: userId,
       event_type: 'policy_requested',
       platform,
       device_id,
-      num_blocks_returned: activeBlocks.length,
+      num_blocks_returned: results.length,
       timestamp: now.toISOString()
     }
 
@@ -178,33 +203,33 @@ async function handler(req: Request): Promise<Response> {
         platform: platform || 'unknown'
       })
       .then(() => console.log('[get-block-policy] Audit logged'))
-      .catch(err => console.error('[get-block-policy] Audit log error:', err))
+      .catch((err: any) => console.error('[get-block-policy] Audit log error:', err))
 
-    // 6. Build response with server timestamp (never client-controlled)
+    // 7. Build response with server timestamp (never client-controlled)
     const response: PolicyResponse = {
       user_id: userId,
       timestamp: now.toISOString(),
-      blocks: activeBlocks,
+      blocks: results,
       signature: ''  // Computed below
     }
 
-    // 7. Sign the response to prevent tampering
+    // 8. Sign the response to prevent tampering
     // Client cannot forge this signature without the secret
-    const signatureData = JSON.stringify(activeBlocks) + now.toISOString() + jwtSecret
+    const signatureData = JSON.stringify(results) + now.toISOString() + jwtSecret
     const encoder = new TextEncoder()
     const data = encoder.encode(signatureData)
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     response.signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-    console.log('[get-block-policy] Returning policy for user', userId, 'with', activeBlocks.length, 'active blocks')
+    console.log('[get-block-policy] Returning policy for user', userId, 'with', results.length, 'active blocks')
 
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     })
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('[get-block-policy] Unexpected error:', err)
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: String(err) }),

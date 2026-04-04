@@ -7,7 +7,7 @@
     </h1>
 
     <div class="prose prose-resin max-w-none text-resin-earth/90 space-y-6">
-        <p><strong>Last Updated:</strong> February 25, 2026</p>
+        <p><strong>Last Updated:</strong> April 4, 2026</p>
 
         <p>
             Please read these Terms of Service ("Terms") carefully before using
@@ -60,6 +60,13 @@
         <p>
             We reserve the right, at our sole discretion, to modify or replace
             these Terms at any time.
+        </p>
+
+        <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">
+            6. Attributions
+        </h2>
+        <p>
+            Reward icons used in the App are provided by <a href="https://www.freepik.com" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 decoration-resin-amber/50 hover:text-resin-forest transition-colors">Freepik</a>.
         </p>
     </div>
 </main>

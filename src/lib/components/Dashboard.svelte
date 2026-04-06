@@ -70,6 +70,11 @@
     // Use state and flip it immediately on X.
     let showBanner = $state(false);
 
+    // AI Activation state (from extension)
+    let aiStatus = $state<'idle' | 'scheduling' | 'success' | 'error'>('idle');
+    let aiMessage = $state("");
+    let aiSessionId = $state<string | null>(null);
+
     onMount(() => {
         // Try to load from localStorage first (fastest), fallback to server data
         const cachedProfile = localStorage.getItem('resin_profile');
@@ -181,9 +186,49 @@
             // Set up polling as fallback
             setupPolling();
 
+            // Real-time AI Activation Listeners (from extension content script)
+            const handleAIStarted = (e: any) => {
+                aiStatus = 'scheduling';
+                aiMessage = "AI is scheduling your focus plan...";
+                aiSessionId = e.detail?.sessionId;
+                console.log('[Dashboard] AI Scheduling started:', aiSessionId);
+            };
+
+            const handleAISuccess = async (e: any) => {
+                aiStatus = 'success';
+                aiMessage = "Your plan is ready!";
+                console.log('[Dashboard] AI Scheduling success:', e.detail);
+                
+                // Refresh data to show new plan
+                await invalidateAll();
+                
+                // Clear success message after 5 seconds
+                setTimeout(() => {
+                    if (aiStatus === 'success') aiStatus = 'idle';
+                }, 5000);
+            };
+
+            const handleAIError = (e: any) => {
+                aiStatus = 'error';
+                aiMessage = e.detail?.error || "Scheduling failed";
+                console.log('[Dashboard] AI Scheduling error:', e.detail);
+                
+                // Clear error message after 8 seconds
+                setTimeout(() => {
+                    if (aiStatus === 'error') aiStatus = 'idle';
+                }, 8000);
+            };
+
+            window.addEventListener('resin:ai_started', handleAIStarted);
+            window.addEventListener('resin:ai_success', handleAISuccess);
+            window.addEventListener('resin:ai_error', handleAIError);
+
             return () => {
                 supabase.removeChannel(subscription);
                 if (pollInterval) clearInterval(pollInterval);
+                window.removeEventListener('resin:ai_started', handleAIStarted);
+                window.removeEventListener('resin:ai_success', handleAISuccess);
+                window.removeEventListener('resin:ai_error', handleAIError);
             };
         }
     });
@@ -272,6 +317,46 @@
 <main
     class="w-full h-full min-h-screen pt-28 pb-32 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto"
 >
+    <!-- AI Status Notification Overlay -->
+    {#if aiStatus !== 'idle'}
+        <div 
+            transition:fade 
+            class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 pointer-events-none"
+        >
+            <div class="pointer-events-auto glass-card rounded-2xl p-4 border shadow-premium-lg flex items-center gap-4 
+                {aiStatus === 'scheduling' ? 'border-resin-amber/30 bg-white/90' : ''}
+                {aiStatus === 'success' ? 'border-resin-forest/30 bg-white/90' : ''}
+                {aiStatus === 'error' ? 'border-red-200 bg-red-50/90' : ''}"
+            >
+                {#if aiStatus === 'scheduling'}
+                    <div class="w-10 h-10 rounded-full bg-resin-amber/10 flex items-center justify-center">
+                        <span class="w-5 h-5 border-2 border-resin-amber/30 border-t-resin-amber rounded-full animate-spin"></span>
+                    </div>
+                {:else}
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center 
+                        {aiStatus === 'success' ? 'bg-resin-forest/10 text-resin-forest' : 'bg-red-100 text-red-600'}"
+                    >
+                        {aiStatus === 'success' ? '✓' : '✕'}
+                    </div>
+                {/if}
+                
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-resin-charcoal">{aiMessage}</p>
+                    {#if aiStatus === 'success'}
+                        <a href="/amber" class="text-xs font-bold text-resin-forest hover:underline">View Timeline →</a>
+                    {/if}
+                </div>
+
+                <button 
+                    onclick={() => aiStatus = 'idle'}
+                    class="text-resin-earth/40 hover:text-resin-charcoal transition-colors px-2"
+                >
+                    ✕
+                </button>
+            </div>
+        </div>
+    {/if}
+
     <!-- Header -->
     <div
         class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
@@ -496,7 +581,9 @@
                                         savingAmber = false;
                                         successAmber = false;
                                         composeText = "";
-                                        goto((result.data as any)?.redirectTo || "/amber");
+                                        const data = result.type === 'success' ? result.data : null;
+                                        const redirectTo = data?.redirectTo || "/amber";
+                                        goto(redirectTo);
                                     }, 800);
                                 } else {
                                     savingAmber = false;

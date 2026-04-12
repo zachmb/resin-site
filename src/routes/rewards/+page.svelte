@@ -14,6 +14,49 @@
     // Calculate focus hours
     const focusHours = $derived(Math.floor(totalFocusMinutes / 60));
     const focusMinutes = $derived(totalFocusMinutes % 60);
+
+    // Fossil Rewards Catalogue
+    type UnlockCondition = { type: 'always' } | { type: 'stones', amount: number } | { type: 'streak', days: number };
+    
+    interface FossilReward {
+        id: string;
+        displayName: string;
+        flavour: string;
+        unlock: UnlockCondition;
+    }
+
+    const fossilRewards: FossilReward[] = [
+        { id: "fossil_footprint", displayName: "Dino Footprint", flavour: "Every journey starts with one step.", unlock: { type: 'always' } },
+        { id: "fossil_trace", displayName: "Trace Fossil", flavour: "Proof you were here.", unlock: { type: 'stones', amount: 10 } },
+        { id: "fossil_trilobite_flat", displayName: "Trilobite", flavour: "500 million years of persistence.", unlock: { type: 'stones', amount: 25 } },
+        { id: "fossil_bone_rock", displayName: "Bone Fragment", flavour: "Fragments reveal the whole.", unlock: { type: 'stones', amount: 50 } },
+        { id: "fossil_lizard_octagon", displayName: "Stone Lizard", flavour: "Sealed in stone. Perfectly preserved.", unlock: { type: 'stones', amount: 75 } },
+        { id: "fossil_ammonite", displayName: "Ammonite", flavour: "A perfect spiral. A perfect system.", unlock: { type: 'stones', amount: 100 } },
+        { id: "fossil_trilobite_outline", displayName: "Ancient Trilobite", flavour: "Rare and precise.", unlock: { type: 'stones', amount: 200 } },
+        { id: "fossil_column_broken", displayName: "Broken Column", flavour: "Empires crumble. Habits endure.", unlock: { type: 'stones', amount: 300 } },
+        { id: "fossil_ammonite_brush", displayName: "Excavation", flavour: "Patience uncovers everything.", unlock: { type: 'streak', days: 7 } },
+        { id: "fossil_triceratops", displayName: "Triceratops Skull", flavour: "Three horns. Three weeks. Unbreakable.", unlock: { type: 'streak', days: 14 } },
+        { id: "fossil_trex_rock", displayName: "T-Rex in Rock", flavour: "Buried for 65 million years. Unearthed today.", unlock: { type: 'streak', days: 21 } },
+        { id: "fossil_trex_flat", displayName: "T-Rex Skull", flavour: "Apex. Every day.", unlock: { type: 'streak', days: 30 } },
+        { id: "fossil_trex_cartoon", displayName: "Legendary T-Rex", flavour: "Only the most relentless survive.", unlock: { type: 'stones', amount: 500 } },
+        { id: "fossil_dragonfly_amber", displayName: "Amber Dragonfly", flavour: "Frozen in time. A relic of discipline.", unlock: { type: 'stones', amount: 1000 } }
+    ];
+
+    function isUnlocked(reward: FossilReward): boolean {
+        switch (reward.unlock.type) {
+            case 'always': return true;
+            case 'stones': return totalStones >= reward.unlock.amount;
+            case 'streak': return longestStreak >= reward.unlock.days;
+        }
+    }
+
+    function getUnlockLabel(reward: FossilReward): string {
+        switch (reward.unlock.type) {
+            case 'always': return "Started with this";
+            case 'stones': return `Requires ${reward.unlock.amount} stones`;
+            case 'streak': return `Requires ${reward.unlock.days}-day streak`;
+        }
+    }
 </script>
 
 <svelte:head>
@@ -259,6 +302,68 @@
                         </p>
                     </div>
                 {/if}
+            </div>
+        </div>
+
+        <!-- Section: Fossil Collection -->
+        <div class="mt-16" in:fly={{ y: 20, duration: 800, delay: 800 }}>
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 class="text-3xl font-serif font-bold text-resin-charcoal tracking-tight flex items-center gap-3">
+                        <Award class="w-8 h-8 text-resin-amber" />
+                        Fossil Collection
+                    </h2>
+                    <p class="text-resin-earth/70 mt-2 font-light">
+                        Unlock ancient relics by building your streak and collecting petrified stones.
+                    </p>
+                </div>
+                <div class="hidden sm:flex items-center gap-2 bg-white/60 backdrop-blur-md px-4 py-2 rounded-full border border-resin-forest/5 shadow-sm">
+                    <span class="text-sm font-bold text-resin-charcoal">
+                        {fossilRewards.filter(r => isUnlocked(r)).length} / {fossilRewards.length} 
+                    </span>
+                    <span class="text-sm text-resin-earth/60">Unlocked</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {#each fossilRewards as fossil}
+                    {@const unlocked = isUnlocked(fossil)}
+                    <div class="relative group bg-white/60 backdrop-blur-md rounded-3xl p-5 border shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-all duration-300 {unlocked ? 'border-resin-amber/20 hover:border-resin-amber/40 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]' : 'border-white/40 opacity-70'}">
+                        
+                        <!-- Lock Overlay for Locked Fossils -->
+                        {#if !unlocked}
+                            <div class="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-3xl z-10 hidden sm:flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div class="w-8 h-8 rounded-full bg-resin-charcoal/80 flex items-center justify-center text-white mb-2 shadow-lg">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <span class="text-xs font-bold text-resin-charcoal tracking-wide px-3 text-center">{getUnlockLabel(fossil)}</span>
+                            </div>
+                            <div class="absolute top-3 right-3 sm:hidden z-10 w-6 h-6 rounded-full bg-black/10 flex items-center justify-center backdrop-blur-md">
+                                <svg class="w-3 h-3 text-resin-charcoal/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            </div>
+                        {/if}
+
+                        <div class="relative w-full aspect-square mb-4 flex items-center justify-center rounded-2xl {unlocked ? 'bg-gradient-to-br from-[#Fdf5e6] to-[#E8F0EA]/50' : 'bg-gray-100/50'}">
+                            <img 
+                                src="/images/fossils/{fossil.id}.png" 
+                                alt={fossil.displayName} 
+                                class="w-24 h-24 object-contain max-w-full drop-shadow-sm transition-all duration-500 {unlocked ? 'filter-none group-hover:scale-110' : 'grayscale opacity-40 blur-[1px]'}"
+                            />
+                        </div>
+                        
+                        <div class="text-center">
+                            <h3 class="font-bold text-resin-charcoal text-sm mb-1 leading-tight {unlocked ? '' : 'opacity-60'}">{fossil.displayName}</h3>
+                            <p class="text-[10px] sm:text-xs text-resin-earth/70 font-medium leading-snug {unlocked ? '' : 'opacity-0 sm:group-hover:opacity-100'} transition-opacity">
+                                {#if unlocked}
+                                    {fossil.flavour}
+                                {:else}
+                                    <span class="sm:hidden block mt-1 pb-1">🔒 {getUnlockLabel(fossil)}</span>
+                                    <span class="hidden sm:inline">Keep going to reveal...</span>
+                                {/if}
+                            </p>
+                        </div>
+                    </div>
+                {/each}
             </div>
         </div>
     </div>

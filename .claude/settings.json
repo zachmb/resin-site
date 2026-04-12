@@ -51,7 +51,8 @@
       "Bash(find /Users/zachbas/resin/resin -type f -name *.swift)",
       "Bash(find /Users/zachbas/resinsite -name *.test.ts -o -name *.spec.ts -o -name *.test.js -o -name *.spec.js)",
       "Bash(ls -la /Users/zachbas/resinsite/*.config.*)",
-      "Bash(tee test-results.log)"
+      "Bash(tee test-results.log)",
+      "Bash(npx vercel:*)"
     ]
   }
 }

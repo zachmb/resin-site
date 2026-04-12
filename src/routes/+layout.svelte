@@ -42,9 +42,8 @@
 		return 'Resin';
 	});
 
-	// FIX: Make profile reactive so real-time updates propagate
-	let profileData = $state(data.profile);
-	let hasStreak = $derived(profileData?.current_streak > 0);
+	// Profile derived from data prop so real-time updates propagate
+	let profileData = $derived(data.profile);
 	let daysWithoutSession = $derived.by(() => {
 		if (!profileData?.last_session_date) return 999;
 		const daysDiff = Math.floor((Date.now() - new Date(profileData.last_session_date).getTime()) / (1000 * 60 * 60 * 24));
@@ -119,7 +118,7 @@
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange(
-			(event: string, _session: Session | null) => {
+			(_event: string, _session: Session | null) => {
 				if (_session?.expires_at !== session?.expires_at) {
 					invalidate("supabase:auth");
 				}

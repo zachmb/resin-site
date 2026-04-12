@@ -32,8 +32,16 @@
             a: "Yes. Your notes and plans are encrypted. We don't read your content, sell your data, or use it for training AI models beyond your own personalization. You can export or delete everything at any time."
         },
         {
+            q: "How is the iOS app free if it uses AI?",
+            a: "Resin uses hyper-optimized local AI models (like Google's Gemma or Alibaba's Qwen) that run directly on your iPhone's neural engine. Because we do not pay cloud compute fees every time you generate a plan, we can offer the core mobile application infinitely for free, with zero token limits."
+        },
+        {
+            q: "Why should I upgrade to Resin Pro?",
+            a: "Resin Pro unlocks the Cloud layer. It gives you the Web Dashboard to plan on your laptop, the Chrome Extension to enforce website blocking (like youtube.com) while working, seamless cross-device cloud sync, and the ability to join multiplayer Focus Groups. The free tier strictly remains a solo, single-device mobile experience."
+        },
+        {
             q: "How is Resin different from Forest or Focus apps?",
-            a: "Most focus apps just block apps or grow a tree — they don't help you figure out what to actually do. Resin is the only app that combines AI-powered planning, real OS-level app blocking, and cross-platform sync into one system. You don't just focus, you finish things."
+            a: "Most focus apps just block apps or grow a tree — they don't help you figure out what to actually do. Resin is the only app that combines local AI-powered planning, real OS-level app blocking, and cross-platform sync into one system. You don't just focus, you finish things."
         }
     ];
 
@@ -129,15 +137,15 @@
                 <div class="flex flex-wrap items-center gap-4 text-xs text-resin-earth/50">
                     <span class="flex items-center gap-1.5">
                         <Check class="w-3.5 h-3.5 text-resin-forest" />
-                        Free to start
+                        iOS App is 100% Free
                     </span>
                     <span class="flex items-center gap-1.5">
                         <Check class="w-3.5 h-3.5 text-resin-forest" />
-                        End-to-end encrypted
+                        Local On-Device AI
                     </span>
                     <span class="flex items-center gap-1.5">
                         <Check class="w-3.5 h-3.5 text-resin-forest" />
-                        No card required
+                        Pro Cloud Sync Available
                     </span>
                 </div>
             </div>
@@ -223,38 +231,38 @@
         </div>
     </section>
 
-    <!-- ─── PROBLEM STATEMENT (dark) ─── -->
+    <!-- ─── PROBLEM STATEMENT (light) ─── -->
     <section
         data-section="problem"
-        class="w-full bg-resin-charcoal py-20 px-6 mb-24 transition-all duration-700 {animatedSections['problem'] ? 'opacity-100' : 'opacity-0'}"
+        class="w-full bg-transparent py-20 px-6 mb-24 transition-all duration-700 {animatedSections['problem'] ? 'opacity-100' : 'opacity-0'}"
     >
         <div class="max-w-4xl mx-auto">
-            <p class="text-resin-amber/80 text-sm font-semibold uppercase tracking-widest mb-10">Sound familiar?</p>
+            <p class="text-resin-amber font-semibold uppercase tracking-widest mb-10">Sound familiar?</p>
             <div class="space-y-8">
                 <div class="flex gap-6 items-start">
                     <div class="text-resin-amber/30 font-serif text-5xl leading-none select-none mt-1">"</div>
-                    <p class="text-white/90 text-2xl md:text-3xl font-light leading-relaxed">
+                    <p class="text-resin-charcoal text-2xl md:text-3xl font-light leading-relaxed">
                         You know what you need to do. You've known for weeks. But you open your phone and two hours disappear.
                     </p>
                 </div>
                 <div class="flex gap-6 items-start pl-8">
                     <div class="text-resin-forest/40 font-serif text-5xl leading-none select-none mt-1">"</div>
-                    <p class="text-white/70 text-xl md:text-2xl font-light leading-relaxed">
+                    <p class="text-resin-charcoal/80 text-xl md:text-2xl font-light leading-relaxed">
                         You make a to-do list. You feel good about it. You don't do any of it.
                     </p>
                 </div>
                 <div class="flex gap-6 items-start pl-16">
-                    <div class="text-white/20 font-serif text-5xl leading-none select-none mt-1">"</div>
-                    <p class="text-white/50 text-lg md:text-xl font-light leading-relaxed">
+                    <div class="text-resin-charcoal/20 font-serif text-5xl leading-none select-none mt-1">"</div>
+                    <p class="text-resin-charcoal/60 text-lg md:text-xl font-light leading-relaxed">
                         You try Forest. You try Pomodoro. You disable them both within a day.
                     </p>
                 </div>
             </div>
-            <div class="mt-14 pt-10 border-t border-white/10">
-                <p class="text-white text-xl md:text-2xl font-semibold">
+            <div class="mt-14 pt-10 border-t border-resin-charcoal/10">
+                <p class="text-resin-charcoal text-xl md:text-2xl font-semibold">
                     The problem isn't motivation. It's that nothing actually <em class="text-resin-amber not-italic">stops you</em> from getting distracted — and nothing tells you exactly what to do next.
                 </p>
-                <p class="text-white/60 mt-4 text-base">Resin fixes both. At the same time.</p>
+                <p class="text-resin-earth/70 mt-4 text-base">Resin fixes both. At the same time.</p>
             </div>
         </div>
     </section>
@@ -509,6 +517,56 @@
         </div>
     </section>
 
+    <!-- ─── THE BUSINESS MODEL ─── -->
+    <section class="max-w-5xl mx-auto px-6 mb-24" data-section="pricing">
+        <div class="text-center mb-14">
+            <p class="text-resin-forest text-sm font-semibold uppercase tracking-widest mb-3">Transparent Pricing</p>
+            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-4">The 'Local-First' Advantage</h2>
+            <p class="text-resin-earth/70 text-lg max-w-2xl mx-auto leading-relaxed">
+                Most AI productivity apps charge high monthly fees to cover their massive compute costs. Resin runs state-of-the-art AI (Gemma/Qwen) entirely locally on your iPhone. Zero server costs for us means zero cost for you.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8 items-start">
+            <!-- Free Tier -->
+            <div class="glass-card rounded-3xl p-10 border-t-[6px] border-t-resin-charcoal relative">
+                <div class="absolute -top-4 right-8 bg-resin-charcoal text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md">Core</div>
+                <h3 class="text-3xl font-bold text-resin-charcoal mb-2">iOS App</h3>
+                <div class="flex items-baseline gap-1 mb-6">
+                    <span class="text-5xl font-bold text-resin-charcoal">$0</span>
+                    <span class="text-resin-earth/50 font-medium">/forever</span>
+                </div>
+                <p class="text-resin-earth/60 mb-8 leading-relaxed">Everything you need to turn thoughts into action, powered completely on-device.</p>
+                <div class="space-y-4 mb-10">
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-forest flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Unlimited local AI planning</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-forest flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">OS-level app blocking (Screen Time)</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-forest flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Private on-device storage</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-forest flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Calendar integrations</span></div>
+                </div>
+                <a href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer" class="block w-full py-4 rounded-xl border-2 border-resin-charcoal text-resin-charcoal font-bold text-center hover:bg-resin-charcoal hover:text-white transition-colors">Download Beta</a>
+            </div>
+
+            <!-- Pro Tier -->
+            <div class="glass-card rounded-3xl p-10 border-t-[6px] border-t-resin-amber relative shadow-2xl scale-[1.02] bg-white">
+                <div class="absolute -top-4 right-8 bg-resin-amber text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md shadow-resin-amber/30">Most Popular</div>
+                <h3 class="text-3xl font-bold text-resin-charcoal mb-2">Resin Pro</h3>
+                <div class="flex items-baseline gap-1 mb-6">
+                    <span class="text-5xl font-bold text-resin-charcoal">$8</span>
+                    <span class="text-resin-earth/50 font-medium">/month</span>
+                </div>
+                <p class="text-resin-earth/60 mb-8 leading-relaxed">The complete cross-device ecosystem. For those who do their deep work at a laptop.</p>
+                <div class="space-y-4 mb-10">
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-amber flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Everything in Free</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-amber flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Seamless cloud sync & backup</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-amber flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Web Desktop Dashboard</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-amber flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Chrome URL Blocking Extension</span></div>
+                    <div class="flex items-start gap-3"><Check class="w-5 h-5 text-resin-amber flex-shrink-0 mt-0.5" /> <span class="text-resin-charcoal font-medium">Collaborative Focus Groups & Friends</span></div>
+                </div>
+                <a href="/login?next=/" class="block w-full py-4 rounded-xl bg-resin-amber text-white font-bold text-center hover:bg-resin-charcoal transition-colors shadow-lg shadow-resin-amber/20">Start Free Trial</a>
+            </div>
+        </div>
+    </section>
+
     <!-- ─── COMPARISON TABLE ─── -->
     <section class="max-w-4xl mx-auto px-6 mb-24" data-section="compare">
         <div class="text-center mb-12">
@@ -594,29 +652,29 @@
     </section>
 
     <!-- ─── FINAL CTA ─── -->
-    <section class="w-full bg-resin-charcoal py-24 px-6" data-section="cta">
+    <section class="w-full bg-transparent py-24 px-6" data-section="cta">
         <div class="max-w-3xl mx-auto text-center">
             <div class="text-5xl mb-6">🌲</div>
-            <h2 class="text-4xl md:text-5xl font-bold text-white font-serif mb-5 leading-tight">
+            <h2 class="text-4xl md:text-5xl font-bold text-resin-charcoal font-serif mb-5 leading-tight">
                 Stop planning to do it.<br />
                 <span class="text-resin-amber">Actually do it.</span>
             </h2>
-            <p class="text-white/60 text-lg mb-10 max-w-xl mx-auto">
+            <p class="text-resin-earth/70 text-lg mb-10 max-w-xl mx-auto">
                 The thought in your head right now — the one you've been putting off — Resin can turn it into a scheduled plan with blocked distractions in under 60 seconds.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <a href="/login?next=/" class="group inline-flex items-center justify-center px-10 py-4 bg-resin-amber text-white rounded-full font-bold text-lg hover:bg-white hover:text-resin-charcoal transition-all duration-300 shadow-2xl hover:shadow-3xl hover:-translate-y-0.5 w-full sm:w-auto">
+                <a href="/login?next=/" class="group inline-flex items-center justify-center px-10 py-4 bg-resin-amber text-white rounded-full font-bold text-lg hover:bg-resin-amber/80 transition-all duration-300 shadow-2xl hover:shadow-3xl hover:-translate-y-0.5 w-full sm:w-auto">
                     Start for Free
                     <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                 </a>
-                <a href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-10 py-4 border border-white/20 text-white/70 rounded-full font-semibold text-base hover:border-white/50 hover:text-white transition-all duration-300 w-full sm:w-auto">
+                <a href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-10 py-4 border border-resin-charcoal/20 text-resin-charcoal/70 rounded-full font-semibold text-base hover:border-resin-charcoal/50 hover:text-resin-charcoal transition-all duration-300 w-full sm:w-auto">
                     <Apple class="w-5 h-5 mr-2" />
                     iOS App (Beta)
                 </a>
             </div>
-            <p class="text-white/30 text-sm">Free forever for core features. No credit card.</p>
+            <p class="text-resin-earth/40 text-sm">Download the iOS app for free. No credit card required.</p>
         </div>
     </section>
 

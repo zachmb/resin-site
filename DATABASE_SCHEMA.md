@@ -130,6 +130,21 @@ Shareable invite links for joining groups.
 
 ---
 
+### `user_custom_blocks` — Extension URL Blocks
+Stores the custom domains the user wishes to block in the Chrome extension. Real-time synced to the extension service worker.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | Foreign key to profiles(id) |
+| `domain` | text | The website to block (e.g., 'youtube.com') |
+| `created_at` | timestamp | Created time |
+
+**RLS Policies:**
+- `SELECT`, `INSERT`, `UPDATE`, `DELETE` — Restricted strictly to the user (`auth.uid() = user_id`)
+
+---
+
 ## 🔄 Data Flow by Feature
 
 ### Save/Delete Notes (`/notes`)

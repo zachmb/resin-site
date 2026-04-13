@@ -147,13 +147,6 @@
             <!-- Left copy -->
             <div class="transition-all duration-700 {visible('hero')} pb-20 lg:pb-0">
 
-                <!-- Badge -->
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-8 tracking-wide"
-                     style="background: rgba(200,136,74,0.1); border: 1px solid rgba(200,136,74,0.25); color: {C.amberDark};">
-                    <Sparkles class="w-3.5 h-3.5" />
-                    Notes · AI Planning · App Blocking
-                </div>
-
                 <!-- Headline: serif, heavy, like iOS New York -->
                 <h1 class="font-serif font-bold leading-[1.04] tracking-tight mb-7"
                     style="font-size: clamp(44px, 6vw, 72px); color: {C.charcoal};">

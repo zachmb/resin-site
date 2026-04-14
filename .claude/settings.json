@@ -53,7 +53,32 @@
       "Bash(ls -la /Users/zachbas/resinsite/*.config.*)",
       "Bash(tee test-results.log)",
       "Bash(npx vercel:*)",
-      "Bash(ls /Users/zachbas/resinsite/*.config*)"
+      "Bash(ls /Users/zachbas/resinsite/*.config*)",
+      "Bash(awk '{print $NF}')",
+      "Bash(sed -i '' 's|from '\\\\''$lib/apns'\\\\''|from '\\\\''$lib/services/apns'\\\\''|g' src/lib/services/amber.ts)",
+      "Bash(sed -i '' 's|from '\\\\''$lib/gamification_service'\\\\''|from '\\\\''$lib/services/gamification'\\\\''|g' src/lib/services/amber.ts)",
+      "Bash(sed -i '' 's|from '\\\\''$lib/achievementDefinitions'\\\\''|from '\\\\''$lib/data/achievements'\\\\''|g' src/lib/services/gamification.ts)",
+      "Bash(sed -i '' 's|from '\\\\''$lib/treeSpecies'\\\\''|from '\\\\''$lib/data/treeSpecies'\\\\''|g' src/lib/utils/forestGenerator.ts)",
+      "Bash(grep -n 'from '\\\\''$lib/' src/lib/services/amber.ts)",
+      "Bash(grep -n 'from '\\\\''$lib/' src/lib/services/gamification.ts)",
+      "Bash(grep -n 'from '\\\\''$lib/' src/lib/utils/forestGenerator.ts)",
+      "Bash(grep -r 'from '\\\\''$lib/amber_service'\\\\''' src/)",
+      "Bash(grep -r 'from '\\\\''$lib/gamification_service'\\\\''' src/)",
+      "Bash(grep -r 'from '\\\\''$lib/gamification_adapter'\\\\''' src/)",
+      "Bash(grep -r 'from '\\\\''$lib/apns'\\\\''' src/)",
+      "Bash(grep -r 'from '\\\\''$lib/cache'\\\\''' src/)",
+      "Bash(mkdir -p landing dashboard notes amber map focus gamification groups account ui)",
+      "Bash(mv LandingPage.svelte landing/)",
+      "Bash(mv Dashboard.svelte dashboard/)",
+      "Bash(mv NotesEditor.svelte notes/)",
+      "Bash(mv RichNoteEditor.svelte notes/)",
+      "Bash(grep -r 'from '\\\\''$lib/components/[A-Z]' src/lib/components/)",
+      "Bash(sed -i '' 's|from \"\\\\$lib/offline\"|from \"\\\\$lib/services/offline\"|g' /Users/zachbas/resinsite/src/routes/+layout.svelte)",
+      "Bash(grep -r 'from \"\\\\$lib/offline\"' /Users/zachbas/resinsite/src/)",
+      "Bash(grep -r 'from '\\\\''$lib/offline'\\\\''' /Users/zachbas/resinsite/src/)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -rn 'from '\\\\''$lib/supabase'\\\\''' /Users/zachbas/resinsite/src/)",
+      "Bash(grep -rn 'from \"\\\\$lib/supabase\"' /Users/zachbas/resinsite/src/)"
     ]
   }
 }

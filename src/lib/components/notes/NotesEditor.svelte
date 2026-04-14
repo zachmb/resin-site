@@ -1,11 +1,11 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import { parseCommands } from "$lib/utils/commandParser";
-    import CommandPalette from "./CommandPalette.svelte";
-    import ConfirmDeleteModal from "./ConfirmDeleteModal.svelte";
+    import CommandPalette from "$lib/components/ui/CommandPalette.svelte";
+    import ConfirmDeleteModal from "$lib/components/ui/ConfirmDeleteModal.svelte";
     import { onDestroy, untrack } from "svelte";
     import { invalidateAll, goto } from "$app/navigation";
-    import { setCache, invalidateCache, clearCache } from "$lib/cache";
+    import { setCache, invalidateCache, clearCache } from "$lib/utils/cache";
 
     import ConnectedNotesSection from "./ConnectedNotesSection.svelte";
     import RichNoteEditor from "./RichNoteEditor.svelte";

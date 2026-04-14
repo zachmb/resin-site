@@ -7,8 +7,8 @@ import {
 } from '$env/static/private';
 import { createClient } from '@supabase/supabase-js';
 import { sendPush } from './apns';
-import { syncStonesFromNotes } from './gamification_service';
-import type { Chronotype } from './types';
+import { syncStonesFromNotes } from '$lib/services/gamification';
+import type { Chronotype } from '$lib/types';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }

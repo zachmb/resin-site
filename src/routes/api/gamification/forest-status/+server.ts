@@ -18,7 +18,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { getForestHealthStatus } from '@resin/core';
-import { createSupabaseGamificationAdapter } from '$lib/gamification_adapter';
+import { createSupabaseGamificationAdapter } from '$lib/services/gamificationAdapter';
 
 export const GET = async (event: RequestEvent) => {
     const user = await event.locals.getUser();

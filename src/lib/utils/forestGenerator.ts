@@ -1,4 +1,4 @@
-import { TREE_SPECIES, type TreeSpeciesDefinition } from './treeSpecies';
+import { TREE_SPECIES, type TreeSpeciesDefinition } from '$lib/data/treeSpecies';
 
 export interface ForestTreeData {
     id: string;

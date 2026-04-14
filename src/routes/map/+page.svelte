@@ -1,5 +1,5 @@
 <script lang="ts">
-    import MindMap from "$lib/components/MindMap.svelte";
+    import MindMap from "$lib/components/map/MindMap.svelte";
     import { page } from "$app/stores";
     import { invalidateAll } from "$app/navigation";
     import { enhance } from "$app/forms";

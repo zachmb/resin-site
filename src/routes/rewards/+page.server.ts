@@ -1,6 +1,6 @@
 import { error, redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { generateForestTrees } from '$lib/forestGenerator';
+import { generateForestTrees } from '$lib/utils/forestGenerator';
 
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
     try {

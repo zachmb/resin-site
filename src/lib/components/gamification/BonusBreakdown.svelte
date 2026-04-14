@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fly } from 'svelte/transition';
-    import type { BonusLineItem } from '$lib/rewardStore';
-    import { ACHIEVEMENT_DEFINITIONS } from '$lib/achievementDefinitions';
+    import type { BonusLineItem } from '$lib/state/rewards';
+    import { ACHIEVEMENT_DEFINITIONS } from '$lib/data/achievements';
 
     let {
         baseStones = 0,

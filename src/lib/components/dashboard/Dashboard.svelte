@@ -3,8 +3,8 @@
     import { fade } from "svelte/transition";
     import { enhance } from "$app/forms";
     import { goto, invalidateAll } from "$app/navigation";
-    import { createSupabaseClient } from "$lib/supabase";
-    import ResinShieldCard from "./ResinShieldCard.svelte";
+    import { createSupabaseClient } from "$lib/db/client";
+    import ResinShieldCard from "$lib/components/focus/ResinShieldCard.svelte";
 
     let {
         session = null,

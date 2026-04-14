@@ -2,8 +2,8 @@ import { json } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { syncStonesFromNotes } from '$lib/gamification_service';
-import { recordDailyActivity } from '$lib/gamification_service';
+import { syncStonesFromNotes } from '$lib/services/gamification';
+import { recordDailyActivity } from '$lib/services/gamification';
 import type { RequestEvent } from '@sveltejs/kit';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {

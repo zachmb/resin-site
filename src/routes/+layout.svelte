@@ -4,12 +4,12 @@
 	import { page } from "$app/stores";
 	import { onMount, untrack } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
-	import { flushQueue } from "$lib/offline_queue";
-	import { rewardTriggered } from "$lib/rewardStore";
-	import { registerServiceWorker } from "$lib/offline";
+	import { flushQueue } from "$lib/services/offlineQueue";
+	import { rewardTriggered } from "$lib/state/rewards";
+	import { registerServiceWorker } from "$lib/services/offline";
 	import { createNotesDataManager, createAmberDataManager } from "$lib/services/DataManager";
-	import DailyRitualPrompt from "$lib/components/DailyRitualPrompt.svelte";
-	import OfflineIndicator from "$lib/components/OfflineIndicator.svelte";
+	import DailyRitualPrompt from "$lib/components/groups/DailyRitualPrompt.svelte";
+	import OfflineIndicator from "$lib/components/ui/OfflineIndicator.svelte";
 	import "./layout.css";
 
 	let { children, data } = $props();

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import AmberView from "$lib/components/AmberView.svelte";
+    import AmberView from "$lib/components/amber/AmberView.svelte";
     import { onMount } from "svelte";
     import { createAmberDataManager } from "$lib/services/DataManager";
     import type { DataManager } from "$lib/services/DataManager";

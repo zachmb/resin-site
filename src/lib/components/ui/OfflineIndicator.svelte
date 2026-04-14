@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { onConnectivityChange, onOfflineSyncSuccess } from '$lib/offline';
+    import { onConnectivityChange, onOfflineSyncSuccess } from '$lib/services/offline';
     import { WifiOff, Wifi, CheckCircle } from 'lucide-svelte';
 
     let isOnline = $state(typeof navigator !== 'undefined' && navigator.onLine);

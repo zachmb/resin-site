@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { runActivationPipeline } from '$lib/amber_service';
-import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service';
+import { runActivationPipeline } from '$lib/services/amber';
+import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification';
 
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return null;

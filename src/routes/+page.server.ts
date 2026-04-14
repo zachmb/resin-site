@@ -1,6 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
-import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service';
+import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification';
 
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return '';

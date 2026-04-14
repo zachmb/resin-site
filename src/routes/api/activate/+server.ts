@@ -33,10 +33,10 @@ import {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
 } from '$env/static/private'
-import { sendPush } from '$lib/apns'
+import { sendPush } from '$lib/services/apns'
 import { executeNoteCommands } from '$lib/services/commandExecutor'
-import { computeUserInsights } from '$lib/amber_service'
-import { syncStonesFromNotes, recordDailyActivity } from '$lib/gamification_service'
+import { computeUserInsights } from '$lib/services/amber'
+import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification'
 import type { RequestEvent } from '@sveltejs/kit'
 import type { ActivateRequest, ActivateResponse } from '@resin/contracts'
 

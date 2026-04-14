@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { ACHIEVEMENT_DEFINITIONS, type AchievementContext } from './achievementDefinitions';
+import { ACHIEVEMENT_DEFINITIONS, type AchievementContext } from '$lib/data/achievements';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }

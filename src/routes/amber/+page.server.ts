@@ -262,7 +262,7 @@ export const actions: Actions = {
 
         // Apply gamification rewards (variable stones, forest health, streak)
         try {
-            const { calculateSessionReward, applySessionReward } = await import('$lib/gamification_service');
+            const { calculateSessionReward, applySessionReward } = await import('$lib/services/gamification');
             const reward = await calculateSessionReward(user.id, durationMinutes);
 
             // Customize message with session title
@@ -359,7 +359,7 @@ export const actions: Actions = {
 
         // Apply forest decay for breaking focus (loss aversion mechanic)
         try {
-            const { applyForestDecay } = await import('$lib/gamification_service');
+            const { applyForestDecay } = await import('$lib/services/gamification');
             await applyForestDecay(user.id, sessionId, 0);
         } catch (decayError) {
             console.error('Error applying forest decay:', decayError);
@@ -402,7 +402,7 @@ export const actions: Actions = {
 
             if (calendarEventIds.length > 0) {
                 try {
-                    const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
+                    const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/services/amber');
                     const gToken = await getGoogleAccessToken(user.id);
                     for (const eventId of calendarEventIds) {
                         await deleteCalendarEvent(gToken, eventId);
@@ -435,7 +435,7 @@ export const actions: Actions = {
 
             // Recalculate stones
             try {
-                const { syncStonesFromNotes } = await import('$lib/gamification_service');
+                const { syncStonesFromNotes } = await import('$lib/services/gamification');
                 await syncStonesFromNotes(user.id, { force: true });
             } catch (syncError) {
                 console.error('[Delete] Stone sync error:', syncError);
@@ -989,7 +989,7 @@ export const actions: Actions = {
 
         if (calendarEventIds.length > 0) {
             try {
-                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
+                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/services/amber');
                 const gToken = await getGoogleAccessToken(user.id);
                 for (const eventId of calendarEventIds) {
                     await deleteCalendarEvent(gToken, eventId);
@@ -1055,7 +1055,7 @@ export const actions: Actions = {
 
         if (calendarEventIds.length > 0) {
             try {
-                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/amber_service');
+                const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/services/amber');
                 const gToken = await getGoogleAccessToken(user.id);
                 for (const eventId of calendarEventIds) {
                     await deleteCalendarEvent(gToken, eventId);

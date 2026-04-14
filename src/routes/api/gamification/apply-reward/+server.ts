@@ -29,7 +29,7 @@ import {
     calculateNewForestHealth,
     getForestHealthStatus
 } from '@resin/core';
-import { createSupabaseGamificationAdapter } from '$lib/gamification_adapter';
+import { createSupabaseGamificationAdapter } from '$lib/services/gamificationAdapter';
 
 export const POST = async (event: RequestEvent) => {
     const user = await event.locals.getUser();

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import AccountView from "$lib/components/AccountView.svelte";
+    import AccountView from "$lib/components/account/AccountView.svelte";
     import { page } from "$app/stores";
 
     let { data } = $props<any>();

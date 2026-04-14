@@ -1,8 +1,8 @@
 <script lang="ts">
-    import NotesEditor from "$lib/components/NotesEditor.svelte";
+    import NotesEditor from "$lib/components/notes/NotesEditor.svelte";
     import { page } from "$app/stores";
     import { fade } from "svelte/transition";
-    import { setCache, clearCache, invalidateCache } from "$lib/cache";
+    import { setCache, clearCache, invalidateCache } from "$lib/utils/cache";
     import { onMount } from "svelte";
     import { createNotesDataManager } from "$lib/services/DataManager";
     import type { DataManager } from "$lib/services/DataManager";

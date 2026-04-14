@@ -4,12 +4,12 @@
     import { invalidateAll, goto } from "$app/navigation";
     import { fly, fade } from "svelte/transition";
     import { onDestroy } from "svelte";
-    import SessionCelebration from './SessionCelebration.svelte';
+    import SessionCelebration from '$lib/components/gamification/SessionCelebration.svelte';
     import AmberIgniteRitual from './AmberIgniteRitual.svelte';
-    import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
-    import CalendarVisualizer from './CalendarVisualizer.svelte';
+    import ConfirmDeleteModal from '$lib/components/ui/ConfirmDeleteModal.svelte';
+    import CalendarVisualizer from '$lib/components/ui/CalendarVisualizer.svelte';
     import AmberCalendar from './AmberCalendar.svelte';
-    import { setCache, invalidateCache, clearCache } from '$lib/cache';
+    import { setCache, invalidateCache, clearCache } from '$lib/utils/cache';
 
     let {
         profile,

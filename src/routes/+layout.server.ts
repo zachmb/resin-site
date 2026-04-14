@@ -1,4 +1,4 @@
-import { recordDailyActivity, syncStonesFromNotes } from '$lib/gamification_service';
+import { recordDailyActivity, syncStonesFromNotes } from '$lib/services/gamification';
 
 export const load = async ({ locals: { supabase, getSession }, depends }) => {
     depends('supabase:auth');

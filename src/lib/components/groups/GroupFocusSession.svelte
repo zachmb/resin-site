@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { createSupabaseClient } from "$lib/supabase";
+    import { createSupabaseClient } from "$lib/db/client";
     import { Clock, Users, Play, Plus } from "lucide-svelte";
 
     let { groupId = "", groupName = "" } = $props<{

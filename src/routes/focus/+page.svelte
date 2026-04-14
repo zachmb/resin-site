@@ -3,7 +3,7 @@
     import { fade, slide } from 'svelte/transition';
     import { invalidateAll } from '$app/navigation';
     import { onMount } from 'svelte';
-    import FocusControl from '$lib/components/FocusControl.svelte';
+    import FocusControl from '$lib/components/focus/FocusControl.svelte';
     import { Circle, Calendar, Users, Clock, Trash2 } from 'lucide-svelte';
     import type { PageData } from './$types';
 

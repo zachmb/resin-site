@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Brain, Lock, Zap, Check, ChevronDown, Apple, TrendingUp, Calendar, Globe, Smartphone, Star, Shield, Sparkles, ArrowRight, FileText, Mic, Link } from 'lucide-svelte';
+    import { Brain, Lock, Check, ChevronDown, Apple, TrendingUp, Calendar, Globe, Star, Shield, ArrowRight, FileText, Mic, Link } from 'lucide-svelte';
     import { onMount } from 'svelte';
 
     // ── iOS-accurate color palette ──────────────────────────────────────
@@ -128,159 +128,178 @@
 </script>
 
 <!-- ─── Root: warm sand background matching iOS ─── -->
-<main style="background: {C.bg}; font-family: 'Outfit', system-ui, sans-serif;">
+<main style="background: {C.bg}; font-family: 'Nunito', system-ui, sans-serif;">
 
 <!-- ═══════════════════════════════════════════════════════════
      HERO
 ═══════════════════════════════════════════════════════════ -->
 <section class="relative pt-24 pb-0 overflow-hidden" data-section="hero">
-    <!-- Soft ambient glows -->
-    <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
-         style="background:
-            radial-gradient(ellipse 900px 600px at 85% -10%, rgba(200,136,74,0.13) 0%, transparent 65%),
-            radial-gradient(ellipse 500px 400px at 0% 75%, rgba(77,102,82,0.08) 0%, transparent 60%);">
+
+    <!-- Subtle grain texture overlay -->
+    <div class="absolute inset-0 pointer-events-none opacity-[0.025]" aria-hidden="true"
+         style="background-image: url(&quot;data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size: 180px;">
+    </div>
+    <!-- Warm amber glow, top right -->
+    <div class="absolute top-0 right-0 w-[700px] h-[700px] pointer-events-none" aria-hidden="true"
+         style="background: radial-gradient(ellipse at 80% 0%, rgba(200,136,74,0.16) 0%, transparent 60%); filter: blur(1px);">
     </div>
 
     <div class="max-w-7xl mx-auto px-6 lg:px-10">
-        <div class="grid lg:grid-cols-2 gap-16 items-center" style="min-height: 88vh;">
+        <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center" style="min-height: 90vh;">
 
-            <!-- Left copy -->
-            <div class="transition-all duration-700 {visible('hero')} pb-20 lg:pb-0">
+            <!-- ── LEFT: Copy ── -->
+            <div class="transition-all duration-700 {visible('hero')} pb-24 lg:pb-0">
 
-                <!-- Headline: serif, heavy, like iOS New York -->
-                <h1 class="font-serif font-bold leading-[1.04] tracking-tight mb-7"
-                    style="font-size: clamp(44px, 6vw, 72px); color: {C.charcoal};">
-                    The notes app<br />that turns thoughts<br />
-                    <em class="not-italic" style="background: linear-gradient(135deg, {C.amber} 0%, {C.amberDark} 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        into finished work.
-                    </em>
+                <!-- Kicker -->
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-7 uppercase tracking-wider"
+                     style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
+                    <FileText class="w-3 h-3" /> Notes · AI Planning · Focus
+                </div>
+
+                <h1 class="font-serif font-bold tracking-tight mb-6" style="font-size: clamp(42px, 5.8vw, 70px); line-height: 1.05; color: {C.charcoal};">
+                    Write it down.<br />
+                    <span class="relative inline-block">
+                        <span style="background: linear-gradient(135deg, {C.amber} 0%, {C.amberDark} 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Actually get it done.</span>
+                        <!-- hand-drawn underline accent -->
+                        <svg aria-hidden="true" class="absolute w-full overflow-visible" style="bottom:-6px; left:0;" height="8" preserveAspectRatio="none" viewBox="0 0 420 8">
+                            <path d="M3,6 C70,1 140,7.5 210,4.5 C280,1.5 350,7 417,3.5" stroke="{C.amber}" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.55"/>
+                        </svg>
+                    </span>
                 </h1>
 
-                <p class="text-xl leading-relaxed mb-10 max-w-[480px]" style="color: {C.earth};">
-                    Capture everything. AI structures your notes into concrete plans. Real app blocking keeps you on task until it's done — on iPhone, iPad, and in Chrome.
+                <p class="mb-5 leading-relaxed max-w-[480px]" style="font-size:18px; color:{C.earth}; line-height:1.75; font-family:'Nunito', sans-serif;">
+                    Resin is a <strong style="color:{C.charcoal}; font-weight:700;">notes app first</strong> — the kind where you can just dump whatever's in your head, no structure required. Then, one tap activates AI that turns any note into a concrete action plan. Your phone blocks distractions until it's done.
                 </p>
 
+                <!-- Notes callout -->
+                <div class="flex items-start gap-3 mb-8 px-4 py-3.5 rounded-2xl" style="background:rgba(200,136,74,0.07); border:1px solid rgba(200,136,74,0.15); max-width:460px;">
+                    <FileText class="w-4 h-4 flex-shrink-0 mt-0.5" style="color:{C.amber};" />
+                    <p style="font-size:13.5px; color:{C.earth}; line-height:1.6; font-family:'Lora', serif; font-style:italic;">
+                        Stream-of-consciousness. Half-formed thoughts. Goals you haven't started. It all starts as a note.
+                    </p>
+                </div>
+
                 <!-- CTAs -->
-                <div class="flex flex-col sm:flex-row gap-4 mb-10">
+                <div class="flex flex-col sm:flex-row items-start gap-4 mb-11">
+                    <!-- App Store badge style -->
                     <a href="https://testflight.apple.com/join/yV53qa1z"
                        target="_blank" rel="noopener noreferrer"
-                       class="group inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-full font-bold text-base text-white transition-all duration-300 hover:-translate-y-0.5"
-                       style="background: {C.charcoal}; box-shadow: 0 8px 24px -4px rgba(46,42,38,0.35);">
-                        <Apple class="w-4 h-4" />
-                        Download for iOS
-                        <ArrowRight class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                       class="group inline-flex items-center gap-3 transition-all duration-200 hover:-translate-y-0.5"
+                       style="background:{C.charcoal}; color:white; padding:14px 26px; border-radius:14px; box-shadow: 0 6px 20px -4px rgba(46,42,38,0.4), 0 1px 3px rgba(46,42,38,0.3);">
+                        <Apple class="w-5 h-5 flex-shrink-0" />
+                        <div>
+                            <div style="font-size:10px; opacity:0.55; line-height:1; margin-bottom:3px; letter-spacing:0.03em; text-transform:uppercase;">iOS · Free forever</div>
+                            <div style="font-size:16px; font-weight:700; line-height:1; letter-spacing:-0.01em;">Download for free</div>
+                        </div>
                     </a>
+
                     <a href="/login?next=/"
-                       class="group inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full font-semibold text-base transition-all duration-300"
-                       style="border: 2px solid rgba(46,42,38,0.18); color: {C.charcoal};">
-                        Try Web App
-                        <ArrowRight class="w-4 h-4 opacity-40 group-hover:opacity-80 group-hover:translate-x-0.5 transition-all" />
+                       class="group inline-flex items-center gap-2 transition-colors"
+                       style="padding:16px 24px; font-size:15px; font-weight:600; color:{C.earth}; border-bottom: 1.5px solid rgba(92,75,60,0.25);">
+                        Try the web app
+                        <ArrowRight class="w-4 h-4 opacity-50 group-hover:opacity-80 group-hover:translate-x-0.5 transition-all" />
                     </a>
                 </div>
 
-                <!-- Trust -->
-                <div class="flex flex-wrap items-center gap-5 text-sm" style="color: {C.earthLight};">
-                    <span class="flex items-center gap-1.5"><Check class="w-3.5 h-3.5" style="color: {C.forest};" />iOS app free forever</span>
-                    <span class="flex items-center gap-1.5"><Check class="w-3.5 h-3.5" style="color: {C.forest};" />AI runs on-device</span>
-                    <span class="flex items-center gap-1.5"><Check class="w-3.5 h-3.5" style="color: {C.forest};" />No credit card</span>
+                <!-- Trust row -->
+                <div class="flex flex-wrap gap-x-6 gap-y-2" style="font-size:13px; color:{C.earthLight};">
+                    <span>✦ iOS app is free</span>
+                    <span>✦ AI runs on-device</span>
+                    <span>✦ No credit card</span>
                 </div>
             </div>
 
-            <!-- Right: stacked phones -->
-            <div class="hidden lg:flex justify-center items-end relative h-[620px]" data-section="hero-phones">
+            <!-- ── RIGHT: Single phone mockup + annotations ── -->
+            <div class="hidden lg:flex justify-center items-center relative" style="height:640px;">
 
-                <!-- Phone 1: Note editor (left, behind) -->
-                <div class="absolute left-2 bottom-0 overflow-hidden shadow-[0_32px_72px_-16px_rgba(46,42,38,0.32)] transform -rotate-3 z-10"
-                     style="width:248px; height:516px; border-radius:42px; border: 9px solid {C.charcoal}; background: white;">
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 z-20 rounded-b-2xl" style="width:96px; height:24px; background: {C.charcoal};"></div>
-                    <div class="h-full flex flex-col" style="background: {C.bg};">
-                        <div class="h-7"></div>
-                        <!-- App header -->
-                        <div class="px-5 pt-4 pb-3 flex items-center justify-between" style="border-bottom: 1px solid rgba(46,42,38,0.06);">
-                            <div>
-                                <div class="font-serif font-semibold" style="font-size:14px; color:{C.charcoal};">Notes</div>
-                                <div style="font-size:9px; color:{C.earthLight}; margin-top:1px;">5 notes · 2 active</div>
-                            </div>
-                            <div class="rounded-full flex items-center justify-center" style="width:26px; height:26px; background:{C.amber};">
-                                <span style="color:white; font-size:12px; font-weight:700;">+</span>
-                            </div>
-                        </div>
-                        <!-- Note list -->
-                        <div class="px-3 py-3 space-y-2.5 flex-1">
-                            <!-- Active note card -->
-                            <div class="rounded-2xl p-3.5" style="background:white; border-left: 3px solid {C.amber}; box-shadow: 0 2px 10px -2px rgba(46,42,38,0.08);">
-                                <div class="flex items-center justify-between mb-1">
-                                    <div class="font-serif font-semibold truncate" style="font-size:11px; color:{C.charcoal};">Redesign onboarding flow</div>
-                                    <span class="rounded-md font-bold" style="font-size:8px; color:white; background:{C.amber}; padding:1px 5px;">Active</span>
-                                </div>
-                                <div style="font-size:9px; color:{C.earthLight};">5 tasks · Fri 2pm · Apps blocked</div>
-                            </div>
-                            <!-- Draft notes -->
-                            {#each [
-                                ['Learn Spanish this month', 'Need structure. Been saying this for a year...'],
-                                ['Talk to Mum about Christmas', 'Book flights before they sell out. Also check...'],
-                                ['Finish portfolio case study', 'The Instagram Redesign one — almost done'],
-                            ] as [title, body]}
-                                <div class="rounded-xl p-3" style="background:white; border: 1px solid rgba(46,42,38,0.06);">
-                                    <div class="font-serif font-medium mb-1 truncate" style="font-size:10px; color:{C.charcoal};">{title}</div>
-                                    <div class="leading-relaxed line-clamp-1" style="font-size:8.5px; color:{C.earth}; opacity:0.65;">{body}</div>
-                                </div>
-                            {/each}
-                        </div>
-                    </div>
-                </div>
+                <!-- The phone -->
+                <div class="relative z-20" style="transform: rotate(1.5deg);">
+                    <div class="overflow-hidden relative"
+                         style="width:290px; height:600px; border-radius:50px; border:10px solid {C.charcoal}; background:white; box-shadow: 0 40px 80px -20px rgba(46,42,38,0.38), 0 0 0 1px rgba(46,42,38,0.08);">
 
-                <!-- Phone 2: AI plan (right, front) -->
-                <div class="absolute right-0 top-0 overflow-hidden shadow-[0_40px_80px_-20px_rgba(46,42,38,0.38)] transform rotate-3 z-20"
-                     style="width:252px; height:526px; border-radius:44px; border: 9px solid {C.charcoal}; background:white;">
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 z-20 rounded-b-2xl" style="width:96px; height:24px; background: {C.charcoal};"></div>
-                    <div class="h-full flex flex-col" style="background:white;">
-                        <div class="h-7"></div>
-                        <!-- Plan header -->
-                        <div class="px-4 pt-4 pb-3" style="background: linear-gradient(135deg, rgba(200,136,74,0.12) 0%, rgba(200,136,74,0.03) 100%);">
-                            <div class="flex items-start justify-between mb-2">
-                                <div>
-                                    <div class="font-serif font-semibold leading-tight" style="font-size:12px; color:{C.charcoal};">Redesign onboarding flow</div>
-                                    <div style="font-size:9px; color:{C.earthLight}; margin-top:2px;">4 tasks · 2h 15min</div>
-                                </div>
-                                <span class="font-bold rounded-full" style="font-size:8px; color:white; background:{C.amber}; padding:2px 7px;">AI Plan</span>
-                            </div>
-                            <div class="flex gap-1.5">
-                                <span class="rounded-full" style="font-size:8.5px; color:{C.forestDark}; background:rgba(77,102,82,0.1); padding:2px 7px;">Thu 3pm</span>
-                                <span class="rounded-full" style="font-size:8.5px; color:{C.amberDark}; background:rgba(200,136,74,0.1); padding:2px 7px;">Apps blocked</span>
-                            </div>
+                        <!-- Dynamic island -->
+                        <div class="absolute z-10 flex items-center justify-center" style="top:12px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:{C.charcoal}; border-radius:20px;">
+                            <div class="rounded-full" style="width:10px; height:10px; background:#111;"></div>
                         </div>
-                        <!-- Tasks -->
-                        <div class="px-4 py-3 space-y-2.5 flex-1">
-                            {#each [
-                                ['Audit current onboarding', '20m'],
-                                ['Sketch 3 alternative flows', '45m'],
-                                ['Build hi-fi in Figma', '50m'],
-                                ['Write copy & micro-text', '20m'],
-                            ] as [task, time], i}
-                                <div class="flex items-center gap-2.5">
-                                    <div class="rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white" style="width:18px; height:18px; background:{C.amber}; font-size:8px;">{i+1}</div>
-                                    <span class="flex-1 font-medium" style="font-size:10px; color:{C.charcoal}; line-height:1.3;">{task}</span>
-                                    <span class="font-mono" style="font-size:9px; color:{C.earthLight};">{time}</span>
+
+                        <!-- Screen content: note editor -->
+                        <div class="flex flex-col h-full" style="background:{C.bg};">
+
+                            <!-- Status bar -->
+                            <div class="flex items-center justify-between px-6 pt-5 pb-1" style="font-size:11px; font-weight:600; color:{C.charcoal};">
+                                <span>9:41</span>
+                                <div class="flex items-center gap-1">
+                                    <span style="font-size:10px;">●●●</span>
+                                    <span style="font-size:10px;">WiFi</span>
+                                    <span style="font-size:10px;">🔋</span>
                                 </div>
-                            {/each}
-                        </div>
-                        <!-- CTA -->
-                        <div class="px-4 pb-4 pt-2" style="border-top: 1px solid rgba(200,136,74,0.15);">
-                            <div class="w-full text-center rounded-xl font-bold text-white" style="background:{C.forestDark}; font-size:10px; padding:10px;">
-                                Schedule &amp; Block Apps ✓
+                            </div>
+
+                            <!-- Nav bar -->
+                            <div class="flex items-center justify-between px-5 py-3">
+                                <span style="font-size:11px; color:{C.earthLight};">← Notes</span>
+                                <span style="font-size:11px; color:{C.amber}; font-weight:600;">Done</span>
+                            </div>
+
+                            <!-- Note title -->
+                            <div class="px-5 pb-3">
+                                <div class="font-serif font-semibold" style="font-size:17px; color:{C.charcoal}; line-height:1.3;">Q2 report — due Friday</div>
+                                <div style="font-size:10px; color:{C.earthLight}; margin-top:3px;">Today · 4 min ago</div>
+                            </div>
+
+                            <!-- Divider -->
+                            <div style="height:1px; background:rgba(46,42,38,0.07); margin:0 20px;"></div>
+
+                            <!-- Note body — genuine, human writing -->
+                            <div class="px-5 py-4 flex-1" style="font-size:13.5px; color:{C.earth}; line-height:1.8; font-family:'Lora', serif;">
+                                <p style="margin-bottom:10px;">Still haven't started this. Sarah's already asked twice and I keep saying "almost." Deadline is Friday morning.</p>
+                                <p style="margin-bottom:10px;">The block is I don't know where to even begin. There's too much data, no clear story yet.</p>
+                                <p style="margin-bottom:6px; color:{C.charcoal}; font-weight:500;">I think I need to:</p>
+                                <p style="padding-left:12px; color:{C.charcoal};">— Pull last quarter numbers<br/>— Find the 3 things that matter<br/>— Write exec summary first<br/>— 6 slides max, not 20</p>
+                                <p style="margin-top:10px; color:{C.earthLight};">Just start with the data pull. That's the actual block.<span style="display:inline-block; width:2px; height:14px; background:{C.amber}; margin-left:2px; vertical-align:-2px; border-radius:1px;" class="animate-pulse"></span></p>
+                            </div>
+
+                            <!-- Activate button -->
+                            <div class="px-4 pb-5 pt-2">
+                                <div class="rounded-2xl flex items-center justify-between px-4 py-3.5" style="background:white; border:1px solid rgba(200,136,74,0.22); box-shadow:0 2px 12px -2px rgba(200,136,74,0.15);">
+                                    <div>
+                                        <div style="font-size:11px; font-weight:600; color:{C.charcoal};">Turn this into a plan</div>
+                                        <div style="font-size:9.5px; color:{C.earthLight}; margin-top:1px;">AI reads the whole note</div>
+                                    </div>
+                                    <div class="rounded-xl font-bold text-white flex items-center gap-1.5" style="background:{C.amber}; font-size:11px; padding:8px 14px;">
+                                        ✨ Activate
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Floating chip -->
-                <div class="absolute z-30 rotate-6" style="left:50%; top:48%; transform:translateX(-50%) translateY(-50%) rotate(6deg);">
-                    <div class="rounded-2xl px-4 py-2.5 whitespace-nowrap" style="background:white; border:1px solid rgba(200,136,74,0.2); box-shadow:0 8px 24px -4px rgba(46,42,38,0.18);">
-                        <div style="font-size:9.5px; font-weight:700; color:{C.amber};">⚡ Note → Plan in 8 seconds</div>
+                <!-- Annotation 1: top-right sticky note -->
+                <div class="absolute z-30" style="top:40px; right:-10px; transform:rotate(4deg);">
+                    <div style="background:#FFFBF0; padding:10px 14px; border-radius:3px; box-shadow:2px 4px 12px rgba(46,42,38,0.14), 0 1px 2px rgba(46,42,38,0.08); min-width:130px; border-top:3px solid {C.amberLight};">
+                        <div style="font-size:16px; margin-bottom:4px;">⚡</div>
+                        <div style="font-size:11px; font-weight:700; color:{C.charcoal}; line-height:1.3;">Plan generated<br/>in 8 seconds</div>
+                    </div>
+                </div>
+
+                <!-- Annotation 2: bottom-left -->
+                <div class="absolute z-30" style="bottom:80px; left:-30px; transform:rotate(-3deg);">
+                    <div style="background:#F0F5F1; padding:10px 14px; border-radius:3px; box-shadow:2px 4px 12px rgba(46,42,38,0.12); min-width:140px; border-top:3px solid {C.forest};">
+                        <div style="font-size:16px; margin-bottom:4px;">🔒</div>
+                        <div style="font-size:11px; font-weight:700; color:{C.charcoal}; line-height:1.3;">Apps blocked<br/>automatically</div>
+                        <div style="font-size:9px; color:{C.earthLight}; margin-top:3px;">iOS · iPad · Chrome</div>
+                    </div>
+                </div>
+
+                <!-- Annotation 3: mid-left small chip -->
+                <div class="absolute z-30" style="top:42%; left:-40px; transform:rotate(-6deg);">
+                    <div style="background:white; padding:8px 12px; border-radius:20px; box-shadow:0 4px 14px rgba(46,42,38,0.12); border:1px solid rgba(46,42,38,0.08); white-space:nowrap;">
+                        <span style="font-size:11px; font-weight:600; color:{C.charcoal};">🌲 On-device AI</span>
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </section>
@@ -332,18 +351,22 @@
                      style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
                     <FileText class="w-3 h-3" /> Note-taking
                 </div>
-                <h2 class="font-serif font-bold leading-tight mb-6" style="font-size:clamp(34px,4.2vw,50px); color:{C.charcoal};">
-                    Your thoughts deserve<br />a better home.
+                <h2 class="font-serif font-bold leading-tight mb-5" style="font-size:clamp(34px,4.2vw,50px); color:{C.charcoal};">
+                    Notes are the<br />foundation of everything.
                 </h2>
-                <p class="text-lg leading-relaxed mb-8" style="color:{C.earth};">
-                    Resin is where you write before you know what you're writing. Stream-of-consciousness brain dumps, quick voice memos, half-formed ideas — it all lands here. Then, when you're ready to act, one tap turns any note into an executable plan.
+                <p class="text-lg leading-relaxed mb-4" style="color:{C.earth}; font-family:'Nunito', sans-serif;">
+                    Every plan, every blocked focus session, every scheduled task — it all starts as a note. Resin treats notes as the raw material for action, not just a filing cabinet.
+                </p>
+                <p class="leading-relaxed mb-8" style="font-size:15px; color:{C.earth}; font-family:'Lora', serif; font-style:italic; border-left:3px solid rgba(200,136,74,0.4); padding-left:16px; line-height:1.7;">
+                    Write the messy version — the one with the excuses and the "I don't know where to start." That's exactly what the AI needs to build a plan that actually fits you.
                 </p>
                 <ul class="space-y-4 mb-10">
                     {#each [
-                        ['Write anything, any way', 'Text, voice, rich formatting — or just raw stream of consciousness'],
+                        ['Freeform writing, no structure required', 'Dump everything: brain dumps, voice memos, rough ideas, half-thoughts'],
+                        ['Rich text + markdown + inline formatting', 'Bold, headers, lists — or just plain prose, whatever flows'],
                         ['Notes connect in a mind map', 'See how your ideas relate in an interactive 2D canvas'],
-                        ['Every note is actionable', 'One tap to activate AI planning from any note'],
-                        ['Synced to every device', 'Write on phone, plan on web — always in sync'],
+                        ['Every note is one tap from a plan', 'Activate any note → AI generates concrete tasks and schedules them'],
+                        ['Write on any device, see it everywhere', 'iPhone, iPad, web — always in sync, always there'],
                     ] as [title, sub]}
                         <li class="flex gap-3.5 items-start">
                             <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style="background:rgba(200,136,74,0.12);">
@@ -369,22 +392,30 @@
                     <!-- Main note editor card -->
                     <div class="rounded-3xl overflow-hidden" style="background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 24px 60px -12px rgba(46,42,38,0.14);">
                         <!-- Editor toolbar -->
-                        <div class="px-5 py-3.5 flex items-center justify-between" style="border-bottom:1px solid rgba(46,42,38,0.06); background:{C.bg};">
+                        <div class="px-5 py-3 flex items-center justify-between" style="border-bottom:1px solid rgba(46,42,38,0.06); background:{C.bg};">
                             <div class="flex items-center gap-3">
-                                <div class="font-serif font-semibold" style="font-size:13px; color:{C.charcoal};">Learn Spanish this month</div>
+                                <span class="font-semibold" style="font-size:11px; color:{C.earthLight};">All Notes</span>
+                                <span style="color:{C.grayLight};">›</span>
+                                <span class="font-serif font-semibold" style="font-size:12px; color:{C.charcoal};">Learn Spanish this month</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <Mic class="w-3.5 h-3.5" style="color:{C.earthLight};" />
                                 <Link class="w-3.5 h-3.5" style="color:{C.earthLight};" />
                             </div>
                         </div>
+                        <!-- Formatting bar -->
+                        <div class="px-5 py-2 flex items-center gap-3" style="border-bottom:1px solid rgba(46,42,38,0.04); background:rgba(46,42,38,0.015);">
+                            {#each ['B', 'I', 'H1', '—', '☑'] as fmt}
+                                <span class="font-semibold cursor-pointer" style="font-size:10px; color:{C.earthLight}; padding:1px 4px; border-radius:3px;">{fmt}</span>
+                            {/each}
+                        </div>
                         <!-- Note body -->
-                        <div class="px-5 py-5">
-                            <div class="font-serif leading-relaxed mb-6 whitespace-pre-wrap" style="font-size:14px; color:{C.earth}; line-height:1.75;">I've been saying I'll learn Spanish for literally 3 years. I have Duolingo on my phone (haven't opened in 9 months). My girlfriend speaks it and I feel left out at family dinners.
+                        <div class="px-5 py-4">
+                            <div class="font-serif leading-relaxed mb-5 whitespace-pre-wrap" style="font-size:13.5px; color:{C.earth}; line-height:1.8;">I've been saying I'll learn Spanish for <span style="font-weight:700; color:{C.charcoal};">3 years</span>. Duolingo is on my phone — haven't opened in 9 months. My girlfriend speaks it and I feel left out at family dinners.
 
-I think the real problem is I don't have a system. Maybe I need:
+The real problem is I don't have a system. Maybe:
 — 30 min every morning before coffee
-— watch one Spanish show per week (La Casa de Papel?)
+— watch one Spanish show / week
 — find a language exchange partner
 — commit to a trip to Mexico City as the goal
 </div>

@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { sendPush } from '$lib/apns';
+import { sendPush } from '$lib/services/apns';
 
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser, session }, setHeaders }) => {
     // Disable server caching for fresh data

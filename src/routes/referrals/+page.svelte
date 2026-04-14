@@ -54,7 +54,7 @@
 
         <!-- Free Tier Status -->
         {#if data.isFree}
-            <div class="glass-card rounded-2xl p-8 mb-8 border-2 border-resin-forest/30 bg-gradient-to-br from-resin-forest/5 to-transparent shadow-premium">
+            <div class="glass-card rounded-lg p-8 mb-8 border-2 border-resin-forest/30 bg-gradient-to-br from-resin-forest/5 to-transparent shadow-premium">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold text-resin-charcoal">Your Free Tier Progress</h2>
                     <span class="text-3xl font-bold text-resin-forest">{data.referralCount}/3</span>
@@ -93,7 +93,7 @@
         {/if}
 
         <!-- Referral Code -->
-        <div class="glass-card rounded-2xl p-8 mb-8 border border-white/20 shadow-premium">
+        <div class="glass-card rounded-lg p-8 mb-8 border border-white/20 shadow-premium">
             <h2 class="text-xl font-bold text-resin-charcoal mb-4 flex items-center gap-2">
                 <Share2 size={20} class="text-resin-amber" />
                 Your Referral Code
@@ -118,7 +118,7 @@
         </div>
 
         <!-- Share Options -->
-        <div class="glass-card rounded-2xl p-8 mb-8 border border-white/20 shadow-premium">
+        <div class="glass-card rounded-lg p-8 mb-8 border border-white/20 shadow-premium">
             <h2 class="text-xl font-bold text-resin-charcoal mb-4">Share Your Referral Code</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -148,7 +148,7 @@
 
         <!-- Referral History -->
         {#if data.referrals.length > 0}
-            <div class="glass-card rounded-2xl p-8 border border-white/20 shadow-premium">
+            <div class="glass-card rounded-lg p-8 border border-white/20 shadow-premium">
                 <h2 class="text-xl font-bold text-resin-charcoal mb-4 flex items-center gap-2">
                     <Users size={20} class="text-resin-forest" />
                     Your Referrals
@@ -179,21 +179,21 @@
         <!-- How It Works -->
         <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="text-center">
-                <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center mx-auto mb-3">
+                <div class="w-12 h-12 rounded-md bg-resin-forest/10 flex items-center justify-center mx-auto mb-3">
                     <span class="text-xl font-bold text-resin-forest">1</span>
                 </div>
                 <h3 class="font-bold text-resin-charcoal mb-1">Share Your Code</h3>
                 <p class="text-sm text-resin-earth/70">Give friends your unique referral code</p>
             </div>
             <div class="text-center">
-                <div class="w-12 h-12 rounded-full bg-resin-amber/10 flex items-center justify-center mx-auto mb-3">
+                <div class="w-12 h-12 rounded-md bg-resin-amber/10 flex items-center justify-center mx-auto mb-3">
                     <span class="text-xl font-bold text-resin-amber">2</span>
                 </div>
                 <h3 class="font-bold text-resin-charcoal mb-1">They Sign Up</h3>
                 <p class="text-sm text-resin-earth/70">They use your code when creating their account</p>
             </div>
             <div class="text-center">
-                <div class="w-12 h-12 rounded-full bg-resin-forest/10 flex items-center justify-center mx-auto mb-3">
+                <div class="w-12 h-12 rounded-md bg-resin-forest/10 flex items-center justify-center mx-auto mb-3">
                     <span class="text-xl font-bold text-resin-forest">3</span>
                 </div>
                 <h3 class="font-bold text-resin-charcoal mb-1">Both Get Premium</h3>

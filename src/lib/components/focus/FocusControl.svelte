@@ -62,7 +62,7 @@
 </script>
 
 <div
-    class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium relative overflow-hidden group"
+    class="glass-card rounded-xl p-8 border border-white/20 shadow-premium relative overflow-hidden group"
 >
     <!-- Animated background element -->
     <div
@@ -72,7 +72,7 @@
     <div class="relative z-10">
         <div class="flex items-center gap-4 mb-6">
             <div
-                class="w-12 h-12 rounded-2xl bg-resin-charcoal text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"
+                class="w-12 h-12 rounded-lg bg-resin-charcoal text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform"
             >
                 <svg
                     class="w-6 h-6"
@@ -106,7 +106,7 @@
                     type="text"
                     bind:value={title}
                     placeholder="What are we focusing on?"
-                    class="w-full bg-white/50 border border-resin-forest/10 rounded-2xl px-5 py-4 text-resin-charcoal placeholder:text-resin-earth/40 focus:outline-none focus:ring-2 focus:ring-resin-amber/30 focus:border-resin-amber/30 transition-all"
+                    class="w-full bg-white/50 border border-resin-forest/20 rounded-lg px-5 py-4 text-resin-charcoal placeholder:text-resin-earth/40 focus:outline-none focus:ring-2 focus:ring-resin-amber/30 focus:border-resin-amber/30 transition-all"
                 />
                 {#if title.length > 0}
                     <button
@@ -138,7 +138,7 @@
                     {#each durations as d}
                         <button
                             onclick={() => (duration = d)}
-                            class="px-4 py-2 rounded-xl text-xs font-bold transition-all {duration ===
+                            class="px-4 py-2 rounded-md text-xs font-bold transition-all {duration ===
                             d
                                 ? 'bg-resin-amber text-white shadow-md'
                                 : 'bg-white/40 text-resin-earth hover:bg-white/60'}"

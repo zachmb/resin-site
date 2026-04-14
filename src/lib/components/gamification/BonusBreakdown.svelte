@@ -31,7 +31,7 @@
         out:fly={{ y: 20, duration: 300 }}
     >
         <div
-            class="glass-card rounded-2xl p-6 bg-gradient-to-r from-resin-amber/15 via-white/40 to-resin-amber/10 border border-resin-amber/40 shadow-lg shadow-resin-amber/20"
+            class="glass-card rounded-lg p-6 bg-gradient-to-r from-resin-amber/15 via-white/40 to-resin-amber/10 border border-resin-amber/40 shadow-lg shadow-resin-amber/20"
         >
             <!-- Header -->
             <div class="mb-4 pb-4 border-b border-resin-amber/20">

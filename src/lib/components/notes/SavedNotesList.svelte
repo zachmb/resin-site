@@ -111,7 +111,7 @@
                     <div class="group relative">
                         <button
                             onclick={() => setActiveNote(note)}
-                            class="w-full text-left glass-card rounded-2xl p-6 border border-resin-amber/20 hover:border-resin-amber/40 shadow-sm hover:shadow-md transition-all h-full flex flex-col group relative bg-resin-amber/5"
+                            class="w-full text-left glass-card rounded-lg p-6 border border-resin-amber/20 hover:border-resin-amber/40 shadow-sm hover:shadow-md transition-all h-full flex flex-col group relative bg-resin-amber/5"
                         >
                             <div class="flex items-start gap-3 mb-3">
                                 <div
@@ -173,7 +173,7 @@
             class="glass-card rounded-[2rem] p-12 text-center border border-resin-forest/5 flex flex-col items-center justify-center"
         >
             <div
-                class="w-16 h-16 rounded-full bg-resin-amber/10 flex items-center justify-center mb-4 text-resin-amber"
+                class="w-16 h-16 rounded-md bg-resin-amber/10 flex items-center justify-center mb-4 text-resin-amber"
             >
                 <svg
                     class="w-8 h-8"
@@ -223,7 +223,7 @@
                 <div class="group relative">
                     <button
                         onclick={() => setActiveNote(note)}
-                        class="w-full text-left glass-card rounded-2xl p-6 border border-resin-forest/5 hover:border-resin-forest/20 shadow-sm hover:shadow-md transition-all h-full flex flex-col group relative"
+                        class="w-full text-left glass-card rounded-lg p-6 border border-resin-forest/5 hover:border-resin-forest/20 shadow-sm hover:shadow-md transition-all h-full flex flex-col group relative"
                     >
                         <h3
                             class="text-lg font-bold text-resin-charcoal mb-2 line-clamp-1"

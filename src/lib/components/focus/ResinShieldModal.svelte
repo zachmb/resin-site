@@ -23,7 +23,7 @@
         onclick={close}
     >
         <div
-            class="glass-card w-full max-w-2xl rounded-[2.5rem] border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
+            class="glass-card w-full max-w-2xl rounded-xl border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
             onclick={(e) => e.stopPropagation()}
             transition:slide={{ duration: 300 }}
         >
@@ -224,7 +224,7 @@
 
                 <!-- Identity Setup -->
                 <div
-                    class="bg-resin-amber/5 border border-resin-amber/20 rounded-2xl p-6 mt-4"
+                    class="bg-resin-amber/5 border border-resin-amber/20 rounded-lg p-6 mt-4"
                 >
                     <h4
                         class="text-sm font-bold text-resin-charcoal mb-2 flex items-center gap-2"
@@ -270,7 +270,7 @@
             >
                 <button
                     onclick={close}
-                    class="px-8 py-3 bg-resin-charcoal text-white rounded-2xl font-bold text-sm hover:bg-resin-forest transition-all shadow-lg active:scale-95"
+                    class="px-8 py-3 bg-resin-charcoal text-white rounded-lg font-bold text-sm hover:bg-resin-forest transition-all shadow-lg active:scale-95"
                 >
                     Got it, I'm ready
                 </button>

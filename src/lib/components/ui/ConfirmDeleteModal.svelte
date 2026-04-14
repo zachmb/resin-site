@@ -24,7 +24,7 @@
 		aria-modal="true"
 	>
 		<div
-			class="bg-resin-bg rounded-2xl shadow-xl max-w-sm w-full border border-resin-forest/10 overflow-hidden"
+			class="bg-resin-bg rounded-lg shadow-xl max-w-sm w-full border border-resin-forest/10 overflow-hidden"
 			transition:fade={{ duration: 200 }}
 		>
 			<!-- Header -->

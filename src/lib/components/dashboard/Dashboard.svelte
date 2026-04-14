@@ -323,13 +323,13 @@
             transition:fade 
             class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 pointer-events-none"
         >
-            <div class="pointer-events-auto glass-card rounded-2xl p-4 border shadow-premium-lg flex items-center gap-4 
+            <div class="pointer-events-auto glass-card rounded-lg p-4 border shadow-premium-lg flex items-center gap-4 
                 {aiStatus === 'scheduling' ? 'border-resin-amber/30 bg-white/90' : ''}
                 {aiStatus === 'success' ? 'border-resin-forest/30 bg-white/90' : ''}
                 {aiStatus === 'error' ? 'border-red-200 bg-red-50/90' : ''}"
             >
                 {#if aiStatus === 'scheduling'}
-                    <div class="w-10 h-10 rounded-full bg-resin-amber/10 flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-md bg-resin-amber/10 flex items-center justify-center">
                         <span class="w-5 h-5 border-2 border-resin-amber/30 border-t-resin-amber rounded-full animate-spin"></span>
                     </div>
                 {:else}
@@ -469,12 +469,12 @@
     <!-- Quick Compose Card -->
     <section class="mb-8">
         <div
-            class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
+            class="glass-card rounded-xl p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
         >
             <textarea
                 bind:value={composeText}
                 placeholder="What's on your mind? Start a note, a plan, anything..."
-                class="w-full bg-white/50 border border-white/30 rounded-2xl p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
+                class="w-full bg-white/50 border border-white/30 rounded-lg p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
                 rows="3"
             ></textarea>
             <div class="flex items-center justify-end gap-3 mt-6">
@@ -524,7 +524,7 @@
                                 console.error('Background save failed:', err);
                             }
                         }}
-                        class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
+                        class="px-6 py-2 rounded-md text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"
                     >
                         {#if savingNote}
                             <svg
@@ -599,7 +599,7 @@
                         <button
                             type="submit"
                             disabled={savingAmber}
-                            class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[160px] justify-center"
+                            class="px-6 py-2 rounded-md text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[160px] justify-center"
                         >
                             {#if savingAmber}
                                 <svg
@@ -645,7 +645,7 @@
                 {:else}
                     <a
                         href="/notes"
-                        class="px-6 py-2 rounded-full text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all inline-block active:scale-95"
+                        class="px-6 py-2 rounded-md text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all inline-block active:scale-95"
                     >
                         Save Note
                     </a>
@@ -657,7 +657,7 @@
                             goto('/amber');
                         }}
                         disabled={navigatingToAmber}
-                        class="px-6 py-2 rounded-full text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 inline-flex items-center gap-2"
+                        class="px-6 py-2 rounded-md text-sm font-bold text-white bg-resin-amber hover:bg-resin-amber/90 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 inline-flex items-center gap-2"
                     >
                         {#if navigatingToAmber}
                             <svg
@@ -694,7 +694,7 @@
     {#if weeklyStats}
         <section class="mb-8">
             <div
-                class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-white/20 shadow-premium relative bg-gradient-to-br from-white/40 to-transparent"
+                class="glass-card rounded-xl p-8 md:p-10 border border-white/20 shadow-premium relative bg-gradient-to-br from-white/40 to-transparent"
             >
                 <div class="flex items-center justify-between mb-6">
                     <h3
@@ -789,7 +789,7 @@
                                 >{day.day}</span
                             >
                             <div
-                                class="w-full aspect-square rounded-2xl {heatColors[
+                                class="w-full aspect-square rounded-lg {heatColors[
                                     heatLevel(day.focusMinutes)
                                 ]} flex items-center justify-center transition-all hover:scale-105 cursor-default"
                                 title="{day.focusMinutes}m focused, {day.sessions} session(s)"
@@ -820,7 +820,7 @@
     <!-- Onboarding Banner -->
     {#if showBanner}
         <div transition:fade class="mb-8">
-            <div class="glass-card rounded-[2.5rem] p-8 border-2 border-resin-amber/40 bg-gradient-to-r from-resin-amber/10 to-transparent shadow-premium">
+            <div class="glass-card rounded-xl p-8 border-2 border-resin-amber/40 bg-gradient-to-r from-resin-amber/10 to-transparent shadow-premium">
                 <div class="flex items-start justify-between gap-6">
                     <div class="flex-1">
                         <h2 class="text-2xl font-bold text-resin-charcoal mb-2 flex items-center gap-2">
@@ -862,7 +862,7 @@
     <!-- Burnout Risk Banner -->
     {#if burnoutRisk}
         <section
-            class="rounded-2xl p-6 bg-gradient-to-r from-resin-amber/10 to-orange-50/20 border border-resin-amber/30 shadow-sm"
+            class="rounded-lg p-6 bg-gradient-to-r from-resin-amber/10 to-orange-50/20 border border-resin-amber/30 shadow-sm"
             transition:fade={{ duration: 300 }}
         >
             <div class="flex items-center gap-4">
@@ -887,7 +887,7 @@
             <!-- Focus Groups Card -->
             {#if groups && groups.length > 0}
                 <section
-                    class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-forest/15 shadow-premium relative bg-gradient-to-br from-resin-forest/5 to-transparent overflow-hidden"
+                    class="glass-card rounded-xl p-8 md:p-10 border border-resin-forest/15 shadow-premium relative bg-gradient-to-br from-resin-forest/5 to-transparent overflow-hidden"
                 >
                     <div
                         class="absolute -right-16 -bottom-16 w-48 h-48 bg-resin-forest/5 rounded-full blur-3xl"
@@ -896,7 +896,7 @@
                         <div class="flex items-center justify-between mb-6">
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="w-10 h-10 rounded-2xl bg-resin-forest/10 flex items-center justify-center"
+                                    class="w-10 h-10 rounded-lg bg-resin-forest/10 flex items-center justify-center"
                                 >
                                     <span class="text-lg">👥</span>
                                 </div>
@@ -925,7 +925,7 @@
                             {#each groups.slice(0, 3) as group}
                                 <a
                                     href="/groups/{group.id}"
-                                    class="flex items-center justify-between p-3 rounded-2xl bg-white/40 hover:bg-white/60 transition-colors group/item"
+                                    class="flex items-center justify-between p-3 rounded-lg bg-white/40 hover:bg-white/60 transition-colors group/item"
                                 >
                                     <div>
                                         <p class="text-sm font-bold text-resin-charcoal group-hover/item:text-resin-forest transition-colors">
@@ -946,7 +946,7 @@
             <!-- Taste Insights Card -->
             {#if weeklyStats && (weeklyStats.topFeeling || weeklyStats.enjoyedThings.length > 0)}
                 <section
-                    class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-amber/15 shadow-premium relative bg-gradient-to-br from-resin-amber/5 to-transparent overflow-hidden"
+                    class="glass-card rounded-xl p-8 md:p-10 border border-resin-amber/15 shadow-premium relative bg-gradient-to-br from-resin-amber/5 to-transparent overflow-hidden"
                 >
                     <div
                         class="absolute -right-16 -bottom-16 w-48 h-48 bg-resin-amber/5 rounded-full blur-3xl"
@@ -954,7 +954,7 @@
                     <div class="relative z-10">
                         <div class="flex items-center gap-3 mb-6">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-resin-amber/10 flex items-center justify-center"
+                                class="w-10 h-10 rounded-lg bg-resin-amber/10 flex items-center justify-center"
                             >
                                 <span class="text-lg">✦</span>
                             </div>
@@ -974,7 +974,7 @@
 
                         {#if weeklyStats.topFeeling}
                             <div
-                                class="flex items-center gap-3 mb-5 p-4 rounded-2xl bg-white/40"
+                                class="flex items-center gap-3 mb-5 p-4 rounded-lg bg-white/40"
                             >
                                 <span class="text-2xl"
                                     >{feelingIcons[weeklyStats.topFeeling] ||
@@ -1047,7 +1047,7 @@
 
             <!-- Timeline -->
             <section
-                class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-white/20 shadow-premium relative bg-gradient-to-br from-white/40 to-transparent"
+                class="glass-card rounded-xl p-8 md:p-10 border border-white/20 shadow-premium relative bg-gradient-to-br from-white/40 to-transparent"
             >
                 <div class="flex items-center justify-between mb-8">
                     <h3
@@ -1129,7 +1129,7 @@
                 {:else}
                     <div class="text-center py-12">
                         <div
-                            class="w-16 h-16 rounded-3xl bg-resin-forest/5 flex items-center justify-center mx-auto mb-4 border border-dashed border-resin-forest/20"
+                            class="w-16 h-16 rounded-xl bg-resin-forest/5 flex items-center justify-center mx-auto mb-4 border border-dashed border-resin-forest/20"
                         >
                             <svg
                                 class="w-8 h-8 text-resin-earth/30"
@@ -1162,7 +1162,7 @@
             <!-- Forest & Rewards Card -->
             <a
                 href="/rewards"
-                class="glass-card rounded-[2.5rem] p-8 border border-resin-forest/20 shadow-premium bg-gradient-to-br from-resin-forest/10 to-transparent hover:shadow-lg transition-all group block"
+                class="glass-card rounded-xl p-8 border border-resin-forest/20 shadow-premium bg-gradient-to-br from-resin-forest/10 to-transparent hover:shadow-lg transition-all group block"
             >
                 <div class="flex items-center justify-between mb-6">
                     <h3
@@ -1244,7 +1244,7 @@
 
             <!-- Daily Routines Card -->
             <section
-                class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
+                class="glass-card rounded-xl p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
             >
                 <div class="flex items-center justify-between mb-6">
                     <h3
@@ -1428,7 +1428,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <a
                         href="/rewards"
-                        class="glass-card rounded-2xl p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
+                        class="glass-card rounded-lg p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
                     >
                         <p
                             class="text-2xl font-bold text-resin-charcoal group-hover:text-resin-forest transition-colors"
@@ -1443,7 +1443,7 @@
                     </a>
                     <a
                         href="/rewards"
-                        class="glass-card rounded-2xl p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
+                        class="glass-card rounded-lg p-5 border border-white/20 hover:border-resin-amber/30 transition-all group text-center"
                     >
                         <p
                             class="text-2xl font-bold text-resin-charcoal group-hover:text-resin-forest transition-colors"
@@ -1476,7 +1476,7 @@
                 {#each recentNotes as note}
                     <a
                         href="/notes?id={note.id}"
-                        class="glass-card rounded-3xl p-6 border border-white/20 hover:border-resin-amber/30 hover:shadow-xl transition-all group"
+                        class="glass-card rounded-xl p-6 border border-white/20 hover:border-resin-amber/30 hover:shadow-xl transition-all group"
                     >
                         <div class="flex items-center justify-between mb-3">
                             <h4

@@ -54,7 +54,7 @@
     >
         <div>
             <div
-                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
             >
                 Insights & Patterns
             </div>
@@ -97,7 +97,7 @@
         <!-- Left: Rankings -->
         <div class="lg:col-span-7 space-y-8">
             <section
-                class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-amber/15 shadow-premium relative bg-gradient-to-br from-resin-amber/5 to-transparent overflow-hidden"
+                class="glass-card rounded-xl p-8 md:p-10 border border-resin-amber/15 shadow-premium relative bg-gradient-to-br from-resin-amber/5 to-transparent overflow-hidden"
             >
                 <div
                     class="absolute -right-16 -bottom-16 w-48 h-48 bg-resin-amber/5 rounded-full blur-3xl"
@@ -105,7 +105,7 @@
                 <div class="relative z-10">
                     <div class="flex items-center gap-3 mb-8">
                         <div
-                            class="w-10 h-10 rounded-2xl bg-resin-amber/10 flex items-center justify-center"
+                            class="w-10 h-10 rounded-lg bg-resin-amber/10 flex items-center justify-center"
                         >
                             <span class="text-lg">✦</span>
                         </div>
@@ -125,7 +125,7 @@
                         <div class="space-y-4">
                             {#each topFeelings as [feeling, count], i}
                                 <div
-                                    class="flex items-center gap-4 bg-white/40 p-4 rounded-2xl border border-resin-forest/5 hover:border-resin-amber/20 transition-colors"
+                                    class="flex items-center gap-4 bg-white/40 p-4 rounded-lg border border-resin-forest/5 hover:border-resin-amber/20 transition-colors"
                                 >
                                     <div
                                         class="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm border border-resin-forest/5"
@@ -162,7 +162,7 @@
                         </div>
                     {:else}
                         <div
-                            class="text-center py-12 border-2 border-dashed border-resin-forest/10 rounded-3xl"
+                            class="text-center py-12 border-2 border-dashed border-resin-forest/10 rounded-xl"
                         >
                             <p class="text-resin-charcoal font-medium">
                                 No feelings logged yet
@@ -178,7 +178,7 @@
             <!-- Rating Trend -->
             {#if ratingHistory.length > 0}
                 <section
-                    class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-white/20 shadow-premium"
+                    class="glass-card rounded-xl p-8 md:p-10 border border-white/20 shadow-premium"
                 >
                     <div class="flex items-center justify-between mb-8">
                         <h3
@@ -232,7 +232,7 @@
                 <!-- 7-Day Mood Trend -->
                 {#if weeklyMoodBreakdown && Object.keys(weeklyMoodBreakdown).some(day => Object.keys(weeklyMoodBreakdown[day]).length > 0)}
                     <section
-                        class="glass-card rounded-[2.5rem] p-8 md:p-10 border border-resin-forest/10 shadow-premium relative bg-gradient-to-br from-resin-forest/5 to-transparent overflow-hidden"
+                        class="glass-card rounded-xl p-8 md:p-10 border border-resin-forest/10 shadow-premium relative bg-gradient-to-br from-resin-forest/5 to-transparent overflow-hidden"
                     >
                         <h3 class="text-lg font-bold text-resin-charcoal mb-6 font-serif">
                             7-Day Mood Trend
@@ -289,7 +289,7 @@
                 <div class="space-y-4">
                     {#each enjoyedThings as item}
                         <div
-                            class="glass-card rounded-3xl p-6 border border-white/20 hover:border-resin-amber/30 hover:shadow-xl transition-all group"
+                            class="glass-card rounded-xl p-6 border border-white/20 hover:border-resin-amber/30 hover:shadow-xl transition-all group"
                         >
                             <p
                                 class="text-sm text-resin-charcoal leading-relaxed font-serif italic text-lg mb-3"
@@ -310,7 +310,7 @@
                 </div>
             {:else}
                 <div
-                    class="text-center py-12 border-2 border-dashed border-resin-forest/10 rounded-3xl"
+                    class="text-center py-12 border-2 border-dashed border-resin-forest/10 rounded-xl"
                 >
                     <p class="text-resin-charcoal font-medium">
                         Nothing logged yet

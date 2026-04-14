@@ -45,7 +45,7 @@
             in:scale={{ duration: 400, start: 0.9 }}
             out:scale={{ duration: 300, start: 0.95 }}
         >
-            <div class="glass-card rounded-2xl p-12 text-center border border-resin-amber/40 bg-gradient-to-b from-resin-amber/15 via-resin-forest/5 to-resin-amber/10 shadow-2xl">
+            <div class="glass-card rounded-lg p-12 text-center border border-resin-amber/40 bg-gradient-to-b from-resin-amber/15 via-resin-forest/5 to-resin-amber/10 shadow-2xl">
                 <!-- Animated amber orb -->
                 <div class="mb-8 flex justify-center relative h-32">
                     <!-- Outer glow rings -->

@@ -114,7 +114,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Calendar -->
             <div class="lg:col-span-2">
-                <div class="glass-card rounded-2xl p-6 border border-white/20 shadow-premium">
+                <div class="glass-card rounded-lg p-6 border border-white/20 shadow-premium">
                     <!-- Month Navigation -->
                     <div class="flex items-center justify-between mb-6">
                         <button
@@ -174,7 +174,7 @@
             <!-- Stats Sidebar -->
             <div class="space-y-4">
                 <!-- Monthly Stats -->
-                <div class="glass-card rounded-2xl p-6 border border-white/20 shadow-premium">
+                <div class="glass-card rounded-lg p-6 border border-white/20 shadow-premium">
                     <h3 class="text-lg font-bold text-resin-charcoal mb-4">Monthly Stats</h3>
 
                     <div class="space-y-4">
@@ -221,7 +221,7 @@
                 </div>
 
                 <!-- Legend -->
-                <div class="glass-card rounded-2xl p-6 border border-white/20 shadow-premium">
+                <div class="glass-card rounded-lg p-6 border border-white/20 shadow-premium">
                     <h3 class="text-lg font-bold text-resin-charcoal mb-4">Activity Levels</h3>
 
                     <div class="space-y-2 text-sm">

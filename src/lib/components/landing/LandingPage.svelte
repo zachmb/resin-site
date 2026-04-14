@@ -151,7 +151,7 @@
             <div class="transition-all duration-700 {visible('hero')} pb-24 lg:pb-0">
 
                 <!-- Kicker -->
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-7 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-7 uppercase tracking-wider"
                      style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
                     <FileText class="w-3 h-3" /> Notes · AI Planning · Focus
                 </div>
@@ -172,7 +172,7 @@
                 </p>
 
                 <!-- Notes callout -->
-                <div class="flex items-start gap-3 mb-8 px-4 py-3.5 rounded-2xl" style="background:rgba(200,136,74,0.07); border:1px solid rgba(200,136,74,0.15); max-width:460px;">
+                <div class="flex items-start gap-3 mb-8 px-4 py-3.5 rounded-lg" style="background:rgba(200,136,74,0.07); border:1px solid rgba(200,136,74,0.15); max-width:460px;">
                     <FileText class="w-4 h-4 flex-shrink-0 mt-0.5" style="color:{C.amber};" />
                     <p style="font-size:13.5px; color:{C.earth}; line-height:1.6; font-family:'Lora', serif; font-style:italic;">
                         Stream-of-consciousness. Half-formed thoughts. Goals you haven't started. It all starts as a note.
@@ -218,7 +218,7 @@
                          style="width:290px; height:600px; border-radius:50px; border:10px solid {C.charcoal}; background:white; box-shadow: 0 40px 80px -20px rgba(46,42,38,0.38), 0 0 0 1px rgba(46,42,38,0.08);">
 
                         <!-- Dynamic island -->
-                        <div class="absolute z-10 flex items-center justify-center" style="top:12px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:{C.charcoal}; border-radius:20px;">
+                        <div class="absolute z-10 flex items-center justify-center" style="top:12px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:{C.charcoal}; border-radius: 8px;">
                             <div class="rounded-full" style="width:10px; height:10px; background:#111;"></div>
                         </div>
 
@@ -261,7 +261,7 @@
 
                             <!-- Activate button -->
                             <div class="px-4 pb-5 pt-2">
-                                <div class="rounded-2xl flex items-center justify-between px-4 py-3.5" style="background:white; border:1px solid rgba(200,136,74,0.22); box-shadow:0 2px 12px -2px rgba(200,136,74,0.15);">
+                                <div class="rounded-lg flex items-center justify-between px-4 py-3.5" style="background:white; border:1px solid rgba(200,136,74,0.22); box-shadow:0 2px 12px -2px rgba(200,136,74,0.15);">
                                     <div>
                                         <div style="font-size:11px; font-weight:600; color:{C.charcoal};">Turn this into a plan</div>
                                         <div style="font-size:9.5px; color:{C.earthLight}; margin-top:1px;">AI reads the whole note</div>
@@ -294,7 +294,7 @@
 
                 <!-- Annotation 3: mid-left small chip -->
                 <div class="absolute z-30" style="top:42%; left:-40px; transform:rotate(-6deg);">
-                    <div style="background:white; padding:8px 12px; border-radius:20px; box-shadow:0 4px 14px rgba(46,42,38,0.12); border:1px solid rgba(46,42,38,0.08); white-space:nowrap;">
+                    <div style="background:white; padding:8px 12px; border-radius: 8px; box-shadow:0 4px 14px rgba(46,42,38,0.12); border:1px solid rgba(46,42,38,0.08); white-space:nowrap;">
                         <span style="font-size:11px; font-weight:600; color:{C.charcoal};">🌲 On-device AI</span>
                     </div>
                 </div>
@@ -347,7 +347,7 @@
 
             <!-- Text left -->
             <div>
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-8 uppercase tracking-wider"
                      style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
                     <FileText class="w-3 h-3" /> Note-taking
                 </div>
@@ -390,7 +390,7 @@
             <div class="flex justify-center">
                 <div class="relative w-full max-w-[420px]">
                     <!-- Main note editor card -->
-                    <div class="rounded-3xl overflow-hidden" style="background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 24px 60px -12px rgba(46,42,38,0.14);">
+                    <div class="rounded-xl overflow-hidden" style="background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 24px 60px -12px rgba(46,42,38,0.14);">
                         <!-- Editor toolbar -->
                         <div class="px-5 py-3 flex items-center justify-between" style="border-bottom:1px solid rgba(46,42,38,0.06); background:{C.bg};">
                             <div class="flex items-center gap-3">
@@ -422,11 +422,11 @@ The real problem is I don't have a system. Maybe:
                             <!-- Tags -->
                             <div class="flex flex-wrap gap-1.5 mb-5">
                                 {#each ['Personal', 'Language', 'Self-growth'] as tag}
-                                    <span class="rounded-full text-xs font-medium px-2.5 py-0.5" style="background:rgba(200,136,74,0.08); color:{C.amberDark};">{tag}</span>
+                                    <span class="rounded-md text-xs font-medium px-2.5 py-0.5" style="background:rgba(200,136,74,0.08); color:{C.amberDark};">{tag}</span>
                                 {/each}
                             </div>
                             <!-- Activate bar -->
-                            <div class="rounded-2xl px-4 py-3.5 flex items-center justify-between" style="background:rgba(200,136,74,0.07); border:1px solid rgba(200,136,74,0.18);">
+                            <div class="rounded-lg px-4 py-3.5 flex items-center justify-between" style="background:rgba(200,136,74,0.07); border:1px solid rgba(200,136,74,0.18);">
                                 <div>
                                     <div class="font-semibold text-xs" style="color:{C.charcoal};">Ready to build a plan?</div>
                                     <div class="text-xs mt-0.5" style="color:{C.earthLight};">AI will structure this into weekly tasks</div>
@@ -439,7 +439,7 @@ The real problem is I don't have a system. Maybe:
                     </div>
 
                     <!-- Floating mind map peek -->
-                    <div class="absolute -right-6 -bottom-6 rounded-2xl overflow-hidden" style="width:160px; background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 12px 32px -6px rgba(46,42,38,0.18); padding:12px;">
+                    <div class="absolute -right-6 -bottom-6 rounded-lg overflow-hidden" style="width:160px; background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 12px 32px -6px rgba(46,42,38,0.18); padding:12px;">
                         <div class="font-semibold mb-2" style="font-size:9px; color:{C.charcoal};">Mind Map · 5 notes</div>
                         <!-- SVG mini-map -->
                         <svg width="136" height="80" viewBox="0 0 136 80">
@@ -484,7 +484,7 @@ The real problem is I don't have a system. Maybe:
                                         <div class="font-serif font-semibold" style="font-size:13px; color:{C.charcoal}; line-height:1.3;">Learn Spanish this month</div>
                                         <div style="font-size:9px; color:{C.earthLight}; margin-top:3px;">6 tasks · 3h 45min total</div>
                                     </div>
-                                    <span class="font-bold rounded-full" style="font-size:8px; color:white; background:{C.amber}; padding:2px 7px;">AI Plan</span>
+                                    <span class="font-bold rounded-md" style="font-size:8px; color:white; background:{C.amber}; padding:2px 7px;">AI Plan</span>
                                 </div>
                                 <div class="flex gap-1.5">
                                     <span class="rounded-full" style="font-size:8.5px; color:{C.forestDark}; background:rgba(77,102,82,0.1); padding:2px 7px;">Starts Mon 7am</span>
@@ -532,7 +532,7 @@ The real problem is I don't have a system. Maybe:
 
             <!-- Text right -->
             <div class="order-1 lg:order-2">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-8 uppercase tracking-wider"
                      style="background:rgba(77,102,82,0.1); color:{C.forestDark};">
                     <Brain class="w-3 h-3" /> On-Device AI
                 </div>
@@ -575,7 +575,7 @@ The real problem is I don't have a system. Maybe:
 
             <!-- Text left -->
             <div>
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-8 uppercase tracking-wider"
                      style="background:rgba(46,42,38,0.07); color:{C.charcoal};">
                     <Lock class="w-3 h-3" /> App Blocking
                 </div>
@@ -622,7 +622,7 @@ The real problem is I don't have a system. Maybe:
                                 <div class="font-serif font-semibold text-white mb-1" style="font-size:15px;">Learn Spanish</div>
                                 <div class="mb-6" style="font-size:11px; color:rgba(255,255,255,0.35);">Morning vocab · 15 min</div>
                                 <!-- Timer -->
-                                <div class="rounded-2xl px-10 py-4 mb-5 w-full text-center" style="background:rgba(255,255,255,0.06);">
+                                <div class="rounded-lg px-10 py-4 mb-5 w-full text-center" style="background:rgba(255,255,255,0.06);">
                                     <div class="uppercase tracking-wider mb-1" style="font-size:9px; color:rgba(255,255,255,0.28);">Time remaining</div>
                                     <div class="font-mono font-bold" style="font-size:38px; color:{C.amberGlow};">11:23</div>
                                 </div>
@@ -634,7 +634,7 @@ The real problem is I don't have a system. Maybe:
                                                 <span style="font-size:13px;">{emoji}</span>
                                                 <span style="font-size:10px; font-weight:500; color:rgba(255,255,255,0.35);">{app}</span>
                                             </div>
-                                            <span class="font-bold rounded-full" style="font-size:7.5px; color:rgba(232,168,87,0.7); background:rgba(232,168,87,0.12); padding:1px 6px;">BLOCKED</span>
+                                            <span class="font-bold rounded-md" style="font-size:7.5px; color:rgba(232,168,87,0.7); background:rgba(232,168,87,0.12); padding:1px 6px;">BLOCKED</span>
                                         </div>
                                     {/each}
                                 </div>
@@ -681,7 +681,7 @@ The real problem is I don't have a system. Maybe:
                             <div class="text-5xl mb-5" style="filter:drop-shadow(0 0 16px rgba(232,168,87,0.5));">🌲</div>
                             <div class="font-serif font-semibold mb-1" style="color:rgba(255,255,255,0.9); font-size:15px;">YouTube is blocked</div>
                             <div class="mb-8" style="font-size:11px; color:rgba(255,255,255,0.3);">You're in a Resin focus session</div>
-                            <div class="rounded-2xl px-6 py-4 mb-8 w-full max-w-xs" style="background:rgba(255,255,255,0.05);">
+                            <div class="rounded-lg px-6 py-4 mb-8 w-full max-w-xs" style="background:rgba(255,255,255,0.05);">
                                 <div class="uppercase tracking-wider mb-1.5" style="font-size:8.5px; color:rgba(255,255,255,0.25);">Current task</div>
                                 <div class="font-serif font-medium" style="font-size:13px; color:rgba(255,255,255,0.85);">Morning vocab: 15 new words</div>
                                 <div style="font-size:10px; margin-top:3px; color:rgba(232,168,87,0.65);">15 min · task 1 of 6</div>
@@ -694,7 +694,7 @@ The real problem is I don't have a system. Maybe:
 
             <!-- Text right -->
             <div class="order-1 lg:order-2">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-8 uppercase tracking-wider"
                      style="background:rgba(77,102,82,0.1); color:{C.forestDark};">
                     <Globe class="w-3 h-3" /> Chrome Extension
                 </div>
@@ -747,8 +747,8 @@ The real problem is I don't have a system. Maybe:
                 { icon: Shield, color: C.charcoal, bg: `rgba(46,42,38,0.07)`, title: 'Block everything', desc: 'iOS Screen Time + Chrome extension working in parallel. When you\'re in a session, every distraction is just gone.', bullets: ['OS-level app blocking', 'Chrome URL blocking', 'Auto-synced to plan'] },
                 { icon: TrendingUp, color: C.forest, bg: `rgba(77,102,82,0.09)`, title: 'Grow over time', desc: 'Post-session ratings teach the AI your real pace and resistance patterns. Plans get sharper. Your forest grows. Streaks compound.', bullets: ['Per-session reflection', 'Tree forest & streak tracking', 'AI adapts to your style'] }
             ] as f}
-                <div class="rounded-3xl p-8 hover:-translate-y-1 hover:shadow-lg transition-all duration-500 group" style="background:white; border:1px solid rgba(46,42,38,0.06);">
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-105 transition-transform" style="background:{f.bg};">
+                <div class="rounded-xl p-8 hover:-translate-y-1 hover:shadow-lg transition-all duration-500 group" style="background:white; border:1px solid rgba(46,42,38,0.06);">
+                    <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-6 group-hover:scale-105 transition-transform" style="background:{f.bg};">
                         <f.icon class="w-5 h-5" style="color:{f.color};" />
                     </div>
                     <h3 class="font-serif font-bold mb-3 text-xl" style="color:{C.charcoal};">{f.title}</h3>
@@ -776,7 +776,7 @@ The real problem is I don't have a system. Maybe:
         <div class="grid lg:grid-cols-2 gap-20 items-center transition-all duration-700 {visible('feat-cal')}">
             <!-- Text left -->
             <div>
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-8 uppercase tracking-wider"
                      style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
                     <Calendar class="w-3 h-3" /> Calendar Sync
                 </div>
@@ -807,11 +807,11 @@ The real problem is I don't have a system. Maybe:
             </div>
             <!-- Calendar mockup right -->
             <div class="flex justify-center">
-                <div class="w-full max-w-[380px] rounded-3xl overflow-hidden" style="background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 24px 56px -12px rgba(46,42,38,0.14);">
+                <div class="w-full max-w-[380px] rounded-xl overflow-hidden" style="background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 24px 56px -12px rgba(46,42,38,0.14);">
                     <div class="px-5 py-4" style="border-bottom:1px solid rgba(46,42,38,0.06);">
                         <div class="flex items-center justify-between">
                             <div class="font-serif font-semibold" style="font-size:14px; color:{C.charcoal};">Thursday, Apr 17</div>
-                            <span class="font-bold rounded-full text-white" style="font-size:9px; background:{C.amber}; padding:2px 8px;">Today</span>
+                            <span class="font-bold rounded-md text-white" style="font-size:9px; background:{C.amber}; padding:2px 8px;">Today</span>
                         </div>
                     </div>
                     <div class="p-4 space-y-2">
@@ -848,7 +848,7 @@ The real problem is I don't have a system. Maybe:
         <div class="grid lg:grid-cols-2 gap-20 items-center transition-all duration-700 {visible('feat-forest')}">
             <!-- Text left -->
             <div>
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-8 uppercase tracking-wider"
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-8 uppercase tracking-wider"
                      style="background:rgba(77,102,82,0.1); color:{C.forestDark};">
                     <TrendingUp class="w-3 h-3" /> Progress & Reflection
                 </div>
@@ -945,7 +945,7 @@ The real problem is I don't have a system. Maybe:
         </div>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {#each testimonials as t}
-                <div class="rounded-3xl p-7 hover:shadow-md transition-shadow duration-300" style="background:white; border:1px solid rgba(46,42,38,0.06);">
+                <div class="rounded-xl p-7 hover:shadow-md transition-shadow duration-300" style="background:white; border:1px solid rgba(46,42,38,0.06);">
                     <div class="flex gap-0.5 mb-5">
                         {#each [1,2,3,4,5] as _}
                             <Star class="w-3.5 h-3.5 fill-current" style="color:{C.amber};" />
@@ -985,7 +985,7 @@ The real problem is I don't have a system. Maybe:
         </div>
         <div class="grid md:grid-cols-2 gap-8 items-start">
             <!-- Free tier -->
-            <div class="rounded-3xl p-10" style="background:{C.bgSecondary}; border:2px solid rgba(46,42,38,0.1);">
+            <div class="rounded-xl p-10" style="background:{C.bgSecondary}; border:2px solid rgba(46,42,38,0.1);">
                 <div class="text-xs font-bold uppercase tracking-wider mb-4" style="color:{C.earthLight};">Core — iOS App</div>
                 <div class="flex items-baseline gap-1 mb-3">
                     <span class="font-serif font-bold" style="font-size:52px; color:{C.charcoal};">$0</span>
@@ -1009,13 +1009,13 @@ The real problem is I don't have a system. Maybe:
                     {/each}
                 </div>
                 <a href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"
-                   class="block w-full py-4 rounded-2xl text-center font-bold text-sm transition-colors"
+                   class="block w-full py-4 rounded-lg text-center font-bold text-sm transition-colors"
                    style="border:2px solid rgba(46,42,38,0.18); color:{C.charcoal};">
                     Download Beta
                 </a>
             </div>
             <!-- Pro tier -->
-            <div class="rounded-3xl p-10 relative" style="background:{C.forestDark}; border:2px solid rgba(255,255,255,0.07); box-shadow:0 24px 48px -12px rgba(200,136,74,0.2);">
+            <div class="rounded-xl p-10 relative" style="background:{C.forestDark}; border:2px solid rgba(255,255,255,0.07); box-shadow:0 24px 48px -12px rgba(200,136,74,0.2);">
                 <div class="absolute -top-3 right-8 px-4 py-1 rounded-full font-bold text-white" style="font-size:11px; background:{C.amber};">Most Popular</div>
                 <div class="text-xs font-bold uppercase tracking-wider mb-4" style="color:rgba(255,255,255,0.35);">Resin Pro</div>
                 <div class="flex items-baseline gap-1 mb-3">
@@ -1039,7 +1039,7 @@ The real problem is I don't have a system. Maybe:
                         </div>
                     {/each}
                 </div>
-                <a href="/login?next=/" class="block w-full py-4 rounded-2xl text-center font-bold text-sm transition-all hover:opacity-90"
+                <a href="/login?next=/" class="block w-full py-4 rounded-lg text-center font-bold text-sm transition-all hover:opacity-90"
                    style="background:{C.amber}; color:{C.charcoal};">
                     Start Free Trial
                 </a>
@@ -1059,7 +1059,7 @@ The real problem is I don't have a system. Maybe:
         </div>
         <div class="space-y-3">
             {#each faqs as faq, i}
-                <div class="rounded-2xl overflow-hidden transition-all duration-300" style="background:white; border:1px solid rgba(46,42,38,0.06);">
+                <div class="rounded-lg overflow-hidden transition-all duration-300" style="background:white; border:1px solid rgba(46,42,38,0.06);">
                     <button onclick={() => toggleFaq(i)}
                             class="w-full flex items-center justify-between px-6 py-5 text-left transition-colors"
                             style="color:{C.charcoal};">

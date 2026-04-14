@@ -74,7 +74,7 @@
     <div class="max-w-5xl mx-auto px-6 relative z-10">
         <!-- Header -->
         <header class="mb-14 text-center" in:fly={{ y: -20, duration: 800, delay: 100 }}>
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber mb-4 shadow-sm">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-md bg-resin-amber/10 border border-resin-amber/20 text-resin-amber mb-4 shadow-sm">
                 <Sparkles class="w-4 h-4" />
                 <span class="text-xs font-bold tracking-widest uppercase">Your Achievements</span>
             </div>
@@ -95,7 +95,7 @@
             >
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-orange-100 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
                 <div class="relative z-10">
-                    <div class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mb-6 text-orange-500 border border-orange-100/50 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <div class="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center mb-6 text-orange-500 border border-orange-100/50 shadow-inner group-hover:scale-110 transition-transform duration-500">
                         <Flame class="w-6 h-6" />
                     </div>
                     <div class="flex items-baseline gap-2 mb-1">
@@ -113,7 +113,7 @@
             >
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-yellow-100 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
                 <div class="relative z-10">
-                    <div class="w-12 h-12 rounded-2xl bg-yellow-50 flex items-center justify-center mb-6 text-yellow-600 border border-yellow-100/50 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <div class="w-12 h-12 rounded-lg bg-yellow-50 flex items-center justify-center mb-6 text-yellow-600 border border-yellow-100/50 shadow-inner group-hover:scale-110 transition-transform duration-500">
                         <Trophy class="w-6 h-6" />
                     </div>
                     <div class="flex items-baseline gap-2 mb-1">
@@ -133,7 +133,7 @@
                 <div class="absolute -left-10 -bottom-10 w-24 h-24 bg-[#D4AF37]/20 rounded-full blur-2xl opacity-50"></div>
                 
                 <div class="relative z-10">
-                    <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 border border-white/10 backdrop-blur-sm group-hover:scale-110 transition-transform duration-500">
+                    <div class="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center mb-6 border border-white/10 backdrop-blur-sm group-hover:scale-110 transition-transform duration-500">
                         <Award class="w-6 h-6 text-resin-amber" />
                     </div>
                     <div class="flex items-baseline gap-2 mb-1">
@@ -150,7 +150,7 @@
             >
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-100 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity"></div>
                 <div class="relative z-10">
-                    <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 text-blue-500 border border-blue-100/50 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center mb-6 text-blue-500 border border-blue-100/50 shadow-inner group-hover:scale-110 transition-transform duration-500">
                         <Zap class="w-6 h-6 fill-blue-500/20" />
                     </div>
                     <div class="flex items-baseline gap-1 mb-1">
@@ -238,11 +238,11 @@
             <!-- Right Column: Recent Sessions History -->
             <div 
                 in:fly={{ x: 20, duration: 800, delay: 600 }}
-                class="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-10 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                class="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-xl p-8 md:p-10 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
             >
                 <div class="flex items-center justify-between mb-8 pb-6 border-b border-resin-forest/5">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-resin-forest/5 flex items-center justify-center text-resin-forest border border-resin-forest/10">
+                        <div class="w-12 h-12 rounded-lg bg-resin-forest/5 flex items-center justify-center text-resin-forest border border-resin-forest/10">
                             <History class="w-6 h-6" />
                         </div>
                         <h2 class="text-3xl font-serif font-bold text-resin-charcoal tracking-tight">Session History</h2>
@@ -254,10 +254,10 @@
                         {#each sessions.slice(0, 8) as session, i}
                             <div 
                                 in:fade={{ duration: 400, delay: 700 + (i * 100) }}
-                                class="group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl bg-white border border-resin-forest/5 hover:border-resin-amber/30 hover:shadow-[0_8px_20px_rgb(0,0,0,0.04)] hover:-translate-y-1 transition-all duration-300"
+                                class="group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-lg bg-white border border-resin-forest/5 hover:border-resin-amber/30 hover:shadow-[0_8px_20px_rgb(0,0,0,0.04)] hover:-translate-y-1 transition-all duration-300"
                             >
                                 <div class="flex items-start gap-4 mb-4 sm:mb-0">
-                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-colors duration-300 {session.status === 'completed' ? 'bg-[#2B4634] text-white shadow-md' : 'bg-gray-50 border border-gray-100 text-gray-400 group-hover:bg-gray-100'}">
+                                    <div class="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-300 {session.status === 'completed' ? 'bg-[#2B4634] text-white shadow-md' : 'bg-gray-50 border border-gray-100 text-gray-400 group-hover:bg-gray-100'}">
                                         {#if session.status === 'completed'}
                                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                                         {:else}
@@ -284,7 +284,7 @@
                                 </div>
                                 
                                 <div class="pl-18 sm:pl-0 flex items-center justify-end">
-                                    <span class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-sm {session.status === 'completed' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}">
+                                    <span class="inline-flex items-center px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-widest shadow-sm {session.status === 'completed' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}">
                                         {session.status}
                                     </span>
                                 </div>
@@ -292,7 +292,7 @@
                         {/each}
                     </div>
                 {:else}
-                    <div class="flex flex-col items-center justify-center py-24 px-6 text-center bg-white/50 rounded-3xl border-2 border-dashed border-resin-earth/10">
+                    <div class="flex flex-col items-center justify-center py-24 px-6 text-center bg-white/50 rounded-xl border-2 border-dashed border-resin-earth/10">
                         <div class="w-24 h-24 rounded-full bg-white shadow-sm flex items-center justify-center mb-6">
                             <History class="w-10 h-10 text-resin-earth/30 flex-shrink-0" />
                         </div>
@@ -317,7 +317,7 @@
                         Unlock ancient relics by building your streak and collecting petrified stones.
                     </p>
                 </div>
-                <div class="hidden sm:flex items-center gap-2 bg-white/60 backdrop-blur-md px-4 py-2 rounded-full border border-resin-forest/5 shadow-sm">
+                <div class="hidden sm:flex items-center gap-2 bg-white/60 backdrop-blur-md px-4 py-2 rounded-lg border border-resin-forest/15 shadow-sm">
                     <span class="text-sm font-bold text-resin-charcoal">
                         {fossilRewards.filter(r => isUnlocked(r)).length} / {fossilRewards.length} 
                     </span>
@@ -328,11 +328,11 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {#each fossilRewards as fossil}
                     {@const unlocked = isUnlocked(fossil)}
-                    <div class="relative group bg-white/60 backdrop-blur-md rounded-3xl p-5 border shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-all duration-300 {unlocked ? 'border-resin-amber/20 hover:border-resin-amber/40 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]' : 'border-white/40 opacity-70'}">
+                    <div class="relative group bg-white/60 backdrop-blur-md rounded-xl p-5 border shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-all duration-300 {unlocked ? 'border-resin-amber/20 hover:border-resin-amber/40 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]' : 'border-white/40 opacity-70'}">
                         
                         <!-- Lock Overlay for Locked Fossils -->
                         {#if !unlocked}
-                            <div class="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-3xl z-10 hidden sm:flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div class="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-xl z-10 hidden sm:flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div class="w-8 h-8 rounded-full bg-resin-charcoal/80 flex items-center justify-center text-white mb-2 shadow-lg">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                 </div>
@@ -343,7 +343,7 @@
                             </div>
                         {/if}
 
-                        <div class="relative w-full aspect-square mb-4 flex items-center justify-center rounded-2xl {unlocked ? 'bg-gradient-to-br from-[#Fdf5e6] to-[#E8F0EA]/50' : 'bg-gray-100/50'}">
+                        <div class="relative w-full aspect-square mb-4 flex items-center justify-center rounded-lg {unlocked ? 'bg-gradient-to-br from-[#Fdf5e6] to-[#E8F0EA]/50' : 'bg-gray-100/50'}">
                             <img 
                                 src="/images/fossils/{fossil.id}.png" 
                                 alt={fossil.displayName} 

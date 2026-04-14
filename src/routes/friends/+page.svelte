@@ -57,7 +57,7 @@
 		<!-- Header -->
 		<div class="mb-12">
 			<div
-				class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
+				class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-resin-amber/10 border border-resin-amber/20 text-resin-amber text-[10px] font-bold uppercase tracking-widest mb-3"
 			>
 				Social
 			</div>
@@ -70,7 +70,7 @@
 		</div>
 
 		<!-- Search Card -->
-		<div class="glass-card rounded-[2.5rem] p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent mb-12">
+		<div class="glass-card rounded-xl p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent mb-12">
 			<h2 class="text-lg font-bold text-resin-charcoal mb-6">Find Friends</h2>
 			<form
 				on:submit|preventDefault={handleSearch}
@@ -80,7 +80,7 @@
 					type="email"
 					placeholder="Search by email address..."
 					bind:value={searchEmail}
-					class="flex-1 px-4 py-3 rounded-xl border border-resin-earth/20 bg-white/60 backdrop-blur-sm placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10"
+					class="flex-1 px-4 py-3 rounded-xl border border-resin-earth/30 bg-white/70 backdrop-blur-sm placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10"
 				/>
 				<button
 					type="submit"
@@ -92,7 +92,7 @@
 			</form>
 
 			{#if foundUser}
-				<div class="p-6 rounded-2xl bg-white/60 border border-resin-forest/20">
+				<div class="p-6 rounded-lg bg-white/60 border border-resin-forest/20">
 					<div class="flex items-center gap-4 mb-6">
 						<div
 							class="w-16 h-16 rounded-full bg-gradient-to-br from-resin-forest/20 to-resin-forest/10 text-resin-forest font-bold text-2xl flex items-center justify-center"
@@ -117,7 +117,7 @@
 					</form>
 				</div>
 			{:else if searchEmail && !isSearching}
-				<div class="p-6 rounded-2xl bg-red-50/60 border border-red-200/50 text-center">
+				<div class="p-6 rounded-lg bg-red-50/60 border border-red-200/50 text-center">
 					<p class="text-red-600 font-medium">User not found</p>
 					<p class="text-sm text-red-500/70 mt-1">Try a different email address</p>
 				</div>
@@ -134,7 +134,7 @@
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					{#each data.friends as friend (friend.id)}
 						<div
-							class="glass-card rounded-2xl p-6 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent hover:shadow-lg transition-all"
+							class="glass-card rounded-lg p-6 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent hover:shadow-lg transition-all"
 						>
 							<div class="flex items-center gap-4 mb-6">
 								<div
@@ -190,7 +190,7 @@
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					{#each data.pendingReceived as request (request.id)}
 						<div
-							class="glass-card rounded-2xl p-6 border border-resin-amber/30 shadow-premium bg-gradient-to-br from-resin-amber/5 to-transparent hover:shadow-lg transition-all"
+							class="glass-card rounded-lg p-6 border border-resin-amber/30 shadow-premium bg-gradient-to-br from-resin-amber/5 to-transparent hover:shadow-lg transition-all"
 						>
 							<div class="flex items-center gap-4 mb-6">
 								<div
@@ -241,7 +241,7 @@
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 					{#each data.pendingSent as request (request.id)}
 						<div
-							class="glass-card rounded-2xl p-6 border border-resin-earth/20 shadow-premium bg-gradient-to-br from-white/20 to-transparent opacity-75"
+							class="glass-card rounded-lg p-6 border border-resin-earth/20 shadow-premium bg-gradient-to-br from-white/20 to-transparent opacity-75"
 						>
 							<div class="flex items-center gap-4">
 								<div
@@ -266,7 +266,7 @@
 		<!-- Empty State -->
 		{#if data.friends.length === 0 && data.pendingReceived.length === 0 && data.pendingSent.length === 0}
 			<div
-				class="glass-card rounded-[2.5rem] p-16 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent text-center"
+				class="glass-card rounded-xl p-16 border border-white/20 shadow-premium bg-gradient-to-br from-white/30 to-transparent text-center"
 			>
 				<Users class="w-16 h-16 text-resin-forest/30 mx-auto mb-4" />
 				<p class="text-resin-earth/60 text-lg font-medium mb-2">No friends yet</p>
@@ -286,7 +286,7 @@
 		aria-modal="true"
 	>
 		<div
-			class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
+			class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4"
 			on:click={(e) => e.stopPropagation()}
 		>
 			<h3 class="text-2xl font-bold text-resin-charcoal mb-2">

@@ -12,8 +12,8 @@
 	--font-sans: 'Nunito', 'Outfit', system-ui, sans-serif;
 	--font-serif: 'Lora', 'PT Serif', Georgia, serif;
 
-    --shadow-premium: 0 20px 50px -12px rgba(43, 70, 52, 0.12);
-    --shadow-glass: 0 8px 32px 0 rgba(43, 70, 52, 0.05);
+    --shadow-premium: 0 4px 6px -1px rgba(43, 70, 52, 0.07), 0 10px 24px -4px rgba(43, 70, 52, 0.10), 0 1px 2px rgba(43, 70, 52, 0.06);
+    --shadow-glass: 0 2px 4px rgba(43, 70, 52, 0.05), 0 6px 16px -2px rgba(43, 70, 52, 0.07);
 }
 
 @layer base {
@@ -25,7 +25,7 @@
 
 @layer utilities {
     .glass-card {
-        @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass;
+        @apply bg-white/75 backdrop-blur-xl border border-resin-forest/10 shadow-glass;
     }
 
     .text-balance {

@@ -404,7 +404,7 @@
             <div class="flex gap-4 h-full relative overflow-hidden" in:fade={{ duration: 200 }}>
         <!-- Left Panel: Session Browser -->
         <div
-            class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
+            class="flex-shrink-0 w-full sm:w-80 flex flex-col bg-white/60 backdrop-blur-md rounded-lg shadow-premium border border-resin-forest/5 overflow-hidden"
         >
             <!-- Browser Header -->
             <div class="p-4 border-b border-resin-forest/5 bg-white/40">
@@ -479,7 +479,7 @@
 
         <!-- Right Panel: Session Detail -->
         <div
-            class="flex-1 hidden sm:flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden"
+            class="flex-1 hidden sm:flex flex-col bg-white/60 backdrop-blur-md rounded-lg shadow-premium border border-resin-forest/5 overflow-hidden"
         >
             {#if selectedSession}
                 <!-- Detail Header -->
@@ -709,7 +709,7 @@
                                         <!-- View Mode -->
                                         <div class="flex gap-3 p-3 bg-white/50 rounded-lg border border-resin-forest/5 group hover:border-resin-forest/10 transition-colors">
                                             <div
-                                                class="w-6 h-6 rounded-full bg-resin-forest/10 flex items-center justify-center text-xs font-bold text-resin-forest flex-shrink-0 mt-0.5"
+                                                class="w-6 h-6 rounded-md bg-resin-forest/10 flex items-center justify-center text-xs font-bold text-resin-forest flex-shrink-0 mt-0.5"
                                             >
                                                 {i + 1}
                                             </div>
@@ -1230,9 +1230,9 @@
 <!-- Clear Day Confirmation Modal -->
 {#if showClearConfirm && dateToClear}
     <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]" in:fade>
-        <div class="bg-white/95 backdrop-blur-sm rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-forest/5" in:fly={{ y: 20 }}>
+        <div class="bg-white/95 backdrop-blur-sm rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-resin-forest/5" in:fly={{ y: 20 }}>
             <!-- Icon -->
-            <div class="w-16 h-16 bg-resin-amber/10 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+            <div class="w-16 h-16 bg-resin-amber/10 rounded-lg flex items-center justify-center mb-6 mx-auto">
                 <svg class="w-8 h-8 text-resin-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -1289,11 +1289,11 @@
 <!-- Session Scheduling Working Modal with Progress -->
 {#if isSelectedSessionScheduling || justCompletedSessionId === selectedSession?.id}
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100]" transition:fade>
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl" transition:fly={{ y: 20 }}>
+        <div class="bg-white rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl" transition:fly={{ y: 20 }}>
             {#if justCompletedSessionId === selectedSession?.id}
                 <!-- SUCCESS STATE -->
                 <div class="flex flex-col items-center gap-5">
-                    <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center">
+                    <div class="w-16 h-16 bg-green-50 rounded-lg flex items-center justify-center">
                         <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
@@ -1308,7 +1308,7 @@
             {:else}
                 <!-- WORKING STATE -->
                 <div class="flex flex-col items-center gap-5">
-                    <div class="w-16 h-16 bg-resin-amber/10 rounded-2xl flex items-center justify-center">
+                    <div class="w-16 h-16 bg-resin-amber/10 rounded-lg flex items-center justify-center">
                         <svg class="w-8 h-8 text-resin-amber animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -1340,7 +1340,7 @@
     <!-- Google Sign In Modal -->
     {#if showGoogleSignIn}
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 space-y-6">
                 <!-- Icon -->
                 <div class="flex justify-center">
                     <div class="w-16 h-16 bg-resin-amber/10 rounded-full flex items-center justify-center">
@@ -1403,7 +1403,7 @@
     <!-- Insights Modal -->
     {#if showInsights && insightsData}
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 space-y-6">
+            <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 space-y-6">
                 <!-- Header -->
                 <div class="flex items-start justify-between">
                     <div>

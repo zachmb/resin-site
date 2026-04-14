@@ -39,7 +39,7 @@
         <!-- Key Metrics - 3 Column Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <!-- Total Completed -->
-            <div class="bg-gradient-to-br from-resin-forest/10 to-resin-forest/5 rounded-2xl p-8 shadow-lg border border-resin-forest/20 hover:shadow-xl hover:border-resin-forest/30 transition-all">
+            <div class="bg-gradient-to-br from-resin-forest/10 to-resin-forest/5 rounded-lg p-8 shadow-lg border border-resin-forest/20 hover:shadow-xl hover:border-resin-forest/30 transition-all">
                 <div class="flex items-start justify-between mb-6">
                     <div class="flex-1">
                         <p class="text-resin-earth/70 text-sm font-semibold uppercase tracking-wider">Total Plans</p>
@@ -59,7 +59,7 @@
             </div>
 
             <!-- Estimate Accuracy -->
-            <div class="bg-gradient-to-br from-resin-amber/10 to-resin-amber/5 rounded-2xl p-8 shadow-lg border border-resin-amber/20 hover:shadow-xl hover:border-resin-amber/30 transition-all">
+            <div class="bg-gradient-to-br from-resin-amber/10 to-resin-amber/5 rounded-lg p-8 shadow-lg border border-resin-amber/20 hover:shadow-xl hover:border-resin-amber/30 transition-all">
                 <div class="flex items-start justify-between mb-6">
                     <div class="flex-1">
                         <p class="text-resin-earth/70 text-sm font-semibold uppercase tracking-wider">Estimate Accuracy</p>
@@ -87,7 +87,7 @@
             </div>
 
             <!-- Peak Productivity -->
-            <div class="bg-gradient-to-br from-blue-100/20 to-blue-50/10 rounded-2xl p-8 shadow-lg border border-blue-200/30 hover:shadow-xl hover:border-blue-200/50 transition-all">
+            <div class="bg-gradient-to-br from-blue-100/20 to-blue-50/10 rounded-lg p-8 shadow-lg border border-blue-200/30 hover:shadow-xl hover:border-blue-200/50 transition-all">
                 <div class="flex items-start justify-between mb-6">
                     <div class="flex-1">
                         <p class="text-resin-earth/70 text-sm font-semibold uppercase tracking-wider">Peak Hour</p>
@@ -114,7 +114,7 @@
         <!-- Secondary Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <!-- Average Time Spent -->
-            <div class="bg-white/50 backdrop-blur rounded-2xl p-6 shadow-lg border border-resin-forest/5 hover:shadow-xl transition-all">
+            <div class="bg-white/50 backdrop-blur rounded-lg p-6 shadow-lg border border-resin-forest/15 hover:shadow-xl transition-all">
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <p class="text-resin-earth/60 text-sm font-semibold uppercase tracking-wider">Avg Time Per Task</p>
@@ -125,7 +125,7 @@
             </div>
 
             <!-- Estimation Trend -->
-            <div class="bg-white/50 backdrop-blur rounded-2xl p-6 shadow-lg border border-resin-forest/5 hover:shadow-xl transition-all">
+            <div class="bg-white/50 backdrop-blur rounded-lg p-6 shadow-lg border border-resin-forest/15 hover:shadow-xl transition-all">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
                         <p class="text-resin-earth/60 text-sm font-semibold uppercase tracking-wider">Recent Trend</p>
@@ -137,7 +137,7 @@
         </div>
 
         <!-- Smart Recommendations -->
-        <div class="bg-gradient-to-br from-resin-petrified/30 to-resin-bg/20 rounded-2xl p-8 shadow-lg border border-resin-forest/10">
+        <div class="bg-gradient-to-br from-resin-petrified/30 to-resin-bg/20 rounded-lg p-8 shadow-lg border border-resin-forest/10">
             <h2 class="text-3xl font-bold text-resin-charcoal mb-8 flex items-center gap-3">
                 <span>💡</span>
                 Your Next Steps

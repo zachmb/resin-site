@@ -292,7 +292,7 @@
 
         <!-- Sidebar Navigation Drawer -->
         <div
-            class="h-full flex-shrink-0 flex flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] {isSidebarOpen
+            class="h-full flex-shrink-0 flex flex-col bg-white/60 backdrop-blur-md rounded-lg shadow-premium border border-resin-forest/5 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] {isSidebarOpen
                 ? 'w-full sm:w-80 opacity-100 translate-x-0 sm:relative absolute z-20'
                 : 'w-0 opacity-0 -translate-x-12 pointer-events-none absolute sm:w-0 sm:relative sm:opacity-0 sm:-translate-x-12'}"
         >
@@ -451,7 +451,7 @@
 
         <!-- Editor Block -->
         <div
-            class="flex-1 flex flex-col w-full bg-white/60 backdrop-blur-md rounded-2xl shadow-premium relative group transition-all duration-300 min-w-0 {isSidebarOpen
+            class="flex-1 flex flex-col w-full bg-white/60 backdrop-blur-md rounded-lg shadow-premium relative group transition-all duration-300 min-w-0 {isSidebarOpen
                 ? 'hidden sm:flex'
                 : 'flex'}"
         >
@@ -822,7 +822,7 @@
 <!-- Working Modal - shows while AI is scheduling the plan -->
 {#if isActivating}
     <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center space-y-4">
+        <div class="bg-white rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4 text-center space-y-4">
             <div class="flex justify-center">
                 <svg class="animate-spin h-12 w-12 text-[#2B4634]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -861,7 +861,7 @@
         aria-label="Close modal"
     >
         <div
-            class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4"
+            class="bg-white rounded-lg shadow-2xl p-6 max-w-sm w-full mx-4"
             onclick={(e) => e.stopPropagation()}
             onkeydown={(e) => e.stopPropagation()}
             role="dialog"

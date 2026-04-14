@@ -99,7 +99,7 @@
     };
 </script>
 
-<div class="flex flex-col bg-white/40 backdrop-blur-xl rounded-2xl border border-resin-forest/10 shadow-premium mb-12">
+<div class="flex flex-col bg-white/40 backdrop-blur-xl rounded-lg border border-resin-forest/10 shadow-premium mb-12">
     <!-- Calendar Header -->
     <div class="px-4 py-2.5 border-b border-resin-forest/5 bg-white/40 flex items-center justify-between sticky top-[80px] z-30">
         <div class="flex items-center gap-4">

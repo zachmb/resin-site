@@ -200,7 +200,7 @@
                                 duration: 1200,
                                 opacity: 0,
                             }}
-                            class="bg-white/40 backdrop-blur-md p-10 rounded-2xl flex flex-col items-center text-center space-y-6 border border-[#1A2E1A]/5 shadow-sm hover:shadow-md transition-all duration-700"
+                            class="bg-white/40 backdrop-blur-md p-10 rounded-lg flex flex-col items-center text-center space-y-6 border border-[#1A2E1A]/5 shadow-sm hover:shadow-md transition-all duration-700"
                         >
                             <div
                                 class="w-16 h-16 rounded-full bg-[#1A2E1A]/5 flex items-center justify-center text-[#1A2E1A] transition-transform duration-700 hover:scale-105"
@@ -255,7 +255,7 @@
                                 duration: 1200,
                                 opacity: 0,
                             }}
-                            class="grid md:grid-cols-2 gap-12 items-center bg-white/40 backdrop-blur-md border border-[#1A2E1A]/5 rounded-3xl p-10 md:p-16 shadow-sm"
+                            class="grid md:grid-cols-2 gap-12 items-center bg-white/40 backdrop-blur-md border border-[#1A2E1A]/5 rounded-xl p-10 md:p-16 shadow-sm"
                         >
                             <div
                                 class="space-y-6 {i % 2 !== 0
@@ -288,7 +288,7 @@
                             </div>
                             <!-- Abstract, calm representation of code/logic -->
                             <div
-                                class="aspect-[4/3] rounded-2xl bg-gradient-to-br from-[#1A2E1A]/5 to-transparent border border-[#1A2E1A]/5 overflow-hidden flex items-center justify-center p-8"
+                                class="aspect-[4/3] rounded-lg bg-gradient-to-br from-[#1A2E1A]/5 to-transparent border border-[#1A2E1A]/5 overflow-hidden flex items-center justify-center p-8"
                             >
                                 <div
                                     class="w-full h-full bg-white/50 backdrop-blur-sm rounded-xl border border-[#1A2E1A]/5 p-6 overflow-hidden relative shadow-sm"
@@ -347,7 +347,7 @@
                                 duration: 1000,
                                 opacity: 0,
                             }}
-                            class="p-8 rounded-2xl bg-white/30 border border-[#1A2E1A]/5 hover:bg-white/60 transition-colors duration-500 shadow-sm"
+                            class="p-8 rounded-lg bg-white/30 border border-[#1A2E1A]/5 hover:bg-white/60 transition-colors duration-500 shadow-sm"
                         >
                             <div class="mb-6 text-[#1A2E1A]/40">
                                 <svelte:component
@@ -374,7 +374,7 @@
 
         <!-- Privacy & Philosophy -->
         <section
-            class="py-24 text-center relative overflow-hidden rounded-[2.5rem] bg-white/40 border border-[#1A2E1A]/5 shadow-sm"
+            class="py-24 text-center relative overflow-hidden rounded-xl bg-white/40 border border-[#1A2E1A]/5 shadow-sm"
         >
             <!-- Distinctive Blurred Charcoal Background for Privacy -->
             <div

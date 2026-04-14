@@ -78,7 +78,11 @@
       "Bash(grep -r 'from '\\\\''$lib/offline'\\\\''' /Users/zachbas/resinsite/src/)",
       "Bash(grep -v \"^$\")",
       "Bash(grep -rn 'from '\\\\''$lib/supabase'\\\\''' /Users/zachbas/resinsite/src/)",
-      "Bash(grep -rn 'from \"\\\\$lib/supabase\"' /Users/zachbas/resinsite/src/)"
+      "Bash(grep -rn 'from \"\\\\$lib/supabase\"' /Users/zachbas/resinsite/src/)",
+      "Bash(find /Users/zachbas/resin -type f -name \"*.swift\" -exec grep -l \"purchase\\\\|subscription\\\\|StoreKit\\\\|premium\\\\|upgrade\" {} \\\\;)",
+      "Bash(find /Users/zachbas/resin -type f -name \"*.swift\" -exec grep -l \"needsSync\\\\|syncedAt\" {} \\\\;)",
+      "Bash(openssl rand:*)",
+      "Bash(echo \"RESIN_SYNC_KEY=$\\(openssl rand -hex 32\\)\")"
     ]
   }
 }

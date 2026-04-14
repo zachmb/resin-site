@@ -10,7 +10,7 @@
     </p>
 
     <div
-        class="bg-white rounded-3xl p-8 shadow-[0_10px_40px_rgb(232,154,60,0.1)] border border-resin-amber/20 mb-12"
+        class="bg-white rounded-xl p-8 shadow-[0_10px_40px_rgb(232,154,60,0.1)] border border-resin-amber/20 mb-12"
     >
         <h2 class="text-2xl font-semibold text-resin-forest mb-6">
             Contact Us

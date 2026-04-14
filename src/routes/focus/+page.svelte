@@ -224,7 +224,7 @@
         <!-- Create Group Form Modal -->
         {#if showCreateGroupForm}
             <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4" transition:fade>
-                <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl" transition:slide={{ duration: 300 }}>
+                <div class="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl" transition:slide={{ duration: 300 }}>
                     <h3 class="text-2xl font-serif font-bold text-resin-charcoal mb-6">Create New Group</h3>
 
                     {#if groupFormError}
@@ -290,7 +290,7 @@
                 {#each groups.slice(0, 3) as group (group.id)}
                     <a
                         href="/groups/{group.id}"
-                        class="glass-card rounded-2xl p-6 border border-resin-forest/10 hover:border-resin-forest/30 transition-all group/card"
+                        class="glass-card rounded-lg p-6 border border-resin-forest/10 hover:border-resin-forest/30 transition-all group/card"
                     >
                         <div class="mb-4">
                             <h3 class="font-bold text-resin-charcoal group-hover/card:text-resin-forest transition-colors">
@@ -315,7 +315,7 @@
                 {/each}
             </div>
         {:else}
-            <div class="text-center py-12 px-6 bg-gradient-to-br from-resin-forest/5 to-transparent rounded-2xl border border-resin-forest/10">
+            <div class="text-center py-12 px-6 bg-gradient-to-br from-resin-forest/5 to-transparent rounded-lg border border-resin-forest/10">
                 <Users class="w-12 h-12 text-resin-forest/30 mx-auto mb-4" />
                 <p class="text-resin-charcoal font-semibold mb-2">No groups yet</p>
                 <p class="text-sm text-resin-earth/60 mb-4">Create one or ask a friend to invite you</p>
@@ -339,7 +339,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {#each activeSessions as session (session.id)}
-                    <div class="glass-card rounded-2xl p-6 border border-resin-amber/30 bg-resin-amber/5" transition:slide>
+                    <div class="glass-card rounded-lg p-6 border border-resin-amber/30 bg-resin-amber/5" transition:slide>
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex-1">
                                 <h3 class="font-bold text-resin-charcoal">{session.title}</h3>
@@ -356,7 +356,7 @@
                                             ⚠ No device connected
                                         </span>
                                     {:else}
-                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber animate-pulse">
+                                        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-resin-amber/10 border border-resin-amber/20 text-resin-amber animate-pulse">
                                             ⟳ Pending device sync
                                         </span>
                                     {/if}
@@ -415,7 +415,7 @@
                 method="POST"
                 action="?/scheduleSession"
                 use:enhance
-                class="glass-card rounded-2xl p-6 mb-6 border border-resin-forest/20 bg-resin-forest/5"
+                class="glass-card rounded-lg p-6 mb-6 border border-resin-forest/20 bg-resin-forest/5"
                 transition:slide
             >
                 <div class="space-y-4">
@@ -429,7 +429,7 @@
                             bind:value={scheduleTitle}
                             placeholder="e.g., Deep Work Session"
                             required
-                            class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal placeholder:text-resin-earth/40 focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                            class="w-full bg-white/70 border border-resin-forest/20 rounded-lg px-4 py-3 text-sm text-resin-charcoal placeholder:text-resin-earth/40 focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
                         />
                     </div>
 
@@ -443,7 +443,7 @@
                                 name="date"
                                 bind:value={scheduleDate}
                                 required
-                                class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                class="w-full bg-white/70 border border-resin-forest/20 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
                             />
                         </div>
 
@@ -456,7 +456,7 @@
                                 name="time"
                                 bind:value={scheduleTime}
                                 required
-                                class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                class="w-full bg-white/70 border border-resin-forest/20 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
                             />
                         </div>
                     </div>
@@ -503,7 +503,7 @@
         {#if scheduledSessions.length > 0}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {#each scheduledSessions as session (session.id)}
-                    <div class="glass-card rounded-2xl p-6 border border-resin-forest/20" transition:slide>
+                    <div class="glass-card rounded-lg p-6 border border-resin-forest/20" transition:slide>
                         {#if editingSessionId === session.id}
                             <form
                                 method="POST"
@@ -528,7 +528,7 @@
                                         name="title"
                                         bind:value={editSessionData[session.id].title}
                                         required
-                                        class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                        class="w-full bg-white/70 border border-resin-forest/20 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
                                     />
                                 </div>
 
@@ -542,7 +542,7 @@
                                             name="date"
                                             bind:value={editSessionData[session.id].date}
                                             required
-                                            class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                            class="w-full bg-white/70 border border-resin-forest/20 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
                                         />
                                     </div>
 
@@ -555,7 +555,7 @@
                                             name="time"
                                             bind:value={editSessionData[session.id].time}
                                             required
-                                            class="w-full bg-white/70 border border-resin-forest/10 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
+                                            class="w-full bg-white/70 border border-resin-forest/20 rounded-lg px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-forest/30 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -606,7 +606,7 @@
                                         ⚠ No device connected
                                     </span>
                                 {:else}
-                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-resin-amber animate-pulse">
+                                    <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-resin-amber/10 border border-resin-amber/20 text-resin-amber animate-pulse">
                                         ⟳ Pending device sync
                                     </span>
                                 {/if}
@@ -742,7 +742,7 @@
         </div>
 
         {#if friends.length === 0}
-            <div class="glass-card rounded-2xl p-8 text-center border border-resin-forest/20">
+            <div class="glass-card rounded-lg p-8 text-center border border-resin-forest/20">
                 <p class="text-resin-earth/60 mb-2">You don't have any friends yet!</p>
                 <a href="/friends" class="text-xs font-bold text-resin-amber hover:text-resin-amber/80 transition-colors">
                     Add friends →
@@ -754,7 +754,7 @@
                     method="POST"
                     action="?/inviteFriendToFocus"
                     use:enhance
-                    class="glass-card rounded-2xl p-6 mb-6 border border-resin-amber/20 bg-resin-amber/5"
+                    class="glass-card rounded-lg p-6 mb-6 border border-resin-amber/20 bg-resin-amber/5"
                     transition:slide
                 >
                     <div class="space-y-4">
@@ -859,7 +859,7 @@
             {#if sharedSessions.length > 0}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {#each sharedSessions as session (session.id)}
-                        <div class="glass-card rounded-2xl p-6 border border-resin-amber/20" transition:slide>
+                        <div class="glass-card rounded-lg p-6 border border-resin-amber/20" transition:slide>
                             <div class="flex items-start justify-between mb-3">
                                 <div>
                                     <h3 class="font-bold text-resin-charcoal flex items-center gap-2">
@@ -944,7 +944,7 @@
                 method="POST"
                 action="?/createAutomation"
                 use:enhance
-                class="glass-card rounded-2xl p-6 mb-6 border border-resin-lavender/20 bg-resin-lavender/5"
+                class="glass-card rounded-lg p-6 mb-6 border border-resin-lavender/20 bg-resin-lavender/5"
                 transition:slide
             >
                 <div class="space-y-4">
@@ -1036,7 +1036,7 @@
         {#if data.automations && data.automations.length > 0}
             <div class="space-y-3">
                 {#each data.automations as automation (automation.id)}
-                    <div class="glass-card rounded-2xl p-6 border border-resin-lavender/20" transition:slide>
+                    <div class="glass-card rounded-lg p-6 border border-resin-lavender/20" transition:slide>
                         <div class="flex items-start justify-between mb-2">
                             <h3 class="font-bold text-resin-charcoal">{automation.title}</h3>
                             <form method="POST" action="?/deleteAutomation" use:enhance>

@@ -256,7 +256,7 @@
 
 	<!-- Navigation Bar -->
 	<header
-		class="w-full py-4 px-6 fixed top-0 z-50 bg-resin-bg/60 backdrop-blur-xl border-b border-resin-forest/5"
+		class="w-full py-4 px-6 fixed top-0 z-50 bg-resin-bg/80 backdrop-blur-xl border-b border-resin-forest/12"
 	>
 		<div class="max-w-6xl mx-auto flex items-center justify-between">
 			<a href="/" class="flex items-center gap-2.5 group">
@@ -284,7 +284,7 @@
 				{#if session}
 					{#if activeSession}
 						<div
-							class="flex items-center gap-2 px-3 py-1.5 bg-resin-amber/10 border border-resin-amber/20 rounded-full animate-pulse"
+							class="flex items-center gap-2 px-3 py-1.5 bg-resin-amber/10 border border-resin-amber/20 rounded-md animate-pulse"
 						>
 							<div
 								class="w-2 h-2 rounded-full bg-resin-amber"
@@ -390,7 +390,7 @@
 						href="https://testflight.apple.com/join/yV53qa1z"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="px-5 py-2 bg-resin-charcoal text-white rounded-full hover:bg-resin-forest transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
+						class="px-5 py-2 bg-resin-charcoal text-white rounded-md hover:bg-resin-forest transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
 					>
 						Get the App
 						<svg

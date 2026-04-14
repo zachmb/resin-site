@@ -400,7 +400,7 @@
 
     <!-- Connect Panel -->
     {#if showConnectPanel}
-        <div class="absolute top-16 right-6 z-20 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-6 w-80 border border-resin-forest/10">
+        <div class="absolute top-16 right-6 z-20 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-6 w-80 border border-resin-forest/10">
             <h3 class="font-bold text-resin-charcoal mb-4">Connect Two Notes</h3>
 
             <div class="space-y-4">
@@ -408,7 +408,7 @@
                     <label class="block text-xs font-medium text-resin-earth/60 mb-2">From</label>
                     <select
                         bind:value={connectFrom}
-                        class="w-full px-3 py-2 rounded-lg border border-resin-earth/20 bg-white/60 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
+                        class="w-full px-3 py-2 rounded-lg border border-resin-earth/30 bg-white/70 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
                     >
                         <option value="">Select a note...</option>
                         {#each nodes as node (node.id)}
@@ -421,7 +421,7 @@
                     <label class="block text-xs font-medium text-resin-earth/60 mb-2">To</label>
                     <select
                         bind:value={connectTo}
-                        class="w-full px-3 py-2 rounded-lg border border-resin-earth/20 bg-white/60 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
+                        class="w-full px-3 py-2 rounded-lg border border-resin-earth/30 bg-white/70 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
                     >
                         <option value="">Select a note...</option>
                         {#each nodes as node (node.id)}

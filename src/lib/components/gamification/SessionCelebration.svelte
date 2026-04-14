@@ -47,7 +47,7 @@
 
         <!-- Main celebration card -->
         <div
-            class="relative max-w-md w-full mx-4 rounded-2xl p-8 text-center"
+            class="relative max-w-md w-full mx-4 rounded-lg p-8 text-center"
             class:celebration-standard={celebrationLevel === 'standard'}
             class:celebration-bonus={celebrationLevel === 'bonus'}
             class:celebration-rare={celebrationLevel === 'rare'}
@@ -55,7 +55,7 @@
             out:scale={{ duration: 200, start: 0.9 }}
         >
             <!-- Glow effect -->
-            <div class="absolute inset-0 rounded-2xl -z-10" />
+            <div class="absolute inset-0 rounded-lg -z-10" />
 
             <!-- Content -->
             <div class="space-y-4">

@@ -185,7 +185,7 @@
     <div class="flex gap-6 flex-1 relative min-h-[600px]">
         <!-- Left Panel: Settings Navigation (full width on mobile when not showing content) -->
         <div
-            class="flex-shrink-0 w-full sm:w-80 flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden {mobileShowContent ? 'hidden sm:flex' : 'flex'}"
+            class="flex-shrink-0 w-full sm:w-80 flex-col bg-white/60 backdrop-blur-md rounded-lg shadow-premium border border-resin-forest/5 overflow-hidden {mobileShowContent ? 'hidden sm:flex' : 'flex'}"
         >
             <!-- Profile Card at Top -->
             <div
@@ -257,7 +257,7 @@
 
         <!-- Right Panel: Settings Content (full width on mobile when content is shown) -->
         <div
-            class="flex-1 flex-col bg-white/60 backdrop-blur-md rounded-2xl shadow-premium border border-resin-forest/5 overflow-hidden sm:flex {mobileShowContent ? 'flex' : 'hidden'}"
+            class="flex-1 flex-col bg-white/60 backdrop-blur-md rounded-lg shadow-premium border border-resin-forest/5 overflow-hidden sm:flex {mobileShowContent ? 'flex' : 'hidden'}"
         >
             <!-- Mobile back button -->
             <button
@@ -386,7 +386,7 @@
                                                         id="start_{index}"
                                                         name="availability_start_{index}"
                                                         value={getAvailabilityTime(profile?.availability_schedule?.[index]?.start ?? 16, 'start')}
-                                                        class="w-28 px-4 py-2 bg-white border border-resin-forest/10 rounded-lg focus:outline-none focus:border-resin-forest/30 text-resin-charcoal font-medium text-base"
+                                                        class="w-28 px-4 py-2 bg-white border border-resin-forest/20 rounded-lg focus:outline-none focus:border-resin-forest/30 text-resin-charcoal font-medium text-base"
                                                     />
                                                 </div>
                                                 <div class="text-resin-earth/40">→</div>
@@ -397,7 +397,7 @@
                                                         id="end_{index}"
                                                         name="availability_end_{index}"
                                                         value={getAvailabilityTime(profile?.availability_schedule?.[index]?.end ?? 22, 'end')}
-                                                        class="w-28 px-4 py-2 bg-white border border-resin-forest/10 rounded-lg focus:outline-none focus:border-resin-forest/30 text-resin-charcoal font-medium text-base"
+                                                        class="w-28 px-4 py-2 bg-white border border-resin-forest/20 rounded-lg focus:outline-none focus:border-resin-forest/30 text-resin-charcoal font-medium text-base"
                                                     />
                                                 </div>
                                             </div>
@@ -1034,7 +1034,7 @@
                                                     type={field.includes('secret') || field.includes('token') || field.includes('key') ? 'password' : 'text'}
                                                     bind:value={commandConfigForm[field]}
                                                     placeholder="Enter {fieldLabels[field] || field}"
-                                                    class="w-full px-3 py-2 text-sm bg-white border border-resin-forest/10 rounded-lg text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/30 focus:ring-1 focus:ring-resin-forest/20"
+                                                    class="w-full px-3 py-2 text-sm bg-white border border-resin-forest/20 rounded-lg text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/30 focus:ring-1 focus:ring-resin-forest/20"
                                                 />
                                             </div>
                                         {/each}
@@ -1655,7 +1655,7 @@
     <!-- Hardened Mode Confirmation Modal -->
     {#if showHardenedModal}
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" transition:fade>
-            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
                 <div class="bg-gradient-to-r from-resin-forest to-resin-amber p-6">
                     <h2 class="text-2xl font-bold text-white">🔒 Enable Hardened Mode?</h2>
                 </div>
@@ -1725,7 +1725,7 @@
     <!-- Emergency Unlock Modal -->
     {#if showEmergencyUnlock}
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" transition:fade>
-            <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
                 <div class="bg-gradient-to-r from-red-600 to-red-700 p-6">
                     <h2 class="text-2xl font-bold text-white">🚨 Emergency Unlock</h2>
                 </div>

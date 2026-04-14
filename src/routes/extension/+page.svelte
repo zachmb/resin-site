@@ -15,7 +15,7 @@
 	<div class="max-w-5xl mx-auto">
 		<!-- Header -->
 		<div class="text-center mb-16" in:fly={{ y: -20, duration: 800 }}>
-			<div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-resin-charcoal text-white shadow-xl mb-6">
+			<div class="inline-flex items-center justify-center w-20 h-20 rounded-xl bg-resin-charcoal text-white shadow-xl mb-6">
 				<img src="/resinext-logo.png" alt="Resin Web Shield" class="w-12 h-12 object-contain" />
 			</div>
 			<h1 class="text-5xl md:text-6xl font-bold text-resin-charcoal mb-4">
@@ -29,7 +29,7 @@
 		<!-- Hero Features Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
 			<div
-				class="glass-card rounded-2xl p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all"
+				class="glass-card rounded-lg p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all"
 				in:fly={{ x: -20, duration: 600, delay: 100 }}
 			>
 				<div class="text-4xl mb-4">🔒</div>
@@ -40,7 +40,7 @@
 			</div>
 
 			<div
-				class="glass-card rounded-2xl p-8 border border-resin-amber/10 bg-gradient-to-br from-resin-amber/5 to-transparent hover:border-resin-amber/30 transition-all"
+				class="glass-card rounded-lg p-8 border border-resin-amber/10 bg-gradient-to-br from-resin-amber/5 to-transparent hover:border-resin-amber/30 transition-all"
 				in:fly={{ x: 0, duration: 600, delay: 200 }}
 			>
 				<div class="text-4xl mb-4">⚡</div>
@@ -51,7 +51,7 @@
 			</div>
 
 			<div
-				class="glass-card rounded-2xl p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all"
+				class="glass-card rounded-lg p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all"
 				in:fly={{ x: 20, duration: 600, delay: 300 }}
 			>
 				<div class="text-4xl mb-4">📊</div>
@@ -131,7 +131,7 @@
 
 		<!-- Key Features Detail -->
 		<section class="mb-20">
-			<div class="glass-card rounded-3xl p-12 border border-resin-forest/15 bg-gradient-to-br from-resin-forest/5 to-transparent">
+			<div class="glass-card rounded-xl p-12 border border-resin-forest/15 bg-gradient-to-br from-resin-forest/5 to-transparent">
 				<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12">Why Resin Web Shield Stands Out</h2>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -251,7 +251,7 @@
 
 		<!-- CTA Section -->
 		<section
-			class="glass-card rounded-3xl p-12 border border-resin-amber/20 bg-gradient-to-r from-resin-amber/10 to-resin-forest/5 text-center"
+			class="glass-card rounded-xl p-12 border border-resin-amber/20 bg-gradient-to-r from-resin-amber/10 to-resin-forest/5 text-center"
 			in:fade={{ duration: 600, delay: 400 }}
 		>
 			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-4">
@@ -265,7 +265,7 @@
 					href="https://chrome.google.com/webstore/detail/resin-shield"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="px-10 py-4 bg-resin-charcoal text-white rounded-2xl font-bold text-lg hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
+					class="px-10 py-4 bg-resin-charcoal text-white rounded-lg font-bold text-lg hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
 				>
 					<span>Add to Chrome</span>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,7 +274,7 @@
 				</a>
 				<button
 					onclick={() => goto('/')}
-					class="px-10 py-4 bg-white text-resin-charcoal border-2 border-resin-charcoal rounded-2xl font-bold text-lg hover:bg-resin-charcoal/5 transition-all shadow-xl active:scale-95"
+					class="px-10 py-4 bg-white text-resin-charcoal border-2 border-resin-charcoal rounded-lg font-bold text-lg hover:bg-resin-charcoal/5 transition-all shadow-xl active:scale-95"
 				>
 					Back to Dashboard
 				</button>

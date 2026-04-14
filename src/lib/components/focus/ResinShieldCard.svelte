@@ -10,7 +10,7 @@
 {#if extensionInstalled}
     <!-- Extension Installed - Management Card -->
     <div
-        class="glass-card rounded-[2.5rem] p-8 border border-resin-forest/20 shadow-premium relative overflow-hidden group bg-gradient-to-br from-resin-forest/5 to-transparent"
+        class="glass-card rounded-xl p-8 border border-resin-forest/20 shadow-premium relative overflow-hidden group bg-gradient-to-br from-resin-forest/5 to-transparent"
     >
         <!-- Background Decoration -->
         <div
@@ -21,7 +21,7 @@
             <div class="flex items-start justify-between mb-8">
                 <div class="flex items-center gap-4">
                     <div
-                        class="w-14 h-14 rounded-2xl bg-resin-forest text-white flex items-center justify-center shadow-xl group-hover:rotate-3 transition-transform"
+                        class="w-14 h-14 rounded-lg bg-resin-forest text-white flex items-center justify-center shadow-xl group-hover:rotate-3 transition-transform"
                     >
                         <Settings size={28} />
                     </div>
@@ -30,7 +30,7 @@
                             Extension Connected
                         </h3>
                         <div
-                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-resin-forest/10 border border-resin-forest/20 text-[10px] font-bold text-resin-forest uppercase tracking-wider"
+                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-resin-forest/10 border border-resin-forest/20 text-[10px] font-bold text-resin-forest uppercase tracking-wider"
                         >
                             ✓ Active
                         </div>
@@ -87,7 +87,7 @@
 {:else}
     <!-- Extension Not Installed - Activation Card -->
     <div
-        class="glass-card rounded-[2.5rem] p-8 border border-resin-amber/20 shadow-premium relative overflow-hidden group bg-gradient-to-br from-resin-amber/5 to-transparent"
+        class="glass-card rounded-xl p-8 border border-resin-amber/20 shadow-premium relative overflow-hidden group bg-gradient-to-br from-resin-amber/5 to-transparent"
     >
         <!-- Background Decoration -->
         <div
@@ -98,7 +98,7 @@
             <div class="flex items-start justify-between mb-8">
                 <div class="flex items-center gap-4">
                     <div
-                        class="w-14 h-14 rounded-2xl bg-resin-charcoal text-white flex items-center justify-center shadow-xl group-hover:rotate-3 transition-transform"
+                        class="w-14 h-14 rounded-lg bg-resin-charcoal text-white flex items-center justify-center shadow-xl group-hover:rotate-3 transition-transform"
                     >
                         <img
                             src="/resinext-logo.png"
@@ -111,7 +111,7 @@
                             Activate the Resin Web Shield
                         </h3>
                         <div
-                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-resin-amber/10 border border-resin-amber/20 text-[10px] font-bold text-resin-amber uppercase tracking-wider"
+                            class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-resin-amber/10 border border-resin-amber/20 text-[10px] font-bold text-resin-amber uppercase tracking-wider"
                         >
                             Power Integration
                         </div>

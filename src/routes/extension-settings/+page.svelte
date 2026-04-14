@@ -61,7 +61,7 @@
         {/if}
 
         <!-- Extension Control -->
-        <div class="glass-card rounded-2xl p-8 mb-6 border border-white/20 shadow-premium">
+        <div class="glass-card rounded-lg p-8 mb-6 border border-white/20 shadow-premium">
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h2 class="text-xl font-bold text-resin-charcoal flex items-center gap-2">
@@ -85,7 +85,7 @@
         </div>
 
         <!-- Blocking Settings -->
-        <div class="glass-card rounded-2xl p-8 mb-6 border border-white/20 shadow-premium space-y-6">
+        <div class="glass-card rounded-lg p-8 mb-6 border border-white/20 shadow-premium space-y-6">
             <h2 class="text-xl font-bold text-resin-charcoal">Blocking Rules</h2>
 
             <!-- Blocking Enabled -->
@@ -132,7 +132,7 @@
         </div>
 
         <!-- Blocked Domains -->
-        <div class="glass-card rounded-2xl p-8 mb-6 border border-white/20 shadow-premium">
+        <div class="glass-card rounded-lg p-8 mb-6 border border-white/20 shadow-premium">
             <h2 class="text-xl font-bold text-resin-charcoal mb-4">Custom Blocked Domains</h2>
             <p class="text-sm text-resin-earth/60 mb-4">Add specific websites to block during focus sessions</p>
 

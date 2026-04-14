@@ -13,13 +13,13 @@
 >
     <div class="max-w-md w-full">
         <div
-            class="glass-card rounded-[2.5rem] p-10 text-center space-y-8 animate-fade-in"
+            class="glass-card rounded-xl p-10 text-center space-y-8 animate-fade-in"
         >
             <div class="space-y-4">
                 <img
                     src="/logo.png"
                     alt="Resin Logo"
-                    class="w-20 h-20 mx-auto rounded-2xl shadow-md border border-resin-forest/10"
+                    class="w-20 h-20 mx-auto rounded-lg shadow-md border border-resin-forest/10"
                 />
                 <h1 class="text-3xl font-bold font-serif text-resin-charcoal">
                     Welcome to Resin
@@ -33,7 +33,7 @@
             <div class="space-y-6">
                 <form method="POST" action="?/signInWithGoogle">
                     <button
-                        class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border border-resin-forest/10 rounded-2xl text-resin-charcoal font-semibold hover:bg-resin-bg hover:shadow-md transition-all duration-300 group"
+                        class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border border-resin-forest/20 rounded-lg text-resin-charcoal font-semibold hover:bg-resin-bg hover:shadow-md transition-all duration-300 group"
                     >
                         <svg class="w-6 h-6" viewBox="0 0 24 24">
                             <path
@@ -59,7 +59,7 @@
 
                 <form method="POST" action="?/signInWithApple">
                     <button
-                        class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-resin-charcoal border border-resin-charcoal rounded-2xl text-white font-semibold hover:bg-resin-charcoal/80 hover:shadow-md transition-all duration-300 group"
+                        class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-resin-charcoal border border-resin-charcoal rounded-lg text-white font-semibold hover:bg-resin-charcoal/80 hover:shadow-md transition-all duration-300 group"
                     >
                         <Apple class="w-6 h-6" />
                         Continue with Apple

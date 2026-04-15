@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Brain, Lock, Check, ChevronDown, Apple, TrendingUp, Calendar, Globe, Star, Shield, ArrowRight, FileText, Mic, Link, Users, Zap } from 'lucide-svelte';
+    import { Brain, Lock, Check, ChevronDown, Apple, TrendingUp, Calendar, Globe, Star, Shield, ArrowRight, FileText, Mic, Link } from 'lucide-svelte';
     import { onMount } from 'svelte';
 
     // ── iOS-accurate color palette ──────────────────────────────────────
@@ -153,7 +153,7 @@
                 <!-- Kicker -->
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-7 uppercase tracking-wider"
                      style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
-                    <Brain class="w-3 h-3" /> Notes · AI Planning · Real blocking
+                    <FileText class="w-3 h-3" /> Notes · AI Planning · Focus
                 </div>
 
                 <h1 class="font-serif font-bold tracking-tight mb-6" style="font-size: clamp(42px, 5.8vw, 70px); line-height: 1.05; color: {C.charcoal};">
@@ -928,73 +928,6 @@ The real problem is I don't have a system. Maybe:
                 </div>
             </div>
         </div>
-    </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     2e IDENTITY SECTION
-═══════════════════════════════════════════════════════════ -->
-<section class="py-24 px-6 overflow-hidden" style="background:{C.bg};" data-section="twoE">
-    <div class="max-w-5xl mx-auto transition-all duration-700 {visible('twoE')}">
-
-        <!-- Header -->
-        <div class="text-center mb-14">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-bold mb-7 uppercase tracking-wider"
-                 style="background:rgba(200,136,74,0.1); color:{C.amberDark};">
-                <Brain class="w-3 h-3" /> Built for 2e minds
-            </div>
-            <h2 class="font-serif font-bold leading-tight mb-5" style="font-size:clamp(30px,3.8vw,46px); color:{C.charcoal};">
-                Your brain moves fast.<br />The tools should keep up.
-            </h2>
-            <p class="max-w-xl mx-auto leading-relaxed" style="font-size:17px; color:{C.earth}; line-height:1.8;">
-                Resin is designed for twice-exceptional people — gifted minds who also live with ADHD, autism, dyslexia, or sensory differences. High horsepower, hard to start. Resin is built for that exact gap.
-            </p>
-        </div>
-
-        <!-- 3-col trait cards -->
-        <div class="grid md:grid-cols-3 gap-5 mb-14">
-            {#each [
-                {
-                    icon: Brain,
-                    color: C.amber,
-                    bg: 'rgba(200,136,74,0.08)',
-                    title: 'Working memory relief',
-                    body: 'The brain dump is a pressure valve. Get it out of your head and onto the screen — then let AI sort it into steps your brain can actually start.'
-                },
-                {
-                    icon: Zap,
-                    color: C.forest,
-                    bg: 'rgba(77,102,82,0.08)',
-                    title: 'Task initiation, solved',
-                    body: 'Knowing what to do and starting are two different neurological events. Resin breaks tasks small enough that the first step feels possible.'
-                },
-                {
-                    icon: Lock,
-                    color: C.amberDark,
-                    bg: 'rgba(160,102,58,0.08)',
-                    title: 'No willpower required',
-                    body: 'OS-level blocking removes impulsive escape routes entirely. Your phone can\'t distract you because the apps aren\'t there. No override.'
-                }
-            ] as card}
-                <div class="rounded-2xl p-7" style="background:white; border:1px solid rgba(46,42,38,0.06);">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style="background:{card.bg};">
-                        <card.icon class="w-4.5 h-4.5" style="color:{card.color};" />
-                    </div>
-                    <h3 class="font-serif font-bold mb-3" style="font-size:17px; color:{C.charcoal};">{card.title}</h3>
-                    <p class="text-sm leading-relaxed" style="color:{C.earth}; opacity:0.85;">{card.body}</p>
-                </div>
-            {/each}
-        </div>
-
-        <!-- Quiet pull quote -->
-        <div class="rounded-2xl px-8 py-7 text-center" style="background:rgba(200,136,74,0.06); border:1px solid rgba(200,136,74,0.12); max-width:680px; margin:0 auto;">
-            <p class="font-serif leading-relaxed mb-3" style="font-size:18px; color:{C.charcoal}; font-style:italic;">
-                "Most productivity systems assume you think like a neurotypical person. This doesn't."
-            </p>
-            <p class="text-xs font-semibold uppercase tracking-wider" style="color:{C.earthLight};">— Morgan A., AuDHD · Software Engineer</p>
-        </div>
-
     </div>
 </section>
 

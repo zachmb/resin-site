@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Brain, Lock, Check, ChevronDown, Apple, TrendingUp, Calendar, Globe, Star, Shield, ArrowRight, FileText, Mic, Link, Users, Zap } from 'lucide-svelte';
     import { onMount } from 'svelte';
+    import { createAsciiRenderer } from 'landing-effects';
 
     // ── iOS-accurate color palette ──────────────────────────────────────
     // Pulled directly from ResinTheme.swift
@@ -23,6 +24,14 @@
 
     let animatedSections = $state<{ [key: string]: boolean }>({});
     let openFaq = $state<number | null>(null);
+
+    // ASCII fossil canvas refs — hero + 5 section decorations
+    let asciiCanvas: HTMLCanvasElement;
+    let fossilAmmoniteCanvas: HTMLCanvasElement;
+    let fossilTrilobiteCanvas: HTMLCanvasElement;
+    let fossilTrexCanvas: HTMLCanvasElement;
+    let fossilFootprintCanvas: HTMLCanvasElement;
+    let fossilCtaCanvas: HTMLCanvasElement;
 
     function toggleFaq(i: number) {
         openFaq = openFaq === i ? null : i;
@@ -117,7 +126,109 @@
         }, { threshold: 0.05, rootMargin: '60px' });
 
         sections.forEach((s) => observer.observe(s));
-        return () => observer.disconnect();
+
+        // Lazy-init helper: defers ASCII renderer until element scrolls into view
+        function lazily(canvas: HTMLCanvasElement, init: () => (() => void)): () => void {
+            let cleanup: (() => void) | undefined;
+            const obs = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    cleanup = init();
+                    obs.disconnect();
+                }
+            }, { rootMargin: '120px' });
+            obs.observe(canvas);
+            return () => { obs.disconnect(); cleanup?.(); };
+        }
+
+        // Hero — dragonfly in amber, behind phone mockup (eager, always visible)
+        let cleanupAscii: (() => void) | undefined;
+        if (asciiCanvas) {
+            cleanupAscii = createAsciiRenderer({
+                canvas: asciiCanvas,
+                imageSrc: '/images/fossils/fossil_dragonfly_amber.png',
+                chars: ' ·:+%#',
+                fontSize: 10,
+                brightnessBoost: 1.6,
+                parallaxStrength: 10,
+                colorFn: (lum, _dist) => {
+                    const r = Math.round(140 + lum * 115);
+                    const g = Math.round(80 + lum * 80);
+                    const b = Math.round(30 + lum * 40);
+                    return `rgba(${r},${g},${b},${0.25 + lum * 0.75})`;
+                }
+            });
+        }
+
+        // Amber palette shared across section fossils
+        const amberFn = (lum: number) =>
+            `rgba(${Math.round(145+lum*110)},${Math.round(85+lum*75)},${Math.round(28+lum*38)},${0.22+lum*0.78})`;
+        const forestFn = (lum: number) =>
+            `rgba(${Math.round(50+lum*70)},${Math.round(88+lum*95)},${Math.round(44+lum*55)},${0.2+lum*0.8})`;
+
+        // Section fossils — lazy (init when scrolled into view)
+        const fossilCleanups: (() => void)[] = [];
+
+        if (fossilAmmoniteCanvas) {
+            fossilCleanups.push(lazily(fossilAmmoniteCanvas, () => createAsciiRenderer({
+                canvas: fossilAmmoniteCanvas,
+                imageSrc: '/images/fossils/fossil_ammonite.png',
+                chars: ' ·:+%#',
+                fontSize: 9,
+                brightnessBoost: 2.0,
+                parallaxStrength: 7,
+                colorFn: (lum) => amberFn(lum)
+            })));
+        }
+        if (fossilTrilobiteCanvas) {
+            fossilCleanups.push(lazily(fossilTrilobiteCanvas, () => createAsciiRenderer({
+                canvas: fossilTrilobiteCanvas,
+                imageSrc: '/images/fossils/fossil_trilobite_flat.png',
+                chars: ' ·:+%#',
+                fontSize: 9,
+                brightnessBoost: 1.9,
+                parallaxStrength: 5,
+                colorFn: (lum) => `rgba(${Math.round(110+lum*100)},${Math.round(95+lum*85)},${Math.round(55+lum*55)},${0.2+lum*0.8})`
+            })));
+        }
+        if (fossilTrexCanvas) {
+            fossilCleanups.push(lazily(fossilTrexCanvas, () => createAsciiRenderer({
+                canvas: fossilTrexCanvas,
+                imageSrc: '/images/fossils/fossil_trex_flat.png',
+                chars: ' ·:+%#',
+                fontSize: 10,
+                brightnessBoost: 1.7,
+                parallaxStrength: 6,
+                colorFn: (lum) => forestFn(lum)
+            })));
+        }
+        if (fossilFootprintCanvas) {
+            fossilCleanups.push(lazily(fossilFootprintCanvas, () => createAsciiRenderer({
+                canvas: fossilFootprintCanvas,
+                imageSrc: '/images/fossils/fossil_footprint.png',
+                chars: ' ·:+%#',
+                fontSize: 8,
+                brightnessBoost: 2.2,
+                parallaxStrength: 4,
+                colorFn: (lum) => amberFn(lum)
+            })));
+        }
+        if (fossilCtaCanvas) {
+            fossilCleanups.push(lazily(fossilCtaCanvas, () => createAsciiRenderer({
+                canvas: fossilCtaCanvas,
+                imageSrc: '/images/fossils/fossil_ammonite_brush.png',
+                chars: ' ·:+%#',
+                fontSize: 11,
+                brightnessBoost: 1.5,
+                parallaxStrength: 8,
+                colorFn: (lum) => amberFn(lum)
+            })));
+        }
+
+        return () => {
+            observer.disconnect();
+            cleanupAscii?.();
+            fossilCleanups.forEach(c => c());
+        };
     });
 
     function visible(key: string) {
@@ -211,6 +322,14 @@
 
             <!-- ── RIGHT: Single phone mockup + annotations ── -->
             <div class="hidden lg:flex justify-center items-center relative" style="height:640px;">
+
+                <!-- ASCII art canvas — amber fossil rendered behind the phone -->
+                <canvas
+                    bind:this={asciiCanvas}
+                    class="absolute inset-0 w-full h-full"
+                    style="opacity: 0.28; pointer-events: none; border-radius: 24px;"
+                    aria-hidden="true"
+                ></canvas>
 
                 <!-- The phone -->
                 <div class="relative z-20" style="transform: rotate(1.5deg);">
@@ -341,7 +460,12 @@
 <!-- ═══════════════════════════════════════════════════════════
      FEATURE A — Notes first
 ═══════════════════════════════════════════════════════════ -->
-<section class="py-28 px-6" style="background:{C.bg};" data-section="feat-notes">
+<section class="relative overflow-hidden py-28 px-6" style="background:{C.bg};" data-section="feat-notes">
+    <!-- Ammonite spiral — top-right background decoration -->
+    <canvas bind:this={fossilAmmoniteCanvas}
+        class="absolute pointer-events-none hidden lg:block"
+        style="top:-40px; right:-50px; width:280px; height:280px; opacity:0.18;"
+        aria-hidden="true"></canvas>
     <div class="max-w-7xl mx-auto">
         <div class="grid lg:grid-cols-2 gap-20 items-center transition-all duration-700 {visible('feat-notes')}">
 
@@ -465,7 +589,12 @@ The real problem is I don't have a system. Maybe:
 <!-- ═══════════════════════════════════════════════════════════
      FEATURE B — AI Planning (warm bg)
 ═══════════════════════════════════════════════════════════ -->
-<section class="py-28 px-6" style="background:{C.bgSecondary};" data-section="feat-plan">
+<section class="relative overflow-hidden py-28 px-6" style="background:{C.bgSecondary};" data-section="feat-plan">
+    <!-- Trilobite — bottom-left background decoration -->
+    <canvas bind:this={fossilTrilobiteCanvas}
+        class="absolute pointer-events-none hidden lg:block"
+        style="bottom:-50px; left:-40px; width:260px; height:260px; opacity:0.16;"
+        aria-hidden="true"></canvas>
     <div class="max-w-7xl mx-auto">
         <div class="grid lg:grid-cols-2 gap-20 items-center transition-all duration-700 {visible('feat-plan')}">
 
@@ -569,7 +698,12 @@ The real problem is I don't have a system. Maybe:
 <!-- ═══════════════════════════════════════════════════════════
      FEATURE C — App Blocking
 ═══════════════════════════════════════════════════════════ -->
-<section class="py-28 px-6" style="background:{C.bg};" data-section="feat-block">
+<section class="relative overflow-hidden py-28 px-6" style="background:{C.bg};" data-section="feat-block">
+    <!-- T-Rex skull — bottom-right background decoration -->
+    <canvas bind:this={fossilTrexCanvas}
+        class="absolute pointer-events-none hidden lg:block"
+        style="bottom:-60px; right:-30px; width:310px; height:280px; opacity:0.14;"
+        aria-hidden="true"></canvas>
     <div class="max-w-7xl mx-auto">
         <div class="grid lg:grid-cols-2 gap-20 items-center transition-all duration-700 {visible('feat-block')}">
 
@@ -935,7 +1069,12 @@ The real problem is I don't have a system. Maybe:
 <!-- ═══════════════════════════════════════════════════════════
      2e IDENTITY SECTION
 ═══════════════════════════════════════════════════════════ -->
-<section class="py-24 px-6 overflow-hidden" style="background:{C.bg};" data-section="twoE">
+<section class="relative py-24 px-6 overflow-hidden" style="background:{C.bg};" data-section="twoE">
+    <!-- Dino footprint — left-center background decoration -->
+    <canvas bind:this={fossilFootprintCanvas}
+        class="absolute pointer-events-none hidden lg:block"
+        style="top:50%; left:-30px; transform:translateY(-50%); width:200px; height:220px; opacity:0.15;"
+        aria-hidden="true"></canvas>
     <div class="max-w-5xl mx-auto transition-all duration-700 {visible('twoE')}">
 
         <!-- Header -->
@@ -1148,7 +1287,12 @@ The real problem is I don't have a system. Maybe:
 <!-- ═══════════════════════════════════════════════════════════
      FINAL CTA
 ═══════════════════════════════════════════════════════════ -->
-<section class="py-28 px-6" style="background:{C.bg};" data-section="cta">
+<section class="relative overflow-hidden py-28 px-6" style="background:{C.bg};" data-section="cta">
+    <!-- Ammonite brush — large centered background watermark -->
+    <canvas bind:this={fossilCtaCanvas}
+        class="absolute pointer-events-none hidden lg:block"
+        style="top:50%; left:50%; transform:translate(-50%,-50%); width:420px; height:420px; opacity:0.1;"
+        aria-hidden="true"></canvas>
     <div class="max-w-3xl mx-auto text-center transition-all duration-700 {visible('cta')}">
         <div class="text-5xl mb-7" style="filter:drop-shadow(0 4px 16px rgba(77,102,82,0.2));">🌲</div>
         <h2 class="font-serif font-bold leading-tight mb-6" style="font-size:clamp(36px,5vw,60px); color:{C.charcoal};">

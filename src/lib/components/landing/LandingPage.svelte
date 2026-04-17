@@ -8,7 +8,6 @@
     import QuickFocusSection from './QuickFocusSection.svelte';
 
 let pineHeroCanvas: HTMLCanvasElement;
-    let heroPixelCanvas: HTMLCanvasElement;
     let pineSectionCanvas: HTMLCanvasElement;
     let pixelRevealCanvas!: HTMLCanvasElement;
 
@@ -41,30 +40,21 @@ let pineHeroCanvas: HTMLCanvasElement;
         const amberFn = (lum: number) =>
             `rgba(${Math.round(145+lum*110)},${Math.round(85+lum*75)},${Math.round(28+lum*38)},${0.22+lum*0.78})`;
 
-        // Hero ASCII — heropine.jpeg rendered as forest-green ASCII, fills right column
+        // Hero ASCII — transparent PNG (white removed), WebGL path, forest-green colorFn
         const cleanupHero = createAsciiRenderer({
             canvas: pineHeroCanvas,
-            imageSrc: '/images/heropine.jpeg',
+            imageSrc: '/images/heropine_noback.png',
             chars: ' ·:+#',
             fontSize: 8,
             brightnessBoost: 2.2,
             parallaxStrength: 8,
             colorFn: (lum) => {
-                const r = Math.round(44 + lum * 110);
-                const g = Math.round(82 + lum * 80);
-                const b = Math.round(40 + lum * 30);
-                return `rgba(${r},${g},${b},${0.18 + lum * 0.82})`;
+                if (lum < 0.02) return 'rgba(0,0,0,0)';
+                const r = Math.round(44 + lum * 60);
+                const g = Math.round(82 + lum * 50);
+                const b = Math.round(38 + lum * 20);
+                return `rgba(${r},${g},${b},${Math.min(1, lum * 1.5 + 0.2)})`;
             },
-        });
-
-        // Hero pixel reveal — same image, loads in block-by-block over the ASCII
-        const cleanupHeroPixel = createPixelReveal({
-            canvas: heroPixelCanvas,
-            imageSrc: '/images/heropine.jpeg',
-            blockSize: 18,
-            pixelsPerFrame: 6,
-            glitchRegion: 0.22,
-            delay: 300,
         });
 
         const cleanups = [
@@ -89,7 +79,6 @@ let pineHeroCanvas: HTMLCanvasElement;
 
         return () => {
             cleanupHero();
-            cleanupHeroPixel();
             cleanups.forEach(c => c());
         };
     });
@@ -195,13 +184,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                     style="pointer-events:none;"
                     aria-hidden="true"></canvas>
 
-                <!-- Pixel reveal — loads in block-by-block on top of ASCII -->
-                <canvas bind:this={heroPixelCanvas}
-                    class="absolute inset-0 w-full h-full"
-                    style="pointer-events:none;"
-                    aria-hidden="true"></canvas>
-
-                <div class="absolute bottom-8 left-8 right-8 flex flex-col gap-2 pointer-events-none">
+<div class="absolute bottom-8 left-8 right-8 flex flex-col gap-2 pointer-events-none">
                     <div class="box flex items-center gap-3 px-4 py-3"
                          style="background:rgba(245,239,231,0.82); backdrop-filter:blur(8px); max-width:220px;">
                         <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">

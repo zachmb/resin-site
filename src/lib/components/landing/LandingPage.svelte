@@ -7,37 +7,11 @@
     import FeaturesGrid from './FeaturesGrid.svelte';
     import QuickFocusSection from './QuickFocusSection.svelte';
 
-    const PINE_PATH = `
-        M 155 4
-        L 163 22 L 178 14 L 171 35 L 191 24 L 180 48
-        L 200 38 L 215 28 L 203 56 L 224 44 L 210 70
-        L 232 58 L 248 46 L 233 78 L 252 66 L 236 95
-        L 256 82 L 268 68 L 252 104 L 270 92 L 252 122
-        L 269 110 L 279 94 L 262 132 L 278 120 L 257 152
-        L 273 141 L 280 125 L 263 162 L 275 153 L 252 182
-        L 265 172 L 269 158 L 248 192 L 258 185 L 232 214
-        L 242 208 L 244 194 L 218 228 L 226 222 L 196 250
-        L 200 245 L 198 232 L 173 268
-        L 185 268 L 188 310 L 172 310 L 172 390 L 138 390 L 138 310 L 122 310 L 125 268
-        L 137 268
-        L 112 232 L 110 245 L 114 250 L 84 222 L 92 228
-        L 66 194 L 68 208 L 78 214 L 52 185 L 62 192
-        L 41 158 L 45 172 L 58 182 L 35 153 L 47 162
-        L 30 125 L 37 141 L 53 152 L 32 120 L 48 132
-        L 31 94 L 41 110 L 58 122 L 40 92 L 58 104
-        L 42 68 L 54 82 L 74 95 L 58 66 L 77 78
-        L 62 46 L 78 58 L 100 70 L 86 44 L 107 56
-        L 95 28 L 110 38 L 130 48 L 119 24 L 139 35
-        L 132 14 L 147 22
-        Z
-    `.trim();
-
-    let pineHeroCanvas: HTMLCanvasElement;
+let pineHeroCanvas: HTMLCanvasElement;
+    let heroPixelCanvas: HTMLCanvasElement;
     let pineSectionCanvas: HTMLCanvasElement;
     let pixelRevealCanvas!: HTMLCanvasElement;
-    let pineSvgPath: SVGPathElement;
 
-    let pineOutlineStarted = $state(false);
     let visible = $state(false);
     let openFaq = $state<number | null>(null);
 
@@ -47,17 +21,13 @@
         { q: "Is my data private?", a: "AI runs entirely on your device. Nothing leaves your phone. No content reading, no data selling, no model training. Export or delete everything anytime." },
         { q: "Do I need iOS to use Resin?", a: "The web app handles notes, planning, and calendar sync. OS-level app blocking requires iOS. Website blocking via Chrome extension works on Mac too." },
         { q: "How is it free if it uses AI?", a: "On-device models (Gemma, Qwen) run on your iPhone's neural engine. No cloud compute = no per-request cost. Core app is free forever, no usage caps." },
+        { q: "What does the Chrome extension do?", a: "The Chrome extension enforces website blocking during active focus sessions. Blocked URLs (YouTube, Reddit, Twitter, etc.) are replaced with a calm focus page showing your current task. It syncs with your Resin account automatically — blocking starts and stops with your sessions, no manual toggling." },
+        { q: "Is Resin a notes app or a planning app?", a: "Both. Notes are the foundation — you capture everything there first. When you're ready to act, you activate: AI reads the note and generates an actionable plan. Notes also connect in a mind map, can be shared with friends, and sync across every device." },
+        { q: "How is Resin different from Notion or Obsidian?", a: "Notion and Obsidian are great for organizing knowledge. Resin is for getting things done. Notes become actionable plans with AI in one tap, automatically scheduled on your calendar, and enforced with real app blocking. It's the gap between knowing what to do and actually doing it." },
     ];
 
     onMount(() => {
         visible = true;
-
-        if (pineSvgPath) {
-            const len = pineSvgPath.getTotalLength();
-            pineSvgPath.style.strokeDasharray = String(len);
-            pineSvgPath.style.strokeDashoffset = String(len);
-            requestAnimationFrame(() => { pineOutlineStarted = true; });
-        }
 
         function lazily(canvas: HTMLCanvasElement, init: () => (() => void)): () => void {
             let cleanup: (() => void) | undefined;
@@ -71,19 +41,30 @@
         const amberFn = (lum: number) =>
             `rgba(${Math.round(145+lum*110)},${Math.round(85+lum*75)},${Math.round(28+lum*38)},${0.22+lum*0.78})`;
 
+        // Hero ASCII — heropine.jpeg rendered as forest-green ASCII, fills right column
         const cleanupHero = createAsciiRenderer({
             canvas: pineHeroCanvas,
-            imageSrc: '/images/pine_tree.svg',
+            imageSrc: '/images/heropine.jpeg',
             chars: ' ·:+#',
             fontSize: 8,
-            brightnessBoost: 2.8,
+            brightnessBoost: 2.2,
             parallaxStrength: 8,
             colorFn: (lum) => {
-                const r = Math.round(44 + lum * 140);
-                const g = Math.round(80 + lum * 60);
-                const b = Math.round(40 + lum * 20);
-                return `rgba(${r},${g},${b},${0.15 + lum * 0.85})`;
+                const r = Math.round(44 + lum * 110);
+                const g = Math.round(82 + lum * 80);
+                const b = Math.round(40 + lum * 30);
+                return `rgba(${r},${g},${b},${0.18 + lum * 0.82})`;
             },
+        });
+
+        // Hero pixel reveal — same image, loads in block-by-block over the ASCII
+        const cleanupHeroPixel = createPixelReveal({
+            canvas: heroPixelCanvas,
+            imageSrc: '/images/heropine.jpeg',
+            blockSize: 18,
+            pixelsPerFrame: 6,
+            glitchRegion: 0.22,
+            delay: 300,
         });
 
         const cleanups = [
@@ -108,6 +89,7 @@
 
         return () => {
             cleanupHero();
+            cleanupHeroPixel();
             cleanups.forEach(c => c());
         };
     });
@@ -124,15 +106,7 @@
             border-radius:0; border-left:none; border-right:none; border-top:none;">
     <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <svg viewBox="0 0 20 24" width="16" height="20" aria-hidden="true">
-                <path fill="{C.forest}" d="M10,1 L12,5 L14,3 L13,7 L15,5 L14,9 L16,7 L15,11
-                                           L17,9 L15,13 L13,17 L11,17 L11,22 L9,22 L9,17 L7,17
-                                           L5,13 L3,9 L5,11 L4,7 L6,9 L5,5 L7,7 L6,3 L8,5 Z">
-                    <animate attributeName="opacity" values="0.7;1;0.7" dur="4s" repeatCount="indefinite"
-                             calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" />
-                </path>
-            </svg>
-            <span class="font-bold tracking-tight" style="font-size:17px; color:{C.charcoal};">resin</span>
+            <img src="/logo.png" alt="Resin" width="28" height="28" style="display:block;" />
             <span class="tag" style="background:rgba(200,136,74,0.1); color:{C.amberDark};">beta</span>
         </div>
         <div class="flex items-center gap-3">
@@ -212,40 +186,20 @@
 
             </div>
 
-            <!-- RIGHT: ASCII canvas + SVG pine outline -->
+            <!-- RIGHT: ASCII + pixel-reveal canvas -->
             <div class="relative hidden lg:block" style="height:85vh; border-left:1px solid rgba(46,42,38,0.1);">
 
+                <!-- ASCII renderer — always-on parallax base layer -->
                 <canvas bind:this={pineHeroCanvas}
                     class="absolute inset-0 w-full h-full"
                     style="pointer-events:none;"
                     aria-hidden="true"></canvas>
 
-                <svg class="absolute inset-0 w-full h-full pointer-events-none"
-                     viewBox="0 0 310 400"
-                     preserveAspectRatio="xMidYMid meet"
-                     aria-hidden="true">
-                    <defs>
-                        <linearGradient id="pine-stroke-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%"   stop-color="{C.amberLight}" />
-                            <stop offset="60%"  stop-color="{C.amber}" />
-                            <stop offset="100%" stop-color="{C.forest}" />
-                        </linearGradient>
-                        <filter id="pine-glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-                            <feMerge>
-                                <feMergeNode in="blur" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                    </defs>
-                    <path bind:this={pineSvgPath} d={PINE_PATH}
-                          class="pine-outline" class:drawing={pineOutlineStarted}
-                          stroke="url(#pine-stroke-grad)" stroke-width="3"
-                          filter="url(#pine-glow)" style="animation-duration:3.8s;" />
-                    <path d={PINE_PATH} fill="none" stroke="url(#pine-stroke-grad)"
-                          stroke-width="1" stroke-linejoin="round" stroke-linecap="round"
-                          style="opacity:{pineOutlineStarted ? 0.45 : 0}; transition:opacity 0.4s 3.5s ease;" />
-                </svg>
+                <!-- Pixel reveal — loads in block-by-block on top of ASCII -->
+                <canvas bind:this={heroPixelCanvas}
+                    class="absolute inset-0 w-full h-full"
+                    style="pointer-events:none;"
+                    aria-hidden="true"></canvas>
 
                 <div class="absolute bottom-8 left-8 right-8 flex flex-col gap-2 pointer-events-none">
                     <div class="box flex items-center gap-3 px-4 py-3"
@@ -307,9 +261,300 @@
 </div>
 
 
+<!-- ══════════════════════════════════════════════════════
+     STATS STRIP
+══════════════════════════════════════════════════════ -->
+<div style="background:{C.bgTertiary}; border-top:1px solid rgba(46,42,38,0.08); border-bottom:1px solid rgba(46,42,38,0.08);">
+    <div class="max-w-6xl mx-auto px-6 py-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {#each [
+                { val:'2,400+', label:'sessions completed' },
+                { val:'4.8 ★',  label:'avg App Store rating' },
+                { val:'100%',   label:'on-device AI' },
+                { val:'Free',   label:'iOS · no credit card' },
+            ] as { val, label }}
+                <div class="text-center">
+                    <div style="font-size:22px; font-weight:800; color:{C.charcoal}; letter-spacing:-0.02em; margin-bottom:3px;">{val}</div>
+                    <div class="mono" style="font-size:10px; color:{C.earthLight};">{label}</div>
+                </div>
+            {/each}
+        </div>
+    </div>
+</div>
+
+
 <OnboardingCarousel />
 <FeaturesGrid />
 <QuickFocusSection />
+
+
+<!-- ══════════════════════════════════════════════════════
+     NOTES — DEEP DIVE
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bg};">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex items-center gap-4 mb-14">
+            <span class="section-label" style="color:{C.earth};">03 / notes</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+            <div>
+                <h2 style="font-size:clamp(32px,4vw,52px); font-weight:800; line-height:1.05; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:20px;">
+                    Notes first.<br/>Always.
+                </h2>
+                <p style="font-size:15px; color:{C.earth}; line-height:1.8; max-width:460px; margin-bottom:32px;">
+                    Resin starts as a blank canvas. No folders, no templates. Write whatever's in your head — a panic-typed thought, a half-formed goal, a brain dump at 11pm — and figure out the structure later. Notes don't need to be tidy to become a plan.
+                </p>
+                <div class="flex flex-col gap-5">
+                    {#each [
+                        ['Rich text + images', 'Write long-form, paste images, attach photos. OCR extracts text from photos automatically.'],
+                        ['Mind map connections', 'Link notes into a knowledge graph. See how ideas relate across everything you have written.'],
+                        ['Share with anyone', 'Share individual notes via public link or collaborate with other Resin users in real time.'],
+                        ['One tap to activate', 'Any note can become an action plan. Tap Activate — on-device AI reads the whole note and does the rest.'],
+                    ] as [title, body]}
+                        <div class="flex items-start gap-3">
+                            <div style="width:5px; height:5px; border-radius:50%; background:{C.amber}; margin-top:8px; flex-shrink:0;"></div>
+                            <div>
+                                <div style="font-size:14px; font-weight:700; color:{C.charcoal}; margin-bottom:2px;">{title}</div>
+                                <div class="mono" style="font-size:12px; color:{C.earth}; line-height:1.6;">{body}</div>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+
+            <!-- Phone: note editor -->
+            <div class="flex justify-center lg:justify-end">
+                <div style="width:226px; background:{C.bg}; border:1.5px solid rgba(46,42,38,0.18); border-radius:24px; padding:12px 12px 20px; box-shadow:0 16px 48px -12px rgba(46,42,38,0.2); position:relative;">
+                    <div style="width:48px; height:5px; background:rgba(46,42,38,0.15); border-radius:3px; margin:0 auto 14px;"></div>
+                    <div class="mono" style="font-size:9px; color:{C.earthLight}; margin-bottom:8px; display:flex; justify-content:space-between;">
+                        <span>← notes</span><span style="color:{C.amber}; font-weight:700;">done</span>
+                    </div>
+                    <div style="font-size:15px; font-weight:800; color:{C.charcoal}; margin-bottom:3px; line-height:1.2;">Q2 report — due Friday</div>
+                    <div class="mono" style="font-size:9px; color:{C.earthLight}; margin-bottom:12px;">Today · 4 min ago</div>
+                    <div style="height:1px; background:rgba(46,42,38,0.07); margin-bottom:12px;"></div>
+                    <div style="font-size:12px; color:{C.earth}; line-height:1.75; margin-bottom:14px;">
+                        Still haven't started this. Deadline is Friday and Sarah keeps asking. The block is I don't know where to begin — too much data, no clear story yet.
+                        <br/><br/>
+                        <span style="color:{C.charcoal}; font-weight:700;">I need to:</span><br/>
+                        — Pull last quarter numbers<br/>
+                        — Find the 3 things that matter<br/>
+                        — Write exec summary first<br/>
+                        — 6 slides max
+                    </div>
+                    <div style="background:rgba(255,255,255,0.75); border:1px solid rgba(200,136,74,0.22); border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <div style="font-size:10px; font-weight:700; color:{C.charcoal};">Turn this into a plan</div>
+                            <div class="mono" style="font-size:9px; color:{C.earthLight};">AI reads the whole note</div>
+                        </div>
+                        <div style="background:{C.amber}; color:white; border-radius:6px; padding:5px 10px; font-size:10px; font-weight:700;">✨ Activate</div>
+                    </div>
+                    <div style="position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:40px; height:3px; background:rgba(46,42,38,0.15); border-radius:2px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     AI PLANNING — DEEP DIVE
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bgSecondary};">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex items-center gap-4 mb-14">
+            <span class="section-label" style="color:{C.earth};">04 / planning</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+            <!-- Terminal output -->
+            <div>
+                <div style="background:{C.charcoal}; border:1px solid rgba(46,42,38,0.4); border-radius:8px; overflow:hidden;">
+                    <div class="mono flex items-center gap-2 px-4 py-2.5" style="background:rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.06); font-size:10px; color:rgba(245,239,231,0.3);">
+                        <span style="color:#ff6158;">●</span><span style="color:#ffbd2e;">●</span><span style="color:#28ca41;">●</span>
+                        <span style="margin-left:8px;">resin · plan_generator</span>
+                    </div>
+                    <div class="mono px-4 py-5" style="font-size:12px; line-height:2.1; color:rgba(245,239,231,0.55);">
+                        <div><span style="color:rgba(200,136,74,0.9);">$</span> activate "Q2 report due Friday"</div>
+                        <div style="color:rgba(245,239,231,0.3);">&gt; reading note content…</div>
+                        <div style="color:rgba(245,239,231,0.3);">&gt; running gemma-3n on-device…</div>
+                        <div style="color:rgba(132,184,145,0.9); margin-top:2px;">&gt; plan ready (7.4s)</div>
+                        <div style="margin-top:8px; color:rgba(245,239,231,0.75);">
+                            <div style="color:rgba(232,191,138,0.9);">── Q2 Report ──────────────</div>
+                            <div>1. Pull last quarter metrics <span style="color:rgba(245,239,231,0.3);">&lt;30m&gt;</span></div>
+                            <div>2. Identify 3 key trends <span style="color:rgba(245,239,231,0.3);">&lt;45m&gt;</span></div>
+                            <div>3. Build 6-slide deck <span style="color:rgba(245,239,231,0.3);">&lt;60m&gt;</span></div>
+                            <div style="color:rgba(232,191,138,0.9); margin-top:2px;">── Thu 9:00–11:15am · calendar blocked</div>
+                        </div>
+                        <span style="display:inline-block; width:7px; height:14px; background:rgba(200,136,74,0.7); border-radius:1px; vertical-align:-3px; animation:blink-cursor 1s step-end infinite;"></span>
+                    </div>
+                </div>
+                <div class="mono mt-3" style="font-size:10px; color:{C.earthLight};">// gemma-3n · qwen2.5 · neural engine · never leaves device</div>
+            </div>
+
+            <!-- Copy -->
+            <div>
+                <h2 style="font-size:clamp(32px,4vw,52px); font-weight:800; line-height:1.05; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:20px;">
+                    Your note becomes<br/>a plan in seconds.
+                </h2>
+                <p style="font-size:15px; color:{C.earth}; line-height:1.8; max-width:460px; margin-bottom:32px;">
+                    Tap Activate on any note. On-device AI reads the full text, identifies what you actually need to do, and generates a step-by-step plan with time estimates. Then it blocks time on your calendar before you even start.
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                    {#each [
+                        ['No cloud', 'All AI runs on your Neural Engine. Nothing sent to a server.'],
+                        ['No API key', 'Free forever. No tokens, no credits, no usage limits.'],
+                        ['Steps + time', 'Each task gets a specific duration so you know the scope.'],
+                        ['Calendar sync', 'Plan auto-blocks your Google Calendar before you start.'],
+                    ] as [title, body]}
+                        <div class="box p-4" style="background:rgba(255,255,255,0.5);">
+                            <div style="font-size:13px; font-weight:700; color:{C.charcoal}; margin-bottom:4px;">{title}</div>
+                            <div class="mono" style="font-size:11px; color:{C.earth}; line-height:1.5;">{body}</div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     EVERYWHERE — CROSS-PLATFORM
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bg};">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex items-center gap-4 mb-6">
+            <span class="section-label" style="color:{C.earth};">05 / everywhere</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+        <h2 style="font-size:clamp(28px,3.5vw,44px); font-weight:800; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:10px;">
+            Every surface. One system.
+        </h2>
+        <p style="font-size:15px; color:{C.earth}; line-height:1.7; max-width:520px; margin-bottom:40px;">
+            Resin spans iOS, web, Chrome, and Google Calendar. Block apps on your phone and websites on your laptop — simultaneously, in the same session.
+        </p>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {#each [
+                {
+                    platform: 'iOS app',
+                    tag: 'free · no credit card',
+                    tagColor: C.forest,
+                    features: ['Notes + AI planning', 'OS-level app blocking', 'Quick Focus (1 tap)', 'Forest + streaks', 'Home screen widget'],
+                },
+                {
+                    platform: 'Web dashboard',
+                    tag: 'free to try',
+                    tagColor: C.amber,
+                    features: ['Notes editor + mind map', 'Session planning', 'Google Calendar sync', 'Team note sharing', 'Notes boards'],
+                },
+                {
+                    platform: 'Chrome extension',
+                    tag: 'free',
+                    tagColor: C.amberDark,
+                    features: ['Website blocking', 'Syncs with iOS sessions', 'Blocked URL focus page', 'Focus mode indicator', 'Auto start / stop'],
+                },
+                {
+                    platform: 'Google Calendar',
+                    tag: 'auto-sync',
+                    tagColor: C.earth,
+                    features: ['Plans block time slots', 'Session start reminders', 'Two-way sync', 'Rescheduling support', 'Multi-calendar support'],
+                },
+            ] as { platform, tag, tagColor, features }}
+                <div class="box p-5 flex flex-col" style="background:rgba(255,255,255,0.4);">
+                    <div style="font-size:15px; font-weight:800; color:{C.charcoal}; margin-bottom:4px;">{platform}</div>
+                    <div class="mono mb-5" style="font-size:9px; color:{tagColor}; letter-spacing:0.06em; text-transform:uppercase;">{tag}</div>
+                    <div class="flex flex-col gap-2.5 flex-1">
+                        {#each features as feat}
+                            <div class="flex items-center gap-2">
+                                <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
+                                    <path d="M 1,5 L 4,8 L 9,2" fill="none" stroke="{C.forest}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span style="font-size:12px; color:{C.charcoal};">{feat}</span>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
+        </div>
+    </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     FOREST / PROGRESS
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bgSecondary};">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="flex items-center gap-4 mb-14">
+            <span class="section-label" style="color:{C.earth};">06 / progress</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+            <div>
+                <h2 style="font-size:clamp(32px,4vw,52px); font-weight:800; line-height:1.05; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:20px;">
+                    Your discipline<br/>becomes something<br/>you can see.
+                </h2>
+                <p style="font-size:15px; color:{C.earth}; line-height:1.8; max-width:440px; margin-bottom:36px;">
+                    Every completed session earns stones. Stones unlock fossil rewards — from a dino footprint at your first session to a legendary T-Rex at 500. Your forest grows with your streak. Synced across iOS and web in real time.
+                </p>
+                <div class="flex flex-col gap-5">
+                    {#each [
+                        { label:'Stones', body:'Earned for every completed session. Carry over, never expire.' },
+                        { label:'Fossils', body:'14 collectible fossil rewards unlocked by stones and streaks.' },
+                        { label:'Streak', body:'Daily streak tracked and displayed. Flame badge when streak &gt; 1.' },
+                    ] as { label, body }}
+                        <div class="flex items-start gap-4">
+                            <div class="box mono flex-shrink-0" style="background:{C.bg}; padding:4px 10px; font-size:11px; font-weight:700; color:{C.amber}; white-space:nowrap;">{label}</div>
+                            <div style="font-size:13px; color:{C.earth}; line-height:1.6; padding-top:4px;">{@html body}</div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+
+            <!-- Fossil reward grid -->
+            <div>
+                <div class="grid grid-cols-4 gap-2">
+                    {#each [
+                        ['fossil_footprint',      'Dino Footprint',   'always'],
+                        ['fossil_trace',           'Trace Fossil',     '10 stones'],
+                        ['fossil_trilobite_flat',  'Trilobite',        '25 stones'],
+                        ['fossil_bone_rock',       'Bone Fragment',    '50 stones'],
+                        ['fossil_lizard_octagon',  'Stone Lizard',     '75 stones'],
+                        ['fossil_ammonite',        'Ammonite',         '100 stones'],
+                        ['fossil_ammonite_brush',  'Excavation',       '7-day streak'],
+                        ['fossil_triceratops',     'Triceratops',      '14-day streak'],
+                        ['fossil_trex_rock',       'T-Rex in Rock',    '21-day streak'],
+                        ['fossil_trex_flat',       'T-Rex Skull',      '30-day streak'],
+                        ['fossil_trex_cartoon',    'Legendary T-Rex',  '500 stones'],
+                        ['fossil_dragonfly_amber', 'Amber Dragonfly',  '1000 stones'],
+                    ] as [id, name, unlock]}
+                        <div class="box flex flex-col items-center p-2 text-center" style="background:rgba(255,255,255,0.45);">
+                            <img src="/images/fossils/{id}.png" alt="{name}" style="width:38px; height:38px; object-fit:contain; opacity:0.65; margin-bottom:4px;" />
+                            <div style="font-size:8.5px; font-weight:700; color:{C.charcoal}; line-height:1.2;">{name}</div>
+                            <div class="mono" style="font-size:8px; color:{C.earthLight}; margin-top:2px;">{unlock}</div>
+                        </div>
+                    {/each}
+                </div>
+                <div class="mono mt-3 text-center" style="font-size:10px; color:{C.earthLight};">// 14 fossils total · unlocked by stones + streaks</div>
+            </div>
+
+        </div>
+    </div>
+</section>
 
 
 <!-- ══════════════════════════════════════════════════════
@@ -319,7 +564,7 @@
     <div class="max-w-6xl mx-auto">
 
         <div class="flex items-center gap-4 mb-16">
-            <span class="section-label" style="color:{C.earth};">03 / how it works</span>
+            <span class="section-label" style="color:{C.earth};">07 / how it works</span>
             <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
         </div>
 
@@ -406,19 +651,72 @@
 
 
 <!-- ══════════════════════════════════════════════════════
-     TESTIMONIALS
+     2e — BUILT FOR NEURODIVERGENT MINDS
 ══════════════════════════════════════════════════════ -->
 <section class="py-24 px-6" style="background:{C.bg};">
+    <div class="max-w-5xl mx-auto">
+
+        <div class="flex items-center gap-4 mb-14">
+            <span class="section-label" style="color:{C.earth};">08 / built for 2e minds</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+
+        <div class="text-center mb-12">
+            <h2 style="font-size:clamp(30px,3.8vw,46px); font-weight:800; line-height:1.05; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:16px;">
+                Your brain moves fast.<br/>The tools should keep up.
+            </h2>
+            <p style="font-size:16px; color:{C.earth}; line-height:1.75; max-width:540px; margin:0 auto;">
+                Resin is built for twice-exceptional people — gifted minds who also live with ADHD, autism, dyslexia, or sensory differences. High horsepower, hard to start. Resin is built for that exact gap.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4">
+            {#each [
+                {
+                    title: 'Working memory relief',
+                    body: 'The brain dump is a pressure valve. Get it out of your head and onto the screen — then let AI sort it into steps your brain can actually start.',
+                    accent: C.amber,
+                },
+                {
+                    title: 'Task initiation, solved',
+                    body: 'Knowing what to do and starting are two different neurological events. Resin breaks tasks small enough that the first step feels possible.',
+                    accent: C.forest,
+                },
+                {
+                    title: 'No willpower required',
+                    body: "OS-level blocking removes impulsive escape routes entirely. Your phone can't distract you because the apps aren't there. No override.",
+                    accent: C.amberDark,
+                },
+            ] as { title, body, accent }}
+                <div class="box p-6" style="background:rgba(255,255,255,0.5);">
+                    <div style="width:8px; height:8px; border-radius:50%; background:{accent}; margin-bottom:16px;"></div>
+                    <div style="font-size:16px; font-weight:800; color:{C.charcoal}; margin-bottom:10px; line-height:1.2;">{title}</div>
+                    <p style="font-size:13px; color:{C.earth}; line-height:1.7;">{body}</p>
+                </div>
+            {/each}
+        </div>
+
+    </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TESTIMONIALS
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bgSecondary};">
     <div class="max-w-6xl mx-auto">
         <div class="flex items-center gap-4 mb-12">
-            <span class="section-label" style="color:{C.earth};">04 / from users</span>
+            <span class="section-label" style="color:{C.earth};">09 / from users</span>
             <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
         </div>
         <div class="grid md:grid-cols-3 gap-4">
             {#each [
-                { q:"Finally a notes app where writing something actually means it gets done.", name:"Jordan L.", role:"UX Researcher" },
-                { q:"The blocking is actually real. Instagram just disappears. That's what I needed.", name:"Aisha K.", role:"Grad Student" },
-                { q:"I have ADHD. This is the only system that works — AI breaks things down small enough I can start.", name:"Sofia E.", role:"UX Researcher" },
+                { q:"Finally a notes app where writing something actually means it gets done. Not just filed away forever.", name:"Jordan L.", role:"UX Researcher" },
+                { q:"The blocking is actually real. No timer, no override. Instagram just disappears. That's what I needed.", name:"Aisha K.", role:"Grad Student" },
+                { q:"I have ADHD. This is the only system that works — AI breaks things down small enough I can actually start.", name:"Sofia E.", role:"UX Researcher" },
+                { q:"I dump every panicked thought into Resin. It turns it into a plan so I can stop holding it in my head.", name:"Priya M.", role:"Product Manager" },
+                { q:"Went from 'clean my room' sitting in my notes for 3 weeks to done in 45 minutes. The AI plan was actually specific.", name:"Daniel R.", role:"Freelance Designer" },
+                { q:"Chrome extension + iOS blocking together. My laptop AND phone are locked during sessions. Zero escape routes.", name:"Marcus T.", role:"Software Engineer" },
             ] as t}
                 <div class="box p-6" style="background:rgba(255,255,255,0.5); position:relative; overflow:hidden;">
                     <svg class="absolute top-3 right-3 pointer-events-none" viewBox="0 0 24 20" width="24" height="20" aria-hidden="true">
@@ -445,12 +743,68 @@
 
 
 <!-- ══════════════════════════════════════════════════════
+     PRICING
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bg};">
+    <div class="max-w-4xl mx-auto">
+
+        <div class="flex items-center gap-4 mb-6">
+            <span class="section-label" style="color:{C.earth};">10 / pricing</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+        <h2 style="font-size:clamp(28px,3.5vw,44px); font-weight:800; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:10px;">
+            Free to start. Free to keep.
+        </h2>
+        <p style="font-size:15px; color:{C.earth}; line-height:1.7; max-width:440px; margin-bottom:40px;">
+            On-device AI means no cloud compute costs — no tokens, no credits, no usage caps. The iOS core app is free forever.
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-4 max-w-2xl">
+            {#each [
+                {
+                    platform: 'iOS App',
+                    price: 'Free',
+                    sub: 'forever · no credit card',
+                    accent: C.forest,
+                    features: ['AI planning — unlimited', 'Quick Focus sessions', 'OS-level app blocking', 'Notes + mind map', 'Fossil rewards + streaks', 'Home screen widget'],
+                },
+                {
+                    platform: 'Web + Chrome',
+                    price: 'Free',
+                    sub: 'to try · team features coming',
+                    accent: C.amber,
+                    features: ['Notes editor + boards', 'Session planning', 'Google Calendar sync', 'Website blocking (Chrome)', 'Shared notes', 'Forest dashboard'],
+                },
+            ] as { platform, price, sub, accent, features }}
+                <div class="box p-7" style="background:rgba(255,255,255,0.6);">
+                    <div class="mono mb-1" style="font-size:10px; color:{accent}; letter-spacing:0.08em; text-transform:uppercase;">{platform}</div>
+                    <div style="font-size:36px; font-weight:800; color:{C.charcoal}; margin-bottom:4px; letter-spacing:-0.03em;">{price}</div>
+                    <div class="mono mb-6" style="font-size:11px; color:{C.earthLight};">{sub}</div>
+                    <div class="flex flex-col gap-3">
+                        {#each features as feat}
+                            <div class="flex items-center gap-2">
+                                <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
+                                    <path d="M 1,5 L 4,8 L 9,2" fill="none" stroke="{accent}" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                <span style="font-size:13px; color:{C.charcoal};">{feat}</span>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
+        </div>
+
+    </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
      FAQ
 ══════════════════════════════════════════════════════ -->
 <section class="py-24 px-6" style="background:{C.bgSecondary};">
     <div class="max-w-3xl mx-auto">
         <div class="flex items-center gap-4 mb-12">
-            <span class="section-label" style="color:{C.earth};">05 / faq</span>
+            <span class="section-label" style="color:{C.earth};">11 / faq</span>
             <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
         </div>
         <div class="flex flex-col"
@@ -586,18 +940,7 @@
         letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.45;
     }
 
-    .pine-outline {
-        fill: none; stroke-width: 2;
-        stroke-linejoin: round; stroke-linecap: round;
-        opacity: 0; transition: opacity 0.4s ease;
-    }
-    .pine-outline.drawing {
-        opacity: 0.65;
-        animation: pine-draw 3.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-    }
-    @keyframes pine-draw { to { stroke-dashoffset: 0; } }
-
-    .scan-line { animation: scan 4s linear infinite; }
+.scan-line { animation: scan 4s linear infinite; }
     @keyframes scan {
         from { transform: translateX(-200px); }
         to   { transform: translateX(100vw); }
@@ -611,6 +954,11 @@
     @keyframes shimmer {
         0%        { transform: translateX(-100%); }
         60%, 100% { transform: translateX(200%); }
+    }
+
+    @keyframes blink-cursor {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0; }
     }
 
     @media (prefers-reduced-motion: reduce) {

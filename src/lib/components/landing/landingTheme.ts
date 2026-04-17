@@ -1,0 +1,16 @@
+export const C = {
+    bg:          '#F5EFE7',
+    bgSecondary: '#EDE4D8',
+    bgTertiary:  '#E0D5C5',
+    amber:       '#C8884A',
+    amberLight:  '#E8BF8A',
+    amberGlow:   '#E8A857',
+    amberDark:   '#A0663A',
+    forest:      '#4D6652',
+    forestDark:  '#344A39',
+    earth:       '#8C7B6A',
+    earthLight:  '#C4B5A8',
+    charcoal:    '#2E2A26',
+    gray:        '#8B847D',
+    grayLight:   '#C8C3BE',
+} as const;

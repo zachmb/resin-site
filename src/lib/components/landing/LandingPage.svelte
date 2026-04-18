@@ -136,12 +136,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                     <span style="color:{C.amber};">Do the work.</span>
                 </h1>
 
-                <p style="font-family:'Nunito',system-ui,sans-serif; font-size:15px; color:{C.earth}; line-height:1.75; max-width:420px; margin-bottom:10px;">
-                    Your brain generates more ideas than most.<br/>
-                    The gap isn't intelligence — it's execution.
-                </p>
-                <p style="font-family:'Nunito',system-ui,sans-serif; font-size:14px; color:{C.earth}; line-height:1.75; max-width:420px; margin-bottom:36px; opacity:0.85;">
-                    Apps designed to distract steal 2+ hours of your day while your best ideas sit unfinished in a notes app.<br/>
+                <p style="font-family:'Nunito',system-ui,sans-serif; font-size:14px; color:{C.earth}; line-height:1.75; max-width:420px; margin-bottom:36px;">
                     One tap locks them out. AI turns the note into a plan. That's the whole system.
                 </p>
 

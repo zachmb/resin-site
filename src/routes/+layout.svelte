@@ -506,7 +506,7 @@
 			class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4"
 		>
 			<p class="text-sm text-resin-earth/70">
-							<span class="font-medium text-[15px]">Rewards</span>
+				<span class="font-medium text-[15px]">Rewards</span>
 				&copy; {new Date().getFullYear()} Resin App. All rights reserved.
 			</p>
 

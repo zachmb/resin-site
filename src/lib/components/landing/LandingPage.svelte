@@ -868,47 +868,6 @@ let pineHeroCanvas: HTMLCanvasElement;
 </section>
 
 
-<!-- ══════════════════════════════════════════════════════
-     FOOTER
-══════════════════════════════════════════════════════ -->
-<footer style="background:{C.charcoal}; border-top:1px solid rgba(245,239,231,0.06);">
-
-    <!-- App nav row -->
-    <div class="max-w-6xl mx-auto px-6 pt-8 pb-5 flex flex-col md:flex-row items-center justify-between gap-4"
-         style="border-bottom:1px solid rgba(245,239,231,0.06);">
-        <p style="font-size:14px; color:rgba(245,239,231,0.45);">
-            <span style="font-weight:700; color:rgba(245,239,231,0.7);">Rewards</span>
-            &copy; {new Date().getFullYear()} Resin App. All rights reserved.
-        </p>
-        <nav class="flex flex-wrap items-center gap-6 mono" style="font-size:13px; color:rgba(245,239,231,0.4);">
-            <a href="/" class="hover:opacity-70 transition-opacity">Home</a>
-            <a href="/privacy" class="hover:opacity-70 transition-opacity">Privacy</a>
-            <a href="/terms" class="hover:opacity-70 transition-opacity">Terms</a>
-            <a href="/extension" class="hover:opacity-70 transition-opacity">Web Shield</a>
-            <a href="/support" class="hover:opacity-70 transition-opacity">Support</a>
-            <a href="/architecture" class="hover:opacity-70 transition-opacity">Architecture</a>
-        </nav>
-    </div>
-
-    <!-- Brand row -->
-    <div class="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <svg viewBox="0 0 20 24" width="14" height="17" aria-hidden="true">
-                <path fill="{C.forest}" opacity="0.6"
-                      d="M10,1 L12,5 L14,3 L13,7 L15,5 L14,9 L16,7 L15,11
-                         L17,9 L15,13 L13,17 L11,17 L11,22 L9,22 L9,17 L7,17
-                         L5,13 L3,9 L5,11 L4,7 L6,9 L5,5 L7,7 L6,3 L8,5 Z" />
-            </svg>
-            <span class="font-bold" style="font-size:15px; color:rgba(245,239,231,0.7);">resin</span>
-            <span class="mono" style="font-size:12px; color:rgba(245,239,231,0.25);">// write · plan · do</span>
-        </div>
-        <div class="flex flex-wrap gap-6 mono" style="font-size:13px; color:rgba(245,239,231,0.3);">
-            <a href="mailto:hi@noteresin.com" class="hover:opacity-70 transition-opacity">contact</a>
-        </div>
-    </div>
-
-</footer>
-
 </main>
 
 <style>

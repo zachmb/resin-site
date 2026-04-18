@@ -96,6 +96,7 @@ let pineHeroCanvas: HTMLCanvasElement;
     <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <img src="/logo.png" alt="Resin" width="28" height="28" style="display:block;" />
+            <span class="font-bold" style="font-size:17px; color:{C.charcoal}; letter-spacing:-0.01em;">resin</span>
             <span class="tag" style="background:rgba(200,136,74,0.1); color:{C.amberDark};">beta</span>
         </div>
         <div class="flex items-center gap-3">

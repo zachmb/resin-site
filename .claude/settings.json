@@ -89,7 +89,11 @@
       "Bash(identify /Users/zachbas/resinsite/static/images/heropine.jpeg)",
       "Bash(sips -s format png /Users/zachbas/resinsite/static/images/heropine.jpeg --out /tmp/heropine_check.png)",
       "Bash(convert --version)",
-      "Bash(sort -t: -k3)"
+      "Bash(sort -t: -k3)",
+      "Bash(vercel --version)",
+      "Bash(vercel --prod)",
+      "Bash(vercel deploy *)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

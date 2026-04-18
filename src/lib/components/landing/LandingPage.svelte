@@ -126,7 +126,7 @@ let pineHeroCanvas: HTMLCanvasElement;
             <div class="py-16 lg:py-0 pr-0 lg:pr-16 fade-up" class:in={visible}>
 
                 <div class="tag mb-8 inline-block" style="background:rgba(77,102,82,0.1); color:{C.forestDark};">
-                    focus · notes · planning
+                    built for the ADHD brain
                 </div>
 
                 <h1 style="font-size:clamp(46px,5.5vw,72px); font-weight:800; line-height:1.0;
@@ -136,10 +136,13 @@ let pineHeroCanvas: HTMLCanvasElement;
                     <span style="color:{C.amber};">Do the work.</span>
                 </h1>
 
-                <p class="mono" style="font-size:14px; color:{C.earth}; line-height:1.8; max-width:400px; margin-bottom:36px;">
-                    One tap locks every distracting app — OS-level, no override.<br/>
-                    Write a note and AI builds the plan.<br/>
-                    Your phone holds you to it.
+                <p style="font-family:'Nunito',system-ui,sans-serif; font-size:15px; color:{C.earth}; line-height:1.75; max-width:420px; margin-bottom:10px;">
+                    Your brain generates more ideas than most.<br/>
+                    The gap isn't intelligence — it's execution.
+                </p>
+                <p style="font-family:'Nunito',system-ui,sans-serif; font-size:14px; color:{C.earth}; line-height:1.75; max-width:420px; margin-bottom:36px; opacity:0.85;">
+                    Apps designed to distract steal 2+ hours of your day while your best ideas sit unfinished in a notes app.<br/>
+                    One tap locks them out. AI turns the note into a plan. That's the whole system.
                 </p>
 
                 <div class="grid grid-cols-3 gap-2 mb-10" style="max-width:380px;">
@@ -159,18 +162,22 @@ let pineHeroCanvas: HTMLCanvasElement;
                     {/each}
                 </div>
 
-                <div class="flex flex-wrap gap-3">
+                <div class="flex flex-wrap items-center gap-4">
                     <a href="https://testflight.apple.com/join/yV53qa1z"
                        target="_blank" rel="noopener noreferrer"
-                       class="flex items-center gap-2 transition-all hover:-translate-y-px"
-                       style="background:{C.charcoal}; color:white; padding:13px 22px; border-radius:6px;
-                              font-size:14px; font-weight:700; box-shadow:0 4px 16px -4px rgba(46,42,38,0.4);">
-                        <Apple class="w-4 h-4" /> iOS · Free
+                       class="flex items-center gap-2 transition-all hover:-translate-y-px relative overflow-hidden"
+                       style="background:{C.amber}; color:white; padding:13px 22px; border-radius:6px;
+                              font-size:14px; font-weight:800; box-shadow:0 4px 20px -4px rgba(200,136,74,0.5);">
+                        <span class="absolute inset-0 pointer-events-none" aria-hidden="true"
+                              style="background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.18) 50%,transparent 60%);
+                                     animation:shimmer 3s ease-in-out infinite;"></span>
+                        <Apple class="w-4 h-4 relative z-10" />
+                        <span class="relative z-10">iOS · Free</span>
                     </a>
                     <a href="/login?next=/"
-                       class="flex items-center gap-2 box transition-all hover:-translate-y-px"
-                       style="background:rgba(255,255,255,0.6); color:{C.charcoal}; padding:13px 22px; font-size:14px; font-weight:600;">
-                        Web app <ArrowRight class="w-4 h-4" style="color:{C.amber};" />
+                       class="flex items-center gap-1.5 transition-opacity hover:opacity-70"
+                       style="font-size:13px; font-weight:600; color:{C.earth};">
+                        Web app <ArrowRight class="w-3.5 h-3.5" style="color:{C.earthLight};" />
                     </a>
                 </div>
 
@@ -252,10 +259,10 @@ let pineHeroCanvas: HTMLCanvasElement;
     <div class="max-w-6xl mx-auto px-6 py-6">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {#each [
-                { val:'2,400+', label:'sessions completed' },
+                { val:'2.5 hrs', label:'lost to distraction daily' },
                 { val:'4.8 ★',  label:'avg App Store rating' },
                 { val:'100%',   label:'on-device AI' },
-                { val:'Free',   label:'iOS · no credit card' },
+                { val:'0',      label:'overrides possible' },
             ] as { val, label }}
                 <div class="text-center">
                     <div style="font-size:22px; font-weight:800; color:{C.charcoal}; letter-spacing:-0.02em; margin-bottom:3px;">{val}</div>
@@ -269,6 +276,24 @@ let pineHeroCanvas: HTMLCanvasElement;
 
 <OnboardingCarousel />
 <FeaturesGrid />
+
+<!-- Pull-quote after features — social proof before the long middle -->
+<div style="background:{C.bgSecondary}; border-top:1px solid rgba(46,42,38,0.08); border-bottom:1px solid rgba(46,42,38,0.08);">
+    <div class="max-w-3xl mx-auto px-6 py-12 text-center">
+        <p style="font-size:clamp(18px,2.2vw,24px); font-weight:700; color:{C.charcoal}; line-height:1.5; margin-bottom:20px;">
+            "I have ADHD. This is the only system that works — AI breaks things down small enough I can actually start."
+        </p>
+        <div class="flex items-center justify-center gap-3">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center mono"
+                 style="background:{C.bgTertiary}; font-size:13px; color:{C.earth}; font-weight:700;">S</div>
+            <div class="text-left">
+                <div class="mono" style="font-size:13px; font-weight:600; color:{C.charcoal};">Sofia E.</div>
+                <div class="mono" style="font-size:12px; color:{C.earthLight};">UX Researcher</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <QuickFocusSection />
 
 
@@ -685,55 +710,13 @@ let pineHeroCanvas: HTMLCanvasElement;
 
 
 <!-- ══════════════════════════════════════════════════════
-     TESTIMONIALS
-══════════════════════════════════════════════════════ -->
-<section class="py-24 px-6" style="background:{C.bgSecondary};">
-    <div class="max-w-6xl mx-auto">
-        <div class="flex items-center gap-4 mb-12">
-            <span class="section-label" style="color:{C.earth};">09 / from users</span>
-            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
-        </div>
-        <div class="grid md:grid-cols-3 gap-4">
-            {#each [
-                { q:"Finally a notes app where writing something actually means it gets done. Not just filed away forever.", name:"Jordan L.", role:"UX Researcher" },
-                { q:"The blocking is actually real. No timer, no override. Instagram just disappears. That's what I needed.", name:"Aisha K.", role:"Grad Student" },
-                { q:"I have ADHD. This is the only system that works — AI breaks things down small enough I can actually start.", name:"Sofia E.", role:"UX Researcher" },
-                { q:"I dump every panicked thought into Resin. It turns it into a plan so I can stop holding it in my head.", name:"Priya M.", role:"Product Manager" },
-                { q:"Went from 'clean my room' sitting in my notes for 3 weeks to done in 45 minutes. The AI plan was actually specific.", name:"Daniel R.", role:"Freelance Designer" },
-                { q:"Chrome extension + iOS blocking together. My laptop AND phone are locked during sessions. Zero escape routes.", name:"Marcus T.", role:"Software Engineer" },
-            ] as t}
-                <div class="box p-6" style="background:rgba(255,255,255,0.5); position:relative; overflow:hidden;">
-                    <svg class="absolute top-3 right-3 pointer-events-none" viewBox="0 0 24 20" width="24" height="20" aria-hidden="true">
-                        <path d="M 3,3 C 3,3 0,9 3,12 C 5,14 8,13 8,10 C 8,7 5,7 5,10
-                                 M 13,3 C 13,3 10,9 13,12 C 15,14 18,13 18,10 C 18,7 15,7 15,10"
-                              fill="{C.amber}" opacity="0.15" />
-                    </svg>
-                    <p style="font-size:14px; color:{C.charcoal}; line-height:1.7; margin-bottom:16px;">"{t.q}"</p>
-                    <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-full flex items-center justify-center mono"
-                             style="background:{C.bgTertiary}; font-size:12px; color:{C.earth}; font-weight:600;">
-                            {t.name[0]}
-                        </div>
-                        <div>
-                            <div class="mono" style="font-size:13px; font-weight:600; color:{C.charcoal};">{t.name}</div>
-                            <div class="mono" style="font-size:12px; color:{C.earthLight};">{t.role}</div>
-                        </div>
-                    </div>
-                </div>
-            {/each}
-        </div>
-    </div>
-</section>
-
-
-<!-- ══════════════════════════════════════════════════════
      PRICING
 ══════════════════════════════════════════════════════ -->
 <section class="py-24 px-6" style="background:{C.bg};">
     <div class="max-w-4xl mx-auto">
 
         <div class="flex items-center gap-4 mb-6">
-            <span class="section-label" style="color:{C.earth};">10 / pricing</span>
+            <span class="section-label" style="color:{C.earth};">// pricing</span>
             <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
         </div>
         <h2 style="font-size:clamp(28px,3.5vw,44px); font-weight:800; letter-spacing:-0.02em; color:{C.charcoal}; margin-bottom:10px;">
@@ -788,7 +771,7 @@ let pineHeroCanvas: HTMLCanvasElement;
 <section class="py-24 px-6" style="background:{C.bgSecondary};">
     <div class="max-w-3xl mx-auto">
         <div class="flex items-center gap-4 mb-12">
-            <span class="section-label" style="color:{C.earth};">11 / faq</span>
+            <span class="section-label" style="color:{C.earth};">// faq</span>
             <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
         </div>
         <div class="flex flex-col"
@@ -810,6 +793,48 @@ let pineHeroCanvas: HTMLCanvasElement;
                             <p style="font-size:14px; color:{C.earth}; line-height:1.75; padding-top:16px;">{faq.a}</p>
                         </div>
                     {/if}
+                </div>
+            {/each}
+        </div>
+    </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TESTIMONIALS — right before CTA for max serial position impact
+══════════════════════════════════════════════════════ -->
+<section class="py-24 px-6" style="background:{C.bgSecondary};">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center gap-4 mb-12">
+            <span class="section-label" style="color:{C.earth};">// from users</span>
+            <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-4">
+            {#each [
+                { q:"Finally a notes app where writing something actually means it gets done. Not just filed away forever.", name:"Jordan L.", role:"UX Researcher" },
+                { q:"The blocking is actually real. No timer, no override. Instagram just disappears. That's what I needed.", name:"Aisha K.", role:"Grad Student" },
+                { q:"I dump every panicked thought into Resin. It turns it into a plan so I can stop holding it in my head.", name:"Priya M.", role:"Product Manager" },
+                { q:"Went from 'clean my room' sitting in my notes for 3 weeks to done in 45 minutes. The AI plan was actually specific.", name:"Daniel R.", role:"Freelance Designer" },
+                { q:"Chrome extension + iOS blocking together. My laptop AND phone are locked during sessions. Zero escape routes.", name:"Marcus T.", role:"Software Engineer" },
+                { q:"I have ADHD. This is the only system that works — AI breaks things down small enough I can actually start.", name:"Sofia E.", role:"UX Researcher" },
+            ] as t}
+                <div class="box p-6" style="background:rgba(255,255,255,0.5); position:relative; overflow:hidden;">
+                    <svg class="absolute top-3 right-3 pointer-events-none" viewBox="0 0 24 20" width="24" height="20" aria-hidden="true">
+                        <path d="M 3,3 C 3,3 0,9 3,12 C 5,14 8,13 8,10 C 8,7 5,7 5,10
+                                 M 13,3 C 13,3 10,9 13,12 C 15,14 18,13 18,10 C 18,7 15,7 15,10"
+                              fill="{C.amber}" opacity="0.15" />
+                    </svg>
+                    <p style="font-size:14px; color:{C.charcoal}; line-height:1.7; margin-bottom:16px;">"{t.q}"</p>
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center mono"
+                             style="background:{C.bgTertiary}; font-size:12px; color:{C.earth}; font-weight:600;">
+                            {t.name[0]}
+                        </div>
+                        <div>
+                            <div class="mono" style="font-size:13px; font-weight:600; color:{C.charcoal};">{t.name}</div>
+                            <div class="mono" style="font-size:12px; color:{C.earthLight};">{t.role}</div>
+                        </div>
+                    </div>
                 </div>
             {/each}
         </div>

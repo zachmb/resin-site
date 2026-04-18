@@ -102,7 +102,7 @@ let pineHeroCanvas: HTMLCanvasElement;
             <a href="/login" class="mono text-xs font-medium transition-opacity hover:opacity-70" style="color:{C.earth};">sign in</a>
             <a href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"
                class="flex items-center gap-1.5 transition-opacity hover:opacity-80"
-               style="background:{C.charcoal}; color:white; padding:7px 16px; border-radius:6px; font-size:13px; font-weight:700;">
+               style="background:{C.charcoal}; color:white; padding:7px 16px; border-radius:6px; font-size:14px; font-weight:700;">
                 <Apple class="w-3.5 h-3.5" /> Get the app
             </a>
         </div>
@@ -153,7 +153,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                                 </path>
                             </svg>
                             <div class="mono font-semibold" style="font-size:16px; color:{C.charcoal};">{val}</div>
-                            <div class="mono" style="font-size:9px; color:{C.earth}; margin-top:2px;">{label}</div>
+                            <div class="mono" style="font-size:11px; color:{C.earth}; margin-top:2px;">{label}</div>
                         </div>
                     {/each}
                 </div>
@@ -195,7 +195,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                                          calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" />
                             </circle>
                         </svg>
-                        <span class="mono" style="font-size:11px; color:{C.charcoal};">on-device · private</span>
+                        <span class="mono" style="font-size:13px; color:{C.charcoal};">on-device · private</span>
                     </div>
                     <div class="box-amber flex items-center gap-3 px-4 py-3"
                          style="background:rgba(245,239,231,0.82); backdrop-filter:blur(8px); max-width:220px;">
@@ -207,12 +207,12 @@ let pineHeroCanvas: HTMLCanvasElement;
                                          begin="0.8s" calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" />
                             </circle>
                         </svg>
-                        <span class="mono" style="font-size:11px; color:{C.charcoal};">plan in &lt;10 seconds</span>
+                        <span class="mono" style="font-size:13px; color:{C.charcoal};">plan in &lt;10 seconds</span>
                     </div>
                 </div>
 
                 <div class="absolute top-6 right-6">
-                    <span class="mono" style="font-size:9px; color:{C.earthLight};">// ascii_renderer v1</span>
+                    <span class="mono" style="font-size:11px; color:{C.earthLight};">// ascii_renderer v1</span>
                 </div>
             </div>
 
@@ -231,7 +231,7 @@ let pineHeroCanvas: HTMLCanvasElement;
          aria-hidden="true"></div>
     <div class="max-w-6xl mx-auto px-6 py-4 relative z-10">
         <div class="flex flex-wrap items-center gap-6 lg:gap-10 mono"
-             style="font-size:12px; color:rgba(245,239,231,0.6);">
+             style="font-size:13px; color:rgba(245,239,231,0.6);">
             <span><span style="color:#86b891;">$</span> focus.quick <span style="color:rgba(245,239,231,0.3);">// 1 tap · apps blocked instantly</span></span>
             <span class="hidden sm:inline" style="color:rgba(245,239,231,0.2);">|</span>
             <span><span style="color:{C.amber};">$</span> notes.capture <span style="color:rgba(245,239,231,0.3);">// no structure required</span></span>
@@ -258,7 +258,7 @@ let pineHeroCanvas: HTMLCanvasElement;
             ] as { val, label }}
                 <div class="text-center">
                     <div style="font-size:22px; font-weight:800; color:{C.charcoal}; letter-spacing:-0.02em; margin-bottom:3px;">{val}</div>
-                    <div class="mono" style="font-size:10px; color:{C.earthLight};">{label}</div>
+                    <div class="mono" style="font-size:12px; color:{C.earthLight};">{label}</div>
                 </div>
             {/each}
         </div>
@@ -302,7 +302,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                             <div style="width:5px; height:5px; border-radius:50%; background:{C.amber}; margin-top:8px; flex-shrink:0;"></div>
                             <div>
                                 <div style="font-size:14px; font-weight:700; color:{C.charcoal}; margin-bottom:2px;">{title}</div>
-                                <div class="mono" style="font-size:12px; color:{C.earth}; line-height:1.6;">{body}</div>
+                                <div class="mono" style="font-size:13px; color:{C.earth}; line-height:1.6;">{body}</div>
                             </div>
                         </div>
                     {/each}
@@ -313,13 +313,13 @@ let pineHeroCanvas: HTMLCanvasElement;
             <div class="flex justify-center lg:justify-end">
                 <div style="width:226px; background:{C.bg}; border:1.5px solid rgba(46,42,38,0.18); border-radius:24px; padding:12px 12px 20px; box-shadow:0 16px 48px -12px rgba(46,42,38,0.2); position:relative;">
                     <div style="width:48px; height:5px; background:rgba(46,42,38,0.15); border-radius:3px; margin:0 auto 14px;"></div>
-                    <div class="mono" style="font-size:9px; color:{C.earthLight}; margin-bottom:8px; display:flex; justify-content:space-between;">
+                    <div class="mono" style="font-size:11px; color:{C.earthLight}; margin-bottom:8px; display:flex; justify-content:space-between;">
                         <span>← notes</span><span style="color:{C.amber}; font-weight:700;">done</span>
                     </div>
                     <div style="font-size:15px; font-weight:800; color:{C.charcoal}; margin-bottom:3px; line-height:1.2;">Q2 report — due Friday</div>
-                    <div class="mono" style="font-size:9px; color:{C.earthLight}; margin-bottom:12px;">Today · 4 min ago</div>
+                    <div class="mono" style="font-size:11px; color:{C.earthLight}; margin-bottom:12px;">Today · 4 min ago</div>
                     <div style="height:1px; background:rgba(46,42,38,0.07); margin-bottom:12px;"></div>
-                    <div style="font-size:12px; color:{C.earth}; line-height:1.75; margin-bottom:14px;">
+                    <div style="font-size:13px; color:{C.earth}; line-height:1.75; margin-bottom:14px;">
                         Still haven't started this. Deadline is Friday and Sarah keeps asking. The block is I don't know where to begin — too much data, no clear story yet.
                         <br/><br/>
                         <span style="color:{C.charcoal}; font-weight:700;">I need to:</span><br/>
@@ -330,10 +330,10 @@ let pineHeroCanvas: HTMLCanvasElement;
                     </div>
                     <div style="background:rgba(255,255,255,0.75); border:1px solid rgba(200,136,74,0.22); border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
                         <div>
-                            <div style="font-size:10px; font-weight:700; color:{C.charcoal};">Turn this into a plan</div>
-                            <div class="mono" style="font-size:9px; color:{C.earthLight};">AI reads the whole note</div>
+                            <div style="font-size:12px; font-weight:700; color:{C.charcoal};">Turn this into a plan</div>
+                            <div class="mono" style="font-size:11px; color:{C.earthLight};">AI reads the whole note</div>
                         </div>
-                        <div style="background:{C.amber}; color:white; border-radius:6px; padding:5px 10px; font-size:10px; font-weight:700;">✨ Activate</div>
+                        <div style="background:{C.amber}; color:white; border-radius:6px; padding:5px 10px; font-size:12px; font-weight:700;">✨ Activate</div>
                     </div>
                     <div style="position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:40px; height:3px; background:rgba(46,42,38,0.15); border-radius:2px;"></div>
                 </div>
@@ -360,11 +360,11 @@ let pineHeroCanvas: HTMLCanvasElement;
             <!-- Terminal output -->
             <div>
                 <div style="background:{C.charcoal}; border:1px solid rgba(46,42,38,0.4); border-radius:8px; overflow:hidden;">
-                    <div class="mono flex items-center gap-2 px-4 py-2.5" style="background:rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.06); font-size:10px; color:rgba(245,239,231,0.3);">
+                    <div class="mono flex items-center gap-2 px-4 py-2.5" style="background:rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.06); font-size:12px; color:rgba(245,239,231,0.3);">
                         <span style="color:#ff6158;">●</span><span style="color:#ffbd2e;">●</span><span style="color:#28ca41;">●</span>
                         <span style="margin-left:8px;">resin · plan_generator</span>
                     </div>
-                    <div class="mono px-4 py-5" style="font-size:12px; line-height:2.1; color:rgba(245,239,231,0.55);">
+                    <div class="mono px-4 py-5" style="font-size:13px; line-height:2.1; color:rgba(245,239,231,0.55);">
                         <div><span style="color:rgba(200,136,74,0.9);">$</span> activate "Q2 report due Friday"</div>
                         <div style="color:rgba(245,239,231,0.3);">&gt; reading note content…</div>
                         <div style="color:rgba(245,239,231,0.3);">&gt; running gemma-3n on-device…</div>
@@ -379,7 +379,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                         <span style="display:inline-block; width:7px; height:14px; background:rgba(200,136,74,0.7); border-radius:1px; vertical-align:-3px; animation:blink-cursor 1s step-end infinite;"></span>
                     </div>
                 </div>
-                <div class="mono mt-3" style="font-size:10px; color:{C.earthLight};">// gemma-3n · qwen2.5 · neural engine · never leaves device</div>
+                <div class="mono mt-3" style="font-size:12px; color:{C.earthLight};">// gemma-3n · qwen2.5 · neural engine · never leaves device</div>
             </div>
 
             <!-- Copy -->
@@ -398,8 +398,8 @@ let pineHeroCanvas: HTMLCanvasElement;
                         ['Calendar sync', 'Plan auto-blocks your Google Calendar before you start.'],
                     ] as [title, body]}
                         <div class="box p-4" style="background:rgba(255,255,255,0.5);">
-                            <div style="font-size:13px; font-weight:700; color:{C.charcoal}; margin-bottom:4px;">{title}</div>
-                            <div class="mono" style="font-size:11px; color:{C.earth}; line-height:1.5;">{body}</div>
+                            <div style="font-size:14px; font-weight:700; color:{C.charcoal}; margin-bottom:4px;">{title}</div>
+                            <div class="mono" style="font-size:13px; color:{C.earth}; line-height:1.5;">{body}</div>
                         </div>
                     {/each}
                 </div>
@@ -456,14 +456,14 @@ let pineHeroCanvas: HTMLCanvasElement;
             ] as { platform, tag, tagColor, features }}
                 <div class="box p-5 flex flex-col" style="background:rgba(255,255,255,0.4);">
                     <div style="font-size:15px; font-weight:800; color:{C.charcoal}; margin-bottom:4px;">{platform}</div>
-                    <div class="mono mb-5" style="font-size:9px; color:{tagColor}; letter-spacing:0.06em; text-transform:uppercase;">{tag}</div>
+                    <div class="mono mb-5" style="font-size:11px; color:{tagColor}; letter-spacing:0.06em; text-transform:uppercase;">{tag}</div>
                     <div class="flex flex-col gap-2.5 flex-1">
                         {#each features as feat}
                             <div class="flex items-center gap-2">
                                 <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
                                     <path d="M 1,5 L 4,8 L 9,2" fill="none" stroke="{C.forest}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
-                                <span style="font-size:12px; color:{C.charcoal};">{feat}</span>
+                                <span style="font-size:13px; color:{C.charcoal};">{feat}</span>
                             </div>
                         {/each}
                     </div>
@@ -501,8 +501,8 @@ let pineHeroCanvas: HTMLCanvasElement;
                         { label:'Streak', body:'Daily streak tracked and displayed. Flame badge when streak &gt; 1.' },
                     ] as { label, body }}
                         <div class="flex items-start gap-4">
-                            <div class="box mono flex-shrink-0" style="background:{C.bg}; padding:4px 10px; font-size:11px; font-weight:700; color:{C.amber}; white-space:nowrap;">{label}</div>
-                            <div style="font-size:13px; color:{C.earth}; line-height:1.6; padding-top:4px;">{@html body}</div>
+                            <div class="box mono flex-shrink-0" style="background:{C.bg}; padding:4px 10px; font-size:13px; font-weight:700; color:{C.amber}; white-space:nowrap;">{label}</div>
+                            <div style="font-size:14px; color:{C.earth}; line-height:1.6; padding-top:4px;">{@html body}</div>
                         </div>
                     {/each}
                 </div>
@@ -527,12 +527,12 @@ let pineHeroCanvas: HTMLCanvasElement;
                     ] as [id, name, unlock]}
                         <div class="box flex flex-col items-center p-2 text-center" style="background:rgba(255,255,255,0.45);">
                             <img src="/images/fossils/{id}.png" alt="{name}" style="width:38px; height:38px; object-fit:contain; opacity:0.65; margin-bottom:4px;" />
-                            <div style="font-size:8.5px; font-weight:700; color:{C.charcoal}; line-height:1.2;">{name}</div>
-                            <div class="mono" style="font-size:8px; color:{C.earthLight}; margin-top:2px;">{unlock}</div>
+                            <div style="font-size:11px; font-weight:700; color:{C.charcoal}; line-height:1.2;">{name}</div>
+                            <div class="mono" style="font-size:11px; color:{C.earthLight}; margin-top:2px;">{unlock}</div>
                         </div>
                     {/each}
                 </div>
-                <div class="mono mt-3 text-center" style="font-size:10px; color:{C.earthLight};">// 14 fossils total · unlocked by stones + streaks</div>
+                <div class="mono mt-3 text-center" style="font-size:12px; color:{C.earthLight};">// 14 fossils total · unlocked by stones + streaks</div>
             </div>
 
         </div>
@@ -573,7 +573,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                             </svg>
                         </div>
                     {/if}
-                    <div class="mono font-bold mb-6" style="font-size:11px; color:{step.accent}; letter-spacing:0.1em;">{step.n}</div>
+                    <div class="mono font-bold mb-6" style="font-size:13px; color:{step.accent}; letter-spacing:0.1em;">{step.n}</div>
                     <div style="font-size:26px; font-weight:800; color:{C.charcoal}; margin-bottom:10px; line-height:1.1;">{step.title}</div>
                     <p style="font-size:14px; color:{C.earth}; line-height:1.7;">{step.body}</p>
                 </div>
@@ -625,7 +625,7 @@ let pineHeroCanvas: HTMLCanvasElement;
     <div class="absolute inset-0 flex items-center justify-center">
         <div style="background:rgba(245,239,231,0.9); padding:20px 32px;
                     border:1px solid rgba(46,42,38,0.1); border-radius:4px; backdrop-filter:blur(4px);">
-            <p class="mono" style="font-size:11px; color:{C.earth}; letter-spacing:0.08em;">
+            <p class="mono" style="font-size:13px; color:{C.earth}; letter-spacing:0.08em;">
                 // block apps in one tap. notes become plans. plans become sessions.
             </p>
         </div>
@@ -674,7 +674,7 @@ let pineHeroCanvas: HTMLCanvasElement;
                 <div class="box p-6" style="background:rgba(255,255,255,0.5);">
                     <div style="width:8px; height:8px; border-radius:50%; background:{accent}; margin-bottom:16px;"></div>
                     <div style="font-size:16px; font-weight:800; color:{C.charcoal}; margin-bottom:10px; line-height:1.2;">{title}</div>
-                    <p style="font-size:13px; color:{C.earth}; line-height:1.7;">{body}</p>
+                    <p style="font-size:14px; color:{C.earth}; line-height:1.7;">{body}</p>
                 </div>
             {/each}
         </div>
@@ -710,12 +710,12 @@ let pineHeroCanvas: HTMLCanvasElement;
                     <p style="font-size:14px; color:{C.charcoal}; line-height:1.7; margin-bottom:16px;">"{t.q}"</p>
                     <div class="flex items-center gap-2">
                         <div class="w-7 h-7 rounded-full flex items-center justify-center mono"
-                             style="background:{C.bgTertiary}; font-size:10px; color:{C.earth}; font-weight:600;">
+                             style="background:{C.bgTertiary}; font-size:12px; color:{C.earth}; font-weight:600;">
                             {t.name[0]}
                         </div>
                         <div>
-                            <div class="mono" style="font-size:11px; font-weight:600; color:{C.charcoal};">{t.name}</div>
-                            <div class="mono" style="font-size:10px; color:{C.earthLight};">{t.role}</div>
+                            <div class="mono" style="font-size:13px; font-weight:600; color:{C.charcoal};">{t.name}</div>
+                            <div class="mono" style="font-size:12px; color:{C.earthLight};">{t.role}</div>
                         </div>
                     </div>
                 </div>
@@ -760,16 +760,16 @@ let pineHeroCanvas: HTMLCanvasElement;
                 },
             ] as { platform, price, sub, accent, features }}
                 <div class="box p-7" style="background:rgba(255,255,255,0.6);">
-                    <div class="mono mb-1" style="font-size:10px; color:{accent}; letter-spacing:0.08em; text-transform:uppercase;">{platform}</div>
+                    <div class="mono mb-1" style="font-size:12px; color:{accent}; letter-spacing:0.08em; text-transform:uppercase;">{platform}</div>
                     <div style="font-size:36px; font-weight:800; color:{C.charcoal}; margin-bottom:4px; letter-spacing:-0.03em;">{price}</div>
-                    <div class="mono mb-6" style="font-size:11px; color:{C.earthLight};">{sub}</div>
+                    <div class="mono mb-6" style="font-size:13px; color:{C.earthLight};">{sub}</div>
                     <div class="flex flex-col gap-3">
                         {#each features as feat}
                             <div class="flex items-center gap-2">
                                 <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
                                     <path d="M 1,5 L 4,8 L 9,2" fill="none" stroke="{accent}" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
-                                <span style="font-size:13px; color:{C.charcoal};">{feat}</span>
+                                <span style="font-size:14px; color:{C.charcoal};">{feat}</span>
                             </div>
                         {/each}
                     </div>
@@ -841,7 +841,7 @@ let pineHeroCanvas: HTMLCanvasElement;
             Block the noise.<br/>
             <span style="color:{C.amber};">Do the work.</span>
         </h2>
-        <p class="mono mb-12" style="font-size:13px; color:rgba(245,239,231,0.4); line-height:1.8;">
+        <p class="mono mb-12" style="font-size:14px; color:rgba(245,239,231,0.4); line-height:1.8;">
             iOS app · free forever · 1-tap focus · no credit card
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -872,7 +872,26 @@ let pineHeroCanvas: HTMLCanvasElement;
      FOOTER
 ══════════════════════════════════════════════════════ -->
 <footer style="background:{C.charcoal}; border-top:1px solid rgba(245,239,231,0.06);">
-    <div class="max-w-6xl mx-auto px-6 py-8 flex flex-wrap items-center justify-between gap-4">
+
+    <!-- App nav row -->
+    <div class="max-w-6xl mx-auto px-6 pt-8 pb-5 flex flex-col md:flex-row items-center justify-between gap-4"
+         style="border-bottom:1px solid rgba(245,239,231,0.06);">
+        <p style="font-size:14px; color:rgba(245,239,231,0.45);">
+            <span style="font-weight:700; color:rgba(245,239,231,0.7);">Rewards</span>
+            &copy; {new Date().getFullYear()} Resin App. All rights reserved.
+        </p>
+        <nav class="flex flex-wrap items-center gap-6 mono" style="font-size:13px; color:rgba(245,239,231,0.4);">
+            <a href="/" class="hover:opacity-70 transition-opacity">Home</a>
+            <a href="/privacy" class="hover:opacity-70 transition-opacity">Privacy</a>
+            <a href="/terms" class="hover:opacity-70 transition-opacity">Terms</a>
+            <a href="/extension" class="hover:opacity-70 transition-opacity">Web Shield</a>
+            <a href="/support" class="hover:opacity-70 transition-opacity">Support</a>
+            <a href="/architecture" class="hover:opacity-70 transition-opacity">Architecture</a>
+        </nav>
+    </div>
+
+    <!-- Brand row -->
+    <div class="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
             <svg viewBox="0 0 20 24" width="14" height="17" aria-hidden="true">
                 <path fill="{C.forest}" opacity="0.6"
@@ -881,14 +900,13 @@ let pineHeroCanvas: HTMLCanvasElement;
                          L5,13 L3,9 L5,11 L4,7 L6,9 L5,5 L7,7 L6,3 L8,5 Z" />
             </svg>
             <span class="font-bold" style="font-size:15px; color:rgba(245,239,231,0.7);">resin</span>
-            <span class="mono" style="font-size:10px; color:rgba(245,239,231,0.25);">// write · plan · do</span>
+            <span class="mono" style="font-size:12px; color:rgba(245,239,231,0.25);">// write · plan · do</span>
         </div>
-        <div class="flex flex-wrap gap-6 mono" style="font-size:11px; color:rgba(245,239,231,0.3);">
-            <a href="/privacy" class="hover:opacity-70 transition-opacity">privacy</a>
-            <a href="/terms" class="hover:opacity-70 transition-opacity">terms</a>
+        <div class="flex flex-wrap gap-6 mono" style="font-size:13px; color:rgba(245,239,231,0.3);">
             <a href="mailto:hi@noteresin.com" class="hover:opacity-70 transition-opacity">contact</a>
         </div>
     </div>
+
 </footer>
 
 </main>
@@ -912,14 +930,14 @@ let pineHeroCanvas: HTMLCanvasElement;
 
     .tag {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 10px; font-weight: 600;
+        font-size: 12px; font-weight: 600;
         letter-spacing: 0.08em; text-transform: uppercase;
         padding: 4px 10px; border-radius: 4px;
     }
 
     .section-label {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 10px; font-weight: 500;
+        font-size: 12px; font-weight: 500;
         letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.45;
     }
 

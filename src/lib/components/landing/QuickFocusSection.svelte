@@ -95,7 +95,7 @@
 <style>
     .label {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 10px; font-weight: 500;
+        font-size: 12px; font-weight: 500;
         letter-spacing: 0.12em; text-transform: uppercase;
         color: rgba(245,239,231,0.3);
     }
@@ -126,7 +126,7 @@
         flex-shrink: 0;
     }
     .bullet-title { font-size: 14px; font-weight: 700; color: rgba(245,239,231,0.9); margin-bottom: 2px; }
-    .bullet-body  { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(245,239,231,0.4); }
+    .bullet-body  { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: rgba(245,239,231,0.4); }
 
     .phone {
         width: 240px;
@@ -154,7 +154,7 @@
 
     .phone-header {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 11px;
+        font-size: 13px;
         color: rgba(245,239,231,0.35);
         margin-bottom: 20px;
         padding: 0 4px;
@@ -166,7 +166,7 @@
         padding: 8px 0;
         border-radius: 8px;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 12px; font-weight: 700;
+        font-size: 13px; font-weight: 700;
     }
 
     .app-panel {
@@ -177,7 +177,7 @@
     }
     .app-panel-label {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
+        font-size: 11px;
         color: rgba(245,239,231,0.3);
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -189,7 +189,7 @@
         justify-content: space-between;
         padding: 5px 0;
     }
-    .app-name { font-size: 12px; color: rgba(245,239,231,0.7); }
+    .app-name { font-size: 13px; color: rgba(245,239,231,0.7); }
 
     .start-btn {
         border-radius: 12px;

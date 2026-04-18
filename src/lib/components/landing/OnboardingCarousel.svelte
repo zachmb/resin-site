@@ -8,7 +8,7 @@
         <div class="flex items-center gap-4 mb-12">
             <span class="section-label" style="color:{C.earth};">// first run</span>
             <div style="flex:1; height:1px; background:rgba(46,42,38,0.1);"></div>
-            <span class="mono" style="font-size:10px; color:{C.earthLight};">setup takes 60 seconds</span>
+            <span class="mono" style="font-size:12px; color:{C.earthLight};">setup takes 60 seconds</span>
         </div>
 
         <div class="carousel">
@@ -78,13 +78,13 @@
                         <p class="mono hint">when do you do deep work?</p>
                         <div class="time-row">
                             <div class="time-block">
-                                <span class="mono hint" style="font-size:9px;">from</span>
-                                <span class="time-val">9<span style="font-size:13px;">am</span></span>
+                                <span class="mono hint" style="font-size:11px;">from</span>
+                                <span class="time-val">9<span style="font-size:14px;">am</span></span>
                             </div>
                             <div class="time-divider"></div>
                             <div class="time-block">
-                                <span class="mono hint" style="font-size:9px;">to</span>
-                                <span class="time-val">6<span style="font-size:13px;">pm</span></span>
+                                <span class="mono hint" style="font-size:11px;">to</span>
+                                <span class="time-val">6<span style="font-size:14px;">pm</span></span>
                             </div>
                         </div>
                         <div class="day-chips">
@@ -115,7 +115,7 @@
                             {#each ['Instagram','TikTok','Twitter','YouTube'] as app}
                                 <div class="app-row">
                                     <span>{app}</span>
-                                    <span class="mono" style="font-size:10px; color:{C.forest};">blocked ✓</span>
+                                    <span class="mono" style="font-size:12px; color:{C.forest};">blocked ✓</span>
                                 </div>
                             {/each}
                         </div>
@@ -147,7 +147,7 @@
 
         </div>
 
-        <p class="mono mt-4 text-center lg:hidden" style="font-size:10px; color:{C.earthLight};">← scroll to see all steps →</p>
+        <p class="mono mt-4 text-center lg:hidden" style="font-size:12px; color:{C.earthLight};">← scroll to see all steps →</p>
     </div>
 </section>
 
@@ -170,7 +170,7 @@
     }
 
     .card-label {
-        font-size: 10px;
+        font-size: 12px;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -203,10 +203,10 @@
         border-radius: 2px;
     }
 
-    .screen-content { font-size: 12px; }
+    .screen-content { font-size: 13px; }
 
     .mono { font-family: 'JetBrains Mono', monospace; }
-    .hint { font-size: 10px; color: #8B847D; margin-bottom: 8px; }
+    .hint { font-size: 12px; color: #8B847D; margin-bottom: 8px; }
 
     /* Screen 01 */
     .note-input {
@@ -214,27 +214,27 @@
         border: 1px solid rgba(200,136,74,0.25);
         border-radius: 6px;
         padding: 10px;
-        font-size: 11px;
+        font-size: 13px;
         color: #2E2A26;
         line-height: 1.6;
         min-height: 80px;
     }
     .tag-row { display: flex; gap: 6px; margin-top: 10px; }
     .chip {
-        font-size: 10px;
+        font-size: 12px;
         padding: 3px 8px;
         border-radius: 3px;
         font-family: 'JetBrains Mono', monospace;
     }
 
     /* Screen 02 */
-    .plan-title { font-size: 12px; font-weight: 700; color: #2E2A26; margin-bottom: 8px; }
+    .plan-title { font-size: 13px; font-weight: 700; color: #2E2A26; margin-bottom: 8px; }
     .task-list { display: flex; flex-direction: column; gap: 5px; }
     .task-row {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 11px;
+        font-size: 13px;
         color: #2E2A26;
     }
     .task-row.done { color: #8B847D; text-decoration: line-through; }
@@ -242,7 +242,7 @@
         width: 16px; height: 16px;
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 9px;
+        font-size: 11px;
         flex-shrink: 0;
     }
 
@@ -261,7 +261,7 @@
         width: 24px; height: 24px;
         border-radius: 4px;
         display: flex; align-items: center; justify-content: center;
-        font-size: 10px;
+        font-size: 12px;
         font-family: 'JetBrains Mono', monospace;
         font-weight: 600;
     }
@@ -272,11 +272,11 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 11px;
+        font-size: 13px;
         color: #2E2A26;
     }
     .os-badge {
-        font-size: 10px;
+        font-size: 12px;
         color: #4D6652;
         font-family: 'JetBrains Mono', monospace;
         background: rgba(77,102,82,0.08);
@@ -304,7 +304,7 @@
         vertical-align: middle;
         animation: blink 1s step-end infinite;
     }
-    .greeting { font-size: 13px; color: #2E2A26; font-weight: 700; }
+    .greeting { font-size: 14px; color: #2E2A26; font-weight: 700; }
 
     @keyframes blink {
         0%, 100% { opacity: 1; }

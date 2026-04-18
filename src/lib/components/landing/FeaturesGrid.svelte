@@ -127,7 +127,7 @@
                 </p>
 
                 <div class="box mono mt-6 px-3 py-3"
-                     style="background:rgba(46,42,38,0.04); font-size:11px; color:{C.earth};">
+                     style="background:rgba(46,42,38,0.04); font-size:13px; color:{C.earth};">
                     <div style="color:{C.forest};">&gt; activating note…</div>
                     <div style="opacity:0.6; margin-top:2px;">→ 3 tasks generated</div>
                     <div style="opacity:0.6;">→ scheduled 9:00–10:15am</div>
@@ -163,7 +163,7 @@
                 <div class="flex gap-2 mt-6 flex-wrap">
                     {#each platforms as platform, i}
                         <span class="box mono"
-                              style="font-size:10px; padding:4px 8px; color:{C.charcoal}; background:rgba(255,255,255,0.6);">
+                              style="font-size:12px; padding:4px 8px; color:{C.charcoal}; background:rgba(255,255,255,0.6);">
                             {platform}
                             <svg style="display:inline; margin-left:3px; vertical-align:-1px;"
                                  viewBox="0 0 10 10" width="8" height="8" aria-hidden="true">
@@ -194,7 +194,7 @@
 
     .section-label {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 10px; font-weight: 500;
+        font-size: 12px; font-weight: 500;
         letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.45;
     }
 

@@ -22,63 +22,63 @@
 
     const techStack = [
         {
-            name: "SwiftUI",
+            name: "SvelteKit",
             icon: Layout,
             description:
-                "Refined native performance and fluid interactions for Apple environments.",
+                "Fast, calm web UI — the pro dashboard counterpart to the iOS app.",
         },
         {
-            name: "Combine",
+            name: "SwiftUI",
             icon: Network,
             description:
-                "Seamless data flow and responsive, calm state management.",
+                "Native iOS experience with OS-level Screen Time blocking integrations.",
         },
         {
             name: "Supabase",
             icon: Zap,
             description:
-                "Secure authentication and resilient cloud persistence.",
+                "Auth, database, and realtime sync across iOS, web, and extension.",
         },
         {
-            name: "DeepSeek AI",
+            name: "AI Planning",
             icon: Brain,
             description:
-                "Advanced cognitive reasoning to function as your Chief of Staff.",
+                "Hybrid: on-device planning on iOS, and a secure server pipeline for web/Chrome activation.",
         },
         {
-            name: "EventKit",
+            name: "Calendar Sync",
             icon: Calendar,
             description:
-                "Direct, native integration with your personal schedule.",
+                "Schedules sessions into your real calendar (Google Calendar + EventKit where applicable).",
         },
         {
-            name: "Google API",
+            name: "Local-first Web",
             icon: Cloud,
             description:
-                "Secure synchronization across your professional ecosystem.",
+                "Cache + background sync so the web app stays responsive (even with spotty connectivity).",
         },
     ];
 
     const components = [
         {
-            title: "The Commitment Engine",
-            code: "AmberNoteService",
+            title: "Activation Pipeline",
+            code: "POST /api/activate",
             description:
-                "The core mechanism that ensures no drafted thought is ever left unresolved. It manages precisely scheduled plans and drives them toward completion.",
+                "Turns a note into a scheduled plan: auth → calendar availability → planning → calendar block → persisted session + tasks.",
             color: "bg-resin-amber/20",
         },
         {
-            title: "Context Processor",
-            code: "BrainDumpViewModel",
+            title: "Local-first Sync",
+            code: "DataManager + OfflineQueue",
             description:
-                "Transforms unstructured drafts into actionable intelligence, determining precise timing and the most logical next steps without manual sorting.",
+                "Instant UI from cache, then background refresh + retry so your dashboard stays snappy and consistent.",
             color: "bg-resin-forest/20",
         },
         {
-            title: "Private Architecture",
-            code: "UserDefaults + Supabase",
+            title: "Blocking Surfaces",
+            code: "FamilyControls + Chrome Extension",
             description:
-                "A local-first approach to ensure your data remains yours, while syncing seamlessly in the background when needed.",
+                "OS-level app blocking on iOS/macOS and domain blocking on Chrome — both synced to focus sessions.",
             color: "bg-resin-earth/20",
         },
     ];

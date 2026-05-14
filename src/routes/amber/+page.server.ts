@@ -230,10 +230,10 @@ export const actions: Actions = {
         // Clean up associated blocking sessions (extension blocking)
         // Mark them as inactive since the session is complete
         try {
-            const { data: tasks } = await supabase
-                .from('amber_tasks')
-                .select('start_time, end_time')
-                .eq('amber_session_id', sessionId);
+	            const { data: tasks } = await supabase
+	                .from('amber_tasks')
+	                .select('start_time, end_time')
+	                .eq('session_id', sessionId);
 
             if (tasks && tasks.length > 0) {
                 const firstTask = tasks[0];
@@ -327,10 +327,10 @@ export const actions: Actions = {
 
         // Clean up associated blocking sessions (extension blocking)
         try {
-            const { data: tasks } = await supabase
-                .from('amber_tasks')
-                .select('start_time, end_time')
-                .eq('amber_session_id', sessionId);
+	            const { data: tasks } = await supabase
+	                .from('amber_tasks')
+	                .select('start_time, end_time')
+	                .eq('session_id', sessionId);
 
             if (tasks && tasks.length > 0) {
                 const firstTask = tasks[0];
@@ -632,16 +632,16 @@ export const actions: Actions = {
         }
 
         // Update the amber task (session_id check ensures it belongs to this session)
-        const { error } = await supabase
-            .from('amber_tasks')
-            .update({
-                title,
-                description: description || null,
-                estimated_minutes: estimatedMinutes,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', taskId)
-            .eq('amber_session_id', sessionId);
+	        const { error } = await supabase
+	            .from('amber_tasks')
+	            .update({
+	                title,
+	                description: description || null,
+	                estimated_minutes: estimatedMinutes,
+	                updated_at: new Date().toISOString()
+	            })
+	            .eq('id', taskId)
+	            .eq('session_id', sessionId);
 
         if (error) {
             console.error('Error updating task:', error);
@@ -674,12 +674,12 @@ export const actions: Actions = {
         if (!check) return fail(401, { error: 'Unauthorized' });
 
         // Fetch current task times
-        const { data: task } = await supabase
-            .from('amber_tasks')
-            .select('start_time, end_time')
-            .eq('id', taskId)
-            .eq('amber_session_id', sessionId)
-            .single();
+	        const { data: task } = await supabase
+	            .from('amber_tasks')
+	            .select('start_time, end_time')
+	            .eq('id', taskId)
+	            .eq('session_id', sessionId)
+	            .single();
 
         if (!task?.start_time) return { success: true }; // no-op if no times
 
@@ -719,10 +719,10 @@ export const actions: Actions = {
 
         // Calculate tier and apply tier-based rules to all tasks
         const tier = intensity < 0.25 ? 0 : intensity < 0.5 ? 1 : intensity < 0.75 ? 2 : 3;
-        const { data: tasks } = await supabase
-            .from('amber_tasks')
-            .select('id')
-            .eq('amber_session_id', sessionId);
+	        const { data: tasks } = await supabase
+	            .from('amber_tasks')
+	            .select('id')
+	            .eq('session_id', sessionId);
 
         for (const task of tasks || []) {
             const updates: any = { updated_at: new Date().toISOString() };
@@ -765,10 +765,10 @@ export const actions: Actions = {
         }
 
         // Fetch current tasks
-        const { data: tasks, error: fetchError } = await supabase
-            .from('amber_tasks')
-            .select('id, estimated_minutes')
-            .eq('amber_session_id', sessionId);
+	        const { data: tasks, error: fetchError } = await supabase
+	            .from('amber_tasks')
+	            .select('id, estimated_minutes')
+	            .eq('session_id', sessionId);
 
         if (fetchError || !tasks || tasks.length === 0) {
             return fail(500, { error: 'Failed to fetch tasks' });
@@ -817,11 +817,11 @@ export const actions: Actions = {
         }
 
         // Fetch tasks
-        const { data: tasks, error: fetchError } = await supabase
-            .from('amber_tasks')
-            .select('id, start_time, end_time, estimated_minutes')
-            .eq('amber_session_id', sessionId)
-            .order('sequence_order, created_at', { ascending: true });
+	        const { data: tasks, error: fetchError } = await supabase
+	            .from('amber_tasks')
+	            .select('id, start_time, end_time, estimated_minutes')
+	            .eq('session_id', sessionId)
+	            .order('sequence_order, created_at', { ascending: true });
 
         if (fetchError || !tasks) {
             return fail(500, { error: 'Failed to fetch tasks' });
@@ -931,11 +931,11 @@ export const actions: Actions = {
         }
 
         // Fetch all tasks for this session
-        const { data: tasks, error: fetchError } = await supabase
-            .from('amber_tasks')
-            .select('id, end_time')
-            .eq('amber_session_id', sessionId)
-            .order('sequence_order, created_at', { ascending: true });
+	        const { data: tasks, error: fetchError } = await supabase
+	            .from('amber_tasks')
+	            .select('id, end_time')
+	            .eq('session_id', sessionId)
+	            .order('sequence_order, created_at', { ascending: true });
 
         if (fetchError || !tasks || tasks.length === 0) {
             return { success: false, error: 'Failed to fetch tasks' };

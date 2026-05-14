@@ -158,7 +158,7 @@
 							<span class="text-2xl">🛡️</span> No Bypass
 						</h4>
 						<p class="text-resin-earth/70">
-							Blocks persist at the network level. Can't disable, can't incognito, can't circumvent. Real blocking.
+							Blocking is enforced by Chrome’s request rules during active sessions. It’s designed to reduce impulse-clicks and keep you pointed at the next step.
 						</p>
 					</div>
 

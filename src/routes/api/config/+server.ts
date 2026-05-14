@@ -24,8 +24,8 @@ function loadConfig() {
   if (cachedConfig) return cachedConfig;
 
   try {
-    // Read from repo root resin-config.json
-    const configPath = path.resolve(process.cwd(), '../../resin-config.json');
+    // Read from repo root resin-config.json (this project’s root)
+    const configPath = path.resolve(process.cwd(), 'resin-config.json');
     const configData = fs.readFileSync(configPath, 'utf-8');
     cachedConfig = JSON.parse(configData);
     return cachedConfig;

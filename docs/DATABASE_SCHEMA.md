@@ -1,6 +1,6 @@
 # Resin Database Schema — Source of Truth
 
-**Last Updated:** 2026-03-19
+**Last Updated:** 2026-05-14
 **Purpose:** Complete reference for all tables, columns, and relationships used by the Resin web app.
 
 ---
@@ -16,6 +16,7 @@ Unified table storing all user notes and plans. Status determines lifecycle. boa
 | `user_id` | uuid | Foreign key to profiles(id) |
 | `raw_text` | text | Full note content (markdown) |
 | `display_title` | text | Note title |
+| `title` | text | Legacy/compat title (some clients still write this) |
 | `status` | text | `'draft'` (saved), `'scheduled'` (activated), `'completed'`, `'failed'`, `'canceled'`, `'processing'` |
 | `board_id` | uuid | Foreign key to boards(id) — NULL = personal note, NOT NULL = group note |
 | `color` | text | Sticky note color (amber, green, blue, purple) — for group notes |
@@ -49,10 +50,34 @@ Related to `amber_sessions` via `session_id`. Represents individual tasks/subtas
 |--------|------|-------|
 | `id` | uuid | Primary key |
 | `session_id` | uuid | Foreign key to amber_sessions(id) |
+| `title` | text | Task title (what the user does next) |
+| `description` | text | Optional task detail (often AI steps joined as text) |
 | `estimated_minutes` | integer | Time estimate |
+| `sequence_order` | integer | 1..N ordering within the session |
 | `start_time` | timestamp | Scheduled start |
 | `end_time` | timestamp | Scheduled end |
 | `calendar_event_id` | text | Google Calendar event ID |
+| `requires_focus` | boolean | Whether blocking should be active for this task |
+| `requires_camera_verification` | boolean | Whether verification is required |
+| `created_at` | timestamp | Created time |
+| `updated_at` | timestamp | Last modified time |
+
+---
+
+### `blocking_sessions` — Focus/Blocking Windows (All Platforms)
+Cross-platform “blocking envelope” that the Chrome extension and iOS can enforce. This is the source of truth for *when* blocking should be active.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | Primary key |
+| `user_id` | uuid | Foreign key to profiles(id) |
+| `title` | text | Optional label (e.g. `Amber Session: <display_title>`) |
+| `start_time` | timestamp | Blocking start time |
+| `end_time` | timestamp | Blocking end time |
+| `is_active` | boolean | True = enforce (clients still time-gate against start/end) |
+| `device_scheduled` | boolean | Whether a device has acknowledged/scheduled it |
+| `created_at` | timestamp | Created time |
+| `updated_at` | timestamp | Last modified time |
 
 ---
 
@@ -162,6 +187,12 @@ POST /amber?/activate     → UPDATE amber_sessions SET status='scheduled'
 GET  /amber              → SELECT * FROM amber_sessions WHERE status IN ('scheduled', 'completed', 'failed')
 ```
 
+### Chrome Extension Sync (Activation → Blocking)
+When a plan is scheduled via `POST /api/activate`, the server should create:
+- `amber_sessions` + `amber_tasks` (the plan + tasks)
+- `blocking_sessions` (the blocking window that clients enforce)
+- `active_blocks` rows (via Edge Function) for realtime extension policy updates
+
 ### Group Collaboration (`/groups/[id]`)
 ```
 POST /groups?/addNote       → INSERT board_notes (via boards)
@@ -258,6 +289,18 @@ GROUP BY g.id, s.id;
 SELECT token, group_id, expires_at FROM group_invites
 WHERE expires_at < NOW() AND uses_count > 0;
 ```
+
+---
+
+## 🧱 Supabase Migration SQL (Schema Alignment)
+
+Use the canonical SQL in the extension repo:
+- `/Users/zachbas/resinext/extension_db_setup.sql`
+
+This is the re-runnable schema-alignment script used to keep:
+- `blocking_sessions` aligned with the contracts shape (`title`, `device_scheduled`)
+- `amber_sessions` aligned for plan/session content (`raw_text`, `display_title`)
+- `amber_tasks` aligned for plan/task parity (`session_id` FK)
 
 ---
 

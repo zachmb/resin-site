@@ -37,22 +37,34 @@ export const POST = async ({ request }: RequestEvent) => {
             );
         }
 
-        // 3. Fetch task with session info to verify ownership and get title
+        // 3. Fetch task then verify session ownership
         const { data: taskData, error: taskError } = await admin
             .from('amber_tasks')
-            .select('id, title, calendar_event_id, start_time, end_time, amber_session_id, amber_sessions!amber_session_id(user_id, display_title)')
+            .select('id, title, calendar_event_id, start_time, end_time, session_id')
             .eq('id', task_id)
             .single();
 
-        console.log('[api/amber/reschedule] Task fetch:', { taskError, taskData: taskData ? { id: taskData.id, title: taskData.title } : null });
+        console.log('[api/amber/reschedule] Task fetch:', {
+            taskError,
+            taskData: taskData ? { id: taskData.id, title: taskData.title, session_id: (taskData as any).session_id } : null
+        });
 
-        if (taskError || !taskData) {
+        if (taskError || !taskData || !(taskData as any).session_id) {
             return json({ error: 'Task not found' }, { status: 404 });
         }
 
-        // Verify user owns this task
-        const session = (taskData as any).amber_sessions;
-        if (session?.user_id !== user.id) {
+        const sessionId = (taskData as any).session_id as string;
+        const { data: sessionData, error: sessionError } = await admin
+            .from('amber_sessions')
+            .select('id, user_id')
+            .eq('id', sessionId)
+            .single();
+
+        if (sessionError || !sessionData) {
+            return json({ error: 'Session not found' }, { status: 404 });
+        }
+
+        if (sessionData.user_id !== user.id) {
             return json({ error: 'Permission denied' }, { status: 403 });
         }
 
@@ -101,6 +113,7 @@ export const POST = async ({ request }: RequestEvent) => {
                 updated_at: new Date().toISOString(),
             })
             .eq('id', task_id)
+            .eq('session_id', sessionId)
             .select()
             .single();
 

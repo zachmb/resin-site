@@ -23,8 +23,8 @@
             <!-- Copy -->
             <div>
                 <h2 class="headline">
-                    No note needed.<br/>
-                    <span style="color:{C.amberLight};">Just block and go.</span>
+                    Instantly block<br/>
+                    <span style="color:{C.amberLight};">distracting apps.</span>
                 </h2>
                 <p class="subtext">
                     Open Resin. Tap Quick Focus.<br/>

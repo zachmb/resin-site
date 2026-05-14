@@ -582,7 +582,10 @@
                                         successAmber = false;
                                         composeText = "";
                                         const data = result.type === 'success' ? result.data : null;
-                                        const redirectTo = data?.redirectTo || "/amber";
+                                        const redirectTo =
+                                            typeof (data as any)?.redirectTo === 'string'
+                                                ? (data as any).redirectTo
+                                                : "/amber";
                                         goto(redirectTo);
                                     }, 800);
                                 } else {

@@ -489,6 +489,41 @@ export const POST = async ({ request }: RequestEvent) => {
         }
         await admin.from('amber_tasks').upsert(taskRow)
 
+        // 7.5. Create a blocking session + active blocks for the extension (best-effort)
+        // This keeps web/Chrome blocking in lockstep with Amber plan scheduling, even when activation
+        // originates from the Chrome extension (which calls this endpoint directly).
+        try {
+            const { data: profile } = await admin
+                .from('profiles')
+                .select('blocking_enabled, extension_enabled')
+                .eq('id', user.id)
+                .single()
+
+            const blockingEnabled = (profile as any)?.blocking_enabled ?? true
+            const extensionEnabled = (profile as any)?.extension_enabled ?? true
+
+            if (blockingEnabled && extensionEnabled) {
+                await admin.from('blocking_sessions').insert({
+                    user_id: user.id,
+                    start_time: plan.scheduling.start_time,
+                    end_time: plan.scheduling.end_time,
+                    is_active: true,
+                    title: `Amber Session: ${plan.display_title || 'Focus'}`
+                })
+
+                // Server-side creation of active blocks for realtime extension sync
+                await admin.functions.invoke('create-block-from-session', {
+                    body: {
+                        session_id,
+                        category_ids: ['youtube', 'reddit', 'social', 'video'],
+                        block_entire_session: true
+                    }
+                })
+            }
+        } catch (blockingErr) {
+            console.warn('[activate] Warning: extension blocking sync failed (non-fatal)', blockingErr)
+        }
+
         // 8. Sync stones for activation (1 note = 1 stone)
         await syncStonesFromNotes(user.id);
         await recordDailyActivity(user.id);
@@ -519,6 +554,7 @@ export const POST = async ({ request }: RequestEvent) => {
         // 10. Return the full result to the caller (app may still be in foreground)
         return json({
             status: 'scheduled',
+            session_id,
             task: {
                 id: taskRow.id,
                 title: plan.display_title,

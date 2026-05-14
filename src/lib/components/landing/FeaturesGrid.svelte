@@ -121,9 +121,9 @@
                     <circle cx="16" cy="16" r="2.5" fill="{C.forest}" />
                 </svg>
 
-                <h3 class="feature-h3" style="color:{C.charcoal};">Plan in 10 seconds.</h3>
+                <h3 class="feature-h3" style="color:{C.charcoal};">Plan in seconds.</h3>
                 <p class="feature-p" style="color:{C.earth};">
-                    On-device AI reads your note and generates a step-by-step plan with time estimates. No cloud, no API key, no waiting.
+                    On iOS, planning can run on-device. On web/Chrome, Resin schedules plans via a secure server pipeline — same output, no setup.
                 </p>
 
                 <div class="box mono mt-6 px-3 py-3"

@@ -67,12 +67,12 @@ export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedS
             is_device_scheduled: fs.device_scheduled,
             amber_tasks: [{
                 id: `focus-${fs.id}`,
-                amber_session_id: fs.id,
+                session_id: fs.id,
                 title: fs.title || 'Focus',
                 estimated_minutes: Math.round((new Date(fs.end_time).getTime() - new Date(fs.start_time).getTime()) / 60000),
                 start_time: fs.start_time,
                 end_time: fs.end_time,
-                order: 1
+                sequence_order: 1
             }]
         }));
 

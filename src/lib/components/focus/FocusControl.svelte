@@ -10,8 +10,36 @@
     let isSubmitting = $state(false);
     let showOptions = $state(false);
     let successMessage = $state("");
-    let protectionStatus = $state<"Protected" | "Waiting for device" | "Recovering">("Waiting for device");
+    let protectionStatus = $state<"Protected" | "Waiting for device" | "Needs setup" | "Recovering">("Waiting for device");
     let syncCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+    const protectionCopy = $derived.by(() => {
+        switch (protectionStatus) {
+            case "Protected":
+                return {
+                    dot: "bg-resin-forest",
+                    message: "Your device confirmed protection. Distractions should redirect now.",
+                    action: "Refresh status"
+                };
+            case "Needs setup":
+                return {
+                    dot: "bg-resin-amber",
+                    message: "A focus can run, but a device or distraction list still needs setup.",
+                    action: "Open settings"
+                };
+            case "Recovering":
+                return {
+                    dot: "bg-resin-amber animate-pulse",
+                    message: "Resin is re-checking device sync. Keep focusing; retry if this feels stale.",
+                    action: "Retry sync"
+                };
+            default:
+                return {
+                    dot: "bg-resin-earth/40",
+                    message: "Waiting for a connected device to apply protection.",
+                    action: "Retry sync"
+                };
+        }
+    });
 
     const startFocus = async () => {
         if (!title.trim() || isSubmitting) return;
@@ -179,20 +207,28 @@
                 </div>
             {/if}
 
-            <div class="flex items-center justify-between gap-3 rounded-lg border border-resin-forest/10 bg-resin-forest/5 px-4 py-3">
-                <div>
+            <div class="flex items-start justify-between gap-3 rounded-lg border border-resin-forest/10 bg-resin-forest/5 px-4 py-3">
+                <div class="min-w-0">
                     <p class="text-[11px] uppercase tracking-wider font-bold text-resin-earth/45">Protection status</p>
-                    <p class="text-sm font-bold text-resin-charcoal">{protectionStatus}</p>
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-full {protectionCopy.dot}"></span>
+                        <p class="text-sm font-bold text-resin-charcoal">{protectionStatus}</p>
+                    </div>
+                    <p class="mt-1 text-xs font-medium text-resin-earth/65">{protectionCopy.message}</p>
                 </div>
                 <button
                     type="button"
                     onclick={() => {
+                        if (protectionStatus === "Needs setup") {
+                            window.location.href = "/extension-settings";
+                            return;
+                        }
                         protectionStatus = "Recovering";
                         window.location.reload();
                     }}
-                    class="text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors"
+                    class="shrink-0 text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors"
                 >
-                    Retry sync
+                    {protectionCopy.action}
                 </button>
             </div>
 

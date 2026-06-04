@@ -181,6 +181,15 @@
                 ? 'Waiting for device'
                 : 'Needs setup'
     );
+    const pageProtectionCopy = $derived.by(() => {
+        if (pageProtectionStatus === 'Protected') {
+            return 'A session is active. Connected devices should be protecting this window.';
+        }
+        if (pageProtectionStatus === 'Waiting for device') {
+            return 'Resin is waiting for a connected app or extension to confirm protection.';
+        }
+        return 'Connect a device or choose distractions so Resin can protect future focus sessions.';
+    });
 </script>
 
 <svelte:head>
@@ -196,13 +205,18 @@
         <p class="text-resin-earth/60 font-medium mt-2">
             Type one thing, activate it, and Resin protects the focus window across your devices.
         </p>
-        <div class="mt-5 inline-flex items-center gap-3 rounded-full border border-resin-forest/15 bg-white/65 px-4 py-2 shadow-sm">
-            <span class="h-2.5 w-2.5 rounded-full {pageProtectionStatus === 'Protected' ? 'bg-resin-forest' : pageProtectionStatus === 'Needs setup' ? 'bg-resin-amber' : 'bg-resin-earth/40'}"></span>
-            <span class="text-xs font-bold uppercase tracking-wider text-resin-earth/50">Protection status</span>
-            <span class="text-sm font-bold text-resin-charcoal">{pageProtectionStatus}</span>
+        <div class="mt-5 flex max-w-2xl flex-col gap-2 rounded-2xl border border-resin-forest/15 bg-white/65 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="mt-1 h-2.5 w-2.5 rounded-full {pageProtectionStatus === 'Protected' ? 'bg-resin-forest' : pageProtectionStatus === 'Needs setup' ? 'bg-resin-amber' : 'bg-resin-earth/40'}"></span>
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-resin-earth/50">Protection status</span>
+                    <div class="text-sm font-bold text-resin-charcoal">{pageProtectionStatus}</div>
+                    <p class="text-xs font-medium text-resin-earth/65">{pageProtectionCopy}</p>
+                </div>
+            </div>
             <button
                 onclick={() => invalidateAll()}
-                class="text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors"
+                class="text-left text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors sm:text-right"
             >
                 Retry sync
             </button>

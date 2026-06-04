@@ -58,6 +58,7 @@
             <li>Focus automation preferences and recurring schedules</li>
         </ul>
         <p class="mt-2"><strong>Important for iOS:</strong> The iOS app uses Apple's Screen Time framework for blocking. We do NOT have access to your device's screen time data, installed apps list, or browsing history. Apple handles all app/website blocking through its native APIs. We only store your blocking preferences and schedules in our database.</p>
+        <p class="mt-2"><strong>Important for Chrome:</strong> The Chrome extension uses Chrome's declarativeNetRequest API to redirect only the domains you choose to block during active focus sessions. The extension does not read page content, form data, cookies, passwords, keystrokes, or browsing history.</p>
         <p class="mt-2">This data is used exclusively to manage your focus sessions and is not shared with third parties except Apple (for Screen Time API integration only).</p>
 
         <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
@@ -84,6 +85,7 @@
             <li>Creating calendar entries for focus blocks and amber sessions</li>
         </ul>
         <p class="mt-2">You can revoke this access at any time in your account settings. We store your refresh token securely and only use it to sync calendar data on your behalf.</p>
+        <p class="mt-2"><strong>Google API Limited Use:</strong> The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements. Google Calendar data is used only to read scheduling conflicts and create, update, or delete calendar events you request through Resin.</p>
 
         <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
             1.6 Usage and Analytics

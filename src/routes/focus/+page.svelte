@@ -173,6 +173,14 @@
         }
         return { icon: '⟳', label: 'Pending device sync', color: 'bg-resin-amber/10 border-resin-amber/20 text-resin-amber animate-pulse' };
     };
+
+    const pageProtectionStatus = $derived(
+        activeSessions.length > 0
+            ? 'Protected'
+            : deviceCount > 0
+                ? 'Waiting for device'
+                : 'Needs setup'
+    );
 </script>
 
 <svelte:head>
@@ -186,8 +194,19 @@
             Focus Sessions
         </h1>
         <p class="text-resin-earth/60 font-medium mt-2">
-            Control when your phone blocks distractions. All sessions sync instantly to your device.
+            Type one thing, activate it, and Resin protects the focus window across your devices.
         </p>
+        <div class="mt-5 inline-flex items-center gap-3 rounded-full border border-resin-forest/15 bg-white/65 px-4 py-2 shadow-sm">
+            <span class="h-2.5 w-2.5 rounded-full {pageProtectionStatus === 'Protected' ? 'bg-resin-forest' : pageProtectionStatus === 'Needs setup' ? 'bg-resin-amber' : 'bg-resin-earth/40'}"></span>
+            <span class="text-xs font-bold uppercase tracking-wider text-resin-earth/50">Protection status</span>
+            <span class="text-sm font-bold text-resin-charcoal">{pageProtectionStatus}</span>
+            <button
+                onclick={() => invalidateAll()}
+                class="text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors"
+            >
+                Retry sync
+            </button>
+        </div>
     </div>
 
     <!-- Quick Focus (FocusControl) -->

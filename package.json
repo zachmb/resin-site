@@ -1,5 +1,5 @@
 {
-	"name": "tempapp",
+	"name": "resinsite",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
@@ -36,7 +36,7 @@
 		"lucide-svelte": "^0.575.0",
 		"pg": "^8.20.0"
 	},
-	"description": "Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).",
+	"description": "Resin web app and API for notes, focus sessions, blocking sync, and ecosystem configuration.",
 	"main": "svelte.config.js",
 	"directories": {
 		"test": "tests"
@@ -47,7 +47,7 @@
 	},
 	"keywords": [],
 	"author": "",
-	"license": "ISC",
+	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/zachmb/resin-site/issues"
 	},

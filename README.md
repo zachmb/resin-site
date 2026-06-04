@@ -1,42 +1,34 @@
-# sv
+# Resin Site
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Resin's SvelteKit web app and API. This repo is the public web dashboard, the API surface used by iOS and the Chrome extension, and the source of the shared `/api/config` ecosystem configuration.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
+## Local Development
 
 ```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --install npm tempApp
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+The app expects Supabase and server credentials in `.env.local`. Start from `.env.example`.
 
-To create a production version of your app:
+## Production
+
+Deploy with the Vercel adapter already configured in `svelte.config.js`.
+
+Required production environment variables:
+
+- `PUBLIC_RESIN_APP_URL`
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DEEPSEEK_API_KEY`
+- `RESIN_SYNC_KEY`
+
+`/api/config` returns the shared production config consumed by web, iOS, and the Chrome extension. Keep `resin-config.json` aligned with the live domain and public Supabase project values.
+
+## Verification
 
 ```sh
+npm run check
 npm run build
 ```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.

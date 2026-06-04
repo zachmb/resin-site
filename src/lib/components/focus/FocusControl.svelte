@@ -10,6 +10,7 @@
     let isSubmitting = $state(false);
     let showOptions = $state(false);
     let successMessage = $state("");
+    let protectionStatus = $state<"Protected" | "Waiting for device" | "Recovering">("Waiting for device");
     let syncCheckTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const startFocus = async () => {
@@ -28,7 +29,10 @@
 
             const data = await res.json();
             if (data.status === "success") {
-                successMessage = "Focus session sent to phone!";
+                protectionStatus = data.notificationsSent > 0 ? "Waiting for device" : "Recovering";
+                successMessage = data.notificationsSent > 0
+                    ? "Focus started — waiting for your device to confirm."
+                    : "Focus started. Open the app or extension if protection needs a nudge.";
                 title = "";
                 if (onSessionStarted) onSessionStarted(data.session);
 
@@ -39,6 +43,7 @@
                         try {
                             const syncRes = await fetch(`/api/focus/sync-status?id=${data.session.id}`);
                             const syncData = await syncRes.json();
+                            protectionStatus = syncData.device_scheduled ? "Protected" : "Waiting for device";
                             // Status will update reactively once component refetches
                             if (onSessionStarted) onSessionStarted({ ...data.session, device_scheduled: syncData.device_scheduled });
                         } catch (err) {
@@ -90,12 +95,12 @@
             </div>
             <div>
                 <h3 class="text-xl font-bold text-resin-charcoal">
-                    Initiate Focus
+                    Type one thing → Activate
                 </h3>
                 <p
                     class="text-xs text-resin-earth/60 font-medium uppercase tracking-wider"
                 >
-                    Remote Session Control
+                    Resin protects it
                 </p>
             </div>
         </div>
@@ -173,6 +178,23 @@
                     </button>
                 </div>
             {/if}
+
+            <div class="flex items-center justify-between gap-3 rounded-lg border border-resin-forest/10 bg-resin-forest/5 px-4 py-3">
+                <div>
+                    <p class="text-[11px] uppercase tracking-wider font-bold text-resin-earth/45">Protection status</p>
+                    <p class="text-sm font-bold text-resin-charcoal">{protectionStatus}</p>
+                </div>
+                <button
+                    type="button"
+                    onclick={() => {
+                        protectionStatus = "Recovering";
+                        window.location.reload();
+                    }}
+                    class="text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors"
+                >
+                    Retry sync
+                </button>
+            </div>
 
             {#if successMessage}
                 <p

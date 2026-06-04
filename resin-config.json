@@ -1,6 +1,92 @@
 {
+  "environment": "production",
   "api": {
     "baseUrl": "https://noteresin.com",
-    "version": "v1"
+    "version": "v1",
+    "requestTimeout": 30000,
+    "retry": {
+      "maxAttempts": 3,
+      "delayMs": 1000,
+      "backoffMultiplier": 2
+    }
+  },
+  "supabase": {
+    "url": "https://vqzaadhoccgtywewtkrm.supabase.co",
+    "anonKey": "sb_publishable_P_-T0hzfXzuzOsx9Ff8gMw_3SwUpdgm",
+    "realtime": {
+      "enabled": true,
+      "channels": [
+        "blocking_sessions",
+        "profiles",
+        "user_custom_blocks",
+        "active_blocks"
+      ]
+    }
+  },
+  "features": {
+    "widgetEnabled": true,
+    "widgetMinVersion": {
+      "ios": "1.2.0",
+      "web": "1.0.0"
+    },
+    "hardenedModeEnabled": true,
+    "hardenedModeMinVersion": {
+      "ios": "1.1.0",
+      "web": "1.0.0"
+    },
+    "newGamificationEnabled": true,
+    "newGamificationMinVersion": {
+      "ios": "2.0.0",
+      "web": "1.5.0"
+    },
+    "focusAutomationEnabled": true,
+    "focusAutomationMinVersion": {
+      "ios": "1.5.0",
+      "web": "1.3.0",
+      "extension": "1.0.0"
+    },
+    "mindMapConnectionsEnabled": true,
+    "mindMapConnectionsMinVersion": {
+      "ios": "1.6.0",
+      "web": "1.4.0"
+    },
+    "boardsEnabled": false,
+    "boardsMinVersion": {
+      "ios": "2.1.0",
+      "web": "1.6.0"
+    }
+  },
+  "minVersions": {
+    "ios": "1.0.0",
+    "web": "1.0.0",
+    "extension": "1.0.0"
+  },
+  "recommendedVersions": {
+    "ios": "2.0.0",
+    "web": "1.5.0",
+    "extension": "1.0.0"
+  },
+  "analytics": {
+    "enabled": true,
+    "provider": "custom",
+    "sampleRate": 1
+  },
+  "notifications": {
+    "enabled": true,
+    "provider": "supabase",
+    "timeoutMs": 5000
+  },
+  "rateLimit": {
+    "requestsPerMinute": 60,
+    "requestsPerHour": 1000
+  },
+  "auth": {
+    "provider": "supabase",
+    "sessionTimeout": 3600000,
+    "refreshTokenExpiryDays": 7
+  },
+  "build": {
+    "timestamp": "2026-06-03T00:00:00.000Z",
+    "configVersion": "1.0.0"
   }
 }

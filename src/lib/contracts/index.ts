@@ -71,7 +71,11 @@ export interface UserProfile {
   chronotype?: Chronotype;
   focus_success_rate?: number; // 0-1
 
-  // Feature flags
+  // Blocking toggles (actual `profiles` columns read by web + extension)
+  blocking_enabled?: boolean;
+  extension_enabled?: boolean;
+
+  // Feature flags (distinct from the blocking toggles above)
   hardened_mode_enabled: boolean;
   widget_enabled: boolean;
 
@@ -242,27 +246,29 @@ export interface SavedNote {
 }
 
 /**
- * Note Connection — relationship between notes
+ * Note Connection — relationship between notes.
+ * Persisted in `mind_map_edges` with columns `source_id` / `target_id`.
  */
 export interface NoteConnection {
   id: string; // UUID
-  from_note_id: string; // UUID
-  to_note_id: string; // UUID
+  source_id: string; // UUID (DB column source_id)
+  target_id: string; // UUID (DB column target_id)
   connection_type: ConnectionType;
   created_at: string; // ISO8601
 }
 
 /**
- * Device Token — for push notifications
+ * Device Token — for push notifications. DB table `device_tokens`.
  */
 export interface DeviceToken {
   id: string; // UUID
   user_id: string; // UUID
   token: string; // APNs token
-  platform: 'ios' | 'web';
+  device_type: 'ios' | 'web'; // DB column device_type
   device_name?: string;
+  is_active: boolean;
   created_at: string; // ISO8601
-  last_seen: string; // ISO8601
+  last_used_at?: string; // ISO8601 (DB column last_used_at)
 }
 
 /**

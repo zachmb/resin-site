@@ -26,3 +26,8 @@ vite.config.ts.timestamp-*
 resin_ref/
 image.png
 .env*.local
+
+# Test / tooling artifacts
+test-results/
+playwright-report/
+supabase/.temp/

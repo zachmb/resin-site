@@ -17,10 +17,15 @@ test.describe('Dashboard Background Save Integration - Real Database', () => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
 
-		// Check if authenticated (if redirected to login, we'll handle it)
-		if (page.url().includes('/login')) {
-			test.skip();
-		}
+		// Unauthenticated users get the marketing landing page at '/' (no /login
+		// redirect), so detect the dashboard by its compose box. Skip — not fail —
+		// when the dashboard isn't available (no signed-in session in this env).
+		const onDashboard = await page
+			.locator('textarea[placeholder*="What\'s on your mind" i]')
+			.first()
+			.isVisible()
+			.catch(() => false);
+		test.skip(!onDashboard, 'Not authenticated — dashboard not available in this environment');
 	});
 
 	test('save note via dashboard immediately creates temp note and background-saves to database', async ({

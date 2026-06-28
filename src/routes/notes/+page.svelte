@@ -145,9 +145,9 @@
         // Handle temp ID replacement (from optimistic navigation)
         const tempIdMatch = selectedNoteId?.match(/^temp_/);
         if (tempIdMatch) {
-            // Replace temp ID with real ID
-            delete localDrafts[selectedNoteId!];
+            // Replace temp ID with real ID — carry the draft over BEFORE deleting it.
             localDrafts[note.id] = localDrafts[selectedNoteId!] || '';
+            delete localDrafts[selectedNoteId!];
         } else {
             delete localDrafts[note.id];
         }

@@ -545,11 +545,11 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         await syncStonesFromNotes(userId);
 
         // 7. Push Notifications
-        const { data: tokens } = await admin.from('device_tokens').select('device_token').eq('user_id', userId).eq('platform', 'apns');
+        const { data: tokens } = await admin.from('device_tokens').select('token').eq('user_id', userId).eq('device_type', 'ios');
         if (tokens && tokens.length > 0) {
             const startStr = new Date(plan.scheduling.start_time).toLocaleTimeString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' });
-            await Promise.all(tokens.map(({ device_token }) =>
-                sendPush(device_token, {
+            await Promise.all(tokens.map(({ token }) =>
+                sendPush(token, {
                     title: `${plan.display_title} scheduled`,
                     body: `Starting at ${startStr} · ${plan.scheduling.duration_minutes} min`,
                     data: { amber_session_id: sessionId }

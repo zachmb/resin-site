@@ -531,16 +531,16 @@ export const POST = async ({ request }: RequestEvent) => {
         // 9. Send APNs push to all registered devices for this user
         const { data: tokens } = await admin
             .from('device_tokens')
-            .select('device_token')
+            .select('token')
             .eq('user_id', user.id)
-            .eq('platform', 'apns')
+            .eq('device_type', 'ios')
 
         if (tokens && tokens.length > 0) {
             const startStr = new Date(plan.scheduling.start_time)
                 .toLocaleTimeString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' })
 
-            await Promise.all(tokens.map(({ device_token }) =>
-                sendPush(device_token, {
+            await Promise.all(tokens.map(({ token }) =>
+                sendPush(token, {
                     title: `${plan.display_title} scheduled`,
                     body: `Starting at ${startStr} · ${plan.scheduling.duration_minutes} min`,
                     data: { amber_session_id: session_id },

@@ -69,7 +69,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 	// Load device tokens
 	const { data: deviceTokens } = await supabase
 		.from('device_tokens')
-		.select('device_token, platform, updated_at')
+		// Alias real columns (token, device_type) to the names the UI expects.
+		.select('device_token:token, platform:device_type, updated_at')
 		.eq('user_id', user.id)
 		.order('updated_at', { ascending: false });
 
@@ -266,7 +267,7 @@ export const actions: Actions = {
             .from('device_tokens')
             .delete()
             .eq('user_id', user.id)
-            .eq('device_token', token);
+            .eq('token', token);
 
         if (error) return fail(500, { error: 'Failed to remove device' });
         if (!count || count === 0) return fail(403, { error: 'Device not found or insufficient permissions' });
@@ -635,7 +636,7 @@ export const actions: Actions = {
                 .from('device_tokens')
                 .select('token')
                 .eq('user_id', user.id)
-                .eq('platform', 'apns');
+                .eq('device_type', 'ios');
 
             if (tokens && tokens.length > 0) {
                 // Trigger push notification via APNs

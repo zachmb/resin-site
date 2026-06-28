@@ -16,10 +16,13 @@
     let sessionStartTime = $state("");
     let loading = $state(false);
     let userSessions: Record<string, boolean> = $state({});
+    let currentUserId: string | null = $state(null);
 
     const supabase = createSupabaseClient();
 
     onMount(async () => {
+        const { data } = await supabase.auth.getUser();
+        currentUserId = data.user?.id ?? null;
         await loadSessions();
     });
 
@@ -55,6 +58,10 @@
 
                 if (data) {
                     participants[session.id] = data;
+                    // Reflect whether the current user is already an active participant
+                    // so the Join/Leave button shows the correct state after a reload.
+                    userSessions[session.id] = !!currentUserId
+                        && data.some((p: { user_id: string }) => p.user_id === currentUserId);
                 }
             } catch (error) {
                 console.error("Error loading participants:", error);
@@ -98,10 +105,26 @@
             const { data: user } = await supabase.auth.getUser();
             if (!user.user) return;
 
-            await supabase.from("group_session_participants").insert({
-                session_id: sessionId,
-                user_id: user.user.id
-            });
+            // Re-activate an existing row if the user joined before (and left),
+            // otherwise insert — never create duplicate participant rows.
+            const { data: existing } = await supabase
+                .from("group_session_participants")
+                .select("id")
+                .eq("session_id", sessionId)
+                .eq("user_id", user.user.id)
+                .maybeSingle();
+
+            if (existing) {
+                await supabase
+                    .from("group_session_participants")
+                    .update({ left_at: null })
+                    .eq("id", existing.id);
+            } else {
+                await supabase.from("group_session_participants").insert({
+                    session_id: sessionId,
+                    user_id: user.user.id
+                });
+            }
 
             userSessions[sessionId] = true;
             await loadParticipants();

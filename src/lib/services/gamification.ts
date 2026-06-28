@@ -460,8 +460,12 @@ export async function applySessionReward(
     // Standardize daily streak tracking alongside session streak
     const { currentStreak, longestStreak } = await recordDailyActivity(userId);
 
-    // Sync stones based on note count (1 note = 1 stone)
+    // Sync stones based on note count (1 note = 1 stone), plus a streak bonus on
+    // every 5th consecutive session. This is a single, consistent write — the old
+    // code wrote total_stones twice (once from note count, then again from a STALE
+    // profile.total_stones read), which produced inconsistent totals.
     const stonesCount = await syncStonesFromNotes(userId);
+    const streakBonus = (newStreak > 1 && newStreak % 5 === 0) ? 5 : 0;
 
     await admin
         .from('profiles')
@@ -469,7 +473,7 @@ export async function applySessionReward(
             sessions_completed_streak: newStreak,
             last_session_date: now.toISOString(),
             forest_health: newForestHealth,
-            total_stones: stonesCount,
+            total_stones: stonesCount + streakBonus,
             current_streak: currentStreak,
             updated_at: now.toISOString()
         })
@@ -495,17 +499,7 @@ export async function applySessionReward(
             related_session_id: sessionId
         });
 
-    // Bonus: if streak is a multiple of 5, award streak bonus
-    if (newStreak > 1 && newStreak % 5 === 0) {
-        const streakBonus = 5;
-        await admin
-            .from('profiles')
-            .update({
-                total_stones: profile.total_stones + reward.totalStones + streakBonus,
-                updated_at: now.toISOString()
-            })
-            .eq('id', userId);
-    }
+    // (Streak bonus is folded into the single profile update above.)
 
     // Check and award achievements
     const ctx = await buildAchievementContext(userId, now);

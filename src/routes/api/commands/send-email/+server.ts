@@ -1,14 +1,19 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
+import { getAuthenticatedUserId } from '$lib/server/auth';
 
 /**
  * Send email via configured email service
  * This is a simple implementation that would send emails
  * In production, integrate with SendGrid, AWS SES, Mailgun, etc.
  */
-export const POST = async ({ request }: RequestEvent) => {
+export const POST = async (event: RequestEvent) => {
     try {
-        const body = await request.json();
+        // Require auth so this can never become an open email relay.
+        const userId = await getAuthenticatedUserId(event);
+        if (!userId) return error(401, 'Unauthorized');
+
+        const body = await event.request.json();
         const { to, content, subject } = body;
 
         if (!to || !content) {

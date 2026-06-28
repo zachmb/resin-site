@@ -1,18 +1,17 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createClient } from '@supabase/supabase-js';
+import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
     try {
-        const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        // Get the request body
-        const { domain, userId } = await request.json();
+        // Derive the user from the verified token/session — never trust a body userId.
+        const userId = await getAuthenticatedUserId(event);
+        if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!domain || !userId) {
+        const { domain } = await event.request.json();
+        if (!domain) {
             return json(
-                { error: 'Missing domain or userId' },
+                { error: 'Missing domain' },
                 { status: 400 }
             );
         }

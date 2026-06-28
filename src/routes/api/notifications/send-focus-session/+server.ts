@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createClient } from '@supabase/supabase-js';
+import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
 
 const APNS_KEY_ID = process.env.APNS_KEY_ID!;
 const APNS_TEAM_ID = process.env.APNS_TEAM_ID!;
@@ -10,14 +10,14 @@ const APNS_KEY = process.env.APNS_KEY!;
 /**
  * Send silent push notification to iOS devices when focus session starts
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
     try {
-        const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        const { userId, sessionId, sessionTitle, endTime, groupId } = await request.json();
+        const userId = await getAuthenticatedUserId(event);
+        if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!userId || !sessionId) {
+        const { sessionId, sessionTitle, endTime, groupId } = await event.request.json();
+
+        if (!sessionId) {
             return json(
                 { error: 'Missing required fields' },
                 { status: 400 }
@@ -28,7 +28,18 @@ export const POST: RequestHandler = async ({ request }) => {
         let userIds = [userId];
 
         if (groupId) {
-            // Get all members of the group
+            // Only allow broadcasting to a group the caller actually belongs to.
+            const { data: membership } = await supabase
+                .from('group_members')
+                .select('user_id')
+                .eq('group_id', groupId)
+                .eq('user_id', userId)
+                .maybeSingle();
+            if (!membership) {
+                return json({ error: 'Not a member of this group' }, { status: 403 });
+            }
+
+            // Fan out to all members of the group.
             const { data: groupMembers } = await supabase
                 .from('group_members')
                 .select('user_id')

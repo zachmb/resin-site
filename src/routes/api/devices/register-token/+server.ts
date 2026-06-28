@@ -1,29 +1,30 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createClient } from '@supabase/supabase-js';
+import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
 
 /**
  * Register a device token for push notifications
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
     try {
-        const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        const { userId, token, deviceType, deviceName } = await request.json();
+        const userId = await getAuthenticatedUserId(event);
+        if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!userId || !token || !deviceType) {
+        const { token, deviceType, deviceName } = await event.request.json();
+
+        if (!token || !deviceType) {
             return json(
-                { error: 'Missing required fields: userId, token, deviceType' },
+                { error: 'Missing required fields: token, deviceType' },
                 { status: 400 }
             );
         }
 
-        // Check if token already exists
+        // Check if token already exists for THIS user
         const { data: existing } = await supabase
             .from('device_tokens')
             .select('id')
             .eq('token', token)
+            .eq('user_id', userId)
             .single();
 
         let result;

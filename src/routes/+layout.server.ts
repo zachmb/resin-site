@@ -78,8 +78,8 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
         .select('*')
         .eq('user_id', session.user.id)
         .eq('status', 'active')
-        .lte('start_time', Date.now() / 1000)
-        .gte('end_time', Date.now() / 1000)
+        .lte('start_time', now)
+        .gte('end_time', now)
         .limit(1);
 
     // 2. Check for Amber Plan focus tasks

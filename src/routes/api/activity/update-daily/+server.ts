@@ -1,24 +1,19 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createClient } from '@supabase/supabase-js';
+import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
 
 /**
  * Update or create daily activity record for a user
  * Merges the provided updates with existing data
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
     try {
-        const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        const { userId, updates } = await request.json();
+        const userId = await getAuthenticatedUserId(event);
+        if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!userId) {
-            return json(
-                { error: 'Missing userId' },
-                { status: 400 }
-            );
-        }
+        const body = await event.request.json();
+        // Strip identity/ownership columns so a caller can't override them via mass-assignment.
+        const { user_id: _ignoredUserId, id: _ignoredId, ...updates } = body?.updates ?? {};
 
         // Get today's date
         const today = new Date().toISOString().split('T')[0];

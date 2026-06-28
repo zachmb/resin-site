@@ -1,13 +1,18 @@
 /**
- * Resin Contracts - Shared TypeScript interfaces for Web, iOS, and Extension
- * Single source of truth for data models and API contracts
+ * Resin Contracts — web runtime copy (aliased as `@resin/contracts` via svelte.config.js).
+ *
+ * The CANONICAL source of truth is the `@resin/contracts` package
+ * (resin-contracts/src/index.ts). Keep this file in sync with it. Where the two
+ * differ today (e.g. AmberSession title field), the DB columns are the tiebreaker:
+ * `amber_sessions.display_title` / `.raw_text`, `device_tokens.token` / `.device_type`,
+ * `mind_map_edges.source_id` / `.target_id`, `profiles.blocking_enabled` / `.extension_enabled`.
  */
 
 // ============================================================================
 // ENUMS & TYPES
 // ============================================================================
 
-export type SessionStatus = 'draft' | 'accepted' | 'scheduled' | 'completed' | 'failed' | 'canceled';
+export type SessionStatus = 'draft' | 'processing' | 'accepted' | 'scheduled' | 'completed' | 'failed' | 'canceled';
 export type EnergyDemand = 'low' | 'medium' | 'high';
 export type Chronotype = 'morning_person' | 'night_owl' | 'neutral';
 export type ConnectionType = 'relates_to' | 'blocks' | 'supports' | 'depends_on' | 'references' | 'contradicts';

@@ -1044,7 +1044,7 @@
                                 <button
                                     type="submit"
                                     disabled={activatingId === selectedSession.id}
-                                    class="px-5 py-2.5 bg-resin-amber text-white font-bold rounded-xl shadow-lg shadow-resin-amber/20 hover:shadow-resin-amber/40 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 relative overflow-hidden"
+                                    class="px-5 py-2.5 bg-resin-amber text-resin-charcoal font-bold rounded-xl shadow-lg shadow-resin-amber/20 hover:shadow-resin-amber/40 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 relative overflow-hidden"
                                 >
                                     {#if activatingId === selectedSession.id}
                                         <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1276,7 +1276,7 @@
                     <button
                         type="submit"
                         disabled={clearingDate !== null}
-                        class="w-full px-4 py-3 text-sm font-bold bg-resin-amber text-white hover:bg-resin-amber/90 rounded-xl shadow-lg shadow-resin-amber/20 transition-all disabled:opacity-50"
+                        class="w-full px-4 py-3 text-sm font-bold bg-resin-amber text-resin-charcoal hover:bg-resin-amber/90 rounded-xl shadow-lg shadow-resin-amber/20 transition-all disabled:opacity-50"
                     >
                         {clearingDate ? 'Clearing...' : 'Clear Day'}
                     </button>
@@ -1380,7 +1380,7 @@
                     <form method="POST" action="/account?/signInWithGoogle" class="flex-1">
                         <button
                             type="submit"
-                            class="w-full px-4 py-2.5 bg-resin-amber text-white font-semibold rounded-lg hover:bg-resin-amber/90 transition-colors flex items-center justify-center gap-2"
+                            class="w-full px-4 py-2.5 bg-resin-amber text-resin-charcoal font-semibold rounded-lg hover:bg-resin-amber/90 transition-colors flex items-center justify-center gap-2"
                         >
                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

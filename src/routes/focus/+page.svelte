@@ -767,7 +767,7 @@
             {#if friends.length > 0}
                 <button
                     onclick={() => showInviteForm = !showInviteForm}
-                    class="px-4 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all"
+                    class="px-4 py-2 bg-resin-amber text-resin-charcoal rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all"
                 >
                     + Invite Friend
                 </button>
@@ -873,7 +873,7 @@
                             <button
                                 type="submit"
                                 disabled={!inviteCollaboratorId || !inviteTitle.trim()}
-                                class="flex-1 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all disabled:opacity-50"
+                                class="flex-1 py-2 bg-resin-amber text-resin-charcoal rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all disabled:opacity-50"
                             >
                                 Send Invite
                             </button>
@@ -909,7 +909,7 @@
                                 <div class="flex gap-2 mb-3">
                                     <form method="POST" action="?/acceptSharedFocus" use:enhance class="flex-1">
                                         <input type="hidden" name="sharedSessionId" value={session.id} />
-                                        <button type="submit" class="w-full py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all">
+                                        <button type="submit" class="w-full py-2 bg-resin-amber text-resin-charcoal rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all">
                                             Accept
                                         </button>
                                     </form>
@@ -928,7 +928,7 @@
                                 <div class="flex gap-2 mb-3">
                                     <form method="POST" action="?/completeSharedFocus" use:enhance class="flex-1">
                                         <input type="hidden" name="sharedSessionId" value={session.id} />
-                                        <button type="submit" class="w-full py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all">
+                                        <button type="submit" class="w-full py-2 bg-resin-amber text-resin-charcoal rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all">
                                             Mark Complete
                                         </button>
                                     </form>

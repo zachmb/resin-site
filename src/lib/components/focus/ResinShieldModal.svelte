@@ -256,7 +256,7 @@
                         </div>
                         <button
                             onclick={() => copyToClipboard(redirectUri)}
-                            class="px-3 py-2 bg-resin-amber text-white rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all uppercase tracking-wide"
+                            class="px-3 py-2 bg-resin-amber text-resin-charcoal rounded-lg text-xs font-bold hover:bg-resin-amber/90 transition-all uppercase tracking-wide"
                         >
                             Copy URI
                         </button>

@@ -419,7 +419,7 @@
                             }
                         }}
                         disabled={startingFocus}
-                        class="px-5 py-2.5 bg-resin-amber text-white rounded-xl text-xs font-bold hover:bg-resin-amber/90 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed"
+                        class="px-5 py-2.5 bg-resin-amber text-resin-charcoal rounded-xl text-xs font-bold hover:bg-resin-amber/90 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed"
                         title="Start a 1-hour focus block"
                     >
                         {#if startingFocus}

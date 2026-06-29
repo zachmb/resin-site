@@ -167,7 +167,7 @@
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a href="/login?next=/"
                    class="flex items-center gap-2 transition-all hover:-translate-y-0.5 relative overflow-hidden"
-                   style="background:{C.amber}; color:white; padding:15px 28px; border-radius:10px; font-size:15px; font-weight:900; box-shadow:0 10px 28px -10px rgba(200,136,74,0.55);">
+                   style="background:{C.amber}; color:#2E2A26; padding:15px 28px; border-radius:10px; font-size:15px; font-weight:900; box-shadow:0 10px 28px -10px rgba(200,136,74,0.55);">
                     <span class="absolute inset-0 pointer-events-none" aria-hidden="true"
                           style="background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.16) 50%,transparent 60%); animation:shimmer 3s ease-in-out infinite;"></span>
                     <span class="relative z-10">Open web app</span>

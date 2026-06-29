@@ -1222,7 +1222,7 @@
                             <button
                                 type="submit"
                                 disabled={loading}
-                                class="px-6 py-2.5 bg-resin-amber text-white rounded-xl font-bold text-sm hover:bg-resin-amber/90 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
+                                class="px-6 py-2.5 bg-resin-amber text-resin-charcoal rounded-xl font-bold text-sm hover:bg-resin-amber/90 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
                             >
                                 {#if loading}
                                     <svg

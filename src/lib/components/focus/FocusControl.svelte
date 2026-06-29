@@ -173,7 +173,7 @@
                             onclick={() => (duration = d)}
                             class="px-4 py-2 rounded-md text-xs font-bold transition-all {duration ===
                             d
-                                ? 'bg-resin-amber text-white shadow-md'
+                                ? 'bg-resin-amber text-resin-charcoal shadow-md'
                                 : 'bg-white/40 text-resin-earth hover:bg-white/60'}"
                         >
                             {d}m

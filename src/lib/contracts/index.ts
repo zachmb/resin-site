@@ -89,14 +89,16 @@ export interface UserProfile {
 
 /**
  * Amber Session — a user's activated brain dump/plan
- * ⚠️ Known issue: web code writes `display_title` to Supabase; DB column is `title`.
- * Migration needed: https://github.com/zachmb/resinsite/issues/XXX
+ * DB column for the title is `display_title` (verified: docs/SUPABASE_MIGRATION.sql
+ * declares `display_title text`; web reads/writes `display_title` throughout). This
+ * interface field is named `title` for the iOS-facing contract and maps to the
+ * `display_title` column. No migration is needed — the column already exists.
  */
 export interface AmberSession {
   id: string; // UUID
   user_id: string; // UUID
   raw_text: string; // Original brain dump (DB column: raw_text)
-  title: string; // DB column: title (NOT display_title — web code currently writes display_title, needs migration)
+  title: string; // -> amber_sessions.display_title (verified DB column)
   status: SessionStatus;
   intensity: number; // 0-1
   energy_demand?: EnergyDemand;
@@ -219,15 +221,17 @@ export interface FocusAutomation {
 
 /**
  * Saved Note
- * Stored as rows in amber_sessions table with status='draft'
- * Uses DB columns: id, user_id, status, content, title, created_at, updated_at, rich_text_html, stored_urls, group_id
+ * Stored as rows in amber_sessions table with status='draft'.
+ * DB columns (verified: docs/SUPABASE_MIGRATION.sql): id, user_id, status,
+ * raw_text (body), display_title (title), created_at, updated_at, group_id.
+ * There is no `content` column — the body is `raw_text`; web maps note.content -> raw_text.
  */
 export interface SavedNote {
   id: string; // UUID
   user_id: string; // UUID
   status: 'draft'; // Discriminator: only draft status rows are notes (not plans)
-  title: string; // Display title (stored in DB title column)
-  content: string; // Note body text (DB column: content)
+  title: string; // -> amber_sessions.display_title
+  content: string; // Note body text -> amber_sessions.raw_text (NOT a `content` column)
 
   // Optional content formats
   rich_text_html?: string;

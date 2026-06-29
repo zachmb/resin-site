@@ -16,24 +16,28 @@
     let newDomain = $state("");
     let saving = $state(false);
     let message = $state("");
+    let messageType = $state<'success' | 'error'>('success');
 
     function addDomain() {
         if (!newDomain.trim()) return;
         const domain = newDomain.trim().toLowerCase();
 
         if (blockedDomains.includes(domain)) {
+            messageType = "error";
             message = "Domain already in list";
             return;
         }
 
         blockedDomains = [...blockedDomains, domain];
         newDomain = "";
+        messageType = "success";
         message = `Added ${domain}`;
         setTimeout(() => (message = ""), 2000);
     }
 
     function removeDomain(domain: string) {
         blockedDomains = blockedDomains.filter((d) => d !== domain);
+        messageType = "success";
         message = `Removed ${domain}`;
         setTimeout(() => (message = ""), 2000);
     }
@@ -55,7 +59,11 @@
         </div>
 
         {#if message}
-            <div class="mb-6 p-3 rounded-lg {message.startsWith('✓') ? 'bg-resin-forest/10 text-resin-forest' : 'bg-amber-100 text-amber-700'} text-sm font-semibold">
+            <div
+                role={messageType === 'error' ? 'alert' : 'status'}
+                aria-live={messageType === 'error' ? 'assertive' : 'polite'}
+                class="mb-6 p-3 rounded-lg {messageType === 'error' ? 'bg-amber-100 text-amber-800' : 'bg-resin-forest/10 text-resin-forest'} text-sm font-semibold"
+            >
                 {message}
             </div>
         {/if}
@@ -71,6 +79,9 @@
                     <p class="text-sm text-resin-earth/60 mt-1">Control whether the extension is active</p>
                 </div>
                 <button
+                    role="switch"
+                    aria-checked={extensionEnabled}
+                    aria-label="Extension enabled"
                     onclick={() => { extensionEnabled = !extensionEnabled; }}
                     class="w-14 h-8 rounded-full transition-colors {extensionEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {extensionEnabled ? 'justify-end' : 'justify-start'} p-1"
                 >
@@ -95,6 +106,9 @@
                     <p class="text-xs text-resin-earth/60 mt-1">Prevent access during focus sessions</p>
                 </div>
                 <button
+                    role="switch"
+                    aria-checked={blockingEnabled}
+                    aria-label="Block distracting sites"
                     onclick={() => { blockingEnabled = !blockingEnabled; }}
                     class="w-12 h-7 rounded-full transition-colors {blockingEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {blockingEnabled ? 'justify-end' : 'justify-start'} p-0.5"
                 >
@@ -109,6 +123,9 @@
                     <p class="text-xs text-resin-earth/60 mt-1">Automatically block sites when focus sessions start</p>
                 </div>
                 <button
+                    role="switch"
+                    aria-checked={autoBlockSessions}
+                    aria-label="Auto-block on sessions"
                     onclick={() => { autoBlockSessions = !autoBlockSessions; }}
                     class="w-12 h-7 rounded-full transition-colors {autoBlockSessions ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {autoBlockSessions ? 'justify-end' : 'justify-start'} p-0.5"
                 >
@@ -123,6 +140,9 @@
                     <p class="text-xs text-resin-earth/60 mt-1">Receive alerts when accessing blocked sites</p>
                 </div>
                 <button
+                    role="switch"
+                    aria-checked={notificationsEnabled}
+                    aria-label="Notifications"
                     onclick={() => { notificationsEnabled = !notificationsEnabled; }}
                     class="w-12 h-7 rounded-full transition-colors {notificationsEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {notificationsEnabled ? 'justify-end' : 'justify-start'} p-0.5"
                 >
@@ -153,6 +173,7 @@
                 <div class="flex gap-2">
                     <input
                         type="text"
+                        aria-label="Domain to block"
                         placeholder="e.g., youtube.com, twitter.com"
                         bind:value={newDomain}
                         onkeydown={(e) => {

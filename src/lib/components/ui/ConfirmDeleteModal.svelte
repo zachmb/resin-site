@@ -11,7 +11,20 @@
 	}
 
 	let { isOpen, title, message, onConfirm, onCancel, isLoading = false } = $props();
+
+	let cancelButton = $state<HTMLButtonElement | null>(null);
+
+	// Move focus to the safe "Keep It" action when the dialog opens.
+	$effect(() => {
+		if (isOpen && cancelButton) cancelButton.focus();
+	});
 </script>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (isOpen && e.key === 'Escape' && !isLoading) onCancel();
+	}}
+/>
 
 {#if isOpen}
 	<div
@@ -22,6 +35,7 @@
 		}}
 		role="dialog"
 		aria-modal="true"
+		aria-labelledby="confirm-delete-title"
 	>
 		<div
 			class="bg-resin-bg rounded-lg shadow-xl max-w-sm w-full border border-resin-forest/10 overflow-hidden"
@@ -29,7 +43,7 @@
 		>
 			<!-- Header -->
 			<div class="px-6 py-6 border-b border-resin-earth/10 bg-gradient-to-r from-resin-forest/5 to-resin-amber/5">
-				<h2 class="text-lg font-bold text-resin-charcoal">{title}</h2>
+				<h2 id="confirm-delete-title" class="text-lg font-bold text-resin-charcoal">{title}</h2>
 			</div>
 
 			<!-- Content -->
@@ -40,6 +54,7 @@
 			<!-- Actions -->
 			<div class="px-6 py-4 bg-white/40 flex gap-3">
 				<button
+					bind:this={cancelButton}
 					onclick={onCancel}
 					disabled={isLoading}
 					class="flex-1 px-4 py-2 rounded-lg font-bold text-sm text-resin-forest bg-white hover:bg-white/80 border border-resin-forest/20 transition-all disabled:opacity-50"

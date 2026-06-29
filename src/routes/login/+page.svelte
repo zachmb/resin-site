@@ -106,12 +106,13 @@
                     <p
                         class="text-xs text-resin-earth/80 leading-relaxed font-light"
                     >
-                        Resin uses <span class="font-semibold">Supabase</span>
-                        as our secure third-party database. We
+                        Resin stores your data in <span class="font-semibold">Supabase</span>,
+                        protected by row-level security so other users can never
+                        see your notes, and
                         <span class="font-semibold text-resin-charcoal"
-                            >cannot access</span
-                        > your private notes—they are encrypted and stored directly
-                        in your personal Supabase instance.
+                            >encrypted in transit and at rest</span
+                        >. We never sell your data or use your private notes for
+                        anything but running Resin.
                     </p>
                 </div>
             </div>

@@ -210,7 +210,12 @@
 
             const handleAIError = (e: any) => {
                 aiStatus = 'error';
-                aiMessage = e.detail?.error || "Scheduling failed";
+                const raw = e.detail?.error;
+                // Only show short, human messages; never surface raw codes/JSON/stack text.
+                const looksTechnical = !raw || raw.length > 120 || /[{}<>]|https?:\/\/|status\s*\d|Error:/i.test(raw);
+                aiMessage = looksTechnical
+                    ? "Couldn't schedule this right now — your note is saved, try again."
+                    : raw;
                 console.log('[Dashboard] AI Scheduling error:', e.detail);
                 
                 // Clear error message after 8 seconds
@@ -323,10 +328,12 @@
             transition:fade 
             class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 pointer-events-none"
         >
-            <div class="pointer-events-auto glass-card rounded-lg p-4 border shadow-premium-lg flex items-center gap-4 
+            <div class="pointer-events-auto glass-card rounded-lg p-4 border shadow-premium-lg flex items-center gap-4
                 {aiStatus === 'scheduling' ? 'border-resin-amber/30 bg-white/90' : ''}
                 {aiStatus === 'success' ? 'border-resin-forest/30 bg-white/90' : ''}
                 {aiStatus === 'error' ? 'border-red-200 bg-red-50/90' : ''}"
+                role={aiStatus === 'error' ? 'alert' : 'status'}
+                aria-live={aiStatus === 'error' ? 'assertive' : 'polite'}
             >
                 {#if aiStatus === 'scheduling'}
                     <div class="w-10 h-10 rounded-md bg-resin-amber/10 flex items-center justify-center">
@@ -347,8 +354,9 @@
                     {/if}
                 </div>
 
-                <button 
+                <button
                     onclick={() => aiStatus = 'idle'}
+                    aria-label="Dismiss"
                     class="text-resin-earth/40 hover:text-resin-charcoal transition-colors px-2"
                 >
                     ✕

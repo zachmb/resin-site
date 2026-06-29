@@ -332,9 +332,10 @@
                             class="bg-white/50 rounded-xl p-4 border border-resin-forest/5"
                         >
                             <p class="text-sm text-resin-charcoal/80">
-                                All your notes and sessions are securely stored
-                                in your personal Supabase instance. We cannot
-                                access your data.
+                                All your notes and sessions are stored in Supabase
+                                with row-level security and encrypted in transit
+                                and at rest. We never sell your data or share your
+                                private notes.
                             </p>
                         </div>
                     </section>
@@ -1283,12 +1284,13 @@
                                 <h4
                                     class="font-semibold text-resin-charcoal mb-2"
                                 >
-                                    End-to-End Encryption
+                                    Encrypted &amp; isolated
                                 </h4>
                                 <p class="text-sm text-resin-earth/80">
-                                    Your notes and session data are stored in
-                                    your personal encrypted space in Supabase.
-                                    We cannot read your private content.
+                                    Your notes and session data are isolated with
+                                    row-level security and encrypted in transit
+                                    and at rest. We never sell your data or share
+                                    your private content.
                                 </p>
                             </div>
                             <div class="border-t border-resin-forest/5 pt-4">

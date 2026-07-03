@@ -261,13 +261,14 @@
 				Install Resin Web Shield today and transform your focus sessions into unbreakable commitments.
 			</p>
 			<div class="flex flex-col sm:flex-row gap-4 justify-center">
+				<!-- TODO(launch): once the Chrome Web Store listing is approved, set the
+				     real store URL (https://chromewebstore.google.com/detail/<EXTENSION_ID>)
+				     and change the label back to "Add to Chrome". -->
 				<a
-					href="https://chrome.google.com/webstore/detail/resin-shield"
-					target="_blank"
-					rel="noopener noreferrer"
+					href="/support"
 					class="px-10 py-4 bg-resin-charcoal text-white rounded-lg font-bold text-lg hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
 				>
-					<span>Add to Chrome</span>
+					<span>Chrome Web Store — in review. Get notified</span>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 					</svg>

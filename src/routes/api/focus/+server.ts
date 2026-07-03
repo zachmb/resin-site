@@ -40,6 +40,20 @@ export const POST = async ({ request, locals }: RequestEvent) => {
     const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
     const sessionId = crypto.randomUUID();
 
+    // The service-role client bypasses RLS, so membership must be checked
+    // explicitly before this endpoint fans out pushes to a group.
+    if (groupId) {
+        const { data: membership } = await admin
+            .from('group_members')
+            .select('user_id')
+            .eq('group_id', groupId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (!membership) {
+            return json({ error: 'Not a member of this group' }, { status: 403 });
+        }
+    }
+
     try {
         // 3. Insert into blocking_sessions
         // The iOS app polls this table or receives a push to sync.

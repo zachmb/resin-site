@@ -2,9 +2,14 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url }) => {
-    const species = url.searchParams.get('species') || 'oak';
-    const size = parseInt(url.searchParams.get('size') || '48');
-    const health = parseInt(url.searchParams.get('health') || '100');
+    // Whitelist species and clamp numerics — these params are interpolated
+    // into HTML/SVG, so anything unvalidated is reflected XSS.
+    const requestedSpecies = url.searchParams.get('species') || 'oak';
+    const species = requestedSpecies in SPECIES_COLORS ? requestedSpecies : 'oak';
+    const rawSize = parseInt(url.searchParams.get('size') || '48');
+    const rawHealth = parseInt(url.searchParams.get('health') || '100');
+    const size = Number.isFinite(rawSize) ? Math.min(Math.max(rawSize, 8), 1024) : 48;
+    const health = Number.isFinite(rawHealth) ? Math.min(Math.max(rawHealth, 0), 100) : 100;
 
     // Generate SVG that matches TreeSVG.svelte exactly
     const svg = generateTreeSVG(species, size, health);
@@ -301,9 +306,9 @@ function generateSpeciesContent(species: string, canopy: string, trunk: string, 
     }
 }
 
-function getSpeciesColors(species: string): { canopy: string; trunk: string; highlight: string } {
-    // Match treeSpecies.ts colors exactly
-    const colorMap: Record<string, { canopy: string; trunk: string; highlight: string }> = {
+// Match treeSpecies.ts colors exactly. Also serves as the species whitelist
+// for the query param.
+const SPECIES_COLORS: Record<string, { canopy: string; trunk: string; highlight: string }> = {
         amber: { canopy: '#D4A574', trunk: '#8B6F47', highlight: '#FFD700' },
         stone: { canopy: '#8B8B7A', trunk: '#5C5C4D', highlight: '#BFBF9F' },
         sprout: { canopy: '#90EE90', trunk: '#228B22', highlight: '#7CFC00' },
@@ -331,9 +336,10 @@ function getSpeciesColors(species: string): { canopy: string; trunk: string; hig
         oak: { canopy: '#4D6652', trunk: '#3D2B1F', highlight: '#8B9380' },
         birch: { canopy: '#E8E8D0', trunk: '#D3D3D3', highlight: '#FFFFF0' },
         redwood: { canopy: '#8B4513', trunk: '#5C3317', highlight: '#A0522D' }
-    };
+};
 
-    return colorMap[species] || colorMap['oak'];
+function getSpeciesColors(species: string): { canopy: string; trunk: string; highlight: string } {
+    return SPECIES_COLORS[species] || SPECIES_COLORS['oak'];
 }
 
 function getResinOpacity(species: string): number {

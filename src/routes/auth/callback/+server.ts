@@ -86,7 +86,9 @@ export const GET = async ({ url, locals: { supabase } }) => {
             // 2. If it's a full URL, ensure it's on the same origin
             let redirectPath = '/';
             try {
-                if (next.startsWith('/')) {
+                // Reject protocol-relative (`//evil.com`) and backslash
+                // (`/\evil.com`) forms — browsers treat both as cross-origin.
+                if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\')) {
                     redirectPath = next;
                 } else {
                     const nextUrl = new URL(next, url.origin);
@@ -104,5 +106,6 @@ export const GET = async ({ url, locals: { supabase } }) => {
     }
 
     console.error('[Auth Callback] Auth code error or missing code');
-    throw redirect(303, '/auth/auth-code-error')
+    // /auth/auth-code-error doesn't exist as a route — land on login instead
+    throw redirect(303, '/login?error=auth-code')
 }

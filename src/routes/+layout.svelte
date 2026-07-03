@@ -360,6 +360,15 @@
 				</a>
 				{:else}
 					<a
+						href="/pricing"
+						class="hover:text-resin-forest transition-colors relative group"
+					>
+						Pricing
+						<span
+							class="absolute -bottom-1 left-0 w-0 h-0.5 bg-resin-forest/20 transition-all group-hover:w-full"
+						></span>
+					</a>
+					<a
 						href="/support"
 						class="hover:text-resin-forest transition-colors relative group"
 					>
@@ -508,6 +517,11 @@
 					href="/"
 					class="hover:underline underline-offset-4 decoration-resin-amber/50"
 					>Home</a
+				>
+				<a
+					href="/pricing"
+					class="hover:underline underline-offset-4 decoration-resin-amber/50"
+					>Pricing</a
 				>
 				<a
 					href="/privacy"

@@ -842,7 +842,7 @@
                         </p>
                         <div class="flex flex-wrap gap-3">
                             <a
-                                href="https://testflight.apple.com/join/YOUR_TESTFLIGHT_ID"
+                                href="https://testflight.apple.com/join/yV53qa1z"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-resin-charcoal text-white font-semibold hover:bg-resin-forest transition-colors text-sm"

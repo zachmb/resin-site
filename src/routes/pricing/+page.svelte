@@ -72,7 +72,7 @@
                 $4.99 <span class="text-sm font-normal text-resin-earth/60">/ month</span>
             </p>
             <p class="text-sm text-resin-earth/60 mb-6">
-                or $29.99 / year · 7-day free trial
+                or $29.99 / year ($2.50/mo) · 7-day free trial
             </p>
             <ul class="space-y-3 mb-8">
                 {#each proFeatures as feature}
@@ -82,14 +82,18 @@
                     </li>
                 {/each}
             </ul>
+            <!-- TODO(launch): point at the App Store listing once live -->
             <a
                 href="https://testflight.apple.com/join/yV53qa1z"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="block text-center w-full px-6 py-3 rounded-lg bg-resin-charcoal text-white font-semibold hover:bg-resin-forest transition-colors"
             >
-                Upgrade in the iOS app
+                Get Resin on iOS
             </a>
+            <p class="text-xs text-resin-earth/50 text-center mt-3">
+                Upgrade from inside the app — Account → Resin Pro.
+            </p>
         </div>
     </div>
 

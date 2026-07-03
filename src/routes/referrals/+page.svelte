@@ -14,7 +14,7 @@
     }
 
     function getShareText(): string {
-        return `Join me on Resin! Use code ${data.referralCode} to get free premium. Let's focus together! 🌲`;
+        return `Join me on Resin! Use code ${data.referralCode} when you sign up. Let's focus together! 🌲`;
     }
 
     function shareVia(platform: string) {
@@ -47,8 +47,8 @@
             </h1>
             <p class="text-lg text-resin-earth/70">
                 {data.isFree
-                    ? "Invite 3 friends and get 1 month of free premium!"
-                    : "Thanks for being a premium member!"}
+                    ? "Invite 3 friends and earn a free month of Resin Pro."
+                    : "Thanks for being a Pro member!"}
             </p>
         </div>
 
@@ -86,7 +86,7 @@
 
                 {#if data.referralCount >= 3}
                     <div class="mt-6 p-4 rounded-lg bg-resin-forest/10 border border-resin-forest/30">
-                        <p class="text-sm font-bold text-resin-forest">🎉 You've unlocked free premium! Your access has been activated.</p>
+                        <p class="text-sm font-bold text-resin-forest">🎉 You've earned a free month of Resin Pro. We'll credit your account and email you when it's applied.</p>
                     </div>
                 {/if}
             </div>

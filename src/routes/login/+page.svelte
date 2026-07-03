@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Apple } from 'lucide-svelte';
+    import { page } from '$app/stores';
     /** @type {import('./$types').ActionData} */
     export let form;
 </script>
@@ -28,6 +29,12 @@
                     Connect your accounts to start turning your brain dumps into
                     reality.
                 </p>
+                {#if $page.url.searchParams.get('error')}
+                    <p class="text-sm text-red-500 font-medium" role="alert">
+                        Sign-in didn't complete — the link may have expired.
+                        Please try again.
+                    </p>
+                {/if}
             </div>
 
             <div class="space-y-6">

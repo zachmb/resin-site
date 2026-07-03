@@ -37,7 +37,9 @@ export const POST: RequestHandler = async (event) => {
         const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
         const isBlocked = blockedDomains.some((blocked: string) => {
             const normalized = blocked.toLowerCase().replace(/^www\./, '');
-            return normalized === normalizedDomain || domain.includes(normalized);
+            // Exact or subdomain match only — a substring check would make
+            // blocking x.com also report netflix.com as blocked.
+            return normalizedDomain === normalized || normalizedDomain.endsWith('.' + normalized);
         });
 
         return json({

@@ -62,7 +62,7 @@ export const GET: RequestHandler = async ({ locals: { getUser, getAuthenticatedS
         // Fetch shared notes
         const { data: sharedNotes } = await supabase
             .from('shared_notes')
-            .select('note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id, created_at)')
+            .select('id, note_id, owner_id, amber_sessions!inner(id, raw_text, display_title, status, user_id, created_at)')
             .eq('shared_with_id', userId);
 
         const normalizedSharedNotes = (sharedNotes || []).map((share: any) => {

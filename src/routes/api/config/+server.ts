@@ -14,9 +14,10 @@
 
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
-import fs from 'fs';
-import path from 'path';
 import type { ResinConfig } from '$lib/contracts';
+// Bundled at build time — an fs read from process.cwd() doesn't survive the
+// Vercel serverless bundle, so overrides were silently ignored in production.
+import configOverrides from '../../../../resin-config.json';
 
 // Cache config in memory to avoid reading file on every request
 let cachedConfig: ResinConfig | null = null;
@@ -104,13 +105,10 @@ function loadConfig(): ResinConfig {
   if (cachedConfig) return cachedConfig;
 
   try {
-    // Read from repo root resin-config.json (this project’s root)
-    const configPath = path.resolve(process.cwd(), 'resin-config.json');
-    const configData = fs.readFileSync(configPath, 'utf-8');
-    cachedConfig = mergeConfig(JSON.parse(configData));
+    cachedConfig = mergeConfig(configOverrides as Partial<ResinConfig>);
     return cachedConfig;
   } catch (error) {
-    console.error('[/api/config] Failed to load resin-config.json:', error);
+    console.error('[/api/config] Failed to merge resin-config.json:', error);
     cachedConfig = createDefaultConfig();
     return cachedConfig;
   }

@@ -5,12 +5,17 @@ import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 
 // Note: Requires SUPABASE_SERVICE_ROLE_KEY to bypass Row Level Security when searching by token instead of active user session.
-const supabaseAdmin = createClient(
-    publicEnv.PUBLIC_SUPABASE_URL,
-    env.SUPABASE_SERVICE_ROLE_KEY || publicEnv.PUBLIC_SUPABASE_ANON_KEY
-);
+const supabaseAdmin = env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(publicEnv.PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
+    : null;
 
 export const GET = async ({ request }: RequestEvent) => {
+    // Without the service key the PAT lookup below silently matches nothing
+    // (RLS) and every valid token would 401 — fail loudly instead.
+    if (!supabaseAdmin) {
+        return json({ error: 'Server misconfigured: missing service role key' }, { status: 500 });
+    }
+
     const authHeader = request.headers.get('Authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -26,7 +31,7 @@ export const GET = async ({ request }: RequestEvent) => {
     // 1. Authenticate Request via PAT (openclaw_api_key matches the Bearer token)
     const { data: profile, error } = await supabaseAdmin
         .from('profiles')
-        .select('*')
+        .select('id, sync_notes, availability_start, availability_end')
         .eq('openclaw_api_key', token)
         .single();
 

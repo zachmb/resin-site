@@ -43,9 +43,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	const blockedDomains = customBlocks ? customBlocks.map((b) => b.domain) : [];
+	const accountType = typeof profile?.account_type === 'string' ? profile.account_type.toLowerCase() : 'free';
+	const isPro = accountType === 'pro' || accountType === 'premium' || accountType === 'paid';
 
 	return {
 		profile: profile || null,
+		isPro,
 		extensionEnabled: profile?.extension_enabled ?? true,
 		blockingEnabled: profile?.blocking_enabled ?? true,
 		autoBlockSessions: profile?.auto_block_sessions ?? false,
@@ -68,6 +71,16 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('account_type')
+			.eq('id', user.id)
+			.single();
+		const accountType = typeof profile?.account_type === 'string' ? profile.account_type.toLowerCase() : 'free';
+		const isPro = accountType === 'pro' || accountType === 'premium' || accountType === 'paid';
+		if (!isPro) {
+			return fail(402, { error: 'Web + extension blocking requires Resin Pro. Upgrade in the iOS app to sync protection here.' });
+		}
 
 		const extensionEnabled = formData.get('extensionEnabled') === 'on';
 		const blockingEnabled = formData.get('blockingEnabled') === 'on';

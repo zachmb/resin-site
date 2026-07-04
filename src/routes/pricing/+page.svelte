@@ -2,18 +2,18 @@
     const freeFeatures = [
         'AI plans from your brain dumps (3 per day)',
         'Real app blocking on iOS (Screen Time)',
-        'Chrome extension website blocking',
-        'Notes, mind maps, and calendar',
+        'Notes, mind maps, and calendar on iPhone',
         'Forest, streaks, and rewards',
-        'Web app at noteresin.com',
+        'Shareable plan cards',
     ];
 
     const proFeatures = [
+        'Web app + Chrome extension sync',
+        'Browser website blocking during focus sessions',
+        'Start on iPhone, follow through on laptop',
         'Unlimited AI plans — no daily limit',
-        'Everything in Free, everywhere you work',
-        'Hardened no-exit focus sessions',
+        'Smarter AI scheduling across calendar + history',
         'Full focus insights and history',
-        'Support an independent app',
     ];
 </script>
 
@@ -21,7 +21,7 @@
     <title>Pricing | Resin</title>
     <meta
         name="description"
-        content="Resin is free to start. Resin Pro unlocks unlimited AI plans for $4.99/month or $29.99/year with a 7-day free trial."
+        content="Resin is free on iPhone. Resin Pro unlocks web app and Chrome extension sync, browser blocking, and unlimited AI plans."
     />
 </svelte:head>
 
@@ -31,7 +31,7 @@
             Simple pricing
         </h1>
         <p class="text-resin-earth/80 text-lg max-w-xl mx-auto">
-            Start free — no card needed. Upgrade when you want unlimited plans.
+            Start free on iPhone. Upgrade when you want Resin to follow you onto your laptop.
         </p>
     </div>
 
@@ -82,7 +82,6 @@
                     </li>
                 {/each}
             </ul>
-            <!-- TODO(launch): point at the App Store listing once live -->
             <a
                 href="https://testflight.apple.com/join/yV53qa1z"
                 target="_blank"
@@ -92,7 +91,7 @@
                 Get Resin on iOS
             </a>
             <p class="text-xs text-resin-earth/50 text-center mt-3">
-                Upgrade from inside the app — Account → Resin Pro.
+                Upgrade from inside the iOS app — Account → Resin Pro.
             </p>
         </div>
     </div>

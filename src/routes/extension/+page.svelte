@@ -21,8 +21,12 @@
 			<h1 class="text-5xl md:text-6xl font-bold text-resin-charcoal mb-4">
 				Resin <span class="text-resin-amber">Shield</span>
 			</h1>
+			<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/15 text-resin-charcoal text-xs font-bold uppercase tracking-wide mb-4">
+				<span>Resin Pro</span>
+				<span class="text-resin-earth/45">web + extension sync</span>
+			</div>
 			<p class="text-xl text-resin-earth/70 max-w-2xl mx-auto">
-				Transform your focus sessions into true blocking power. Stop distractions across your entire browser in real-time.
+				Transform your iPhone focus plans into laptop blocking power. Stop distractions across your browser in real-time.
 			</p>
 		</div>
 
@@ -77,7 +81,7 @@
 					<div class="flex-1">
 						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Install the Extension</h3>
 						<p class="text-resin-earth/70">
-							Download Resin Web Shield from the Chrome Web Store. Click "Add to Chrome" and grant the minimal permissions needed to monitor website access.
+							Download Resin Web Shield from the Chrome Web Store. Sign in with the same email you use for Resin Pro.
 						</p>
 					</div>
 				</div>
@@ -92,7 +96,7 @@
 					<div class="flex-1">
 						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Configure Your Block List</h3>
 						<p class="text-resin-earth/70">
-							Open the extension popup and add the websites that distract you most. Common presets include social media, entertainment, and news sites. Customize per session if needed.
+							Open web settings and add the websites that distract you most. Common presets include social media, entertainment, and news sites.
 						</p>
 					</div>
 				</div>
@@ -243,7 +247,7 @@
 						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
 					</summary>
 					<p class="text-resin-earth/70 mt-4">
-						The extension is free. It syncs with your Resin account (which is also free). If you choose a premium plan in the future, the extension remains free and gains additional features.
+						The iPhone app is free. Web app + Chrome extension sync are included with Resin Pro, purchased inside the iOS app.
 					</p>
 				</details>
 			</div>
@@ -255,10 +259,10 @@
 			in:fade={{ duration: 600, delay: 400 }}
 		>
 			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-4">
-				Ready to Block Distractions?
+				Ready to Take Resin to Your Laptop?
 			</h2>
 			<p class="text-lg text-resin-earth/70 mb-8 max-w-2xl mx-auto">
-				Install Resin Web Shield today and transform your focus sessions into unbreakable commitments.
+				Install Resin Web Shield, then upgrade in the iOS app to sync plans and protection across devices.
 			</p>
 			<div class="flex flex-col sm:flex-row gap-4 justify-center">
 				<!-- TODO(launch): once the Chrome Web Store listing is approved, set the

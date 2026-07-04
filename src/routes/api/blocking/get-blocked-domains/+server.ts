@@ -1,11 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
+import { adminClient as supabase, getAuthenticatedUserId, userHasProAccess } from '$lib/server/auth';
 
 export const POST: RequestHandler = async (event) => {
     try {
         const userId = await getAuthenticatedUserId(event);
         if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
+        if (!(await userHasProAccess(userId))) {
+            return json({
+                error: 'Pro required',
+                code: 'PRO_REQUIRED',
+                message: 'Web and extension blocking require Resin Pro.'
+            }, { status: 402 });
+        }
 
         // Fetch user's blocked domains
         const { data: profile, error } = await supabase

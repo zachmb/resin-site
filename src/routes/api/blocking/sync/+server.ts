@@ -16,7 +16,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail } from '$lib/server/auth';
+import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail, userHasProAccess } from '$lib/server/auth';
 
 interface IncomingSession {
 	id: string;
@@ -47,6 +47,13 @@ export const POST: RequestHandler = async ({ request }) => {
 	const userId = await resolveUserIdByEmail(email.trim().toLowerCase());
 	if (!userId) {
 		return json({ error: 'Could not resolve account' }, { status: 500 });
+	}
+	if (!(await userHasProAccess(userId))) {
+		return json({
+			error: 'Pro required',
+			code: 'PRO_REQUIRED',
+			message: 'Web and extension blocking sync require Resin Pro.'
+		}, { status: 402 });
 	}
 
 	// Read back the user's blocked domains so iOS can display them (iOS enforces

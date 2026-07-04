@@ -70,3 +70,23 @@ export async function getAuthenticatedUserId(event: RequestEvent): Promise<strin
 	}
 	return null;
 }
+
+export function isProAccountType(accountType: string | null | undefined): boolean {
+	const normalized = (accountType ?? '').trim().toLowerCase();
+	return normalized === 'pro' || normalized === 'premium' || normalized === 'paid';
+}
+
+export async function userHasProAccess(userId: string): Promise<boolean> {
+	const { data, error } = await adminClient
+		.from('profiles')
+		.select('account_type')
+		.eq('id', userId)
+		.maybeSingle();
+
+	if (error) {
+		console.error('[userHasProAccess] profile lookup failed:', error.message);
+		return false;
+	}
+
+	return isProAccountType((data as { account_type?: string } | null)?.account_type);
+}

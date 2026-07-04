@@ -17,8 +17,10 @@
     let saving = $state(false);
     let message = $state("");
     let messageType = $state<'success' | 'error'>('success');
+    let isPro = $derived(data?.isPro ?? false);
 
     function addDomain() {
+        if (!isPro) return;
         if (!newDomain.trim()) return;
         const domain = newDomain.trim().toLowerCase();
 
@@ -36,6 +38,7 @@
     }
 
     function removeDomain(domain: string) {
+        if (!isPro) return;
         blockedDomains = blockedDomains.filter((d) => d !== domain);
         messageType = "success";
         message = `Removed ${domain}`;
@@ -57,6 +60,22 @@
             </h1>
             <p class="text-lg text-resin-earth/70">Manage your browser extension and blocking rules</p>
         </div>
+
+        {#if !isPro}
+            <div class="glass-card rounded-lg p-6 mb-6 border border-resin-amber/30 bg-resin-amber/10">
+                <p class="text-xs font-bold uppercase tracking-wide text-resin-amber mb-2">Resin Pro</p>
+                <h2 class="text-xl font-bold text-resin-charcoal mb-2">Unlock web + extension blocking</h2>
+                <p class="text-sm text-resin-earth/75 mb-4">
+                    The iPhone app stays free. Resin Pro syncs plans and blocking rules to your laptop so your focus follows you into the browser.
+                </p>
+                <a
+                    href="/pricing"
+                    class="inline-flex px-4 py-2 rounded-lg bg-resin-charcoal text-white text-sm font-bold hover:bg-resin-forest transition-colors"
+                >
+                    See Pro
+                </a>
+            </div>
+        {/if}
 
         {#if message}
             <div
@@ -83,6 +102,7 @@
                     aria-checked={extensionEnabled}
                     aria-label="Extension enabled"
                     onclick={() => { extensionEnabled = !extensionEnabled; }}
+                    disabled={!isPro}
                     class="w-14 h-8 rounded-full transition-colors {extensionEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {extensionEnabled ? 'justify-end' : 'justify-start'} p-1"
                 >
                     <div class="w-6 h-6 rounded-full bg-white shadow-md"></div>
@@ -110,6 +130,7 @@
                     aria-checked={blockingEnabled}
                     aria-label="Block distracting sites"
                     onclick={() => { blockingEnabled = !blockingEnabled; }}
+                    disabled={!isPro}
                     class="w-12 h-7 rounded-full transition-colors {blockingEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {blockingEnabled ? 'justify-end' : 'justify-start'} p-0.5"
                 >
                     <div class="w-5 h-5 rounded-full bg-white shadow-md"></div>
@@ -127,6 +148,7 @@
                     aria-checked={autoBlockSessions}
                     aria-label="Auto-block on sessions"
                     onclick={() => { autoBlockSessions = !autoBlockSessions; }}
+                    disabled={!isPro}
                     class="w-12 h-7 rounded-full transition-colors {autoBlockSessions ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {autoBlockSessions ? 'justify-end' : 'justify-start'} p-0.5"
                 >
                     <div class="w-5 h-5 rounded-full bg-white shadow-md"></div>
@@ -144,6 +166,7 @@
                     aria-checked={notificationsEnabled}
                     aria-label="Notifications"
                     onclick={() => { notificationsEnabled = !notificationsEnabled; }}
+                    disabled={!isPro}
                     class="w-12 h-7 rounded-full transition-colors {notificationsEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {notificationsEnabled ? 'justify-end' : 'justify-start'} p-0.5"
                 >
                     <div class="w-5 h-5 rounded-full bg-white shadow-md"></div>
@@ -162,6 +185,7 @@
                         <code class="text-sm font-mono text-red-600">{domain}</code>
                         <button
                             onclick={() => removeDomain(domain)}
+                            disabled={!isPro}
                             class="p-1 hover:bg-red-100 rounded transition-colors text-red-500"
                         >
                             <Trash2 size={16} />
@@ -176,6 +200,7 @@
                         aria-label="Domain to block"
                         placeholder="e.g., youtube.com, twitter.com"
                         bind:value={newDomain}
+                        disabled={!isPro}
                         onkeydown={(e) => {
                             if (e.key === "Enter") addDomain();
                         }}
@@ -183,6 +208,7 @@
                     />
                     <button
                         onclick={addDomain}
+                        disabled={!isPro}
                         class="px-4 py-2.5 bg-resin-forest text-white rounded-lg font-semibold hover:bg-resin-forest/90 transition-colors text-sm"
                     >
                         Add
@@ -216,14 +242,14 @@
             <input type="hidden" name="blockedDomains" value={JSON.stringify(blockedDomains)} />
 
             <div class="flex gap-3">
-                <button
-                    type="submit"
-                    disabled={saving}
-                    class="flex-1 px-6 py-3 bg-resin-forest text-white rounded-lg font-bold hover:bg-resin-forest/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                >
-                    <RefreshCw size={16} />
-                    {saving ? "Saving..." : "Save Settings"}
-                </button>
+	                <button
+	                    type="submit"
+	                    disabled={saving || !isPro}
+	                    class="flex-1 px-6 py-3 bg-resin-forest text-white rounded-lg font-bold hover:bg-resin-forest/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+	                >
+	                    <RefreshCw size={16} />
+	                    {saving ? "Saving..." : isPro ? "Save Settings" : "Pro required"}
+	                </button>
             </div>
         </form>
 
@@ -231,7 +257,7 @@
         <div class="mt-10 p-6 bg-resin-forest/5 rounded-lg border border-resin-forest/10">
             <h3 class="font-bold text-resin-charcoal mb-2">About the Extension</h3>
             <ul class="text-sm text-resin-earth/70 space-y-1">
-                <li>✓ Blocks distracting websites during focus sessions</li>
+                <li>✓ Blocks distracting websites during focus sessions with Resin Pro</li>
                 <li>✓ Tracks time spent on sites for productivity insights</li>
                 <li>✓ Syncs settings across all your devices</li>
                 <li>✓ Works locally - respects your privacy</li>

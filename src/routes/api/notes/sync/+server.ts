@@ -132,6 +132,23 @@ export const POST = async ({ request }: RequestEvent) => {
         }
     }
 
+    const { data: entitlementProfile, error: entitlementError } = await admin
+        .from('profiles')
+        .select('account_type')
+        .eq('id', userId)
+        .maybeSingle()
+    const accountType = typeof entitlementProfile?.account_type === 'string'
+        ? entitlementProfile.account_type.toLowerCase()
+        : 'free'
+    const hasProAccess = accountType === 'pro' || accountType === 'premium' || accountType === 'paid'
+    if (entitlementError || !hasProAccess) {
+        return json({
+            error: 'Pro required',
+            code: 'PRO_REQUIRED',
+            message: 'Web note sync requires Resin Pro.'
+        }, { status: 402 })
+    }
+
     // ── 4. Upsert notes into amber_sessions ────────────────────────────────────
     // We use the iOS-generated UUID as the primary key to make this idempotent.
     // Notes synced from iOS are stored as status='draft' (same as web notes).

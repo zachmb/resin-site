@@ -37,6 +37,7 @@ import { sendPush } from '$lib/services/apns'
 import { executeNoteCommands } from '$lib/services/commandExecutor'
 import { computeUserInsights } from '$lib/services/amber'
 import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification'
+import { userHasProAccess } from '$lib/server/auth'
 import type { RequestEvent } from '@sveltejs/kit'
 import type { ActivateRequest, ActivateResponse } from '@resin/contracts'
 
@@ -374,6 +375,14 @@ export const POST = async ({ request }: RequestEvent) => {
             details: userError?.message || 'No user found for this token',
             jwt_prefix: jwt.slice(0, 10) + '...'
         }, { status: 401 })
+    }
+
+    if (!(await userHasProAccess(user.id))) {
+        return json({
+            error: 'Pro required',
+            code: 'PRO_REQUIRED',
+            message: 'AI scheduling from the web app and Chrome extension requires Resin Pro. The iPhone app stays free.'
+        }, { status: 402 })
     }
 
     let {

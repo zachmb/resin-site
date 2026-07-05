@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
+import { userHasProAccess } from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ locals: { getUser } }) => {
     const user = await getUser();
@@ -25,6 +26,13 @@ export const actions: Actions = {
         const user = await getUser();
         if (!user) return { success: false, error: "Unauthorized" };
 
+        if (!(await userHasProAccess(user.id))) {
+            return fail(402, {
+                success: false,
+                error: 'AI scheduling on web requires Resin Pro. Upgrade in the iOS app to sync plans to your laptop.',
+                code: 'PRO_REQUIRED'
+            });
+        }
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();

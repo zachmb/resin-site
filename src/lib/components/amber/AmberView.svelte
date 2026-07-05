@@ -116,6 +116,7 @@
     let activeFilter = $state<'all'|'scheduled'|'completed'|'canceled'>('all');
     let showGoogleSignIn = $state(false);
     let googleSignInError = $state<string | null>(null);
+    let activationError = $state<string | null>(null);
     let activatingId = $state<string | null>(null);
     let successId = $state<string | null>(null);
     let showInsights = $state(false);
@@ -1015,6 +1016,9 @@
                                             activatingId = null;
                                             showGoogleSignIn = true;
                                             googleSignInError = result.data?.error as string;
+                                        } else if (result.type === 'failure') {
+                                            activatingId = null;
+                                            activationError = (result.data?.error as string) || 'Activation failed.';
                                         } else if (result.type === 'success') {
                                             // Cache the confirmed session
                                             if (selectedSession) {
@@ -1512,6 +1516,27 @@
         celebrationLevel={celebrationData.celebrationLevel}
         message={celebrationData.message}
     />
+{/if}
+
+{#if activationError}
+    <div
+        class="fixed bottom-8 right-8 max-w-sm z-40 rounded-xl p-4 bg-resin-amber/95 text-resin-charcoal shadow-lg border border-white/30"
+        transition:fly={{ x: 400, duration: 300 }}
+    >
+        <div class="flex items-start gap-3">
+            <span class="text-xl">🔒</span>
+            <div class="flex-1">
+                <p class="font-semibold text-sm">Resin Pro needed</p>
+                <p class="text-xs text-resin-charcoal/75 mt-1">{activationError}</p>
+                <button
+                    class="text-xs font-bold underline mt-2"
+                    onclick={() => (activationError = null)}
+                >
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
 {/if}
 
 

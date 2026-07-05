@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { runActivationPipeline } from '$lib/services/amber';
 import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification';
+import { userHasProAccess } from '$lib/server/auth';
 
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return null;
@@ -424,6 +425,12 @@ export const actions: Actions = {
         const supabase = await getAuthenticatedSupabase();
 
         const userId = user.id;
+        if (!(await userHasProAccess(userId))) {
+            return fail(402, {
+                error: 'AI scheduling on web requires Resin Pro. Your iPhone planning stays free — upgrade when you want laptop follow-through.',
+                code: 'PRO_REQUIRED'
+            });
+        }
 
         const data = await request.formData();
         const content = data.get('noteContent') as string;

@@ -644,11 +644,15 @@
                                             // Keep modal visible while AI is working
                                             // It will be dismissed when the note's tasks are populated
                                         } else {
-                                            activationError = (result as any).data?.error || "Failed to activate.";
+                                            const resultData = (result as any).data;
+                                            activationError = resultData?.error || "Failed to activate.";
                                             showToast(activationError);
                                             isActivating = false;
-                                            // Go back to notes on error
-                                            history.back();
+                                            // Pro-required is an intentional product boundary, not a broken plan.
+                                            // Stay put long enough for the upgrade copy to land.
+                                            if (resultData?.code !== "PRO_REQUIRED") {
+                                                history.back();
+                                            }
                                         }
                                     };
                                 }}

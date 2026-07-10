@@ -9,7 +9,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, resolveUserIdByEmail } from '$lib/server/auth';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: { email?: string; api_key?: string; is_pro?: boolean };
@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const { email, api_key, is_pro } = body;
 
-	if (!api_key || api_key !== RESIN_SYNC_KEY) {
+	if (!isValidResinSyncKey(api_key)) {
 		return json({ error: 'Invalid API key' }, { status: 401 });
 	}
 	if (!email || !email.includes('@')) {

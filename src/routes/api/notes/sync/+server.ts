@@ -33,10 +33,9 @@ import { json } from '@sveltejs/kit'
 import { createClient } from '@supabase/supabase-js'
 import { PUBLIC_SUPABASE_URL } from '$env/static/public'
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private'
-import { env } from '$env/dynamic/private'
+import { isValidResinSyncKey } from '$lib/server/auth'
 import type { RequestEvent } from '@sveltejs/kit'
 
-const RESIN_SYNC_KEY = env.RESIN_SYNC_KEY;
 const MAX_SYNC_NOTES = 250
 const MAX_NOTE_TEXT_CHARS = 20_000
 const MAX_RICH_TEXT_HTML_CHARS = 100_000
@@ -133,7 +132,7 @@ export const POST = async ({ request }: RequestEvent) => {
     const { email, api_key, notes } = body
 
     // ── 2. Validate API key ────────────────────────────────────────────────────
-    if (!api_key || api_key !== RESIN_SYNC_KEY) {
+    if (!isValidResinSyncKey(api_key)) {
         return json({ error: 'Invalid API key' }, { status: 401 })
     }
 

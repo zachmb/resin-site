@@ -17,7 +17,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail, userHasProAccess } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, resolveUserIdByEmail, userHasProAccess } from '$lib/server/auth';
 
 interface IncomingSession {
 	id: string;
@@ -107,7 +107,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { email, api_key, sessions } = body;
 	const releaseStaleIOSSessionRows = body.release_stale_ios_sessions === true;
 
-	if (!api_key || api_key !== RESIN_SYNC_KEY) {
+	if (!isValidResinSyncKey(api_key)) {
 		return json({ error: 'Invalid API key' }, { status: 401 });
 	}
 	if (!email || !email.includes('@')) {

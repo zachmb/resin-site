@@ -10,7 +10,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, resolveUserIdByEmail } from '$lib/server/auth';
 
 const MIN_APNS_TOKEN_LENGTH = 32;
 const MAX_APNS_TOKEN_LENGTH = 512;
@@ -38,7 +38,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const { email, api_key, device_token } = body;
 
-	if (!api_key || api_key !== RESIN_SYNC_KEY) {
+	if (!isValidResinSyncKey(api_key)) {
 		return json({ error: 'Invalid API key' }, { status: 401 });
 	}
 	if (!email || !email.includes('@')) {

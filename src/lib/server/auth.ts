@@ -3,6 +3,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
+import { timingSafeEqual } from 'crypto';
 
 /**
  * Service-role Supabase client (bypasses RLS). Only ever use it scoped by a
@@ -17,6 +18,14 @@ export const adminClient = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_RO
  * to authenticate server-side sync. Same model as /api/notes/sync.
  */
 export const RESIN_SYNC_KEY = env.RESIN_SYNC_KEY;
+
+export function isValidResinSyncKey(candidate: unknown): boolean {
+	if (typeof candidate !== 'string' || typeof RESIN_SYNC_KEY !== 'string') return false;
+	const provided = Buffer.from(candidate);
+	const expected = Buffer.from(RESIN_SYNC_KEY);
+	if (provided.length !== expected.length) return false;
+	return timingSafeEqual(provided, expected);
+}
 
 /**
  * Find (or create) a Supabase user id for an email — the account-resolution used

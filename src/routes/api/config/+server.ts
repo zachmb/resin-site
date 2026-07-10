@@ -114,9 +114,78 @@ function loadConfig(): ResinConfig {
   }
 }
 
+function isPublicSupabaseKey(value: string): boolean {
+  if (!value) return false;
+  if (value.startsWith('sb_secret_')) return false;
+  if (value.toLowerCase().includes('service_role')) return false;
+  if (value.startsWith('sb_publishable_')) return true;
+
+  // Legacy Supabase anon/service keys are JWTs. Decode without verifying only
+  // to distinguish public anon keys from service-role keys before publishing.
+  const [, payload] = value.split('.');
+  if (!payload) return false;
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return decoded?.role === 'anon';
+  } catch {
+    return false;
+  }
+}
+
+function publicFeatureFlags(features: ResinConfig['features']): ResinConfig['features'] {
+  const safeFeatures: Partial<ResinConfig['features']> = {};
+  for (const [key, value] of Object.entries(features)) {
+    if (typeof value === 'boolean') {
+      safeFeatures[key] = value;
+    } else if (value && typeof value === 'object') {
+      const safeVersions: Record<string, string> = {};
+      for (const [platform, version] of Object.entries(value)) {
+        if (typeof version === 'string') safeVersions[platform] = version;
+      }
+      safeFeatures[key] = safeVersions;
+    }
+  }
+  return safeFeatures as ResinConfig['features'];
+}
+
+function toPublicConfig(config: ResinConfig): ResinConfig {
+  if (!isPublicSupabaseKey(config.supabase.anonKey)) {
+    throw new Error('Refusing to publish non-anon Supabase key');
+  }
+
+  return {
+    environment: config.environment,
+    api: {
+      baseUrl: config.api.baseUrl,
+      version: config.api.version,
+      requestTimeout: config.api.requestTimeout,
+      retry: { ...config.api.retry }
+    },
+    supabase: {
+      url: config.supabase.url,
+      anonKey: config.supabase.anonKey,
+      realtime: {
+        enabled: config.supabase.realtime.enabled,
+        channels: [...config.supabase.realtime.channels]
+      }
+    },
+    features: publicFeatureFlags(config.features),
+    minVersions: { ...config.minVersions },
+    recommendedVersions: { ...config.recommendedVersions },
+    analytics: { ...config.analytics },
+    notifications: { ...config.notifications },
+    rateLimit: { ...config.rateLimit },
+    auth: { ...config.auth },
+    build: {
+      timestamp: config.build.timestamp,
+      configVersion: config.build.configVersion
+    }
+  };
+}
+
 export const GET = async (event: RequestEvent) => {
   try {
-    const config = loadConfig();
+    const config = toPublicConfig(loadConfig());
 
     // Cache for 1 hour on the client side
     // Revalidate on the server every 5 minutes

@@ -10,7 +10,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, isValidResinSyncKey, resolveUserIdByEmail } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, resolveExistingUserIdByEmail } from '$lib/server/auth';
 
 const MIN_APNS_TOKEN_LENGTH = 32;
 const MAX_APNS_TOKEN_LENGTH = 512;
@@ -52,9 +52,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Invalid device token' }, { status: 400 });
 	}
 
-	const userId = await resolveUserIdByEmail(email.trim().toLowerCase());
+	const userId = await resolveExistingUserIdByEmail(email.trim().toLowerCase());
 	if (!userId) {
-		return json({ error: 'Could not resolve account' }, { status: 500 });
+		return json({ error: 'Account not found' }, { status: 404 });
 	}
 
 	const { error: cleanupError } = await adminClient

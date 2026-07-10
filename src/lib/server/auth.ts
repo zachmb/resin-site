@@ -58,6 +58,28 @@ export async function resolveUserIdByEmail(email: string): Promise<string | null
 	return newUser.user.id;
 }
 
+export async function resolveExistingUserIdByEmail(email: string): Promise<string | null> {
+	const { data: existingProfile, error: profileError } = await adminClient
+		.from('profiles')
+		.select('id')
+		.eq('email', email)
+		.maybeSingle();
+
+	if (profileError) {
+		console.error('[resolveExistingUserIdByEmail] profile lookup failed:', profileError.message);
+		return null;
+	}
+	if (existingProfile?.id) return existingProfile.id;
+
+	const { data: listData, error: listError } = await adminClient.auth.admin.listUsers();
+	if (listError) {
+		console.error('[resolveExistingUserIdByEmail] listUsers failed:', listError.message);
+		return null;
+	}
+
+	return listData.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
+}
+
 /**
  * Resolve the authenticated user id for an API request WITHOUT trusting any
  * body-supplied `userId`. Accepts either a Supabase Bearer JWT (iOS app /

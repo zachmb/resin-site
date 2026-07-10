@@ -9,7 +9,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, isValidResinSyncKey, resolveUserIdByEmail } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, resolveExistingUserIdByEmail } from '$lib/server/auth';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: { email?: string; api_key?: string; is_pro?: boolean };
@@ -32,9 +32,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const normalizedEmail = email.trim().toLowerCase();
-	const userId = await resolveUserIdByEmail(normalizedEmail);
+	const userId = await resolveExistingUserIdByEmail(normalizedEmail);
 	if (!userId) {
-		return json({ error: 'Could not resolve account' }, { status: 500 });
+		return json({ error: 'Account not found' }, { status: 404 });
 	}
 
 	const accountType = is_pro ? 'pro' : 'free';

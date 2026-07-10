@@ -17,7 +17,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, isValidResinSyncKey, resolveUserIdByEmail, userHasProAccess } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, resolveExistingUserIdByEmail, userHasProAccess } from '$lib/server/auth';
 
 interface IncomingSession {
 	id: string;
@@ -114,9 +114,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Valid email required' }, { status: 400 });
 	}
 
-	const userId = await resolveUserIdByEmail(email.trim().toLowerCase());
+	const userId = await resolveExistingUserIdByEmail(email.trim().toLowerCase());
 	if (!userId) {
-		return json({ error: 'Could not resolve account' }, { status: 500 });
+		return json({ error: 'Account not found' }, { status: 404 });
 	}
 	if (!(await userHasProAccess(userId))) {
 		return json({

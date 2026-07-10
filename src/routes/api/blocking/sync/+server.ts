@@ -10,6 +10,7 @@
  * Body: {
  *   email: string,
  *   api_key: string,
+ *   release_stale_ios_sessions?: boolean,
  *   sessions: Array<{ id, title?, start_time, end_time, is_active?, status? }>
  * }
  * Response: { synced: number, blocked_domains: string[], active_sessions: Array<...>, user_id: string }
@@ -96,7 +97,7 @@ async function getActiveSessions(userId: string, nowIso: string): Promise<Outgoi
 }
 
 export const POST: RequestHandler = async ({ request }) => {
-	let body: { email?: string; api_key?: string; sessions?: IncomingSession[] };
+	let body: { email?: string; api_key?: string; sessions?: IncomingSession[]; release_stale_ios_sessions?: boolean };
 	try {
 		body = await request.json();
 	} catch {
@@ -104,6 +105,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const { email, api_key, sessions } = body;
+	const releaseStaleIOSSessionRows = body.release_stale_ios_sessions === true;
 
 	if (!api_key || api_key !== RESIN_SYNC_KEY) {
 		return json({ error: 'Invalid API key' }, { status: 401 });
@@ -165,7 +167,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		.filter((s): s is NonNullable<typeof s> => s !== null);
 
 	const incomingIds = rows.map((row) => row.id);
-	await deactivateStaleIOSRows(userId, incomingIds, nowIso);
+	if (releaseStaleIOSSessionRows) {
+		await deactivateStaleIOSRows(userId, incomingIds, nowIso);
+	}
 
 	if (rows.length === 0) {
 		const active_sessions = await getActiveSessions(userId, nowIso);

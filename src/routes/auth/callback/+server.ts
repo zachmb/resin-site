@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit'
 
 const IOS_CALLBACK_SCHEME = 'com.resin.app:'
 const IOS_AUTH_CALLBACK_HOSTS = new Set(['auth', 'auth-callback', 'callback', 'login-callback', 'oauth'])
+const isDev = process.env.NODE_ENV === 'development'
 
 function safeIOSAuthCallback(next: string, code: string | null): string | null {
     try {
@@ -30,7 +31,7 @@ export const GET = async ({ url, locals: { supabase } }) => {
             throw redirect(303, appCallback)
         }
 
-        console.warn('[Auth Callback] Rejected invalid iOS callback target:', next)
+        console.warn('[Auth Callback] Rejected invalid iOS callback target')
         throw redirect(303, '/login?error=invalid-ios-callback')
     }
 
@@ -42,14 +43,15 @@ export const GET = async ({ url, locals: { supabase } }) => {
 
             // Capture and store the refresh_token separately in user_credentials
             // This is critical for background token refresh.
-            console.log('[Auth Callback] Session data:', {
-                has_provider_refresh_token: !!session.provider_refresh_token,
-                user_id: session.user.id,
-                provider: session.user.app_metadata?.provider
-            });
+            if (isDev) {
+                console.log('[Auth Callback] Session established:', {
+                    has_provider_refresh_token: !!session.provider_refresh_token,
+                    provider: session.user.app_metadata?.provider
+                });
+            }
 
             if (session.provider_refresh_token) {
-                console.log('[Auth Callback] OAuth refresh capability received');
+                if (isDev) console.log('[Auth Callback] OAuth refresh capability received');
                 try {
                     const { createClient } = await import('@supabase/supabase-js')
                     const { PUBLIC_SUPABASE_URL } = await import('$env/static/public')
@@ -71,10 +73,10 @@ export const GET = async ({ url, locals: { supabase } }) => {
                     if (upsertError) {
                         console.error('[Auth Callback] Error storing OAuth refresh capability:', upsertError.message);
                     } else {
-                        console.log('[Auth Callback] OAuth refresh capability stored successfully');
+                        if (isDev) console.log('[Auth Callback] OAuth refresh capability stored successfully');
                     }
                 } catch (err) {
-                    console.error('[Auth Callback] Unexpected error during token storage:', err);
+                    console.error('[Auth Callback] Unexpected error during token storage');
                 }
             } else {
                 console.warn('[Auth Callback] No provider refresh token found in session. Ensure offline_access and prompt=consent were used.');
@@ -96,10 +98,10 @@ export const GET = async ({ url, locals: { supabase } }) => {
                     }
                 }
             } catch (e) {
-                console.warn('[Auth Callback] Invalid next parameter:', next);
+                console.warn('[Auth Callback] Invalid next parameter');
             }
 
-            console.log('[Auth Callback] Redirecting to:', redirectPath);
+            if (isDev) console.log('[Auth Callback] Redirecting to:', redirectPath);
             throw redirect(303, redirectPath)
         }
     }

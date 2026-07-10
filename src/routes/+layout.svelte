@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { dev } from "$app/environment";
 	import { invalidate } from "$app/navigation";
 	import { setContext } from "svelte";
 	import { page } from "$app/stores";
@@ -17,6 +18,16 @@
 	let isMobileMenuOpen = $state(false);
 	let showDailyRitualPrompt = $state(false);
 	let showRewardGlow = $state(false);
+	const debugLog = (...args: unknown[]) => {
+		if (dev) console.log(...args);
+	};
+	const reportClientIssue = (message: string, error?: unknown) => {
+		if (dev && error) {
+			console.error(message, error);
+			return;
+		}
+		console.error(message);
+	};
 
 	// Compute page title based on current route
 	let pageTitle = $derived.by(() => {
@@ -86,19 +97,23 @@
 		if (session?.user?.id) {
 			const notesManager = createNotesDataManager(
 				(data: any) => {
-					console.log('[DataManager] Notes updated:', data);
+					debugLog('[DataManager] Notes updated:', {
+						count: Array.isArray(data) ? data.length : undefined
+					});
 				},
 				(error: Error) => {
-					console.error('[DataManager] Notes sync error:', error);
+					reportClientIssue('[DataManager] Notes sync error', error);
 				}
 			);
 
 			const amberManager = createAmberDataManager(
 				(data: any) => {
-					console.log('[DataManager] Amber updated:', data);
+					debugLog('[DataManager] Amber updated:', {
+						count: Array.isArray(data) ? data.length : undefined
+					});
 				},
 				(error: Error) => {
-					console.error('[DataManager] Amber sync error:', error);
+					reportClientIssue('[DataManager] Amber sync error', error);
 				}
 			);
 
@@ -112,7 +127,7 @@
 	onMount(() => {
 		// Register service worker for offline caching
 		registerServiceWorker().catch(() => {
-			console.log('Service Worker registration skipped');
+			debugLog('Service Worker registration skipped');
 		});
 
 		const {
@@ -146,7 +161,7 @@
 		// FIX: Set up real-time subscription to profile updates from iOS sync
 		// This ensures stones and streak stay in sync across all pages
 		if (session?.user?.id) {
-			console.log('[Layout] 🔄 Setting up real-time subscription for user:', session.user.id.substring(0, 8) + '...');
+			debugLog('[Layout] Setting up real-time profile subscription');
 			const profileSubscription = supabase
 				.channel(`profiles:${session.user.id}`)
 				.on(
@@ -160,22 +175,22 @@
 					(payload: { new: any }) => {
 						// Update profile data when iOS syncs
 						if (payload.new) {
-							console.log('[Layout] 🔄 Real-time profile update RECEIVED:', {
+							debugLog('[Layout] Real-time profile update received:', {
 								stones: payload.new.total_stones,
 								streak: payload.new.current_streak,
 								timestamp: payload.new.updated_at
 							});
 							profileData = payload.new;
-							console.log('[Layout] ✅ Profile UPDATED in UI');
+							debugLog('[Layout] Profile updated in UI');
 						}
 					}
 				)
 				.subscribe((status: string) => {
-					console.log('[Layout] 📡 Real-time subscription status:', status);
+					debugLog('[Layout] Real-time subscription status:', status);
 					if (status === 'SUBSCRIBED') {
-						console.log('[Layout] ✅ Real-time profile sync CONNECTED');
+						debugLog('[Layout] Real-time profile sync connected');
 					} else if (status === 'CHANNEL_ERROR') {
-						console.error('[Layout] ❌ Real-time subscription CHANNEL_ERROR - Will use polling fallback');
+						reportClientIssue('[Layout] Real-time profile sync unavailable; using polling fallback');
 					}
 				});
 
@@ -208,7 +223,7 @@
 							// Check if values changed since last poll
 							if (updatedProfile.total_stones !== profileData.total_stones ||
 								updatedProfile.current_streak !== profileData.current_streak) {
-								console.log('[Layout] 📊 Polling detected profile update:', {
+								debugLog('[Layout] Polling detected profile update:', {
 									stones: updatedProfile.total_stones,
 									streak: updatedProfile.current_streak
 								});
@@ -218,13 +233,13 @@
 						}
 					} catch (err) {
 						// Silent error - polling is fallback
-						console.error('[Layout] Polling error (will retry):', err);
+						reportClientIssue('[Layout] Profile polling error; will retry', err);
 					}
 				}
 			}, 10000); // Poll every 10 seconds - faster on free plan
 
 			return () => {
-				console.log('[Layout] Cleaning up subscriptions and polling');
+				debugLog('[Layout] Cleaning up subscriptions and polling');
 				subscription.unsubscribe();
 				supabase.removeChannel(profileSubscription);
 				clearInterval(pollInterval);

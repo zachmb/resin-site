@@ -1,3 +1,4 @@
+import { dev } from '$app/environment'
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public'
 import { createBrowserClient, isBrowser } from '@supabase/ssr'
 import type { LayoutLoad } from './$types';
@@ -16,7 +17,7 @@ export const load: LayoutLoad = async ({ fetch, data, depends }) => {
         }
     })
 
-    if (isBrowser()) {
+    if (dev && isBrowser()) {
         console.log('[Layout] Supabase client initialized. URL:', PUBLIC_SUPABASE_URL);
         if (!PUBLIC_SUPABASE_ANON_KEY) console.error('[Layout] PUBLIC_SUPABASE_ANON_KEY IS MISSING!');
     }

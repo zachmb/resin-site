@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { sendPush } from '$lib/services/apns';
+import { isPermanentAPNsTokenFailure, sendPushWithResult } from '$lib/services/apns';
 import type { RequestEvent } from '@sveltejs/kit';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -110,8 +110,8 @@ export const POST = async ({ request, locals }: RequestEvent) => {
         // This will trigger the blocking session to activate on the device immediately
         let notificationsSent = 0;
         if (devices && devices.length > 0) {
-            const pushPromises = devices.map(device =>
-                sendPush(device.token, {
+            const pushPromises = devices.map(async (device) => {
+                const result = await sendPushWithResult(device.token, {
                     title: title,
                     body: 'Focus session started',
                     pushType: 'background',
@@ -122,11 +122,24 @@ export const POST = async ({ request, locals }: RequestEvent) => {
                         startTime: start.toISOString(),
                         endTime: end.toISOString()
                     }
-                })
-            );
+                });
+                return { token: device.token, success: result.success, permanentFailure: isPermanentAPNsTokenFailure(result) };
+            });
 
             const results = await Promise.allSettled(pushPromises);
-            notificationsSent = results.filter(r => r.status === 'fulfilled' && r.value).length;
+            const permanentlyFailedTokens = results
+                .filter((r): r is PromiseFulfilledResult<{ token: string; success: boolean; permanentFailure: boolean }> =>
+                    r.status === 'fulfilled' && r.value.permanentFailure
+                )
+                .map(r => r.value.token);
+            if (permanentlyFailedTokens.length > 0) {
+                await admin
+                    .from('device_tokens')
+                    .update({ is_active: false, updated_at: new Date().toISOString() })
+                    .in('token', permanentlyFailedTokens)
+                    .in('user_id', userIds);
+            }
+            notificationsSent = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
         }
 
         console.log(`[api/focus] Focus session created; notifications sent to ${notificationsSent} device(s)`);

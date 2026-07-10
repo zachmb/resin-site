@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
-import { sendPush } from '$lib/services/apns';
+import { isPermanentAPNsTokenFailure, sendPushWithResult } from '$lib/services/apns';
 
 /**
  * Send silent push notification to iOS devices when focus session starts
@@ -100,7 +100,20 @@ export const POST: RequestHandler = async (event) => {
             )
         );
 
-        const successful = notifications.filter(n => n.status === 'fulfilled').length;
+        const permanentlyFailedTokens = notifications
+            .filter((n): n is PromiseFulfilledResult<{ token: string; permanentFailure: boolean }> =>
+                n.status === 'fulfilled' && n.value.permanentFailure
+            )
+            .map(n => n.value.token);
+        if (permanentlyFailedTokens.length > 0) {
+            await supabase
+                .from('device_tokens')
+                .update({ is_active: false, updated_at: new Date().toISOString() })
+                .in('token', permanentlyFailedTokens)
+                .in('user_id', userIds);
+        }
+
+        const successful = notifications.filter(n => n.status === 'fulfilled' && !n.value.permanentFailure).length;
 
         // Log notification attempt
         console.log(`[Focus Session Push] Sent ${successful} notification(s)`);
@@ -131,15 +144,20 @@ async function sendAPNSNotification(
         endTime: string;
         type: string;
     }
-): Promise<void> {
-    const sent = await sendPush(token, {
+): Promise<{ token: string; permanentFailure: boolean }> {
+    const result = await sendPushWithResult(token, {
         title: payload.sessionTitle,
         body: 'Focus session started',
         pushType: 'background',
         data: payload
     });
 
-    if (!sent) {
+    if (!result.success) {
+        if (isPermanentAPNsTokenFailure(result)) {
+            return { token, permanentFailure: true };
+        }
         throw new Error('APNs push failed');
     }
+
+    return { token, permanentFailure: false };
 }

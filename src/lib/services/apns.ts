@@ -67,11 +67,45 @@ export interface APNsPayload {
     pushType?: 'alert' | 'background'
 }
 
+export interface APNsPushResult {
+    success: boolean
+    status: number
+    reason?: string
+}
+
+const PERMANENT_TOKEN_FAILURES = new Set([
+    'BadDeviceToken',
+    'DeviceTokenNotForTopic',
+    'Unregistered'
+])
+
+function parseAPNsReason(body: string): string {
+    try {
+        const parsed = JSON.parse(body) as { reason?: unknown }
+        if (typeof parsed.reason === 'string') return parsed.reason
+    } catch {
+        // APNs should return JSON, but keep a safe fallback for proxies/dev.
+    }
+    return body.slice(0, 80) || 'Unknown'
+}
+
+export function isPermanentAPNsTokenFailure(result: APNsPushResult): boolean {
+    return !result.success && PERMANENT_TOKEN_FAILURES.has(result.reason || '')
+}
+
 /**
  * Send a push notification to a single APNs device token.
  * Returns true on success, false on failure.
  */
 export async function sendPush(deviceToken: string, payload: APNsPayload): Promise<boolean> {
+    const result = await sendPushWithResult(deviceToken, payload)
+    return result.success
+}
+
+/**
+ * Send a push notification and retain APNs status/reason for token cleanup.
+ */
+export async function sendPushWithResult(deviceToken: string, payload: APNsPayload): Promise<APNsPushResult> {
     const { title, body, data = {}, pushType = 'alert' } = payload
 
     const apnsPayload = {
@@ -99,11 +133,11 @@ export async function sendPush(deviceToken: string, payload: APNsPayload): Promi
     })
 
     if (!response.ok) {
-        const reason = await response.text()
+        const reason = parseAPNsReason(await response.text())
         console.error(`[APNs] Push failed (${response.status}):`, reason)
-        return false
+        return { success: false, status: response.status, reason }
     }
 
     console.log('[APNs] Push sent')
-    return true
+    return { success: true, status: response.status }
 }

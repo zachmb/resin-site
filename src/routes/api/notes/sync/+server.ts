@@ -37,6 +37,12 @@ import { env } from '$env/dynamic/private'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const RESIN_SYNC_KEY = env.RESIN_SYNC_KEY;
+const MAX_SYNC_NOTES = 250
+const MAX_NOTE_TEXT_CHARS = 20_000
+const MAX_RICH_TEXT_HTML_CHARS = 100_000
+const MAX_STORED_URLS = 25
+const MAX_URL_CHARS = 2_000
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 // Admin client — bypasses RLS so we can upsert on behalf of any user
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -69,6 +75,52 @@ function deriveTitle(text: string): string {
     return 'Untitled Note'
 }
 
+function parseValidDate(value: unknown): string | null {
+    if (typeof value !== 'string') return null
+    const date = new Date(value)
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null
+}
+
+function normalizeStoredUrls(value: unknown): string[] {
+    if (!Array.isArray(value)) return []
+    return value
+        .filter((url): url is string => typeof url === 'string')
+        .map((url) => url.trim())
+        .filter((url) => url.length > 0 && url.length <= MAX_URL_CHARS)
+        .slice(0, MAX_STORED_URLS)
+}
+
+function normalizeNotePayload(note: NotePayload): NotePayload | null {
+    if (!note || typeof note.id !== 'string' || !UUID_RE.test(note.id)) return null
+    if (typeof note.text !== 'string') return null
+
+    const text = note.text.trim()
+    if (!text || text.length > MAX_NOTE_TEXT_CHARS) return null
+
+    const createdAt = parseValidDate(note.created_at)
+    if (!createdAt) return null
+
+    const title = typeof note.title === 'string' && note.title.trim()
+        ? note.title.trim().slice(0, 120)
+        : undefined
+    const richTextHtml = typeof note.rich_text_html === 'string'
+        ? note.rich_text_html.slice(0, MAX_RICH_TEXT_HTML_CHARS)
+        : undefined
+    const groupId = typeof note.group_id === 'string' && UUID_RE.test(note.group_id)
+        ? note.group_id
+        : undefined
+
+    return {
+        id: note.id,
+        text,
+        created_at: createdAt,
+        stored_urls: normalizeStoredUrls(note.stored_urls),
+        rich_text_html: richTextHtml,
+        group_id: groupId,
+        title
+    }
+}
+
 export const POST = async ({ request }: RequestEvent) => {
     // ── 1. Parse body ──────────────────────────────────────────────────────────
     let body: SyncRequestBody
@@ -88,9 +140,13 @@ export const POST = async ({ request }: RequestEvent) => {
     if (!email || !email.includes('@')) {
         return json({ error: 'Valid email required' }, { status: 400 })
     }
+    const normalizedEmail = email.trim().toLowerCase()
 
     if (!Array.isArray(notes) || notes.length === 0) {
         return json({ synced: 0, user_id: null, skipped: 0 })
+    }
+    if (notes.length > MAX_SYNC_NOTES) {
+        return json({ error: `Too many notes. Max ${MAX_SYNC_NOTES} per sync.` }, { status: 413 })
     }
 
     // ── 3. Find or create the Supabase user by email ───────────────────────────
@@ -100,7 +156,7 @@ export const POST = async ({ request }: RequestEvent) => {
     const { data: existingProfile } = await admin
         .from('profiles')
         .select('id')
-        .eq('email', email)
+        .eq('email', normalizedEmail)
         .maybeSingle()
 
     if (existingProfile?.id) {
@@ -113,7 +169,7 @@ export const POST = async ({ request }: RequestEvent) => {
             return json({ error: 'Server error looking up user' }, { status: 500 })
         }
 
-        const authUser = listData.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+        const authUser = listData.users.find(u => u.email?.toLowerCase() === normalizedEmail)
 
         if (authUser) {
             userId = authUser.id
@@ -121,7 +177,7 @@ export const POST = async ({ request }: RequestEvent) => {
             // Create a new account for this email — they'll receive a magic link when
             // they visit the web app for the first time.
             const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-                email,
+                email: normalizedEmail,
                 email_confirm: true,   // mark email as verified so they can log in
             })
             if (createError || !newUser?.user) {
@@ -153,8 +209,15 @@ export const POST = async ({ request }: RequestEvent) => {
     // We use the iOS-generated UUID as the primary key to make this idempotent.
     // Notes synced from iOS are stored as status='draft' (same as web notes).
     const now = new Date().toISOString()
+    const validNotes = notes
+        .map(normalizeNotePayload)
+        .filter((note): note is NotePayload => note !== null)
 
-    const rows = notes.map((note) => ({
+    if (validNotes.length === 0) {
+        return json({ synced: 0, user_id: userId, skipped: notes.length })
+    }
+
+    const rows = validNotes.map((note) => ({
         id: note.id,
         user_id: userId,
         raw_text: note.text,
@@ -190,7 +253,8 @@ export const POST = async ({ request }: RequestEvent) => {
             .select('id')
 
         if (fallbackError) {
-            return json({ error: 'Failed to save notes', details: fallbackError.message }, { status: 500 })
+            console.error('[notes/sync] Fallback upsert failed:', fallbackError.message)
+            return json({ error: 'Failed to save notes' }, { status: 500 })
         }
 
         return json({

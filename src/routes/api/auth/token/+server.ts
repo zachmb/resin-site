@@ -34,8 +34,7 @@ export const GET = async ({ request }) => {
     if (credsError) {
         console.error('[Token API] Database error fetching credentials:', credsError.message);
         return json({
-            error: 'Database error fetching Google credentials.',
-            details: credsError.message
+            error: 'Database error fetching Google credentials.'
         }, { status: 500 })
     }
 

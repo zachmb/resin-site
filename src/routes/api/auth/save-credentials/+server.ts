@@ -26,7 +26,7 @@ export const POST = async ({ request }: RequestEvent) => {
     // 3. Validate JWT
     const { data: { user }, error: userError } = await admin.auth.getUser(jwt)
     if (userError || !user) {
-        return json({ error: 'Invalid or expired token', details: userError?.message }, { status: 401 })
+        return json({ error: 'Invalid or expired token' }, { status: 401 })
     }
 
     // 4. Parse body

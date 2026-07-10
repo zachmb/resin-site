@@ -654,7 +654,7 @@ export const POST = async ({ request }: RequestEvent) => {
             .update({ status: 'failed' })
             .eq('id', session_id)
             .eq('user_id', user.id)
-        return json({ error: String(err) }, { status: 500 })
+        return json({ error: 'Activation failed' }, { status: 500 })
     }
 }
 

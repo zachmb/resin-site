@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     if (insertError) {
       console.error('[emergency] Insert error:', insertError);
       return json(
-        { error: 'Failed to trigger emergency hardening', details: insertError.message },
+        { error: 'Failed to trigger emergency hardening' },
         { status: 500 }
       );
     }
@@ -41,6 +41,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     });
   } catch (err: any) {
     console.error('[emergency] Error:', err);
-    return json({ error: 'Internal server error', details: err.message }, { status: 500 });
+    return json({ error: 'Internal server error' }, { status: 500 });
   }
 };

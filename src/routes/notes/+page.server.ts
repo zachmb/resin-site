@@ -233,7 +233,7 @@ export const actions: Actions = {
 
         if (error) {
             console.error('[createNote] Error creating note:', error);
-            return fail(500, { error: 'Could not create note', details: error.message });
+            return fail(500, { error: 'Could not create note' });
         }
 
         if (!newNote) {

@@ -148,6 +148,6 @@ export const POST = async ({ request, locals }: RequestEvent) => {
 
     } catch (err) {
         console.error('[api/focus] Error:', err);
-        return json({ error: String(err) }, { status: 500 });
+        return json({ error: 'Failed to create focus session' }, { status: 500 });
     }
 };

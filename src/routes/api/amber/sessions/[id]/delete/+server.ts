@@ -91,6 +91,6 @@ export const POST = async ({ params, request }: RequestEvent) => {
         return json({ success: true, message: 'Session deleted successfully' });
     } catch (err) {
         console.error('[api/amber/delete] Error:', err);
-        return json({ error: String(err) }, { status: 500 });
+        return json({ error: 'Failed to delete session' }, { status: 500 });
     }
 }

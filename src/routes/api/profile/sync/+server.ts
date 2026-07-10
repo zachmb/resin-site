@@ -67,7 +67,7 @@ export const POST = async ({ request }: RequestEvent) => {
         });
     } catch (err) {
         console.error('[api/profile/sync] Error:', err);
-        return json({ error: String(err) }, { status: 500 });
+        return json({ error: 'Failed to sync profile' }, { status: 500 });
     }
 }
 

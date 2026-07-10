@@ -3,21 +3,17 @@
 type ServiceWorkerContext = typeof self;
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'resin-v1';
-const NOTES_CACHE = 'resin-notes-v1';
-const RUNTIME_CACHE = 'resin-runtime-v1';
-const ASSETS_CACHE = 'resin-assets-v1';
+const CACHE_NAME = 'resin-shell-v2';
+const ASSETS_CACHE = 'resin-assets-v2';
 const SYNC_TAG = 'resin-sync-notes';
 
 // Assets to cache on install (app shell)
 const STATIC_ASSETS = [
-	'/',
 	'/logo.png',
 	'/manifest.json'
 ];
 
 // Cache strategies
-const NETWORK_FIRST_ROUTES = ['/api/notes', '/amber/', '/rewards/', '/focus/'];
 const CACHE_FIRST_ROUTES = ['.js', '.css', '.woff2', '.png', '.svg', '.jpg'];
 
 self.addEventListener('install', (event) => {
@@ -36,7 +32,7 @@ self.addEventListener('activate', (event) => {
 		caches.keys().then((cacheNames) => {
 			return Promise.all(
 				cacheNames.map((cacheName) => {
-					if (![CACHE_NAME, NOTES_CACHE, RUNTIME_CACHE, ASSETS_CACHE].includes(cacheName)) {
+					if (cacheName.startsWith('resin-') && ![CACHE_NAME, ASSETS_CACHE].includes(cacheName)) {
 						return caches.delete(cacheName);
 					}
 				})
@@ -55,19 +51,16 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	// Notes API: prioritize cache for faster loading, sync in background
-	if (url.pathname.includes('/api/notes') && request.method === 'GET') {
-		return event.respondWith(cacheFirstWithSync(request));
+	// API responses and authenticated app pages can include sensitive notes,
+	// focus state, tokens, or account data. Never store them in CacheStorage;
+	// server Cache-Control headers are a backstop, not the first line of defense.
+	if (url.pathname.startsWith('/api/') || request.mode === 'navigate') {
+		return event.respondWith(networkOnlyStrategy(request));
 	}
 
-	// API requests: network first, fallback to cache
-	if (NETWORK_FIRST_ROUTES.some((route) => url.pathname.startsWith(route))) {
-		return event.respondWith(networkFirstStrategy(request));
-	}
-
-	// POST/PUT requests: just try network, let app handle errors
-	if (request.method === 'POST' || request.method === 'PUT') {
-		return event.respondWith(networkFirstStrategy(request));
+	// Mutations: just try network, let app handle errors
+	if (request.method !== 'GET') {
+		return event.respondWith(networkOnlyStrategy(request));
 	}
 
 	// Static assets: cache first, fallback to network
@@ -75,67 +68,13 @@ self.addEventListener('fetch', (event) => {
 		return event.respondWith(cacheFirstStrategy(request));
 	}
 
-	// Documents: network first
-	if (request.mode === 'navigate') {
-		return event.respondWith(networkFirstStrategy(request));
-	}
 });
 
-async function cacheFirstWithSync(request: Request): Promise<Response> {
-	// Return from cache immediately for instant load
-	const cached = await caches.match(request);
-	if (cached) {
-		// Update cache in background without blocking response
-		fetch(request)
-			.then(async response => {
-				if (response.ok) {
-					const cache = await caches.open(NOTES_CACHE);
-					await cache.put(request, response.clone());
-				}
-			})
-			.catch(() => {
-				// Offline - use cached version
-			});
-		return cached;
-	}
-
-	// No cache, try network
+async function networkOnlyStrategy(request: Request): Promise<Response> {
 	try {
-		const response = await fetch(request);
-		if (response.ok) {
-			const cache = await caches.open(NOTES_CACHE);
-			await cache.put(request, response.clone());
-		}
-		return response;
+		return await fetch(request);
 	} catch (error) {
-		return new Response(JSON.stringify({ error: 'Offline - no cached data' }), {
-			status: 503,
-			headers: { 'Content-Type': 'application/json' }
-		});
-	}
-}
-
-async function networkFirstStrategy(request: Request): Promise<Response> {
-	const cacheName = request.method === 'GET' ? RUNTIME_CACHE : undefined;
-
-	try {
-		const response = await fetch(request);
-
-		// Cache successful GET responses
-		if (cacheName && response.ok && request.method === 'GET') {
-			const cache = await caches.open(cacheName);
-			await cache.put(request, response.clone());
-		}
-
-		return response;
-	} catch (error) {
-		// Return cached response if network fails
-		if (cacheName) {
-			const cached = await caches.match(request);
-			if (cached) return cached;
-		}
-
-		return new Response('Offline - cached data unavailable', { status: 503 });
+		return new Response('Offline - network unavailable', { status: 503 });
 	}
 }
 
@@ -278,13 +217,7 @@ self.addEventListener('message', (event) => {
 	if (event.data.type === 'CACHE_NOTES') {
 		event.waitUntil(
 			(async () => {
-				const cache = await caches.open(NOTES_CACHE);
-				for (const note of event.data.notes) {
-					const response = new Response(JSON.stringify(note), {
-						headers: { 'Content-Type': 'application/json' }
-					});
-					await cache.put(new Request(`/api/notes/${note.id}`), response);
-				}
+				await caches.delete('resin-notes-v1');
 			})()
 		);
 	}

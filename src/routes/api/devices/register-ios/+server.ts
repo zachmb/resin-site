@@ -6,7 +6,7 @@
  * shared RESIN_SYNC_KEY (same model as /api/notes/sync) rather than a Bearer token.
  *
  * Body: { email: string, api_key: string, device_token: string }
- * Response: { success: true, user_id: string }
+ * Response: { success: true }
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -88,5 +88,5 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Failed to register device token' }, { status: 500 });
 	}
 
-	return json({ success: true, user_id: userId });
+	return json({ success: true });
 };

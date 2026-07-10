@@ -10,7 +10,20 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const VALID_PLATFORMS = new Set(['apns', 'ios'])
 const MIN_APNS_TOKEN_LENGTH = 32
-const MAX_APNS_TOKEN_LENGTH = 4096
+const MAX_APNS_TOKEN_LENGTH = 512
+
+function normalizeAPNSToken(token: string): string {
+    return token.trim().toLowerCase()
+}
+
+function isValidAPNSToken(token: string): boolean {
+    return (
+        token.length >= MIN_APNS_TOKEN_LENGTH &&
+        token.length <= MAX_APNS_TOKEN_LENGTH &&
+        token.length % 2 === 0 &&
+        /^[a-f0-9]+$/.test(token)
+    )
+}
 
 /**
  * POST /api/register-device
@@ -42,7 +55,8 @@ export const POST = async ({ request }: RequestEvent) => {
     if (!device_token || typeof device_token !== 'string') {
         return json({ error: 'device_token is required' }, { status: 400 })
     }
-    if (device_token.length < MIN_APNS_TOKEN_LENGTH || device_token.length > MAX_APNS_TOKEN_LENGTH) {
+    const normalizedToken = normalizeAPNSToken(device_token)
+    if (!isValidAPNSToken(normalizedToken)) {
         return json({ error: 'Invalid device token' }, { status: 400 })
     }
     if (typeof platform !== 'string' || !VALID_PLATFORMS.has(platform)) {
@@ -52,13 +66,27 @@ export const POST = async ({ request }: RequestEvent) => {
     // Map platform to device_type: 'apns' → 'ios'
     const device_type = platform === 'apns' ? 'ios' : platform
 
+    const { error: cleanupError } = await admin
+        .from('device_tokens')
+        .update({
+            is_active: false,
+            updated_at: new Date().toISOString()
+        })
+        .eq('token', normalizedToken)
+        .neq('user_id', user.id)
+
+    if (cleanupError) {
+        console.error('[register-device] Token ownership cleanup failed')
+        return json({ error: 'Failed to save device token' }, { status: 500 })
+    }
+
     // 3. Upsert into device_tokens table
     const { error: dbError } = await admin
         .from('device_tokens')
         .upsert(
             {
                 user_id: user.id,
-                token: device_token,
+                token: normalizedToken,
                 device_type,
                 is_active: true,
                 last_used_at: new Date().toISOString(),
@@ -68,7 +96,7 @@ export const POST = async ({ request }: RequestEvent) => {
         )
 
     if (dbError) {
-        console.error('[register-device] DB error:', dbError)
+        console.error('[register-device] DB error')
         return json({ error: 'Failed to save device token' }, { status: 500 })
     }
 

@@ -16,6 +16,8 @@ interface AppleNotificationPayload {
 
 // Apple's public keys endpoint
 const APPLE_KEYS_URL = 'https://appleid.apple.com/auth/keys';
+const MAX_SIGNED_PAYLOAD_LENGTH = 16_384;
+const JWT_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
 // Cache Apple's public keys
 let cachedKeys: any = null;
@@ -140,9 +142,13 @@ export const POST: RequestHandler = async ({ request }) => {
 		const body = await request.json();
 		const { signedPayload } = body;
 
-		if (!signedPayload) {
+		if (typeof signedPayload !== 'string' || signedPayload.length === 0) {
 			console.error('[AppleNotifications] Missing signedPayload');
 			return json({ error: 'Missing signedPayload' }, { status: 400 });
+		}
+		if (signedPayload.length > MAX_SIGNED_PAYLOAD_LENGTH || !JWT_RE.test(signedPayload)) {
+			console.error('[AppleNotifications] Invalid signedPayload shape');
+			return json({ success: false, error: 'Invalid notification' }, { status: 200 });
 		}
 
 		// Verify and decode the notification
@@ -153,16 +159,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		console.log('[AppleNotifications] Timestamp:', new Date(payload.timestamp * 1000).toISOString());
 
 		// Handle different notification types
-		let processingResult: Record<string, unknown> = { action: 'acknowledged' };
 		switch (payload.notificationType) {
 			case 'AccountDelete':
-				processingResult = await handleAccountDelete(payload);
+				await handleAccountDelete(payload);
 				break;
 			case 'EmailChange':
-				processingResult = await handleEmailChange(payload);
+				await handleEmailChange(payload);
 				break;
 			case 'ConsentRevoked':
-				processingResult = await handleConsentRevoked(payload);
+				await handleConsentRevoked(payload);
 				break;
 			case 'SignedUp':
 				console.log('[AppleNotifications] User signed up (informational only)');
@@ -172,7 +177,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		// Always respond with 200 OK to acknowledge receipt
-		return json({ success: true, processed: processingResult }, { status: 200 });
+		return json({ success: true }, { status: 200 });
 	} catch (error) {
 		console.error('[AppleNotifications] Error processing notification:', error);
 		// Still return 200 to acknowledge that we received it
@@ -180,7 +185,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json(
 			{
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error'
+				error: 'Invalid notification'
 			},
 			{ status: 200 }
 		);

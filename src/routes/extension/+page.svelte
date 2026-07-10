@@ -37,9 +37,9 @@
 				in:fly={{ x: -20, duration: 600, delay: 100 }}
 			>
 				<div class="text-4xl mb-4">🔒</div>
-				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Total Site Blocking</h3>
+				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Session Site Blocking</h3>
 				<p class="text-sm text-resin-earth/70">
-					Instantly block YouTube, Reddit, Twitter, and any custom websites during your focus sessions. No loopholes.
+					Redirect distracting sites during active focus sessions using Chrome’s privacy-preserving request rules.
 				</p>
 			</div>
 
@@ -59,9 +59,9 @@
 				in:fly={{ x: 20, duration: 600, delay: 300 }}
 			>
 				<div class="text-4xl mb-4">📊</div>
-				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Block Analytics</h3>
+				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Clear Protection Status</h3>
 				<p class="text-sm text-resin-earth/70">
-					See how many times you tried to access blocked sites during each session. Learn your patterns.
+					See whether this browser is protected, waiting for setup, or recovering from a sync issue.
 				</p>
 			</div>
 		</div>
@@ -124,9 +124,9 @@
 						</div>
 					</div>
 					<div class="flex-1">
-						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Review Your Stats</h3>
+						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Check Protection Status</h3>
 						<p class="text-resin-earth/70">
-							After the session, see how many times you attempted blocked sites. Use this insight to understand your distraction triggers and adjust future plans.
+							The popup shows whether this browser is protected, needs setup, waiting for device sync, or recovering.
 						</p>
 					</div>
 				</div>
@@ -144,22 +144,22 @@
 							<span class="text-2xl">🔐</span> Privacy First
 						</h4>
 						<p class="text-resin-earth/70">
-							We only track blocked attempts during your sessions. No browsing history, no ads, no third-party data sharing.
+							Resin redirects only configured blocked domains during focus. It does not read page content, form fields, passwords, or browsing history.
 						</p>
 					</div>
 
 					<div>
 						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">⏱️</span> Countdown Timer
+							<span class="text-2xl">🟢</span> Protection Status
 						</h4>
 						<p class="text-resin-earth/70">
-							See your session time remaining right in the toolbar. Visual feedback keeps you aware and motivated.
+							The toolbar popup makes sync confidence visible with Protected, Waiting, Needs setup, and Recovering states.
 						</p>
 					</div>
 
 					<div>
 						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">🛡️</span> No Bypass
+							<span class="text-2xl">🛡️</span> Request-Rule Blocking
 						</h4>
 						<p class="text-resin-earth/70">
 							Blocking is enforced by Chrome’s request rules during active sessions. It’s designed to reduce impulse-clicks and keep you pointed at the next step.

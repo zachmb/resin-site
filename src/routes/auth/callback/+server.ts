@@ -1,5 +1,20 @@
 import { redirect } from '@sveltejs/kit'
 
+const IOS_CALLBACK_SCHEME = 'com.resin.app:'
+const IOS_AUTH_CALLBACK_HOSTS = new Set(['auth', 'auth-callback', 'callback', 'login-callback', 'oauth'])
+
+function safeIOSAuthCallback(next: string, code: string | null): string | null {
+    try {
+        const appUrl = new URL(next)
+        if (appUrl.protocol !== IOS_CALLBACK_SCHEME) return null
+        if (!IOS_AUTH_CALLBACK_HOSTS.has(appUrl.hostname)) return null
+        if (code) appUrl.searchParams.set('code', code)
+        return appUrl.toString()
+    } catch {
+        return null
+    }
+}
+
 export const GET = async ({ url, locals: { supabase } }) => {
     const code = url.searchParams.get('code')
     const next = url.searchParams.get('next') ?? '/notes'
@@ -10,9 +25,13 @@ export const GET = async ({ url, locals: { supabase } }) => {
     // We must NOT consume the code here — instead hand it back to the app so
     // the Supabase Swift SDK can exchange it via client.auth.session(from:).
     if (next.startsWith('com.resin.app://')) {
-        const appUrl = new URL(next)
-        if (code) appUrl.searchParams.set('code', code)
-        throw redirect(303, appUrl.toString())
+        const appCallback = safeIOSAuthCallback(next, code)
+        if (appCallback) {
+            throw redirect(303, appCallback)
+        }
+
+        console.warn('[Auth Callback] Rejected invalid iOS callback target:', next)
+        throw redirect(303, '/login?error=invalid-ios-callback')
     }
 
     // ── Web sign-in (normal flow) ───────────────────────────────────────────

@@ -3,6 +3,13 @@ import { sequence } from '@sveltejs/kit/hooks'
 import { type Handle } from '@sveltejs/kit'
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public'
 
+const apiCorsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+}
+
 const supabaseHandle: Handle = async ({ event, resolve }) => {
     event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
         cookies: {
@@ -93,12 +100,19 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
 
 // Add CORS headers to all /api/* responses so the iOS app can call them directly
 const corsHandle: Handle = async ({ event, resolve }) => {
+    if (event.url.pathname.startsWith('/api/') && event.request.method === 'OPTIONS') {
+        return new Response(null, {
+            status: 204,
+            headers: apiCorsHeaders,
+        })
+    }
+
     const response = await resolve(event)
 
     if (event.url.pathname.startsWith('/api/')) {
-        response.headers.set('Access-Control-Allow-Origin', '*')
-        response.headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-        response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        for (const [header, value] of Object.entries(apiCorsHeaders)) {
+            response.headers.set(header, value)
+        }
     }
 
     return response
@@ -148,7 +162,14 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
     // Add performance and security headers
     response.headers.set('X-Content-Type-Options', 'nosniff')
     response.headers.set('X-Frame-Options', 'SAMEORIGIN')
-    response.headers.set('X-XSS-Protection', '1; mode=block')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()')
+    response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
+    response.headers.set('X-XSS-Protection', '0')
+
+    if (url.protocol === 'https:') {
+        response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+    }
 
     // Enable compression for text-based content
     if (response.headers.get('Content-Type')?.includes('text')) {

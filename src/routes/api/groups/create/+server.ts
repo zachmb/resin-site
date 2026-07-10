@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request, locals: { getUser } }) => 
 
         if (groupError) {
             console.error('[groups/create] Error creating group:', groupError);
-            return json({ error: 'Failed to create group', detail: groupError }, { status: 500 });
+            return json({ error: 'Failed to create group' }, { status: 500 });
         }
 
         // 2. Create the board exactly matching the ID
@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request, locals: { getUser } }) => 
 
         if (boardError) {
             console.error('[groups/create] Error creating board:', boardError);
-            return json({ error: 'Failed to create group board', detail: boardError }, { status: 500 });
+            return json({ error: 'Failed to create group board' }, { status: 500 });
         }
 
         // 3. Add creator to board members
@@ -79,7 +79,7 @@ export const POST: RequestHandler = async ({ request, locals: { getUser } }) => 
 
         if (memberError) {
             console.error('[groups/create] Error adding creator as member:', memberError);
-            return json({ error: 'Failed to add you to the group', detail: memberError }, { status: 500 });
+            return json({ error: 'Failed to add you to the group' }, { status: 500 });
         }
 
         return json(

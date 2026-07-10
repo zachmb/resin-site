@@ -13,7 +13,20 @@ import type { RequestHandler } from './$types';
 import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail } from '$lib/server/auth';
 
 const MIN_APNS_TOKEN_LENGTH = 32;
-const MAX_APNS_TOKEN_LENGTH = 4096;
+const MAX_APNS_TOKEN_LENGTH = 512;
+
+function normalizeAPNSToken(token: string): string {
+	return token.trim().toLowerCase();
+}
+
+function isValidAPNSToken(token: string): boolean {
+	return (
+		token.length >= MIN_APNS_TOKEN_LENGTH &&
+		token.length <= MAX_APNS_TOKEN_LENGTH &&
+		token.length % 2 === 0 &&
+		/^[a-f0-9]+$/.test(token)
+	);
+}
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: { email?: string; api_key?: string; device_token?: string };
@@ -34,7 +47,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!device_token || typeof device_token !== 'string') {
 		return json({ error: 'device_token is required' }, { status: 400 });
 	}
-	if (device_token.length < MIN_APNS_TOKEN_LENGTH || device_token.length > MAX_APNS_TOKEN_LENGTH) {
+	const normalizedToken = normalizeAPNSToken(device_token);
+	if (!isValidAPNSToken(normalizedToken)) {
 		return json({ error: 'Invalid device token' }, { status: 400 });
 	}
 
@@ -43,10 +57,24 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Could not resolve account' }, { status: 500 });
 	}
 
+	const { error: cleanupError } = await adminClient
+		.from('device_tokens')
+		.update({
+			is_active: false,
+			updated_at: new Date().toISOString()
+		})
+		.eq('token', normalizedToken)
+		.neq('user_id', userId);
+
+	if (cleanupError) {
+		console.error('[register-ios] token ownership cleanup failed');
+		return json({ error: 'Failed to register device token' }, { status: 500 });
+	}
+
 	const { error } = await adminClient.from('device_tokens').upsert(
 		{
 			user_id: userId,
-			token: device_token,
+			token: normalizedToken,
 			device_type: 'ios',
 			is_active: true,
 			last_used_at: new Date().toISOString(),

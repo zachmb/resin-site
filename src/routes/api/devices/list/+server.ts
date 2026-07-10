@@ -22,7 +22,7 @@ export const POST: RequestHandler = async (event) => {
             .order('last_used_at', { ascending: false });
 
         if (error) {
-            console.error('Error fetching devices:', error);
+            console.error('Error fetching devices');
             return json(
                 { error: 'Failed to fetch devices' },
                 { status: 500 }
@@ -44,8 +44,8 @@ export const POST: RequestHandler = async (event) => {
             devices: formattedDevices,
             count: formattedDevices.length
         });
-    } catch (err) {
-        console.error('Error in list devices:', err);
+    } catch {
+        console.error('Error in list devices');
         return json(
             { error: 'Internal server error' },
             { status: 500 }

@@ -125,8 +125,14 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
 
     // Set cache headers based on content type
     if (url.pathname.startsWith('/api/')) {
-        // API responses: short cache, revalidation required
-        response.headers.set('Cache-Control', 'private, max-age=30, must-revalidate')
+        // API responses are usually user-specific or token-bearing. Endpoints
+        // that are truly public/cacheable, such as /api/config or /api/tree-svg,
+        // set their own Cache-Control and are preserved here.
+        if (!response.headers.has('Cache-Control')) {
+            response.headers.set('Cache-Control', 'no-store, max-age=0')
+            response.headers.set('Pragma', 'no-cache')
+            response.headers.set('Expires', '0')
+        }
         // Add API version header (v1 for /api/*, v2 for /api/v2/*, etc.)
         const versionMatch = url.pathname.match(/^\/api\/(v\d+)/)
         const apiVersion = versionMatch ? versionMatch[1] : 'v1'

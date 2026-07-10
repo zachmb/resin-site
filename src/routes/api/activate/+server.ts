@@ -33,7 +33,7 @@ import {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
 } from '$env/static/private'
-import { sendPush } from '$lib/services/apns'
+import { isPermanentAPNsTokenFailure, sendPushWithResult } from '$lib/services/apns'
 import { executeNoteCommands } from '$lib/services/commandExecutor'
 import { computeUserInsights } from '$lib/services/amber'
 import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification'
@@ -586,24 +586,40 @@ export const POST = async ({ request }: RequestEvent) => {
         await syncStonesFromNotes(user.id);
         await recordDailyActivity(user.id);
 
-        // 9. Send APNs push to all registered devices for this user
+        // 9. Send APNs push to active registered devices for this user
         const { data: tokens } = await admin
             .from('device_tokens')
             .select('token')
             .eq('user_id', user.id)
             .eq('device_type', 'ios')
+            .eq('is_active', true)
 
         if (tokens && tokens.length > 0) {
             const startStr = new Date(plan.scheduling.start_time)
                 .toLocaleTimeString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' })
 
-            await Promise.all(tokens.map(({ token }) =>
-                sendPush(token, {
+            const results = await Promise.allSettled(tokens.map(async ({ token }) => {
+                const result = await sendPushWithResult(token, {
                     title: `${plan.display_title} scheduled`,
                     body: `Starting at ${startStr} · ${plan.scheduling.duration_minutes} min`,
                     data: { amber_session_id: session_id },
                 })
-            ))
+                return { token, permanentFailure: isPermanentAPNsTokenFailure(result) }
+            }))
+
+            const permanentlyFailedTokens = results
+                .filter((result): result is PromiseFulfilledResult<{ token: string; permanentFailure: boolean }> =>
+                    result.status === 'fulfilled' && result.value.permanentFailure
+                )
+                .map((result) => result.value.token)
+
+            if (permanentlyFailedTokens.length > 0) {
+                await admin
+                    .from('device_tokens')
+                    .update({ is_active: false, updated_at: new Date().toISOString() })
+                    .eq('user_id', user.id)
+                    .in('token', permanentlyFailedTokens)
+            }
         }
 
         // 9.5. Execute any claw: commands (async, non-blocking)

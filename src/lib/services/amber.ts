@@ -6,7 +6,7 @@ import {
     GOOGLE_CLIENT_SECRET
 } from '$env/static/private';
 import { createClient } from '@supabase/supabase-js';
-import { sendPush } from './apns';
+import { isPermanentAPNsTokenFailure, sendPushWithResult } from './apns';
 import { syncStonesFromNotes } from '$lib/services/gamification';
 import type { Chronotype } from '$lib/types';
 
@@ -545,16 +545,36 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         await syncStonesFromNotes(userId);
 
         // 7. Push Notifications
-        const { data: tokens } = await admin.from('device_tokens').select('token').eq('user_id', userId).eq('device_type', 'ios');
+        const { data: tokens } = await admin
+            .from('device_tokens')
+            .select('token')
+            .eq('user_id', userId)
+            .eq('device_type', 'ios')
+            .eq('is_active', true);
         if (tokens && tokens.length > 0) {
             const startStr = new Date(plan.scheduling.start_time).toLocaleTimeString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' });
-            await Promise.all(tokens.map(({ token }) =>
-                sendPush(token, {
+            const results = await Promise.allSettled(tokens.map(async ({ token }) => {
+                const result = await sendPushWithResult(token, {
                     title: `${plan.display_title} scheduled`,
                     body: `Starting at ${startStr} · ${plan.scheduling.duration_minutes} min`,
                     data: { amber_session_id: sessionId }
-                })
-            ));
+                });
+                return { token, permanentFailure: isPermanentAPNsTokenFailure(result) };
+            }));
+
+            const permanentlyFailedTokens = results
+                .filter((result): result is PromiseFulfilledResult<{ token: string; permanentFailure: boolean }> =>
+                    result.status === 'fulfilled' && result.value.permanentFailure
+                )
+                .map((result) => result.value.token);
+
+            if (permanentlyFailedTokens.length > 0) {
+                await admin
+                    .from('device_tokens')
+                    .update({ is_active: false, updated_at: new Date().toISOString() })
+                    .eq('user_id', userId)
+                    .in('token', permanentlyFailedTokens);
+            }
         }
 
         return { success: true, plan };

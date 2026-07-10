@@ -44,6 +44,57 @@ function parseValidDate(value: string): Date | null {
 	return Number.isFinite(date.getTime()) ? date : null;
 }
 
+async function deactivateStaleIOSRows(userId: string, incomingIds: string[], nowIso: string) {
+	let query = adminClient
+		.from('blocking_sessions')
+		.update({
+			is_active: false,
+			status: 'canceled',
+			updated_at: nowIso
+		})
+		.eq('user_id', userId)
+		.eq('is_active', true)
+		.eq('device_scheduled', true)
+		.gt('end_time', nowIso);
+
+	if (incomingIds.length > 0) {
+		query = query.not('id', 'in', `(${incomingIds.join(',')})`);
+	}
+
+	const { error } = await query;
+	if (error) {
+		// Older deployments may not have device_scheduled/updated_at yet. Sync
+		// must still succeed; stale cleanup will activate once the migration lands.
+		console.error('[blocking/sync] stale iOS session cleanup skipped:', error.message);
+	}
+}
+
+async function getActiveSessions(userId: string, nowIso: string): Promise<OutgoingSession[]> {
+	const { data: activeSessions, error } = await adminClient
+		.from('blocking_sessions')
+		.select('id, title, start_time, end_time, is_active, device_scheduled')
+		.eq('user_id', userId)
+		.eq('is_active', true)
+		.lte('start_time', nowIso)
+		.gt('end_time', nowIso)
+		.order('end_time', { ascending: true })
+		.limit(10);
+
+	if (error) {
+		console.error('[blocking/sync] active session lookup failed:', error.message);
+		return [];
+	}
+
+	return (activeSessions ?? []).map((session) => ({
+		id: session.id,
+		title: session.title ?? 'Focus Session',
+		start_time: session.start_time,
+		end_time: session.end_time,
+		is_active: session.is_active ?? true,
+		device_scheduled: session.device_scheduled ?? false
+	}));
+}
+
 export const POST: RequestHandler = async ({ request }) => {
 	let body: { email?: string; api_key?: string; sessions?: IncomingSession[] };
 	try {
@@ -84,33 +135,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const now = new Date();
 	const nowIso = now.toISOString();
-	const { data: activeSessions, error: activeSessionsError } = await adminClient
-		.from('blocking_sessions')
-		.select('id, title, start_time, end_time, is_active, device_scheduled')
-		.eq('user_id', userId)
-		.eq('is_active', true)
-		.lte('start_time', nowIso)
-		.gt('end_time', nowIso)
-		.order('end_time', { ascending: true })
-		.limit(10);
-
-	if (activeSessionsError) {
-		console.error('[blocking/sync] active session lookup failed:', activeSessionsError.message);
-	}
-
-	const active_sessions: OutgoingSession[] = (activeSessions ?? []).map((session) => ({
-		id: session.id,
-		title: session.title ?? 'Focus Session',
-		start_time: session.start_time,
-		end_time: session.end_time,
-		is_active: session.is_active ?? true,
-		device_scheduled: session.device_scheduled ?? false
-	}));
 
 	const list = Array.isArray(sessions) ? sessions : [];
-	if (list.length === 0) {
-		return json({ synced: 0, blocked_domains, active_sessions, user_id: userId });
-	}
 	if (list.length > MAX_SYNC_SESSIONS) {
 		return json({ error: `Too many sessions. Max ${MAX_SYNC_SESSIONS} per sync.` }, { status: 413 });
 	}
@@ -138,11 +164,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		})
 		.filter((s): s is NonNullable<typeof s> => s !== null);
 
+	const incomingIds = rows.map((row) => row.id);
+	await deactivateStaleIOSRows(userId, incomingIds, nowIso);
+
 	if (rows.length === 0) {
+		const active_sessions = await getActiveSessions(userId, nowIso);
 		return json({ synced: 0, blocked_domains, active_sessions, user_id: userId });
 	}
 
-	const incomingIds = rows.map((row) => row.id);
 	const { data: existingRows, error: existingError } = await adminClient
 		.from('blocking_sessions')
 		.select('id, user_id')
@@ -171,12 +200,14 @@ export const POST: RequestHandler = async ({ request }) => {
 			.upsert(minimal, { onConflict: 'id' })
 			.select('id');
 		if (fallbackError) {
-			return json({ error: 'Failed to sync sessions', details: fallbackError.message }, { status: 500 });
+			console.error('[blocking/sync] minimal upsert failed:', fallbackError.message);
+			return json({ error: 'Failed to sync sessions' }, { status: 500 });
 		}
 		synced = fallback?.length ?? 0;
 	} else {
 		synced = upserted?.length ?? 0;
 	}
 
+	const active_sessions = await getActiveSessions(userId, nowIso);
 	return json({ synced, blocked_domains, active_sessions, user_id: userId });
 };

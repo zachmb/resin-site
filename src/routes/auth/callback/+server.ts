@@ -21,28 +21,16 @@ export const GET = async ({ url, locals: { supabase } }) => {
         if (!error && data.session) {
             const { session } = data;
 
-            // Persist the provider_token in user metadata so the iOS app can retrieve it
-            // via the /api/auth/token endpoint if needed.
-            if (session.provider_token) {
-                await supabase.auth.updateUser({
-                    data: {
-                        provider_token: session.provider_token,
-                        provider_token_expiry: Math.floor(Date.now() / 1000) + (session.expires_in ?? 3600)
-                    }
-                })
-            }
-
             // Capture and store the refresh_token separately in user_credentials
             // This is critical for background token refresh.
             console.log('[Auth Callback] Session data:', {
                 has_provider_refresh_token: !!session.provider_refresh_token,
-                has_provider_token: !!session.provider_token,
                 user_id: session.user.id,
                 provider: session.user.app_metadata?.provider
             });
 
-            if (session.provider_refresh_token || session.provider_token) {
-                console.log('[Auth Callback] Provider tokens captured for user:', session.user.id);
+            if (session.provider_refresh_token) {
+                console.log('[Auth Callback] OAuth refresh capability received');
                 try {
                     const { createClient } = await import('@supabase/supabase-js')
                     const { PUBLIC_SUPABASE_URL } = await import('$env/static/public')
@@ -57,28 +45,20 @@ export const GET = async ({ url, locals: { supabase } }) => {
                         updated_at: new Date().toISOString()
                     };
 
-                    if (session.provider_refresh_token) {
-                        updateData.google_refresh_token = session.provider_refresh_token;
-                        console.log('[Auth Callback] Storing refresh token');
-                    } else if (session.provider_token) {
-                        // Fallback: store access token if refresh token not available
-                        // This won't work for long-term use but helps diagnose the issue
-                        updateData.google_refresh_token = session.provider_token;
-                        console.warn('[Auth Callback] No refresh token, storing access token as fallback');
-                    }
+                    updateData.google_refresh_token = session.provider_refresh_token;
 
                     const { error: upsertError } = await admin.from('user_credentials').upsert(updateData)
 
                     if (upsertError) {
-                        console.error('[Auth Callback] Error storing provider tokens:', upsertError);
+                        console.error('[Auth Callback] Error storing OAuth refresh capability:', upsertError.message);
                     } else {
-                        console.log('[Auth Callback] Provider tokens stored successfully');
+                        console.log('[Auth Callback] OAuth refresh capability stored successfully');
                     }
                 } catch (err) {
                     console.error('[Auth Callback] Unexpected error during token storage:', err);
                 }
             } else {
-                console.warn('[Auth Callback] No provider tokens found in session. Ensure offline_access and prompt=consent were used.');
+                console.warn('[Auth Callback] No provider refresh token found in session. Ensure offline_access and prompt=consent were used.');
             }
 
             // Safer redirect logic

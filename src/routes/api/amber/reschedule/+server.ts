@@ -9,6 +9,9 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 });
 
+const MIN_TASK_WINDOW_MS = 60 * 1000;
+const MAX_TASK_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export const POST = async ({ request }: RequestEvent) => {
     const authHeader = request.headers.get('authorization') ?? '';
     const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -28,13 +31,20 @@ export const POST = async ({ request }: RequestEvent) => {
         const body = await request.json();
         const { task_id, new_start_time, new_end_time } = body;
 
-        console.log('[api/amber/reschedule] Request:', { task_id, new_start_time, new_end_time, userId: user.id });
-
         if (!task_id || !new_start_time || !new_end_time) {
             return json(
                 { error: 'Missing required fields: task_id, new_start_time, new_end_time' },
                 { status: 400 }
             );
+        }
+        const newStart = new Date(new_start_time);
+        const newEnd = new Date(new_end_time);
+        const windowMs = newEnd.getTime() - newStart.getTime();
+        if (!Number.isFinite(newStart.getTime()) || !Number.isFinite(newEnd.getTime())) {
+            return json({ error: 'Invalid task time' }, { status: 400 });
+        }
+        if (windowMs < MIN_TASK_WINDOW_MS || windowMs > MAX_TASK_WINDOW_MS) {
+            return json({ error: 'Task window must be between 1 minute and 24 hours' }, { status: 400 });
         }
 
         // 3. Fetch task then verify session ownership
@@ -43,11 +53,6 @@ export const POST = async ({ request }: RequestEvent) => {
             .select('id, title, calendar_event_id, start_time, end_time, session_id')
             .eq('id', task_id)
             .single();
-
-        console.log('[api/amber/reschedule] Task fetch:', {
-            taskError,
-            taskData: taskData ? { id: taskData.id, title: taskData.title, session_id: (taskData as any).session_id } : null
-        });
 
         if (taskError || !taskData || !(taskData as any).session_id) {
             return json({ error: 'Task not found' }, { status: 404 });
@@ -81,7 +86,6 @@ export const POST = async ({ request }: RequestEvent) => {
         let calendar_warning = false;
         if (taskData.calendar_event_id) {
             try {
-                console.log('[api/amber/reschedule] Updating calendar event:', taskData.calendar_event_id);
                 const gToken = await getGoogleAccessToken(user.id);
                 const success = await updateCalendarEvent(
                     gToken,
@@ -91,7 +95,6 @@ export const POST = async ({ request }: RequestEvent) => {
                     new_end_time,
                     timezone
                 );
-                console.log('[api/amber/reschedule] Calendar update result:', success);
                 if (!success) {
                     calendar_warning = true;
                 }
@@ -104,7 +107,6 @@ export const POST = async ({ request }: RequestEvent) => {
         }
 
         // 6. Update task times in Supabase
-        console.log('[api/amber/reschedule] Updating task in database');
         const { data: updatedTask, error: updateError } = await admin
             .from('amber_tasks')
             .update({
@@ -117,14 +119,12 @@ export const POST = async ({ request }: RequestEvent) => {
             .select()
             .single();
 
-        console.log('[api/amber/reschedule] Database update result:', { updateError: updateError ? updateError.message : 'success', updatedTask: updatedTask ? { id: updatedTask.id } : null });
-
         if (updateError) {
             console.error('[api/amber/reschedule] Database update error:', updateError);
             throw updateError;
         }
 
-        console.log(`[api/amber/reschedule] Successfully rescheduled task ${task_id} for user ${user.id}`);
+        console.log('[api/amber/reschedule] Task rescheduled');
         return json({
             success: true,
             task: updatedTask,
@@ -133,7 +133,6 @@ export const POST = async ({ request }: RequestEvent) => {
     } catch (err) {
         console.error('[api/amber/reschedule] Error:', err);
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('[api/amber/reschedule] Stack:', err instanceof Error ? err.stack : 'no stack');
         return json({ error: errorMessage }, { status: 500 });
     }
 };

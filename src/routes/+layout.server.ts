@@ -77,7 +77,7 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
         .from('blocking_sessions')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('status', 'active')
+        .eq('is_active', true)
         .lte('start_time', now)
         .gte('end_time', now)
         .limit(1);

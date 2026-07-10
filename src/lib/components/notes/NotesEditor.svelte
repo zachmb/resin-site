@@ -461,8 +461,9 @@
             >
                 <div class="flex items-center justify-between gap-3 h-full">
                     <!-- Mobile Back Button -->
-                    <button
-                        onclick={() => {
+	                    <button
+                            aria-label="Back to notes"
+	                        onclick={() => {
                             isSidebarOpen = true;
                             onBack();
                         }}

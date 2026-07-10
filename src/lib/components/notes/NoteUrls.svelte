@@ -48,9 +48,9 @@
     }
 </script>
 
-<div class="space-y-2">
-    <div class="flex items-center justify-between">
-        <label class="text-xs font-bold text-resin-earth/60 uppercase">Bookmarked URLs</label>
+	<div class="space-y-2">
+	    <div class="flex items-center justify-between">
+	        <div class="text-xs font-bold text-resin-earth/60 uppercase">Bookmarked URLs</div>
         {#if urls.length > 0}
             <span class="text-xs font-semibold text-resin-forest">{urls.length} link{urls.length !== 1 ? "s" : ""}</span>
         {/if}
@@ -84,20 +84,19 @@
 
     {#if showInput}
         <div class="space-y-1.5" in:slide>
-            <input
-                type="text"
-                placeholder="https://example.com"
-                bind:value={newUrl}
+	            <input
+	                type="text"
+	                placeholder="https://example.com"
+	                bind:value={newUrl}
                 onkeydown={(e) => {
                     if (e.key === "Enter") validateAndAdd();
                     if (e.key === "Escape") {
                         showInput = false;
                         error = "";
                     };
-                }}
-                class="w-full px-2 py-1.5 text-xs rounded border border-resin-forest/20 bg-white focus:outline-none focus:border-resin-forest/50"
-                autofocus
-            />
+	                }}
+	                class="w-full px-2 py-1.5 text-xs rounded border border-resin-forest/20 bg-white focus:outline-none focus:border-resin-forest/50"
+	            />
             {#if error}
                 <p class="text-[10px] text-red-600">{error}</p>
             {/if}

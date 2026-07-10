@@ -12,6 +12,9 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { adminClient, RESIN_SYNC_KEY, resolveUserIdByEmail } from '$lib/server/auth';
 
+const MIN_APNS_TOKEN_LENGTH = 32;
+const MAX_APNS_TOKEN_LENGTH = 4096;
+
 export const POST: RequestHandler = async ({ request }) => {
 	let body: { email?: string; api_key?: string; device_token?: string };
 	try {
@@ -30,6 +33,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 	if (!device_token || typeof device_token !== 'string') {
 		return json({ error: 'device_token is required' }, { status: 400 });
+	}
+	if (device_token.length < MIN_APNS_TOKEN_LENGTH || device_token.length > MAX_APNS_TOKEN_LENGTH) {
+		return json({ error: 'Invalid device token' }, { status: 400 });
 	}
 
 	const userId = await resolveUserIdByEmail(email.trim().toLowerCase());

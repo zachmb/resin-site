@@ -7,7 +7,7 @@
     </h1>
 
     <div class="prose prose-resin max-w-none text-resin-earth/90 space-y-6">
-        <p><strong>Last Updated:</strong> March 17, 2026</p>
+        <p><strong>Last Updated:</strong> July 9, 2026</p>
 
         <p><strong>Company:</strong> LoopLess LLC, State of Illinois, United States</p>
 
@@ -85,6 +85,7 @@
             <li>Creating calendar entries for focus blocks and amber sessions</li>
         </ul>
         <p class="mt-2">You can revoke this access at any time in your account settings. We store your refresh token securely and only use it to sync calendar data on your behalf.</p>
+        <p class="mt-2">On iOS, you may also grant Apple Calendar access so Resin can read availability and create the focus blocks you request. Apple Calendar data is used on-device for scheduling and is not used for advertising or cross-service tracking.</p>
         <p class="mt-2"><strong>Google API Limited Use:</strong> The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements. Google Calendar data is used only to read scheduling conflicts and create, update, or delete calendar events you request through Resin.</p>
 
         <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
@@ -120,8 +121,10 @@
             <li><strong>Screen Time API:</strong> To enable app and website blocking during focus sessions (via Apple's native framework)</li>
             <li><strong>Calendar Access:</strong> To sync focus sessions and plans to your calendar and check for scheduling conflicts</li>
             <li><strong>Notifications:</strong> To send push notifications for focus reminders and session updates</li>
+            <li><strong>Microphone and Speech Recognition:</strong> To capture and transcribe voice notes only when you choose voice input</li>
+            <li><strong>Camera and Photo Library:</strong> To scan notes, import saved note images, and complete optional photo-proof tasks</li>
         </ul>
-        <p class="mt-2">We do NOT request or collect: location data, contacts, photos library, microphone, camera, health data, or any other sensitive permissions beyond those listed above.</p>
+        <p class="mt-2">We do NOT request or collect location data, contacts, health data, passwords, keystrokes, or browsing history. Camera, photo library, microphone, and speech access are optional, user-initiated features and are not used for advertising or cross-app tracking.</p>
 
         <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">
             2. How We Use Your Information
@@ -147,6 +150,7 @@
             <li><strong>Supabase:</strong> For authentication, database storage, and hosting (SOC 2 certified)</li>
             <li><strong>Apple APNS:</strong> For iOS push notifications (device tokens only, no personal data)</li>
             <li><strong>Apple Screen Time API:</strong> For managing app/website blocking (data remains on-device)</li>
+            <li><strong>Apple Calendar and Speech APIs:</strong> For optional iOS calendar scheduling and voice-note transcription you initiate</li>
             <li><strong>Google Calendar API:</strong> Your calendar OAuth tokens (encrypted, used only for sync)</li>
             <li><strong>DeepSeek & Google Gemini:</strong> Your notes and content (only when you explicitly request AI processing)</li>
         </ul>

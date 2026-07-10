@@ -32,7 +32,7 @@ export const GET = async ({ request }) => {
         .single()
 
     if (credsError) {
-        console.error('[Token API] Database error fetching credentials:', credsError);
+        console.error('[Token API] Database error fetching credentials:', credsError.message);
         return json({
             error: 'Database error fetching Google credentials.',
             details: credsError.message
@@ -40,7 +40,7 @@ export const GET = async ({ request }) => {
     }
 
     if (!credentials?.google_refresh_token) {
-        console.warn('[Token API] No refresh token found for user:', user.id);
+        console.warn('[Token API] No refresh token found for authenticated user');
         return json({
             error: 'Google refresh token not available. Please sign in again on the website.',
             hint: 'Ensure you have connected your Google account and granted offline access.'
@@ -62,7 +62,6 @@ export const GET = async ({ request }) => {
         const supabaseCallback = `${PUBLIC_SUPABASE_URL}/auth/v1/callback`
         params.redirect_uri = supabaseCallback
 
-        console.log('[Token API] Exchanging refresh token for access token...');
         const response = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -72,12 +71,13 @@ export const GET = async ({ request }) => {
         const tokenData = await response.json()
 
         if (!response.ok) {
-            console.error('[Token API] Google token exchange failed for user:', user.id, tokenData);
-            console.error('[Token API] Using Client ID:', GOOGLE_CLIENT_ID?.substring(0, 15) + '...');
-            return json({ error: 'Failed to refresh Google token', details: tokenData }, { status: 400 })
+            console.error('[Token API] Google token exchange failed:', {
+                status: response.status,
+                error: tokenData?.error
+            });
+            return json({ error: 'Failed to refresh Google token' }, { status: 400 })
         }
 
-        console.log('[Token API] Token refreshed successfully');
         return json({
             access_token: tokenData.access_token,
             expires_at: Math.floor(Date.now() / 1000) + tokenData.expires_in

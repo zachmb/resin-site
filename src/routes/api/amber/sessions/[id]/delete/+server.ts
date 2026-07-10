@@ -80,14 +80,14 @@ export const POST = async ({ params, request }: RequestEvent) => {
         }
 
         if (count === 0) {
-            console.warn(`[api/amber/delete] No session found to delete for ID: ${sessionId} and User: ${user.id}`);
+            console.warn('[api/amber/delete] No matching session found to delete');
             return json({ error: 'Session not found or already deleted' }, { status: 404 });
         }
 
         // 5. Recalculate stones (1 note = 1 stone) to ensure count decrements
         await syncStonesFromNotes(user.id, { force: true });
 
-        console.log(`[api/amber/delete] Successfully deleted session ${sessionId} for user ${user.id}`);
+        console.log('[api/amber/delete] Session deleted');
         return json({ success: true, message: 'Session deleted successfully' });
     } catch (err) {
         console.error('[api/amber/delete] Error:', err);

@@ -6,6 +6,7 @@ export async function notifyFocusSessionStart(options: {
     userId: string;
     sessionId: string;
     sessionTitle: string;
+    startTime: Date;
     endTime: Date;
     groupId?: string;
 }): Promise<{ success: boolean; notificationsSent: number }> {
@@ -19,6 +20,7 @@ export async function notifyFocusSessionStart(options: {
                 userId: options.userId,
                 sessionId: options.sessionId,
                 sessionTitle: options.sessionTitle,
+                startTime: options.startTime.toISOString(),
                 endTime: options.endTime.toISOString(),
                 groupId: options.groupId
             })
@@ -63,6 +65,7 @@ export async function onFocusSessionStart(sessionData: {
         userId: sessionData.userId,
         sessionId: sessionData.sessionId,
         sessionTitle: sessionData.title || 'Focus Session',
+        startTime: sessionData.startTime,
         endTime: sessionData.endTime,
         groupId: sessionData.groupId
     });

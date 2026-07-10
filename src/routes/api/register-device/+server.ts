@@ -8,6 +8,10 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 })
 
+const VALID_PLATFORMS = new Set(['apns', 'ios'])
+const MIN_APNS_TOKEN_LENGTH = 32
+const MAX_APNS_TOKEN_LENGTH = 4096
+
 /**
  * POST /api/register-device
  * Body: { device_token: string, platform?: "apns" }
@@ -38,6 +42,12 @@ export const POST = async ({ request }: RequestEvent) => {
     if (!device_token || typeof device_token !== 'string') {
         return json({ error: 'device_token is required' }, { status: 400 })
     }
+    if (device_token.length < MIN_APNS_TOKEN_LENGTH || device_token.length > MAX_APNS_TOKEN_LENGTH) {
+        return json({ error: 'Invalid device token' }, { status: 400 })
+    }
+    if (typeof platform !== 'string' || !VALID_PLATFORMS.has(platform)) {
+        return json({ error: 'Invalid platform' }, { status: 400 })
+    }
 
     // Map platform to device_type: 'apns' → 'ios'
     const device_type = platform === 'apns' ? 'ios' : platform
@@ -51,6 +61,7 @@ export const POST = async ({ request }: RequestEvent) => {
                 token: device_token,
                 device_type,
                 is_active: true,
+                last_used_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             },
             { onConflict: 'user_id,token' }
@@ -61,7 +72,7 @@ export const POST = async ({ request }: RequestEvent) => {
         return json({ error: 'Failed to save device token' }, { status: 500 })
     }
 
-    console.log(`[register-device] Registered token for user ${user.id}`)
+    console.log('[register-device] Registered iOS device for focus sync')
     return json({ status: 'ok' })
 }
 

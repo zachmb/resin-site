@@ -45,6 +45,29 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 })
 
+const MIN_TASK_WINDOW_MS = 60 * 1000
+const MAX_TASK_WINDOW_MS = 24 * 60 * 60 * 1000
+
+function isValidHour(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 23
+}
+
+function validateScheduleWindow(startIso: string, endIso: string, durationMinutes: number): string | null {
+    const start = new Date(startIso)
+    const end = new Date(endIso)
+    const windowMs = end.getTime() - start.getTime()
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) {
+        return 'Planner returned an invalid time'
+    }
+    if (windowMs < MIN_TASK_WINDOW_MS || windowMs > MAX_TASK_WINDOW_MS) {
+        return 'Planner returned an unsupported focus window'
+    }
+    if (!Number.isFinite(durationMinutes) || durationMinutes < 1 || durationMinutes > 24 * 60) {
+        return 'Planner returned an invalid duration'
+    }
+    return null
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface DeepSeekTask {
@@ -71,7 +94,7 @@ async function getGoogleAccessToken(userId: string): Promise<string> {
         .single()
 
     if (credsError) {
-        console.error(`[getGoogleAccessToken] Error fetching credentials for ${userId}:`, credsError);
+        console.error('[getGoogleAccessToken] Error fetching credentials:', credsError.message);
         throw new Error(`Cannot retrieve Google credentials: ${credsError.message}`)
     }
 
@@ -79,9 +102,7 @@ async function getGoogleAccessToken(userId: string): Promise<string> {
         throw new Error('Google Calendar not connected. Please sign in with Google in Account settings.')
     }
 
-    console.log(`[getGoogleAccessToken] Refreshing token for ${userId}.`);
-    console.log(`[getGoogleAccessToken] Config: ID len=${GOOGLE_CLIENT_ID?.length}, Secret len=${GOOGLE_CLIENT_SECRET?.length}`);
-    console.log(`[getGoogleAccessToken] Token prefix: ${creds.google_refresh_token.substring(0, 10)}...`);
+    console.log('[getGoogleAccessToken] Refreshing Google access token.');
 
     const params: Record<string, string> = {
         client_id: GOOGLE_CLIENT_ID,
@@ -102,14 +123,17 @@ async function getGoogleAccessToken(userId: string): Promise<string> {
     })
     const data = await res.json()
     if (!res.ok) {
-        console.error(`[getGoogleAccessToken] Google token refresh failed for user ${userId}. Status: ${res.status}. Data:`, JSON.stringify(data));
-        console.error(`[getGoogleAccessToken] Client ID length: ${GOOGLE_CLIENT_ID?.length}`);
+        console.error('[getGoogleAccessToken] Google token refresh failed:', {
+            status: res.status,
+            error: data?.error,
+            error_description: data?.error_description
+        });
 
         // Check if error is due to invalid refresh token
         if (data.error === 'invalid_grant') {
             throw new Error('Google authorization expired. Please sign in again with Google in Account settings.')
         }
-        throw new Error(`Google token refresh failed: ${data.error || JSON.stringify(data)}`)
+        throw new Error(`Google token refresh failed: ${data.error || 'unknown_error'}`)
     }
     return data.access_token as string
 }
@@ -357,23 +381,14 @@ export const POST = async ({ request }: RequestEvent) => {
 
     if (!jwt) {
         return json({
-            error: 'Authentication failed: No token found.',
-            debug: {
-                has_auth_header: !!authHeader,
-                auth_header_prefix: authHeader ? authHeader.slice(0, 10) + '...' : 'none',
-                has_body: !!body,
-                body_keys: body ? Object.keys(body) : [],
-                has_access_token_in_body: !!body?.access_token
-            }
+            error: 'Authentication failed: No token found.'
         }, { status: 401 })
     }
 
     const { data: { user }, error: userError } = await admin.auth.getUser(jwt)
     if (userError || !user) {
         return json({
-            error: 'Invalid token',
-            details: userError?.message || 'No user found for this token',
-            jwt_prefix: jwt.slice(0, 10) + '...'
+            error: 'Invalid token'
         }, { status: 401 })
     }
 
@@ -399,12 +414,35 @@ export const POST = async ({ request }: RequestEvent) => {
     if (!session_id || !raw_text) {
         return json({ error: 'session_id and raw_text are required' }, { status: 400 })
     }
+    if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) {
+        return json({ error: 'intensity must be between 0 and 1' }, { status: 400 })
+    }
+
+    const { data: existingSession, error: existingSessionError } = await admin
+        .from('amber_sessions')
+        .select('id, user_id')
+        .eq('id', session_id)
+        .maybeSingle()
+
+    if (existingSessionError) {
+        console.error('[activate] Session ownership check failed:', existingSessionError.message)
+        return json({ error: 'Could not verify session ownership' }, { status: 500 })
+    }
+    if (existingSession && existingSession.user_id !== user.id) {
+        return json({ error: 'Session not found or permission denied' }, { status: 403 })
+    }
 
     // Mark session as processing
-    await admin.from('amber_sessions')
-        .update({ status: 'processing' })
-        .eq('id', session_id)
-        .eq('user_id', user.id)
+    if (existingSession) {
+        const { error: processingError } = await admin.from('amber_sessions')
+            .update({ status: 'processing' })
+            .eq('id', session_id)
+            .eq('user_id', user.id)
+        if (processingError) {
+            console.error('[activate] Could not mark session processing:', processingError.message)
+            return json({ error: 'Could not start activation' }, { status: 500 })
+        }
+    }
 
     try {
         // 2.5. Get per-day availability if not provided
@@ -427,12 +465,15 @@ export const POST = async ({ request }: RequestEvent) => {
                 end_hour = end_hour ?? 22
             }
         }
+        if (!isValidHour(start_hour) || !isValidHour(end_hour) || start_hour >= end_hour) {
+            return json({ error: 'Availability window must use valid start/end hours' }, { status: 400 })
+        }
 
-        // 3. Get Google access token & free/busy
-        let gToken: string
-        if (google_access_token) {
-            console.log(`[activate] Using provided google_access_token for user ${user.id}`)
-            gToken = google_access_token
+	        // 3. Get Google access token & free/busy
+	        let gToken: string
+	        if (google_access_token) {
+	            console.log('[activate] Using provided Google calendar access.')
+	            gToken = google_access_token
         } else {
             gToken = await getGoogleAccessToken(user.id)
         }
@@ -447,6 +488,14 @@ export const POST = async ({ request }: RequestEvent) => {
         const systemPrompt = getSystemPrompt(start_hour ?? 16, end_hour ?? 22, timezone, freeBusy, enrichedPreferences)
         const { task: plan, service } = await callDeepSeekWithFallback(raw_text, systemPrompt)
         console.log(`[activate] Used ${service} for plan generation`)
+        const scheduleError = validateScheduleWindow(
+            plan.scheduling.start_time,
+            plan.scheduling.end_time,
+            plan.scheduling.duration_minutes
+        )
+        if (scheduleError) {
+            throw new Error(scheduleError)
+        }
 
         // 5. Create Google Calendar event
         const calEventId = await createCalendarEvent(gToken, plan, plan.display_title, timezone)
@@ -487,7 +536,7 @@ export const POST = async ({ request }: RequestEvent) => {
             id: crypto.randomUUID(),
             session_id,
             title: plan.display_title,
-            description: plan.ai_plan.join('\n'),
+            description,
             estimated_minutes: plan.scheduling.duration_minutes,
             sequence_order: 1,
             start_time: plan.scheduling.start_time,
@@ -588,6 +637,7 @@ export const POST = async ({ request }: RequestEvent) => {
         await admin.from('amber_sessions')
             .update({ status: 'failed' })
             .eq('id', session_id)
+            .eq('user_id', user.id)
         return json({ error: String(err) }, { status: 500 })
     }
 }
@@ -628,7 +678,7 @@ function executeCommandsInBackground(userId: string, noteContent: string, db: an
                     );
             }
 
-            console.log(`[commands] Executed ${results.length} commands for user ${userId}`);
+            console.log(`[commands] Executed ${results.length} command(s)`);
         } catch (error) {
             console.error('[commands] Background execution failed:', error);
         }

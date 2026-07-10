@@ -620,10 +620,6 @@
         margin-bottom: 24px;
     }
 
-    /* NOTES TAB */
-    .notes-section {
-    }
-
     .add-note-form {
         background: rgba(43, 70, 52, 0.03);
         padding: 20px;
@@ -759,10 +755,6 @@
         border-top: 1px solid rgba(43, 70, 52, 0.1);
     }
 
-    /* FOREST TAB */
-    .forest-section {
-    }
-
     .member-legend {
         background: rgba(43, 70, 52, 0.03);
         padding: 20px;
@@ -842,10 +834,6 @@
         padding: 20px;
         color: rgba(43, 70, 52, 0.5);
         font-size: 14px;
-    }
-
-    /* FOCUS TAB */
-    .focus-section {
     }
 
     .focus-admin-panel {

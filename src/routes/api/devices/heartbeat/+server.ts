@@ -1,32 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createClient } from '@supabase/supabase-js';
+import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
 
 /**
  * Update device heartbeat to mark it as active
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
     try {
-        const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const userId = await getAuthenticatedUserId(event);
+        if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
 
-        const authHeader = request.headers.get('authorization') ?? '';
-        const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        const { token } = await event.request.json();
 
-        if (!jwt) {
-            return json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        // Authenticate user
-        const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
-        if (userError || !user) {
-            return json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        const { token } = await request.json();
-
-        if (!token) {
+        if (!token || typeof token !== 'string') {
             return json(
                 { error: 'Missing required field: token' },
                 { status: 400 }
@@ -34,20 +20,29 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         // Update device heartbeat
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('device_tokens')
             .update({
                 last_used_at: new Date().toISOString(),
                 is_active: true
             })
             .eq('token', token)
-            .eq('user_id', user.id);
+            .eq('user_id', userId)
+            .select('id')
+            .maybeSingle();
 
         if (error) {
             console.error('Error updating device heartbeat:', error);
             return json(
                 { error: 'Failed to update heartbeat' },
                 { status: 500 }
+            );
+        }
+
+        if (!data) {
+            return json(
+                { error: 'Device token is not registered for this account' },
+                { status: 404 }
             );
         }
 

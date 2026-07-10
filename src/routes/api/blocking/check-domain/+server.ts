@@ -2,6 +2,16 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { adminClient as supabase, getAuthenticatedUserId, userHasProAccess } from '$lib/server/auth';
 
+function normalizeDomain(raw: unknown): string | null {
+    if (typeof raw !== 'string') return null;
+    let domain = raw.trim().toLowerCase();
+    domain = domain.replace(/^[a-z][a-z0-9+.-]*:\/\//, '');
+    domain = domain.split('/')[0].split('?')[0].split('#')[0].split(':')[0];
+    domain = domain.replace(/^www\./, '');
+    if (!/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)) return null;
+    return domain;
+}
+
 export const POST: RequestHandler = async (event) => {
     try {
         // Derive the user from the verified token/session — never trust a body userId.
@@ -16,9 +26,10 @@ export const POST: RequestHandler = async (event) => {
         }
 
         const { domain } = await event.request.json();
-        if (!domain) {
+        const normalizedDomain = normalizeDomain(domain);
+        if (!normalizedDomain) {
             return json(
-                { error: 'Missing domain' },
+                { error: 'Use a plain domain or URL with a valid hostname' },
                 { status: 400 }
             );
         }
@@ -40,10 +51,9 @@ export const POST: RequestHandler = async (event) => {
 
         const blockedDomains = profile?.blocked_domains || [];
 
-        // Normalize domain for comparison
-        const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
         const isBlocked = blockedDomains.some((blocked: string) => {
-            const normalized = blocked.toLowerCase().replace(/^www\./, '');
+            const normalized = normalizeDomain(blocked);
+            if (!normalized) return false;
             // Exact or subdomain match only — a substring check would make
             // blocking x.com also report netflix.com as blocked.
             return normalizedDomain === normalized || normalizedDomain.endsWith('.' + normalized);

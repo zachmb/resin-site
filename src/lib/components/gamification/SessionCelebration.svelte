@@ -54,8 +54,8 @@
             in:scale={{ duration: 300, start: 0.8 }}
             out:scale={{ duration: 200, start: 0.9 }}
         >
-            <!-- Glow effect -->
-            <div class="absolute inset-0 rounded-lg -z-10" />
+	            <!-- Glow effect -->
+	            <div class="absolute inset-0 rounded-lg -z-10"></div>
 
             <!-- Content -->
             <div class="space-y-4">

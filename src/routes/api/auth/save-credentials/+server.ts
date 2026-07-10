@@ -43,7 +43,6 @@ export const POST = async ({ request }: RequestEvent) => {
     }
 
     // 5. Upsert to user_credentials
-    console.log(`[save-credentials] Storing refresh token for user: ${user.id}`)
     const { error: upsertError } = await admin.from('user_credentials').upsert({
         id: user.id,
         google_refresh_token,
@@ -51,8 +50,8 @@ export const POST = async ({ request }: RequestEvent) => {
     })
 
     if (upsertError) {
-        console.error('[save-credentials] Database error:', upsertError)
-        return json({ error: 'Database error storing credentials', details: upsertError.message }, { status: 500 })
+        console.error('[save-credentials] Database error:', upsertError.message)
+        return json({ error: 'Database error storing credentials' }, { status: 500 })
     }
 
     return json({ status: 'saved' })

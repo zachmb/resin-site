@@ -31,16 +31,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       );
     }
 
-    console.warn(`[emergency] Emergency hardening triggered for user ${user.id}: ${reason}`);
-
-    // TODO: Send push notification to all user devices
-    // TODO: Send email alert
-    // TODO: Log to security audit table
+    console.warn('[emergency] Emergency hardening triggered');
 
     return json({
       success: true,
       emergency_triggered: true,
-      message: 'Emergency hardening activated. All apps are now blocked until manual intervention.',
+      requires_device_sync: true,
+      message: 'Emergency hardening was recorded. Open the iOS app to apply or verify device-level protection.',
     });
   } catch (err: any) {
     console.error('[emergency] Error:', err);

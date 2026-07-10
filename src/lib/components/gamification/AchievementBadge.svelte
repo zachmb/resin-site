@@ -61,7 +61,7 @@
             }`}
             style="background: linear-gradient(135deg, rgba(232, 154, 60, 0.3), rgba(232, 154, 60, 0.1));"
         >
-            <svelte:component this={IconComp} size={32} class="text-resin-amber" />
+	            <IconComp size={32} class="text-resin-amber" />
         </div>
         <p class="text-xs font-bold text-resin-charcoal text-center line-clamp-2">{name}</p>
         <p class="text-[10px] text-resin-forest/70 font-medium">{formatDate(unlockedAt)}</p>
@@ -71,9 +71,9 @@
             style="background: rgba(0, 0, 0, 0.06);"
         >
             <div class="relative">
-                <svelte:component this={IconComp} size={32} class="text-resin-earth opacity-20" />
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <svelte:component this={LockIcon} size={16} class="text-resin-earth opacity-30" />
+	                <IconComp size={32} class="text-resin-earth opacity-20" />
+	                <div class="absolute inset-0 flex items-center justify-center">
+	                    <LockIcon size={16} class="text-resin-earth opacity-30" />
                 </div>
             </div>
         </div>

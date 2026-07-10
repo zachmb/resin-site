@@ -616,37 +616,39 @@
                                         <!-- Edit Mode -->
                                         <div class="space-y-3 p-4 bg-resin-forest/5 rounded-lg border border-resin-forest/20">
                                             <div>
-                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Title</label>
-                                                <input
-                                                    type="text"
+	                                                <label for={`task-title-${task.id}`} class="text-xs font-bold text-resin-earth/60 uppercase">Title</label>
+	                                                <input
+                                                        id={`task-title-${task.id}`}
+	                                                    type="text"
                                                     bind:value={editingTitle}
                                                     class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm font-semibold text-resin-charcoal focus:outline-none focus:border-resin-forest/30"
                                                 />
                                             </div>
                                             <div>
-                                                <label class="text-xs font-bold text-resin-earth/60 uppercase">Description (Optional)</label>
-                                                <textarea
-                                                    bind:value={editingDescription}
-                                                    class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm text-resin-charcoal focus:outline-none focus:border-resin-forest/30 resize-none"
-                                                    style="min-height: auto; height: {Math.min(200, Math.max(50, editingDescription.split('\n').length * 20 + 30))}px"
-                                                />
+	                                                <label for={`task-description-${task.id}`} class="text-xs font-bold text-resin-earth/60 uppercase">Description (Optional)</label>
+	                                                <textarea
+                                                        id={`task-description-${task.id}`}
+	                                                    bind:value={editingDescription}
+	                                                    class="w-full mt-1 px-3 py-2 rounded-lg border border-resin-forest/10 bg-white text-sm text-resin-charcoal focus:outline-none focus:border-resin-forest/30 resize-none"
+	                                                    style="min-height: auto; height: {Math.min(200, Math.max(50, editingDescription.split('\n').length * 20 + 30))}px"
+	                                                ></textarea>
                                             </div>
                                             <!-- Task Duration Slider -->
                                             <div>
-                                                <label class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
-                                                    Length: <span class="font-mono text-resin-forest">{editingDuration}m</span>
-                                                </label>
-                                                <input type="range" min="5" max="240" step="5" bind:value={editingDuration}
-                                                       class="w-full mt-1" style="accent-color: #2B4634" />
+	                                                <label for={`task-duration-${task.id}`} class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
+	                                                    Length: <span class="font-mono text-resin-forest">{editingDuration}m</span>
+	                                                </label>
+	                                                <input id={`task-duration-${task.id}`} type="range" min="5" max="240" step="5" bind:value={editingDuration}
+	                                                       class="w-full mt-1" style="accent-color: #2B4634" />
                                             </div>
                                             <!-- Task Time Offset Slider -->
                                             {#if task.start_time}
                                             <div>
-                                                <label class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
-                                                    When: <span class="font-mono text-amber-600">{editingTaskOffset === 0 ? 'Original' : editingTaskOffset > 0 ? `${editingTaskOffset}m later` : `${Math.abs(editingTaskOffset)}m earlier`}</span>
-                                                </label>
-                                                <input type="range" min="-120" max="120" step="5" bind:value={editingTaskOffset}
-                                                       class="w-full mt-1" style="accent-color: #D97706" />
+	                                                <label for={`task-offset-${task.id}`} class="text-xs font-bold text-resin-earth/60 uppercase tracking-wide">
+	                                                    When: <span class="font-mono text-amber-600">{editingTaskOffset === 0 ? 'Original' : editingTaskOffset > 0 ? `${editingTaskOffset}m later` : `${Math.abs(editingTaskOffset)}m earlier`}</span>
+	                                                </label>
+	                                                <input id={`task-offset-${task.id}`} type="range" min="-120" max="120" step="5" bind:value={editingTaskOffset}
+	                                                       class="w-full mt-1" style="accent-color: #D97706" />
                                             </div>
                                             {/if}
                                             <div class="flex gap-2 pt-2">
@@ -1194,7 +1196,6 @@
                         const url = '/api/amber/reschedule';
                         console.log('[AmberCalendar] Rescheduling task:', task.id, 'from', newStart, 'to', newEnd);
                         console.log('[AmberCalendar] Fetch URL:', url);
-                        console.log('[AmberCalendar] Auth header:', `Bearer ${session.access_token.substring(0, 20)}...`);
 
                         const response = await fetch(url, {
                             method: 'POST',

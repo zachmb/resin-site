@@ -8,6 +8,20 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
+function normalizeBlockedDomain(raw: string): string | null {
+	if (!raw || typeof raw !== 'string') return null;
+	let domain = raw.trim().toLowerCase();
+	domain = domain.replace(/^[a-z][a-z0-9+.-]*:\/\//, '');
+	domain = domain.split('/')[0].split('?')[0].split('#')[0].split(':')[0];
+	domain = domain.replace(/^www\./, '');
+	if (!/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)) {
+		return null;
+	}
+	return domain;
+}
+
+const MAX_CUSTOM_BLOCKED_DOMAINS = 1000;
+
 export const load: PageServerLoad = async ({ locals }) => {
 	const supabase = locals.supabase;
 
@@ -95,6 +109,25 @@ export const actions: Actions = {
 			console.error('[extension-settings] Failed to parse blockedDomains:', e);
 			return fail(400, { error: 'Invalid blockedDomains format' });
 		}
+		if (!Array.isArray(blockedDomains)) {
+			return fail(400, { error: 'Invalid blockedDomains format' });
+		}
+		const invalidDomains = blockedDomains.filter((domain) => !normalizeBlockedDomain(String(domain)));
+		if (invalidDomains.length > 0) {
+			return fail(400, {
+				error: `Remove or fix invalid domain${invalidDomains.length === 1 ? '' : 's'}: ${invalidDomains
+					.slice(0, 3)
+					.join(', ')}`
+			});
+		}
+		blockedDomains = Array.from(
+			new Set(blockedDomains.map((domain) => normalizeBlockedDomain(String(domain))).filter(Boolean) as string[])
+		);
+		if (blockedDomains.length > MAX_CUSTOM_BLOCKED_DOMAINS) {
+			return fail(400, {
+				error: `Keep this list under ${MAX_CUSTOM_BLOCKED_DOMAINS.toLocaleString()} domains so Chrome can apply protection reliably.`
+			});
+		}
 
 		try {
 			// 1. Update basic profile settings
@@ -115,23 +148,26 @@ export const actions: Actions = {
 				return fail(500, { error: 'Failed to save settings to profile' });
 			}
 
-			// 2. Synchronize user_custom_blocks table (The Source of Truth for Extension)
-			// This is more complex than a simple update because it's a multi-row table
-			
-			// A. Remove existing blocks
-			const { error: deleteError } = await supabase
+			// 2. Synchronize user_custom_blocks without delete-first data loss.
+			// Insert missing rows before deleting removed rows, so a transient insert
+			// failure never leaves the user with an empty protection list.
+			const { data: existingBlocks, error: existingBlocksError } = await supabase
 				.from('user_custom_blocks')
-				.delete()
+				.select('domain')
 				.eq('user_id', user.id);
 
-			if (deleteError) {
-				console.error('[extension-settings] Failed to clear old blocks:', deleteError);
+			if (existingBlocksError) {
+				console.error('[extension-settings] Failed to load existing blocks:', existingBlocksError.message);
 				return fail(500, { error: 'Failed to synchronize block list' });
 			}
 
-			// B. Insert new blocks if any
-			if (blockedDomains.length > 0) {
-				const blocksToInsert = blockedDomains.map(domain => ({
+			const existingDomains = new Set((existingBlocks ?? []).map((block) => block.domain));
+			const desiredDomains = new Set(blockedDomains);
+			const domainsToAdd = blockedDomains.filter((domain) => !existingDomains.has(domain));
+			const domainsToRemove = [...existingDomains].filter((domain) => !desiredDomains.has(domain));
+
+			if (domainsToAdd.length > 0) {
+				const blocksToInsert = domainsToAdd.map(domain => ({
 					user_id: user.id,
 					domain: domain.trim().toLowerCase()
 				}));
@@ -141,8 +177,21 @@ export const actions: Actions = {
 					.insert(blocksToInsert);
 
 				if (insertError) {
-					console.error('[extension-settings] Failed to insert new blocks:', insertError);
+					console.error('[extension-settings] Failed to insert new blocks:', insertError.message);
 					return fail(500, { error: 'Failed to update block list' });
+				}
+			}
+
+			if (domainsToRemove.length > 0) {
+				const { error: deleteError } = await supabase
+					.from('user_custom_blocks')
+					.delete()
+					.eq('user_id', user.id)
+					.in('domain', domainsToRemove);
+
+				if (deleteError) {
+					console.error('[extension-settings] Failed to remove old blocks:', deleteError.message);
+					return fail(500, { error: 'Settings saved, but some removed domains may still be protected. Try saving again.' });
 				}
 			}
 

@@ -75,8 +75,6 @@ async function executeCommand(
         return await executeTelegram(command, config, noteContent);
       case 'discord':
         return await executeDiscord(command, config, noteContent);
-      case 'twitter':
-        return await executeTwitter(command, config, noteContent);
       case 'notion':
         return await executeNotion(command, config, noteContent);
       default:
@@ -126,8 +124,18 @@ async function executeSendEmail(
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
+      let message = 'Email service is not available';
+      try {
+        const data = await response.json();
+        message = data.message || data.error || message;
+      } catch {
+        message = await response.text();
+      }
+      return {
+        success: false,
+        message,
+        command: command.fullCommand
+      };
     }
 
     return {
@@ -309,23 +317,6 @@ async function executeDiscord(
   } catch (error) {
     throw error;
   }
-}
-
-/**
- * Post to Twitter/X (simplified - would need OAuth in production)
- */
-async function executeTwitter(
-  command: any,
-  config: CommandConfig,
-  noteContent: string
-): Promise<ExecutionResult> {
-  // Twitter API posting would require OAuth and API keys
-  // This is a placeholder for the full implementation
-  return {
-    success: false,
-    message: 'Twitter posting requires additional OAuth setup - coming soon',
-    command: command.fullCommand
-  };
 }
 
 /**

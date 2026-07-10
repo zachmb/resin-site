@@ -1,6 +1,31 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
+const COMMAND_SECRET_FIELDS = new Set([
+    'api_key',
+    'api_secret',
+    'access_token',
+    'access_token_secret',
+    'bot_token',
+    'url',
+    'webhook_url'
+]);
+
+function sanitizeCommandConfig(config: Record<string, unknown> | null | undefined) {
+    const visibleConfig: Record<string, unknown> = {};
+    const configuredFields: string[] = [];
+
+    for (const [key, value] of Object.entries(config ?? {})) {
+        if (COMMAND_SECRET_FIELDS.has(key)) {
+            if (value) configuredFields.push(key);
+        } else {
+            visibleConfig[key] = value;
+        }
+    }
+
+    return { visibleConfig, configuredFields };
+}
+
 export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) => {
 	const user = await getUser();
 	if (!user) {
@@ -10,7 +35,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
     // Fetch profile - resilient to missing optional columns in production
 	const { data: profile, error: profileError } = await supabase
 		.from('profiles')
-		.select('id, username, full_name, avatar_url, total_stones, current_streak, hardened_mode_enabled, openclaw_api_key, openclaw_url, widget_enabled, availability_schedule')
+		.select('id, username, full_name, avatar_url, total_stones, current_streak, hardened_mode_enabled, openclaw_url, widget_enabled, availability_schedule')
 		.eq('id', user.id)
 		.single();
 
@@ -25,7 +50,6 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
         finalProfile = minimalProfile ? { 
             ...minimalProfile,
             hardened_mode_enabled: false,
-            openclaw_api_key: null,
             openclaw_url: null,
             widget_enabled: true,
             availability_schedule: null
@@ -69,8 +93,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 	// Load device tokens
 	const { data: deviceTokens } = await supabase
 		.from('device_tokens')
-		// Alias real columns (token, device_type) to the names the UI expects.
-		.select('device_token:token, platform:device_type, updated_at')
+		.select('id, platform:device_type, updated_at')
 		.eq('user_id', user.id)
 		.order('updated_at', { ascending: false });
 
@@ -80,6 +103,15 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 		.select('id, command_type, config, enabled')
 		.eq('user_id', user.id)
 		.order('created_at', { ascending: true });
+
+    const safeCommandConfigs = (commandConfigs || []).map((configRow) => {
+        const { visibleConfig, configuredFields } = sanitizeCommandConfig(configRow.config);
+        return {
+            ...configRow,
+            config: visibleConfig,
+            configured_fields: configuredFields
+        };
+    });
 
 	// Load friends and friend requests
 	const { data: friends } = await supabase
@@ -140,7 +172,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
 	return {
 		profile: finalProfile,
 		deviceTokens: deviceTokens || [],
-		commandConfigs: commandConfigs || [],
+		commandConfigs: safeCommandConfigs,
 		tasteData: {
 			feelingCounts,
 			enjoyedThings,
@@ -202,7 +234,6 @@ export const actions: Actions = {
 
         const formData = await request.formData();
         const openclaw_url = formData.get('openclaw_url') as string;
-        const openclaw_api_key = formData.get('openclaw_api_key') as string;
         const widget_enabled = formData.get('widget_enabled') === 'on';
 
         // Build per-day availability schedule
@@ -224,7 +255,6 @@ export const actions: Actions = {
         const updates = {
             id: user.id,
             openclaw_url,
-            openclaw_api_key,
             availability_schedule: availabilitySchedule,
             widget_enabled,
             updated_at: new Date().toISOString(),
@@ -259,15 +289,15 @@ export const actions: Actions = {
         if (!user) return fail(401, { error: 'Unauthorized' });
 
         const data = await request.formData();
-        const token = data.get('device_token')?.toString();
+        const deviceId = data.get('device_id')?.toString();
 
-        if (!token) return fail(400, { error: 'Missing device token' });
+        if (!deviceId) return fail(400, { error: 'Missing device id' });
 
         const { count, error } = await supabase
             .from('device_tokens')
             .delete()
             .eq('user_id', user.id)
-            .eq('token', token);
+            .eq('id', deviceId);
 
         if (error) return fail(500, { error: 'Failed to remove device' });
         if (!count || count === 0) return fail(403, { error: 'Device not found or insufficient permissions' });
@@ -287,7 +317,29 @@ export const actions: Actions = {
         }
 
         try {
-            const config = JSON.parse(configJson);
+            const submittedConfig = JSON.parse(configJson);
+            const { data: existingConfigRow, error: existingConfigError } = await supabase
+                .from('command_integrations')
+                .select('config')
+                .eq('user_id', user.id)
+                .eq('command_type', commandType)
+                .maybeSingle();
+
+            if (existingConfigError) {
+                console.error('Error loading existing command config:', existingConfigError.message);
+                return fail(500, { error: 'Failed to save configuration' });
+            }
+
+            const config = {
+                ...((existingConfigRow?.config as Record<string, unknown> | null) ?? {})
+            };
+
+            for (const [key, value] of Object.entries(submittedConfig)) {
+                if (COMMAND_SECRET_FIELDS.has(key) && String(value ?? '').trim() === '') {
+                    continue;
+                }
+                config[key] = value;
+            }
 
             const { error } = await supabase
                 .from('command_integrations')
@@ -630,23 +682,9 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to unlock' });
         }
 
-        // Send push notification to iOS app to release denyAppRemoval
-        try {
-            const { data: tokens } = await supabase
-                .from('device_tokens')
-                .select('token')
-                .eq('user_id', user.id)
-                .eq('device_type', 'ios');
-
-            if (tokens && tokens.length > 0) {
-                // Trigger push notification via APNs
-                // (DeviceTokenService will handle the actual removal of denyAppRemoval)
-                // For now, the app will check on next launch via profile sync
-            }
-        } catch (err) {
-            console.error('Error sending emergency unlock notification:', err);
-        }
-
-        return { success: true, message: 'Hardened mode disabled. Resin is now deletable.' };
+        return {
+            success: true,
+            message: 'Hardened mode disabled. Open the iOS app to refresh device-level removal protection if it is still active.'
+        };
     }
 };

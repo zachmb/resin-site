@@ -405,9 +405,10 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-resin-earth/60 mb-2">From</label>
-                    <select
-                        bind:value={connectFrom}
+	                    <label for="connect-from-note" class="block text-xs font-medium text-resin-earth/60 mb-2">From</label>
+	                    <select
+                            id="connect-from-note"
+	                        bind:value={connectFrom}
                         class="w-full px-3 py-2 rounded-lg border border-resin-earth/30 bg-white/70 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
                     >
                         <option value="">Select a note...</option>
@@ -418,9 +419,10 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-resin-earth/60 mb-2">To</label>
-                    <select
-                        bind:value={connectTo}
+	                    <label for="connect-to-note" class="block text-xs font-medium text-resin-earth/60 mb-2">To</label>
+	                    <select
+                            id="connect-to-note"
+	                        bind:value={connectTo}
                         class="w-full px-3 py-2 rounded-lg border border-resin-earth/30 bg-white/70 text-resin-charcoal focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 text-sm"
                     >
                         <option value="">Select a note...</option>

@@ -9,6 +9,9 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 });
 
+const MIN_FOCUS_MINUTES = 1;
+const MAX_FOCUS_MINUTES = 480;
+
 export const POST = async ({ request, locals }: RequestEvent) => {
     // 1. Auth: Get session from locals (set by hooks.server.ts)
     const session = await locals.getSession();
@@ -35,8 +38,18 @@ export const POST = async ({ request, locals }: RequestEvent) => {
     if (!title || !durationMinutes) {
         return json({ error: 'title and durationMinutes are required' }, { status: 400 });
     }
+    if (
+        !Number.isFinite(durationMinutes) ||
+        durationMinutes < MIN_FOCUS_MINUTES ||
+        durationMinutes > MAX_FOCUS_MINUTES
+    ) {
+        return json({ error: `durationMinutes must be between ${MIN_FOCUS_MINUTES} and ${MAX_FOCUS_MINUTES}` }, { status: 400 });
+    }
 
     const start = startTime ? new Date(startTime) : new Date();
+    if (!Number.isFinite(start.getTime())) {
+        return json({ error: 'Invalid startTime' }, { status: 400 });
+    }
     const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
     const sessionId = crypto.randomUUID();
 
@@ -63,6 +76,7 @@ export const POST = async ({ request, locals }: RequestEvent) => {
             title: title,
             start_time: start.toISOString(),
             end_time: end.toISOString(),
+            is_active: true,
             device_scheduled: false
         }).select().single();
 
@@ -82,12 +96,15 @@ export const POST = async ({ request, locals }: RequestEvent) => {
         }
 
         // 5. Query device tokens for these users
-        const { data: devices } = await admin
+        const { data: devices, error: devicesError } = await admin
             .from('device_tokens')
             .select('token, user_id')
             .in('user_id', userIds)
             .eq('device_type', 'ios')
             .eq('is_active', true);
+        if (devicesError) {
+            console.error('[api/focus] Device lookup failed:', devicesError.message);
+        }
 
         // 6. Send silent push notification to iOS devices
         // This will trigger the blocking session to activate on the device immediately
@@ -101,6 +118,8 @@ export const POST = async ({ request, locals }: RequestEvent) => {
                     data: {
                         type: 'focus_session_start',
                         sessionId: sessionId,
+                        sessionTitle: title,
+                        startTime: start.toISOString(),
                         endTime: end.toISOString()
                     }
                 })
@@ -110,7 +129,7 @@ export const POST = async ({ request, locals }: RequestEvent) => {
             notificationsSent = results.filter(r => r.status === 'fulfilled' && r.value).length;
         }
 
-        console.log(`[api/focus] Focus session created: ${sessionId}, notifications sent to ${notificationsSent} devices`);
+        console.log(`[api/focus] Focus session created; notifications sent to ${notificationsSent} device(s)`);
 
         return json({ status: 'success', session: data, notificationsSent });
 

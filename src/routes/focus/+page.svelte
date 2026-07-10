@@ -7,12 +7,12 @@
     import { Circle, Calendar, Users, Clock, Trash2 } from 'lucide-svelte';
     import type { PageData } from './$types';
 
-    let { data } = $props();
+    let { data }: { data: PageData } = $props();
 
-    let activeSessions = $state(data.activeSessions || []);
-    let scheduledSessions = $state(data.scheduledSessions || []);
-    let deviceCount = $state(data.deviceCount || 0);
-    let groups = $state(data.groups || []);
+    let activeSessions = $state<PageData['activeSessions']>([]);
+    let scheduledSessions = $state<PageData['scheduledSessions']>([]);
+    let deviceCount = $state(0);
+    let groups = $state<PageData['groups']>([]);
     let showScheduleForm = $state(false);
     let showAutomationForm = $state(false);
 
@@ -29,8 +29,8 @@
     let editingSessionId = $state<string | null>(null);
     let editSessionData = $state<{ [key: string]: any }>({});
 
-    let friends = $state(data.friends || []);
-    let sharedSessions = $state(data.sharedSessions || []);
+    let friends = $state<PageData['friends']>([]);
+    let sharedSessions = $state<PageData['sharedSessions']>([]);
     let showInviteForm = $state(false);
     let inviteCollaboratorId = $state('');
     let inviteTitle = $state('');
@@ -52,6 +52,15 @@
     let groupFormData = $state({ name: '', description: '' });
     let groupFormError = $state('');
     let isCreatingGroup = $state(false);
+
+    $effect(() => {
+        activeSessions = data.activeSessions || [];
+        scheduledSessions = data.scheduledSessions || [];
+        deviceCount = data.deviceCount || 0;
+        groups = data.groups || [];
+        friends = data.friends || [];
+        sharedSessions = data.sharedSessions || [];
+    });
 
     onMount(() => {
         // Immediately invalidate and refresh data to show newly created sessions
@@ -174,19 +183,24 @@
         return { icon: '⟳', label: 'Pending device sync', color: 'bg-resin-amber/10 border-resin-amber/20 text-resin-amber animate-pulse' };
     };
 
+    const hasActiveProtectedSession = $derived(
+        activeSessions.some((session: any) => session.device_scheduled === true)
+    );
     const pageProtectionStatus = $derived(
-        activeSessions.length > 0
+        hasActiveProtectedSession
             ? 'Protected'
-            : deviceCount > 0
+            : activeSessions.length > 0 || deviceCount > 0
                 ? 'Waiting for device'
                 : 'Needs setup'
     );
     const pageProtectionCopy = $derived.by(() => {
         if (pageProtectionStatus === 'Protected') {
-            return 'A session is active. Connected devices should be protecting this window.';
+            return 'A connected device confirmed protection for an active session.';
         }
         if (pageProtectionStatus === 'Waiting for device') {
-            return 'Resin is waiting for a connected app or extension to confirm protection.';
+            return activeSessions.length > 0
+                ? 'A focus session is active; Resin is waiting for a device or extension to confirm protection.'
+                : 'Resin is waiting for a connected app or extension to confirm protection.';
         }
         return 'Connect a device or choose distractions so Resin can protect future focus sessions.';
     });
@@ -453,11 +467,12 @@
             >
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                            What are you focusing on?
-                        </label>
-                        <input
-                            type="text"
+	                        <label for="schedule-title" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                            What are you focusing on?
+	                        </label>
+	                        <input
+                                id="schedule-title"
+	                            type="text"
                             name="title"
                             bind:value={scheduleTitle}
                             placeholder="e.g., Deep Work Session"
@@ -468,11 +483,12 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                Date
-                            </label>
-                            <input
-                                type="date"
+	                            <label for="schedule-date" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                Date
+	                            </label>
+	                            <input
+                                    id="schedule-date"
+	                                type="date"
                                 name="date"
                                 bind:value={scheduleDate}
                                 required
@@ -481,11 +497,12 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                Time
-                            </label>
-                            <input
-                                type="time"
+	                            <label for="schedule-time" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                Time
+	                            </label>
+	                            <input
+                                    id="schedule-time"
+	                                type="time"
                                 name="time"
                                 bind:value={scheduleTime}
                                 required
@@ -495,11 +512,12 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-resin-charcoal mb-3">
-                            Duration: {scheduleDuration} minutes
-                        </label>
-                        <input
-                            type="range"
+	                        <label for="schedule-duration" class="block text-xs font-bold text-resin-charcoal mb-3">
+	                            Duration: {scheduleDuration} minutes
+	                        </label>
+	                        <input
+                                id="schedule-duration"
+	                            type="range"
                             name="duration"
                             bind:value={scheduleDuration}
                             min="15"
@@ -553,11 +571,12 @@
                                 <input type="hidden" name="sessionId" value={session.id} />
 
                                 <div>
-                                    <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                        Title
-                                    </label>
-                                    <input
-                                        type="text"
+	                                    <label for={`edit-title-${session.id}`} class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                        Title
+	                                    </label>
+	                                    <input
+                                            id={`edit-title-${session.id}`}
+	                                        type="text"
                                         name="title"
                                         bind:value={editSessionData[session.id].title}
                                         required
@@ -567,11 +586,12 @@
 
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                            Date
-                                        </label>
-                                        <input
-                                            type="date"
+	                                        <label for={`edit-date-${session.id}`} class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                            Date
+	                                        </label>
+	                                        <input
+                                                id={`edit-date-${session.id}`}
+	                                            type="date"
                                             name="date"
                                             bind:value={editSessionData[session.id].date}
                                             required
@@ -580,11 +600,12 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                            Time
-                                        </label>
-                                        <input
-                                            type="time"
+	                                        <label for={`edit-time-${session.id}`} class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                            Time
+	                                        </label>
+	                                        <input
+                                                id={`edit-time-${session.id}`}
+	                                            type="time"
                                             name="time"
                                             bind:value={editSessionData[session.id].time}
                                             required
@@ -594,11 +615,12 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                        Duration: {editSessionData[session.id].duration} min
-                                    </label>
-                                    <input
-                                        type="range"
+	                                    <label for={`edit-duration-${session.id}`} class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                        Duration: {editSessionData[session.id].duration} min
+	                                    </label>
+	                                    <input
+                                            id={`edit-duration-${session.id}`}
+	                                        type="range"
                                         name="duration"
                                         bind:value={editSessionData[session.id].duration}
                                         min="15"
@@ -670,9 +692,9 @@
                                     <input type="hidden" name="sessionId" value={session.id} />
                                     <input type="hidden" name="daysOfWeek" value={Object.entries(recurringDays).filter(([_, checked]) => checked).map(([day]) => day).join(',')} />
                                     <div>
-                                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                            Repeat On
-                                        </label>
+	                                        <div class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                            Repeat On
+	                                        </div>
                                         <div class="flex flex-wrap gap-2">
                                             {#each dayOfWeekAbbr as day}
                                                 <button
@@ -792,11 +814,12 @@
                 >
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                Invite Friend
-                            </label>
-                            <select
-                                name="collaboratorId"
+	                            <label for="invite-collaborator" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                Invite Friend
+	                            </label>
+	                            <select
+                                    id="invite-collaborator"
+	                                name="collaboratorId"
                                 bind:value={inviteCollaboratorId}
                                 required
                                 class="w-full bg-white/70 border border-resin-amber/10 rounded-lg px-4 py-3 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-resin-amber/30 transition-all"
@@ -809,11 +832,12 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                Focus Title
-                            </label>
-                            <input
-                                type="text"
+	                            <label for="invite-title" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                Focus Title
+	                            </label>
+	                            <input
+                                    id="invite-title"
+	                                type="text"
                                 name="title"
                                 bind:value={inviteTitle}
                                 placeholder="e.g., Deep Work Session"
@@ -824,11 +848,12 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                    Date
-                                </label>
-                                <input
-                                    type="date"
+	                                <label for="invite-date" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                    Date
+	                                </label>
+	                                <input
+                                        id="invite-date"
+	                                    type="date"
                                     name="date"
                                     bind:value={inviteDate}
                                     required
@@ -837,11 +862,12 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                    Time
-                                </label>
-                                <input
-                                    type="time"
+	                                <label for="invite-time" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                    Time
+	                                </label>
+	                                <input
+                                        id="invite-time"
+	                                    type="time"
                                     name="time"
                                     bind:value={inviteTime}
                                     required
@@ -851,11 +877,12 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-3">
-                                Duration: {inviteDuration} minutes
-                            </label>
-                            <input
-                                type="range"
+	                            <label for="invite-duration" class="block text-xs font-bold text-resin-charcoal mb-3">
+	                                Duration: {inviteDuration} minutes
+	                            </label>
+	                            <input
+                                    id="invite-duration"
+	                                type="range"
                                 name="duration"
                                 bind:value={inviteDuration}
                                 min="15"
@@ -982,11 +1009,12 @@
             >
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                            Automation Name
-                        </label>
-                        <input
-                            type="text"
+	                        <label for="automation-title" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                            Automation Name
+	                        </label>
+	                        <input
+                                id="automation-title"
+	                            type="text"
                             name="title"
                             bind:value={automationTitle}
                             placeholder="e.g., Morning Focus Block"
@@ -996,9 +1024,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-resin-charcoal mb-3">
-                            Repeats On
-                        </label>
+	                        <div class="block text-xs font-bold text-resin-charcoal mb-3">
+	                            Repeats On
+	                        </div>
                         <div class="flex flex-wrap gap-2">
                             {#each daysOfWeek as day}
                                 <button
@@ -1016,11 +1044,12 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                Time
-                            </label>
-                            <input
-                                type="time"
+	                            <label for="automation-time" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                Time
+	                            </label>
+	                            <input
+                                    id="automation-time"
+	                                type="time"
                                 name="time"
                                 bind:value={automationTime}
                                 required
@@ -1029,11 +1058,12 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-resin-charcoal mb-2">
-                                Duration (min)
-                            </label>
-                            <input
-                                type="number"
+	                            <label for="automation-duration" class="block text-xs font-bold text-resin-charcoal mb-2">
+	                                Duration (min)
+	                            </label>
+	                            <input
+                                    id="automation-duration"
+	                                type="number"
                                 name="duration"
                                 bind:value={automationDuration}
                                 min="15"

@@ -2,6 +2,21 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { sendPush } from '$lib/services/apns';
 
+const MIN_FOCUS_MINUTES = 1;
+const MAX_FOCUS_MINUTES = 480;
+
+function parseFocusWindow(date: string, time: string, duration: number): { startTime: Date; endTime: Date } | { error: string } {
+    if (!Number.isFinite(duration) || duration < MIN_FOCUS_MINUTES || duration > MAX_FOCUS_MINUTES) {
+        return { error: `Duration must be between ${MIN_FOCUS_MINUTES} and ${MAX_FOCUS_MINUTES} minutes` };
+    }
+    const startTime = new Date(`${date}T${time}`);
+    if (!Number.isFinite(startTime.getTime())) {
+        return { error: 'Invalid session start time' };
+    }
+    const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+    return { startTime, endTime };
+}
+
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser, session }, setHeaders }) => {
     // Disable server caching for fresh data
     setHeaders({
@@ -75,6 +90,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
                                     title: automation.title,
                                     start_time: startTime.toISOString(),
                                     end_time: endTime.toISOString(),
+                                    is_active: true,
                                     device_scheduled: false
                                 });
                             }
@@ -103,6 +119,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         .from('blocking_sessions')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('is_active', true)
         .lte('start_time', now)
         .gte('end_time', now)
         .order('start_time', { ascending: false });
@@ -112,6 +129,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         .from('blocking_sessions')
         .select('*')
         .eq('user_id', session.user.id)
+        .eq('is_active', true)
         .gt('start_time', now)
         .order('start_time', { ascending: true });
 
@@ -212,9 +230,11 @@ export const actions: Actions = {
             return { success: false, error: 'Missing required fields' };
         }
 
-        // Combine date and time into ISO string
-        const startTime = new Date(`${date}T${time}`);
-        const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+        const focusWindow = parseFocusWindow(date, time, duration);
+        if ('error' in focusWindow) {
+            return { success: false, error: focusWindow.error };
+        }
+        const { startTime, endTime } = focusWindow;
         const sessionId = crypto.randomUUID();
 
         try {
@@ -226,6 +246,7 @@ export const actions: Actions = {
                     title: title,
                     start_time: startTime.toISOString(),
                     end_time: endTime.toISOString(),
+                    is_active: true,
                     device_scheduled: false
                 })
                 .select()
@@ -250,6 +271,8 @@ export const actions: Actions = {
                         data: {
                             type: 'focus_session_start',
                             sessionId: sessionId,
+                            sessionTitle: title,
+                            startTime: startTime.toISOString(),
                             endTime: endTime.toISOString()
                         }
                     })
@@ -277,7 +300,7 @@ export const actions: Actions = {
         try {
             const { count, error } = await supabase
                 .from('blocking_sessions')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', sessionId)
                 .eq('user_id', user.id);
 
@@ -362,7 +385,7 @@ export const actions: Actions = {
         try {
             const { count, error } = await supabase
                 .from('focus_automations')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', automationId)
                 .eq('user_id', user.id);
 
@@ -393,9 +416,11 @@ export const actions: Actions = {
             return { success: false, error: 'Missing required fields' };
         }
 
-        // Combine date and time into ISO string
-        const startTime = new Date(`${date}T${time}`);
-        const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+        const focusWindow = parseFocusWindow(date, time, duration);
+        if ('error' in focusWindow) {
+            return { success: false, error: focusWindow.error };
+        }
+        const { startTime, endTime } = focusWindow;
 
         try {
             const { data: updatedSession, error } = await supabase
@@ -522,6 +547,7 @@ export const actions: Actions = {
                             title: blockingSession.title,
                             start_time: startTime.toISOString(),
                             end_time: endTime.toISOString(),
+                            is_active: true,
                             device_scheduled: false
                         });
                     }
@@ -674,6 +700,7 @@ export const actions: Actions = {
                     title: sharedSession.title,
                     start_time: sharedSession.start_time,
                     end_time: sharedSession.end_time,
+                    is_active: true,
                     device_scheduled: false
                 })
                 .select()
@@ -688,6 +715,7 @@ export const actions: Actions = {
                     title: sharedSession.title,
                     start_time: sharedSession.start_time,
                     end_time: sharedSession.end_time,
+                    is_active: true,
                     device_scheduled: false
                 })
                 .select()

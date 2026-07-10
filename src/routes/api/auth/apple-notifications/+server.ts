@@ -1,7 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { createVerify } from 'crypto';
-import { promisify } from 'util';
 
 interface AppleNotificationPayload {
 	notificationType: 'SignedUp' | 'AccountDelete' | 'EmailChange' | 'ConsentRevoked';
@@ -36,27 +35,6 @@ function decodeJWT(token: string): { header: any; payload: any } {
 	const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
 
 	return { header, payload };
-}
-
-/**
- * Convert JWK to PEM format
- */
-function jwkToPem(jwk: any): string {
-	// This is a simplified conversion - in production you might use a library
-	// For now, we'll use the public_key field if available
-	if (jwk.kty === 'RSA' && jwk.n && jwk.e) {
-		// Use Node.js crypto to handle the conversion
-		const publicKeyObject = {
-			key: jwk,
-			format: 'jwk',
-			type: 'public'
-		};
-		return require('crypto').createPrivateKey(publicKeyObject).export({
-			format: 'pem',
-			type: 'pkcs1'
-		});
-	}
-	throw new Error('Unsupported JWK format');
 }
 
 /**
@@ -122,44 +100,38 @@ async function verifyAppleNotification(signedPayload: string): Promise<AppleNoti
 /**
  * Handle account deletion notification from Apple
  */
-async function handleAccountDelete(_payload: AppleNotificationPayload): Promise<void> {
+async function handleAccountDelete(_payload: AppleNotificationPayload): Promise<{ action: string; manualReviewRequired: boolean }> {
 	console.log('[AppleNotifications] Handling account deletion');
 
-	// The payload contains the user identifier, but Apple doesn't provide the actual user ID in the notification.
-	// We would need to match against our database using the subjectToken if available.
-	// For now, we log this and an admin would handle manual deletion if needed.
-
-	// In a production scenario, you might:
-	// 1. Store a mapping of Apple user IDs to your user IDs when they first sign in
-	// 2. Use that mapping here to delete the user
-	// 3. Delete all associated data (notes, tasks, etc.)
-
 	console.log(
-		'[AppleNotifications] Account deletion requested. Manual cleanup may be needed.'
+		'[AppleNotifications] Account deletion requested. No local Apple account mapping was found for automatic deletion.'
 	);
+	return { action: 'acknowledged_without_local_mapping', manualReviewRequired: true };
 }
 
 /**
  * Handle email change notification from Apple
  */
-async function handleEmailChange(payload: AppleNotificationPayload): Promise<void> {
+async function handleEmailChange(payload: AppleNotificationPayload): Promise<{ action: string }> {
 	console.log('[AppleNotifications] Handling email change');
 	if (payload.data?.email) {
-		console.log(`[AppleNotifications] User email changed to: ${payload.data.email}`);
+		console.log('[AppleNotifications] User email changed; local account mapping not available for automatic update.');
 		// You could update user records or send confirmation emails here
 	}
+	return { action: 'acknowledged_without_local_mapping' };
 }
 
 /**
  * Handle consent revocation from Apple
  */
-async function handleConsentRevoked(_payload: AppleNotificationPayload): Promise<void> {
+async function handleConsentRevoked(_payload: AppleNotificationPayload): Promise<{ action: string; manualReviewRequired: boolean }> {
 	console.log('[AppleNotifications] Handling consent revocation');
 	// User has revoked consent for Sign in with Apple
 	// Ideally, you should:
 	// 1. Invalidate the user's session
 	// 2. Prevent future logins with Apple
 	// 3. Notify the user
+	return { action: 'acknowledged_without_local_mapping', manualReviewRequired: true };
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -181,15 +153,16 @@ export const POST: RequestHandler = async ({ request }) => {
 		console.log('[AppleNotifications] Timestamp:', new Date(payload.timestamp * 1000).toISOString());
 
 		// Handle different notification types
+		let processingResult: Record<string, unknown> = { action: 'acknowledged' };
 		switch (payload.notificationType) {
 			case 'AccountDelete':
-				await handleAccountDelete(payload);
+				processingResult = await handleAccountDelete(payload);
 				break;
 			case 'EmailChange':
-				await handleEmailChange(payload);
+				processingResult = await handleEmailChange(payload);
 				break;
 			case 'ConsentRevoked':
-				await handleConsentRevoked(payload);
+				processingResult = await handleConsentRevoked(payload);
 				break;
 			case 'SignedUp':
 				console.log('[AppleNotifications] User signed up (informational only)');
@@ -199,7 +172,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		// Always respond with 200 OK to acknowledge receipt
-		return json({ success: true }, { status: 200 });
+		return json({ success: true, processed: processingResult }, { status: 200 });
 	} catch (error) {
 		console.error('[AppleNotifications] Error processing notification:', error);
 		// Still return 200 to acknowledge that we received it

@@ -133,7 +133,7 @@ class AmberStore {
             // Try blocking_sessions (focus sessions)
             const { count: blockCount, error: blockError } = await this.supabase
                 .from('blocking_sessions')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', sessionId)
                 .eq('user_id', this.userId);
 

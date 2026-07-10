@@ -119,7 +119,7 @@
                                 </div>
                             {/each}
                         </div>
-                        <div class="os-badge">OS-level · no override</div>
+                        <div class="os-badge">OS-level shielding</div>
                     </div>
                     <div class="home-bar"></div>
                 </div>

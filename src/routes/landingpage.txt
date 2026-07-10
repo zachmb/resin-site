@@ -31,7 +31,7 @@
     const faqs = [
         {
             q: "What exactly does 'real app blocking' mean?",
-            a: "Resin uses Apple's Screen Time API (FamilyControls) to block apps at the OS level — not a browser filter or timer. When you're in a focus session, YouTube, Instagram, Reddit, and any app you specify are completely inaccessible across your iPhone, iPad, and Mac. No override, no workaround, no timer to wait out."
+            a: "Resin uses Apple's Screen Time API (FamilyControls) to shield apps at the OS level — not just a browser filter or timer. During a focus session, YouTube, Instagram, Reddit, and any app you specify are blocked by the system until the session ends."
         },
         {
             q: "How does the AI planning work?",
@@ -75,7 +75,7 @@
             role: "Product Manager"
         },
         {
-            quote: "The blocking is actually real. No timer, no override. Instagram just disappears. That's what I needed.",
+            quote: "The blocking feels real. It is not another timer to ignore — Instagram gets shielded when I said I wanted to focus.",
             name: "Aisha K.",
             role: "Grad Student"
         },
@@ -583,11 +583,11 @@ The real problem is I don't have a system. Maybe:
                     Focus mode with<br />actual teeth.
                 </h2>
                 <p class="text-lg leading-relaxed mb-8" style="color:{C.earth};">
-                    Most focus apps grow a tree. Resin uses Apple's Screen Time API to make your distraction apps completely inaccessible. Not a reminder. Not a timer. Instagram just doesn't open until your session ends.
+                    Most focus apps grow a tree. Resin uses Apple's Screen Time API to shield your distraction apps at the system level. Not just a reminder. Not just a timer. Instagram gets blocked until your session ends.
                 </p>
                 <ul class="space-y-4 mb-10">
                     {#each [
-                        ['OS-level via FamilyControls API', 'Apps disappear — no override, no workaround, no 5-minute bypass'],
+                        ['OS-level via FamilyControls API', 'Apps are shielded by the system during your focus window'],
                         ['Blocks across iPhone, iPad, and Mac', 'All Apple devices simultaneously, from one session'],
                         ['Starts exactly when your task does', 'Auto-synced to your plan schedule'],
                         ['Unlocks automatically when done', 'No manual off — ends with the session'],
@@ -644,7 +644,7 @@ The real problem is I don't have a system. Maybe:
                     <!-- OS label -->
                     <div class="absolute -left-10 top-1/2 -translate-y-1/2 rounded-xl px-3 py-2.5" style="background:white; border:1px solid rgba(46,42,38,0.08); box-shadow:0 6px 20px -4px rgba(46,42,38,0.15);">
                         <div class="font-bold" style="font-size:9px; color:{C.charcoal};">Screen Time</div>
-                        <div style="font-size:8px; color:{C.earthLight};">OS-level · no override</div>
+                        <div style="font-size:8px; color:{C.earthLight};">OS-level shielding</div>
                     </div>
                 </div>
             </div>
@@ -744,7 +744,7 @@ The real problem is I don't have a system. Maybe:
         <div class="grid md:grid-cols-3 gap-6">
             {#each [
                 { icon: FileText, color: C.amber, bg: `rgba(200,136,74,0.09)`, title: 'Capture everything', desc: 'Write anything — voice memos, quick thoughts, full brain dumps. Resin holds it all and makes it actionable when you\'re ready.', bullets: ['Rich text and voice input', 'Instant sync across devices', 'Mind map connections'] },
-                { icon: Shield, color: C.charcoal, bg: `rgba(46,42,38,0.07)`, title: 'Block everything', desc: 'iOS Screen Time + Chrome extension working in parallel. When you\'re in a session, every distraction is just gone.', bullets: ['OS-level app blocking', 'Chrome URL blocking', 'Auto-synced to plan'] },
+                { icon: Shield, color: C.charcoal, bg: `rgba(46,42,38,0.07)`, title: 'Protect the session', desc: 'iOS Screen Time + Chrome extension work in parallel. When you\'re in a session, your chosen distractions are shielded.', bullets: ['OS-level app blocking', 'Chrome URL blocking', 'Auto-synced to plan'] },
                 { icon: TrendingUp, color: C.forest, bg: `rgba(77,102,82,0.09)`, title: 'Grow over time', desc: 'Post-session ratings teach the AI your real pace and resistance patterns. Plans get sharper. Your forest grows. Streaks compound.', bullets: ['Per-session reflection', 'Tree forest & streak tracking', 'AI adapts to your style'] }
             ] as f}
                 <div class="rounded-xl p-8 hover:-translate-y-1 hover:shadow-lg transition-all duration-500 group" style="background:white; border:1px solid rgba(46,42,38,0.06);">

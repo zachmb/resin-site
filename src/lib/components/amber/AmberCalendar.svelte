@@ -223,12 +223,12 @@
 <div class="calendar-container hidden-mobile">
     <!-- Header -->
     <div class="calendar-header">
-        <button on:click={() => (weekOffset -= 1)} class="week-nav">← Prev</button>
+	        <button onclick={() => (weekOffset -= 1)} class="week-nav">← Prev</button>
         <span class="week-label">
             {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} —
             {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
-        <button on:click={() => (weekOffset += 1)} class="week-nav">Next →</button>
+	        <button onclick={() => (weekOffset += 1)} class="week-nav">Next →</button>
     </div>
 
     <!-- Calendar Grid -->
@@ -255,7 +255,7 @@
                         <span class="day-date">{formatDateHeader(dayIndex)}</span>
                     </div>
                     <button
-                        on:click={() => handleClearDay(dayIndex)}
+	                        onclick={() => handleClearDay(dayIndex)}
                         class="clear-day-btn"
                         title="Clear this day"
                     >
@@ -291,7 +291,7 @@
                                 z-index: {dragging?.task.id === task.id ? 10 : 1};
                                 cursor: {isFocusTask ? 'not-allowed' : 'move'};
                             "
-                            on:mousedown={(e) => onMouseDown(task, dayIndex, e)}
+	                            onmousedown={(e) => onMouseDown(task, dayIndex, e)}
                             role="button"
                             tabindex="0"
                         >

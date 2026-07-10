@@ -43,15 +43,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       );
     }
 
-    // If drift is emergency-level, notify user
+    // If drift is emergency-level, make that explicit in the response so clients
+    // can guide the user without pretending a push/lock action already happened.
+    let requiresClockVerification = false;
     if (is_emergency && Math.abs(drift_seconds) > 300) {
       console.warn(`[time-drift] Emergency drift detected for user ${user.id}: ${drift_seconds}s`);
-
-      // TODO: Send push notification to user
-      // TODO: Mark user as requiring clock verification
+      requiresClockVerification = true;
     }
 
-    return json({ success: true, drift_logged: true });
+    return json({ success: true, drift_logged: true, requires_clock_verification: requiresClockVerification });
   } catch (err: any) {
     console.error('[time-drift] Error:', err);
     return json({ error: 'Internal server error', details: err.message }, { status: 500 });

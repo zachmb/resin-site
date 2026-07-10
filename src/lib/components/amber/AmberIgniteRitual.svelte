@@ -37,7 +37,14 @@
         out:fade={{ duration: 400 }}
     >
         <!-- Dark overlay -->
-        <div class="absolute inset-0 bg-black/40 pointer-events-auto" onclick={handleIgnite} />
+	        <div
+                class="absolute inset-0 bg-black/40 pointer-events-auto"
+                onclick={handleIgnite}
+                onkeydown={(event) => (event.key === "Enter" || event.key === " ") && handleIgnite()}
+                role="button"
+                tabindex="0"
+                aria-label="Start amber ritual"
+            ></div>
 
         <!-- Main ritual card -->
         <div
@@ -49,14 +56,14 @@
                 <!-- Animated amber orb -->
                 <div class="mb-8 flex justify-center relative h-32">
                     <!-- Outer glow rings -->
-                    <div
-                        class="absolute inset-0 rounded-full bg-gradient-to-br from-resin-amber/30 to-transparent blur-3xl animate-pulse"
-                        style="animation: pulse-glow 2s ease-in-out infinite;"
-                    />
-                    <div
-                        class="absolute inset-4 rounded-full bg-gradient-to-br from-resin-amber/20 to-transparent blur-2xl"
-                        style="animation: pulse-glow 2s ease-in-out infinite 0.3s;"
-                    />
+	                    <div
+	                        class="absolute inset-0 rounded-full bg-gradient-to-br from-resin-amber/30 to-transparent blur-3xl animate-pulse"
+	                        style="animation: pulse-glow 2s ease-in-out infinite;"
+	                    ></div>
+	                    <div
+	                        class="absolute inset-4 rounded-full bg-gradient-to-br from-resin-amber/20 to-transparent blur-2xl"
+	                        style="animation: pulse-glow 2s ease-in-out infinite 0.3s;"
+	                    ></div>
 
                     <!-- Core orb -->
                     <div
@@ -64,21 +71,21 @@
                         style="box-shadow: 0 0 40px rgba(217, 119, 6, 0.8), inset -2px -2px 8px rgba(0, 0, 0, 0.2), inset 2px 2px 8px rgba(255, 255, 255, 0.3);"
                     >
                         <!-- Inner light reflection -->
-                        <div
-                            class="absolute inset-2 rounded-full bg-gradient-to-br from-yellow-200/60 to-transparent"
-                            style="animation: shimmer 3s ease-in-out infinite;"
-                        />
+	                        <div
+	                            class="absolute inset-2 rounded-full bg-gradient-to-br from-yellow-200/60 to-transparent"
+	                            style="animation: shimmer 3s ease-in-out infinite;"
+	                        ></div>
                     </div>
 
                     {#if hasIgnited}
                         <!-- Ignition burst particles -->
                         {#each Array.from({ length: 12 }) as _, i}
-                            <div
-                                class="absolute w-2 h-2 rounded-full bg-resin-amber"
-                                style="--delay: {i * 30}ms; animation: burst-particle 0.8s ease-out forwards;"
-                                style:--x="{Math.cos((i / 12) * Math.PI * 2) * 80}px"
-                                style:--y="{Math.sin((i / 12) * Math.PI * 2) * 80}px"
-                            />
+	                            <div
+	                                class="absolute w-2 h-2 rounded-full bg-resin-amber"
+	                                style="--delay: {i * 30}ms; animation: burst-particle 0.8s ease-out forwards;"
+	                                style:--x="{Math.cos((i / 12) * Math.PI * 2) * 80}px"
+	                                style:--y="{Math.sin((i / 12) * Math.PI * 2) * 80}px"
+	                            ></div>
                         {/each}
                     {/if}
                 </div>

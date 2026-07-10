@@ -278,15 +278,17 @@
 
 <!-- Joint Plan Modal -->
 {#if showJointPlanModal && jointPlanCollaborator}
-	<div
-		class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
-		on:click={closeJointPlanModal}
-		on:keydown={(e) => e.key === 'Escape' && closeJointPlanModal()}
-		role="dialog"
-		aria-modal="true"
-	>
+		<div
+			class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+			on:click={closeJointPlanModal}
+			on:keydown={(e) => e.key === 'Escape' && closeJointPlanModal()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
 		<div
 			class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4"
+			role="presentation"
 			on:click={(e) => e.stopPropagation()}
 		>
 			<h3 class="text-2xl font-bold text-resin-charcoal mb-2">
@@ -300,22 +302,24 @@
 				<input type="hidden" name="collaborator_id" value={jointPlanCollaborator.id} />
 
 				<div class="mb-4">
-					<label class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
+					<label for="joint-plan-text" class="block text-sm font-medium text-resin-charcoal mb-2">What's the plan?</label>
 					<textarea
+						id="joint-plan-text"
 						name="raw_text"
 						bind:value={jointPlanText}
 						placeholder="Describe what you want to plan together..."
 						class="w-full px-4 py-3 rounded-lg border border-resin-earth/20 bg-white focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/10 resize-none"
 						rows="4"
 						required
-					/>
+					></textarea>
 				</div>
 
 				<div class="mb-6">
-					<label class="block text-sm font-medium text-resin-charcoal mb-2">
+					<label for="joint-plan-intensity" class="block text-sm font-medium text-resin-charcoal mb-2">
 						Intensity: <span class="text-resin-amber">{jointPlanIntensity}%</span>
 					</label>
 					<input
+						id="joint-plan-intensity"
 						type="range"
 						name="intensity"
 						bind:value={jointPlanIntensity}

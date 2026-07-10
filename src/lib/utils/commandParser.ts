@@ -99,13 +99,7 @@ export function getCommandMetadata(commandType: string): {
       description: 'Post to Discord channel',
       color: 'violet'
     },
-    'twitter': {
-      icon: '𝕏',
-      label: 'Post to X',
-      description: 'Post the note as a tweet',
-      color: 'gray'
-    },
-    'notion': {
+	    'notion': {
       icon: '📝',
       label: 'Notion',
       description: 'Save to Notion database',
@@ -130,9 +124,8 @@ export function isCommandAvailable(commandType: string): boolean {
     'webhook',
     'slack',
     'telegram',
-    'discord',
-    'twitter',
-    'notion'
+	    'discord',
+	    'notion'
   ];
   return availableCommands.includes(commandType.toLowerCase());
 }

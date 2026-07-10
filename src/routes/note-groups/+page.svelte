@@ -3,7 +3,7 @@
     import type { PageData, ActionData } from './$types';
 
     let { data }: { data: PageData } = $props();
-    let groups = $state(data.groups || []);
+    let groups = $state<PageData['groups']>([]);
     let form: ActionData = $state(null);
 
     $effect(() => {

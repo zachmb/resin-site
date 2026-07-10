@@ -16,6 +16,7 @@
     let loading = $state(false);
     let successMessage = $state("");
     let showDocs = $state(false);
+    let generatedToken = $state("");
     let mobileShowContent = $state(false);
     let activeCategory = $state<
         "profile" | "preferences" | "friends" | "integrations" | "api" | "privacy" | "taste" | "devices" | "hardened"
@@ -36,7 +37,6 @@
         { type: 'slack', icon: '💬', label: 'Slack', fields: ['webhook_url', 'channel'] },
         { type: 'telegram', icon: '✈️', label: 'Telegram', fields: ['bot_token', 'chat_id'] },
         { type: 'discord', icon: '🎮', label: 'Discord', fields: ['webhook_url'] },
-        { type: 'twitter', icon: '𝕏', label: 'Post to X', fields: ['api_key', 'api_secret', 'access_token', 'access_token_secret'] },
         { type: 'notion', icon: '📝', label: 'Notion', fields: ['api_key', 'database_id'] }
     ];
 
@@ -53,6 +53,20 @@
         access_token_secret: 'Access Token Secret',
         database_id: 'Database ID'
     };
+
+    const secretFields = new Set([
+        'api_key',
+        'api_secret',
+        'access_token',
+        'access_token_secret',
+        'bot_token',
+        'url',
+        'webhook_url'
+    ]);
+
+    function isSecretField(field: string) {
+        return secretFields.has(field);
+    }
 
     function getCommandConfig(type: string) {
         return commandConfigs.find((c: any) => c.command_type === type);
@@ -296,10 +310,9 @@
                             class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 space-y-3"
                         >
                             <div>
-                                <label
-                                    class="text-xs text-resin-earth/60 font-semibold"
-                                    >Email Address</label
-                                >
+	                                <div class="text-xs text-resin-earth/60 font-semibold">
+	                                    Email Address
+	                                </div>
                                 <div
                                     class="text-sm font-mono text-resin-charcoal mt-1"
                                 >
@@ -307,10 +320,9 @@
                                 </div>
                             </div>
                             <div class="border-t border-resin-forest/5 pt-3">
-                                <label
-                                    class="text-xs text-resin-earth/60 font-semibold"
-                                    >Member Since</label
-                                >
+	                                <div class="text-xs text-resin-earth/60 font-semibold">
+	                                    Member Since
+	                                </div>
                                 <div class="text-sm text-resin-charcoal mt-1">
                                     {formatDate(
                                         profile?.created_at,
@@ -944,12 +956,12 @@
                                 <div class="flex items-center gap-2">
                                     <code
                                         class="flex-1 text-[10px] font-mono text-white/60 truncate"
-                                        >https://your-supabase-project.supabase.co/auth/v1/callback</code
+	                                        >https://vqzaadhoccgtywewtkrm.supabase.co/auth/v1/callback</code
                                     >
                                     <button
                                         onclick={() =>
                                             navigator.clipboard.writeText(
-                                                "https://your-supabase-project.supabase.co/auth/v1/callback",
+	                                                "https://vqzaadhoccgtywewtkrm.supabase.co/auth/v1/callback",
                                             )}
                                         class="text-[10px] font-bold text-white/40 hover:text-white transition-colors uppercase"
                                     >
@@ -1026,17 +1038,26 @@
 
                                         {#each cmdType.fields as field}
                                             <div>
-                                                <label
-                                                    class="block text-xs font-bold text-resin-earth mb-1"
-                                                >
+	                                                <label
+                                                        for={`command-${cmdType.type}-${field}`}
+	                                                    class="block text-xs font-bold text-resin-earth mb-1"
+	                                                >
                                                     {fieldLabels[field] || field}
                                                 </label>
-                                                <input
-                                                    type={field.includes('secret') || field.includes('token') || field.includes('key') ? 'password' : 'text'}
+	                                                <input
+                                                        id={`command-${cmdType.type}-${field}`}
+	                                                    type={isSecretField(field) ? 'password' : 'text'}
                                                     bind:value={commandConfigForm[field]}
-                                                    placeholder="Enter {fieldLabels[field] || field}"
+                                                    placeholder={isSecretField(field) && existingConfig?.configured_fields?.includes(field)
+                                                        ? "Leave blank to keep existing"
+                                                        : `Enter ${fieldLabels[field] || field}`}
                                                     class="w-full px-3 py-2 text-sm bg-white border border-resin-forest/20 rounded-lg text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/30 focus:ring-1 focus:ring-resin-forest/20"
                                                 />
+                                                {#if isSecretField(field) && existingConfig?.configured_fields?.includes(field)}
+                                                    <p class="mt-1 text-[11px] text-resin-earth/55">
+                                                        Saved securely. The existing value is hidden and will be kept unless you enter a replacement.
+                                                    </p>
+                                                {/if}
                                             </div>
                                         {/each}
 
@@ -1200,11 +1221,11 @@
                         <div
                             class="bg-white/50 border border-resin-amber/20 rounded-xl p-4 font-mono text-sm text-resin-charcoal/80 mb-4 break-all max-h-24 overflow-y-auto"
                         >
-                            {#if profile?.openclaw_api_key}
-                                {profile.openclaw_api_key}
+                            {#if generatedToken}
+                                {generatedToken}
                             {:else}
                                 <span class="text-resin-earth/40 italic"
-                                    >No token generated yet.</span
+                                    >Generate a new token to reveal it once. Existing tokens are hidden for safety.</span
                                 >
                             {/if}
                         </div>
@@ -1215,6 +1236,16 @@
                                 loading = true;
                                 return async ({ result, update }) => {
                                     loading = false;
+                                    const token = result.type === "success" && typeof result.data === "object" && result.data && "token" in result.data
+                                        ? String(result.data.token)
+                                        : "";
+                                    if (token) {
+                                        generatedToken = token;
+                                        successMessage = "Token generated. Copy it now — it will be hidden after you leave this page.";
+                                        setTimeout(() => {
+                                            successMessage = "";
+                                        }, 6000);
+                                    }
                                     await update();
                                 };
                             }}
@@ -1506,7 +1537,7 @@
                 >
                     {#if deviceTokens && deviceTokens.length > 0}
                         <div class="space-y-3">
-                            {#each deviceTokens as device (device.device_token)}
+                            {#each deviceTokens as device (device.id)}
                                 <div
                                     class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 flex items-center justify-between"
                                 >
@@ -1529,11 +1560,6 @@
                                                     device.updated_at
                                                 )}
                                             </p>
-                                            <p
-                                                class="text-xs text-resin-earth/40 mt-1 font-mono"
-                                            >
-                                                {device.device_token.slice(-8)}
-                                            </p>
                                         </div>
                                     </div>
                                     <form
@@ -1544,8 +1570,8 @@
                                     >
                                         <input
                                             type="hidden"
-                                            name="device_token"
-                                            value={device.device_token}
+                                            name="device_id"
+                                            value={device.id}
                                         />
                                         <button
                                             type="submit"
@@ -1646,7 +1672,7 @@
                     <div class="bg-amber-50 rounded-xl p-4 border border-amber-200/50 space-y-2">
                         <p class="text-xs font-semibold text-amber-900">⚠️ Important:</p>
                         <p class="text-xs text-amber-800">
-                            If Resin crashes while hardened mode is active, use the Emergency Unlock button above. You can also force-reset your phone, but that will wipe your device.
+                            If Resin crashes while hardened mode is active, use Emergency Unlock here, then open the iOS app so it can refresh device-level protection. You are not trapped.
                         </p>
                     </div>
                 </div>
@@ -1733,10 +1759,10 @@
                 </div>
                 <div class="p-6 space-y-4">
                     <p class="text-resin-charcoal">
-                        This will immediately disable hardened mode, making Resin deletable again.
+                        This disables hardened mode in your account. If iOS still shows protection, open Resin once so the app can refresh the device state.
                     </p>
                     <p class="text-sm text-resin-earth/60">
-                        Use this only if Resin has crashed or you're unable to complete your focus session.
+                        Use this if Resin crashed, the plan changed, or you simply can’t do this right now.
                     </p>
                     <form
                         method="POST"
@@ -1745,7 +1771,7 @@
                             return async ({ result }) => {
                                 if (result.type === 'success') {
                                     showEmergencyUnlock = false;
-                                    successMessage = 'Hardened mode disabled. Resin is now deletable.';
+                                    successMessage = 'Hardened mode disabled. Open the iOS app if device protection still appears active.';
                                     setTimeout(() => successMessage = '', 3000);
                                     // Reload to update profile
                                     setTimeout(() => location.reload(), 500);

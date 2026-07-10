@@ -76,6 +76,7 @@ export const POST: RequestHandler = async ({ locals: { getAuthenticatedSupabase,
                                 title: automation.title,
                                 start_time: startTime.toISOString(),
                                 end_time: endTime.toISOString(),
+                                is_active: true,
                                 device_scheduled: false
                             });
                         }

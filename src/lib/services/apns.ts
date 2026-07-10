@@ -104,6 +104,6 @@ export async function sendPush(deviceToken: string, payload: APNsPayload): Promi
         return false
     }
 
-    console.log(`[APNs] Push sent to ...${deviceToken.slice(-8)}`)
+    console.log('[APNs] Push sent')
     return true
 }

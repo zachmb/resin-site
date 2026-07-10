@@ -33,9 +33,10 @@
 		onmousedown={(e) => {
 			if (e.target === e.currentTarget) onCancel();
 		}}
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="confirm-delete-title"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="confirm-delete-title"
+            tabindex="-1"
 	>
 		<div
 			class="bg-resin-bg rounded-lg shadow-xl max-w-sm w-full border border-resin-forest/10 overflow-hidden"

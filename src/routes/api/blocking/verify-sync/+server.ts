@@ -33,18 +33,31 @@ export const POST: RequestHandler = async (event) => {
             );
         }
 
-        // Get total blocking sessions scheduled
-        const { count: sessionCount } = await supabase
+        const nowIso = new Date().toISOString();
+
+        // Count actually active sessions separately from future scheduled sessions.
+        // Treating all unexpired sessions as "active" made diagnostics overstate
+        // protection when a session existed but had not started yet.
+        const { count: activeSessionCount } = await supabase
             .from('blocking_sessions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .gte('end_time', new Date().toISOString());
+            .eq('is_active', true)
+            .lte('start_time', nowIso)
+            .gte('end_time', nowIso);
+
+        const { count: upcomingSessionCount } = await supabase
+            .from('blocking_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .gt('start_time', nowIso);
 
         // Calculate sync score (0-100)
         const blockedDomainsScore = (profile?.blocked_domains?.length || 0) > 0 ? 25 : 0;
         const blockingEnabledScore = profile?.blocking_enabled ? 25 : 0;
         const extensionEnabledScore = profile?.extension_enabled ? 25 : 0;
-        const hasSessionsScore = (sessionCount || 0) > 0 ? 25 : 0;
+        const hasSessionsScore = (activeSessionCount || upcomingSessionCount || 0) > 0 ? 25 : 0;
         const syncScore = blockedDomainsScore + blockingEnabledScore + extensionEnabledScore + hasSessionsScore;
 
         return json({
@@ -59,7 +72,8 @@ export const POST: RequestHandler = async (event) => {
                 extensionEnabled: profile?.extension_enabled || false
             },
             sessions: {
-                active: sessionCount || 0
+                active: activeSessionCount || 0,
+                upcoming: upcomingSessionCount || 0
             },
             lastUpdated: profile?.updated_at,
             timestamp: new Date().toISOString()

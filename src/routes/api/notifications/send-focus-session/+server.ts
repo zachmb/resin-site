@@ -1,11 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { adminClient as supabase, getAuthenticatedUserId } from '$lib/server/auth';
-
-const APNS_KEY_ID = process.env.APNS_KEY_ID!;
-const APNS_TEAM_ID = process.env.APNS_TEAM_ID!;
-const APNS_BUNDLE_ID = process.env.APNS_BUNDLE_ID!;
-const APNS_KEY = process.env.APNS_KEY!;
+import { sendPush } from '$lib/services/apns';
 
 /**
  * Send silent push notification to iOS devices when focus session starts
@@ -15,13 +11,19 @@ export const POST: RequestHandler = async (event) => {
         const userId = await getAuthenticatedUserId(event);
         if (!userId) return json({ error: 'Unauthorized' }, { status: 401 });
 
-        const { sessionId, sessionTitle, endTime, groupId } = await event.request.json();
+        const { sessionId, sessionTitle, startTime, endTime, groupId } = await event.request.json();
 
-        if (!sessionId) {
+        if (!sessionId || !endTime) {
             return json(
                 { error: 'Missing required fields' },
                 { status: 400 }
             );
+        }
+
+        const parsedEnd = new Date(endTime);
+        const parsedStart = startTime ? new Date(startTime) : new Date();
+        if (!Number.isFinite(parsedEnd.getTime()) || !Number.isFinite(parsedStart.getTime()) || parsedEnd <= parsedStart) {
+            return json({ error: 'Invalid session time window' }, { status: 400 });
         }
 
         // Get all active device tokens for the user and their group members (if group session)
@@ -50,6 +52,20 @@ export const POST: RequestHandler = async (event) => {
             }
         }
 
+        const { data: focusSession, error: sessionError } = await supabase
+            .from('blocking_sessions')
+            .select('id, user_id')
+            .eq('id', sessionId)
+            .in('user_id', userIds)
+            .maybeSingle();
+        if (sessionError) {
+            console.error('Error verifying focus session before push:', sessionError.message);
+            return json({ error: 'Failed to verify focus session' }, { status: 500 });
+        }
+        if (!focusSession) {
+            return json({ error: 'Focus session not found for this account or group' }, { status: 404 });
+        }
+
         // Get all active iOS device tokens for these users
         const { data: devices, error: devicesError } = await supabase
             .from('device_tokens')
@@ -61,9 +77,11 @@ export const POST: RequestHandler = async (event) => {
         if (devicesError || !devices) {
             console.error('Error fetching device tokens:', devicesError);
             return json({
-                success: true,
-                notificationsSent: 0
-            });
+                success: false,
+                notificationsSent: 0,
+                recoverable: true,
+                error: 'Could not load device tokens. Session can continue, but protection may be waiting for device sync.'
+            }, { status: 503 });
         }
 
         // Send silent push notifications to all devices
@@ -74,7 +92,8 @@ export const POST: RequestHandler = async (event) => {
                     {
                         sessionId,
                         sessionTitle: sessionTitle || 'Focus Session',
-                        endTime,
+                        startTime: parsedStart.toISOString(),
+                        endTime: parsedEnd.toISOString(),
                         type: 'focus_session_start'
                     }
                 )
@@ -84,7 +103,7 @@ export const POST: RequestHandler = async (event) => {
         const successful = notifications.filter(n => n.status === 'fulfilled').length;
 
         // Log notification attempt
-        console.log(`[Focus Session Push] Sent ${successful} notifications for session ${sessionId}`);
+        console.log(`[Focus Session Push] Sent ${successful} notification(s)`);
 
         return json({
             success: true,
@@ -108,27 +127,19 @@ async function sendAPNSNotification(
     payload: {
         sessionId: string;
         sessionTitle: string;
+        startTime: string;
         endTime: string;
         type: string;
     }
 ): Promise<void> {
-    // Note: This is a placeholder for actual APNs implementation
-    // In production, you would use:
-    // 1. Apple's native APNs API with JWT authentication
-    // 2. Or a service like Firebase Cloud Messaging
-    // 3. Or a third-party service like OneSignal, Pusher, etc.
-
-    // For now, we'll log the intent
-    console.log('[APNs] Sending silent notification to device:', {
-        token: token.substring(0, 10) + '...',
-        payload
+    const sent = await sendPush(token, {
+        title: payload.sessionTitle,
+        body: 'Focus session started',
+        pushType: 'background',
+        data: payload
     });
 
-    // TODO: Implement actual APNs notification sending
-    // Steps:
-    // 1. Generate JWT token signed with APNs private key
-    // 2. Make HTTP/2 POST request to api.push.apple.com
-    // 3. Include the notification payload
-
-    return Promise.resolve();
+    if (!sent) {
+        throw new Error('APNs push failed');
+    }
 }

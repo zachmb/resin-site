@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onDestroy } from "svelte";
     import { fade, slide } from "svelte/transition";
 
     let { onSessionStarted } = $props<{
@@ -10,6 +11,7 @@
     let isSubmitting = $state(false);
     let showOptions = $state(false);
     let successMessage = $state("");
+    let errorMessage = $state("");
     let protectionStatus = $state<"Protected" | "Waiting for device" | "Needs setup" | "Recovering">("Waiting for device");
     let syncCheckTimeout: ReturnType<typeof setTimeout> | null = null;
     const protectionCopy = $derived.by(() => {
@@ -45,6 +47,7 @@
         if (!title.trim() || isSubmitting) return;
 
         isSubmitting = true;
+        errorMessage = "";
         try {
             const res = await fetch("/api/focus", {
                 method: "POST",
@@ -56,6 +59,9 @@
             });
 
             const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data?.error || "Focus start failed");
+            }
             if (data.status === "success") {
                 protectionStatus = data.notificationsSent > 0 ? "Waiting for device" : "Recovering";
                 successMessage = data.notificationsSent > 0
@@ -70,12 +76,16 @@
                     syncCheckTimeout = setTimeout(async () => {
                         try {
                             const syncRes = await fetch(`/api/focus/sync-status?id=${data.session.id}`);
+                            if (!syncRes.ok) {
+                                throw new Error(`Sync status failed with ${syncRes.status}`);
+                            }
                             const syncData = await syncRes.json();
                             protectionStatus = syncData.device_scheduled ? "Protected" : "Waiting for device";
                             // Status will update reactively once component refetches
                             if (onSessionStarted) onSessionStarted({ ...data.session, device_scheduled: syncData.device_scheduled });
                         } catch (err) {
                             console.error('Sync check failed:', err);
+                            protectionStatus = "Recovering";
                         }
                     }, 5000);
                 }
@@ -83,13 +93,21 @@
                 setTimeout(() => {
                     successMessage = "";
                 }, 3000);
+            } else {
+                throw new Error(data?.error || "Focus start failed");
             }
         } catch (err) {
             console.error(err);
+            protectionStatus = "Recovering";
+            errorMessage = "Resin couldn't start protection from here. Your thought is still yours — try again in a moment or start from the app.";
         } finally {
             isSubmitting = false;
         }
     };
+
+    onDestroy(() => {
+        if (syncCheckTimeout) clearTimeout(syncCheckTimeout);
+    });
 
     const durations = [15, 25, 50, 90];
 </script>
@@ -251,6 +269,15 @@
                         />
                     </svg>
                     {successMessage}
+                </p>
+            {/if}
+
+            {#if errorMessage}
+                <p
+                    transition:fade
+                    class="text-xs font-bold text-resin-amber flex items-center gap-1.5 ml-1"
+                >
+                    {errorMessage}
                 </p>
             {/if}
         </div>

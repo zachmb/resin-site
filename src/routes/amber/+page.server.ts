@@ -422,7 +422,7 @@ export const actions: Actions = {
 
             const { count, error: deleteError } = await supabase
                 .from('amber_sessions')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', sessionId)
                 .eq('user_id', user.id);
 
@@ -465,7 +465,7 @@ export const actions: Actions = {
             // It's a focus session - just delete it
             const { count, error: deleteError } = await supabase
                 .from('blocking_sessions')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', sessionId)
                 .eq('user_id', user.id);
 

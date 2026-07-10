@@ -46,12 +46,11 @@
 </script>
 
 <div class="relative w-full h-full flex-1">
-    <textarea
-        bind:this={textInput}
-        bind:value={value}
-        {placeholder}
-        {autofocus}
-        oninput={handleInput}
+	    <textarea
+	        bind:this={textInput}
+	        bind:value={value}
+	        {placeholder}
+	        oninput={handleInput}
         onchange={handleChange}
         class="relative z-10 w-full h-full resize-none font-sans text-[17px] leading-relaxed bg-transparent focus:outline-none px-8 sm:px-12 py-6 text-[#2B4634] placeholder:text-[#5C4B3C]/60 {classList}"
         style="caret-color: #2B4634;"

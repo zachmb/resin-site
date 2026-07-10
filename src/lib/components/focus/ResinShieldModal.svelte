@@ -12,21 +12,25 @@
         // Could add a toast here
     }
 
-    const redirectUri =
-        "https://your-supabase-project.supabase.co/auth/v1/callback"; // Placeholder or dynamic if possible
+	    const redirectUri = "https://vqzaadhoccgtywewtkrm.supabase.co/auth/v1/callback";
 </script>
 
 {#if isOpen}
-    <div
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
-        transition:fade={{ duration: 200 }}
-        onclick={close}
-    >
-        <div
-            class="glass-card w-full max-w-2xl rounded-xl border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
-            onclick={(e) => e.stopPropagation()}
-            transition:slide={{ duration: 300 }}
-        >
+	    <div
+	        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
+	        transition:fade={{ duration: 200 }}
+	        onclick={close}
+            onkeydown={(event) => (event.key === "Enter" || event.key === "Escape") && close()}
+            role="button"
+            tabindex="0"
+            aria-label="Close install guide"
+	    >
+	        <div
+	            class="glass-card w-full max-w-2xl rounded-xl border border-white/30 shadow-2xl overflow-hidden flex flex-col my-8"
+	            onclick={(e) => e.stopPropagation()}
+                role="presentation"
+	            transition:slide={{ duration: 300 }}
+	        >
             <!-- Header -->
             <div
                 class="px-8 py-6 border-b border-resin-forest/10 flex items-center justify-between bg-white/40"
@@ -52,8 +56,9 @@
                         </p>
                     </div>
                 </div>
-                <button
-                    onclick={close}
+	                <button
+                        aria-label="Close install guide"
+	                    onclick={close}
                     class="w-10 h-10 rounded-full hover:bg-resin-earth/10 flex items-center justify-center text-resin-earth/60 hover:text-resin-charcoal transition-all"
                 >
                     <svg
@@ -101,8 +106,9 @@
                                 >git clone
                                 https://github.com/zachmb/resinext.git</code
                             >
-                            <button
-                                onclick={() =>
+	                            <button
+                                    aria-label="Copy clone command"
+	                                onclick={() =>
                                     copyToClipboard(
                                         "git clone https://github.com/zachmb/resinext.git",
                                     )}
@@ -148,8 +154,9 @@
                             <code class="text-xs text-white/80 font-mono"
                                 >npm install && npm run build</code
                             >
-                            <button
-                                onclick={() =>
+	                            <button
+                                    aria-label="Copy build command"
+	                                onclick={() =>
                                     copyToClipboard(
                                         "npm install && npm run build",
                                     )}

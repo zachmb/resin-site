@@ -1,48 +1,76 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import { Settings, Shield, ToggleRight, Trash2, RefreshCw } from "lucide-svelte";
-    import type { PageData, ActionData } from './$types';
+    import type { PageData } from './$types';
 
-    // Data from +page.server.ts load function
-    let { data }: { data: PageData } = $props();
-    let form: ActionData = $state(null);
-
-    // Local state
-    let extensionEnabled = $state<boolean>(data?.extensionEnabled ?? false);
-    let blockingEnabled = $state<boolean>(data?.blockingEnabled ?? false);
-    let autoBlockSessions = $state<boolean>(data?.autoBlockSessions ?? false);
-    let notificationsEnabled = $state<boolean>(data?.notificationsEnabled ?? true);
-    let blockedDomains = $state<string[]>(data?.blockedDomains ?? []);
-    let newDomain = $state("");
+	    // Data from +page.server.ts load function
+	    let { data }: { data: PageData } = $props();
+	
+	    // Local state
+	    let extensionEnabled = $state<boolean>(false);
+	    let blockingEnabled = $state<boolean>(false);
+	    let autoBlockSessions = $state<boolean>(false);
+	    let notificationsEnabled = $state<boolean>(true);
+	    let blockedDomains = $state<string[]>([]);
+	    let newDomain = $state("");
     let saving = $state(false);
     let message = $state("");
     let messageType = $state<'success' | 'error'>('success');
-    let isPro = $derived(data?.isPro ?? false);
+	    let isPro = $derived(data?.isPro ?? false);
+        const maxCustomBlockedDomains = 1000;
+
+        $effect(() => {
+            extensionEnabled = data?.extensionEnabled ?? false;
+            blockingEnabled = data?.blockingEnabled ?? false;
+            autoBlockSessions = data?.autoBlockSessions ?? false;
+            notificationsEnabled = data?.notificationsEnabled ?? true;
+            blockedDomains = data?.blockedDomains ?? [];
+        });
+
+    function normalizeBlockedDomain(raw: string): string | null {
+        let domain = raw.trim().toLowerCase();
+        domain = domain.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");
+        domain = domain.split("/")[0].split("?")[0].split("#")[0].split(":")[0];
+        domain = domain.replace(/^www\./, "");
+        return /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)
+            ? domain
+            : null;
+    }
 
     function addDomain() {
         if (!isPro) return;
         if (!newDomain.trim()) return;
-        const domain = newDomain.trim().toLowerCase();
+        const domain = normalizeBlockedDomain(newDomain);
+        if (!domain) {
+            messageType = "error";
+            message = "Use a plain domain like youtube.com";
+            return;
+        }
 
         if (blockedDomains.includes(domain)) {
             messageType = "error";
             message = "Domain already in list";
             return;
         }
+        if (blockedDomains.length >= maxCustomBlockedDomains) {
+            messageType = "error";
+            message = `Keep this list under ${maxCustomBlockedDomains.toLocaleString()} domains so Chrome can apply protection reliably.`;
+            return;
+        }
 
         blockedDomains = [...blockedDomains, domain];
         newDomain = "";
         messageType = "success";
-        message = `Added ${domain}`;
-        setTimeout(() => (message = ""), 2000);
+        message = `Added ${domain}. Save settings to sync it.`;
+        setTimeout(() => (message = ""), 3000);
     }
 
     function removeDomain(domain: string) {
         if (!isPro) return;
         blockedDomains = blockedDomains.filter((d) => d !== domain);
         messageType = "success";
-        message = `Removed ${domain}`;
-        setTimeout(() => (message = ""), 2000);
+        message = `Removed ${domain}. Save settings to sync the change.`;
+        setTimeout(() => (message = ""), 3000);
     }
 </script>
 
@@ -225,9 +253,14 @@
                 saving = true;
                 return async ({ result }) => {
                     if (result.type === 'success' && result.data) {
+                        messageType = 'success';
                         message = (result.data as any).message || '✓ Settings saved!';
                     } else if (result.type === 'failure' && result.data) {
+                        messageType = 'error';
                         message = (result.data as any).error || 'Error saving settings';
+                    } else if (result.type === 'error') {
+                        messageType = 'error';
+                        message = 'Resin could not save settings right now. Try again in a moment.';
                     }
                     saving = false;
                     setTimeout(() => (message = ""), 5000);

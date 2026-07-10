@@ -101,17 +101,17 @@
 
 {#if isVisible}
 	<div id="fossilization-container" class="ceremony">
-		<!-- Shatter glass effect -->
-		<div class="shatter-overlay" style="--duration: {config.duration}ms">
-			{#each Array(8) as _, i}
-				<div class="shard" style="--index: {i}; --duration: {config.duration}ms" />
-			{/each}
-		</div>
+			<!-- Shatter glass effect -->
+			<div class="shatter-overlay" style="--duration: {config.duration}ms">
+				{#each Array(8) as _, i}
+					<div class="shard" style="--index: {i}; --duration: {config.duration}ms"></div>
+				{/each}
+			</div>
 
-		<!-- Fossilization core -->
-		<div class="fossilization-core" style="--duration: {config.duration}ms">
-			<div class="glow" style="--color: {config.color}; --duration: {config.duration}ms" />
-			<div class="crystallize" style="--duration: {config.duration}ms">
+			<!-- Fossilization core -->
+			<div class="fossilization-core" style="--duration: {config.duration}ms">
+				<div class="glow" style="--color: {config.color}; --duration: {config.duration}ms"></div>
+				<div class="crystallize" style="--duration: {config.duration}ms">
 				{config.emoji}
 			</div>
 		</div>

@@ -274,20 +274,3 @@
         {/each}
     </div>
 </div>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(43, 70, 52, 0.1);
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(43, 70, 52, 0.2);
-    }
-</style>

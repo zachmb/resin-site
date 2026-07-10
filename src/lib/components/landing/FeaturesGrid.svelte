@@ -78,9 +78,9 @@
                           fill="{C.amberLight}" opacity="0.8" />
                 </svg>
 
-                <h3 class="feature-h3" style="color:rgba(245,239,231,0.95);">Real blocking. No override.</h3>
+                <h3 class="feature-h3" style="color:rgba(245,239,231,0.95);">Real blocking. Softer exits.</h3>
                 <p class="feature-p" style="color:rgba(245,239,231,0.55);">
-                    FamilyControls API locks apps at the OS level — not a timer, not a browser filter. Instagram disappears. No workaround exists.
+                    FamilyControls API shields chosen apps at the OS level — not just a timer or browser filter. Instagram gets blocked during your focus window.
                 </p>
                 <div class="mono mt-6 text-xs" style="color:rgba(245,239,231,0.3);">iOS · macOS · chrome ext</div>
             </div>

@@ -67,9 +67,9 @@
     "extension": "1.0.0"
   },
   "analytics": {
-    "enabled": true,
+    "enabled": false,
     "provider": "custom",
-    "sampleRate": 1
+    "sampleRate": 0
   },
   "notifications": {
     "enabled": true,

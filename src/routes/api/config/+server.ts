@@ -66,7 +66,7 @@ function createDefaultConfig(): ResinConfig {
     },
     minVersions: { ios: '1.0.0', web: '1.0.0', extension: '1.0.0' },
     recommendedVersions: { ios: '2.0.0', web: '1.5.0', extension: '1.0.0' },
-    analytics: { enabled: true, provider: 'custom', sampleRate: 1.0 },
+    analytics: { enabled: false, provider: 'custom', sampleRate: 0 },
     notifications: { enabled: true, provider: 'supabase', timeoutMs: 5000 },
     rateLimit: { requestsPerMinute: 60, requestsPerHour: 1000 },
     auth: { provider: 'supabase', sessionTimeout: 3600000, refreshTokenExpiryDays: 7 },

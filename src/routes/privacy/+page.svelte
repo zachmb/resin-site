@@ -91,15 +91,14 @@
         <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
             1.6 Usage and Analytics
         </h3>
-        <p>We collect limited, aggregated usage information to understand how you use Resin and improve our Services:</p>
+        <p>Resin does not run third-party analytics or advertising trackers. We store the account activity needed to provide Resin features and show your own progress:</p>
         <ul class="list-disc list-inside mt-2 space-y-1">
-            <li>Features you use most frequently</li>
-            <li>Focus session counts and total focus minutes (aggregated)</li>
+            <li>Focus session counts and total focus minutes</li>
             <li>Streak data (consecutive days of focus activity)</li>
             <li>Reward and achievement progress</li>
-            <li>Session completion rates and error reports</li>
+            <li>Session completion status and operational error reports</li>
         </ul>
-        <p class="mt-2">This data is aggregated and anonymized to protect your privacy. We do NOT track your individual browsing history, websites visited outside of blocking sessions, or personal app usage.</p>
+        <p class="mt-2">This data is used to run Resin, sync your account, and improve reliability. We do NOT track your individual browsing history, websites visited outside of blocking sessions, personal app usage, or cross-site activity.</p>
 
         <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
             1.7 Social and Collaborative Data
@@ -207,7 +206,7 @@
             <li>Your personal data will be removed within 30 days</li>
             <li>Shared notes may persist if other users have access (you can unshare them first)</li>
             <li>Backup copies may persist for up to 90 days for disaster recovery</li>
-            <li>Aggregated, anonymized data may be retained for analytics</li>
+            <li>Operational records may be retained only as needed for security, abuse prevention, and service reliability</li>
             <li>Data retention beyond 30 days may occur if required by law</li>
         </ul>
 

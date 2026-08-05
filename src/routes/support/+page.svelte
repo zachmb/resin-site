@@ -1,80 +1,20 @@
 <script lang="ts">
+    import { ArrowRight, Chrome, CircleUserRound, CreditCard, LockKeyhole, Mail, Smartphone } from 'lucide-svelte';
+    const topics=[
+        {icon:Smartphone,title:'iPhone app',copy:'Screen Time access, focus sessions, notes, and calendar setup.'},
+        {icon:Chrome,title:'Chrome extension',copy:'Site access, protection status, sync, and block lists.'},
+        {icon:CreditCard,title:'Billing and Pro',copy:'Trials, renewals, restoring purchases, and subscription access.'},
+        {icon:CircleUserRound,title:'Account and data',copy:'Sign-in, device sync, exports, privacy, and account deletion.'}
+    ];
 </script>
 
-<main class="flex-grow max-w-3xl mx-auto px-6 py-20 w-full font-sans">
-    <h1 class="text-4xl font-bold font-serif text-resin-charcoal mb-4">
-        App Support
-    </h1>
-    <p class="text-xl text-resin-earth mb-12">
-        We're here to help you get the most out of Resin.
-    </p>
-
-    <div
-        class="bg-white rounded-xl p-8 shadow-[0_10px_40px_rgb(232,154,60,0.1)] border border-resin-amber/20 mb-12"
-    >
-        <h2 class="text-2xl font-semibold text-resin-forest mb-6">
-            Contact Us
-        </h2>
-
-        <form class="space-y-6" onsubmit={(e) => e.preventDefault()}>
-            <div>
-                <label
-                    for="name"
-                    class="block text-sm font-medium text-resin-earth mb-2"
-                    >Name</label
-                >
-                <input
-                    type="text"
-                    id="name"
-                    class="w-full px-4 py-3 rounded-xl border border-resin-earth/20 bg-resin-bg/50 focus:outline-none focus:border-resin-amber focus:ring-1 focus:ring-resin-amber/50 transition-colors"
-                    placeholder="Your name"
-                />
-            </div>
-
-            <div>
-                <label
-                    for="email"
-                    class="block text-sm font-medium text-resin-earth mb-2"
-                    >Email</label
-                >
-                <input
-                    type="email"
-                    id="email"
-                    class="w-full px-4 py-3 rounded-xl border border-resin-earth/20 bg-resin-bg/50 focus:outline-none focus:border-resin-amber focus:ring-1 focus:ring-resin-amber/50 transition-colors"
-                    placeholder="you@example.com"
-                />
-            </div>
-
-            <div>
-                <label
-                    for="message"
-                    class="block text-sm font-medium text-resin-earth mb-2"
-                    >How can we help?</label
-                >
-                <textarea
-                    id="message"
-                    rows="4"
-                    class="w-full px-4 py-3 rounded-xl border border-resin-earth/20 bg-resin-bg/50 focus:outline-none focus:border-resin-amber focus:ring-1 focus:ring-resin-amber/50 transition-colors"
-                    placeholder="Describe the issue or feedback..."
-                ></textarea>
-            </div>
-
-            <button
-                type="submit"
-                class="w-full py-4 bg-resin-forest text-white rounded-xl font-medium hover:bg-resin-charcoal transition-colors shadow-md"
-            >
-                Send Message
-            </button>
-        </form>
-    </div>
-
-    <div class="space-y-4 text-center">
-        <h3 class="font-medium text-resin-charcoal">
-            Frequently Asked Questions
-        </h3>
-        <p class="text-resin-earth/80 text-sm">
-            <strong>What is your email address?</strong><br />
-            Our email address is crew@looplessapp.com.
-        </p>
-    </div>
+<svelte:head><title>Support | Resin</title><meta name="description" content="Get help with Resin, the iPhone app, web dashboard, and Chrome extension."/></svelte:head>
+<main class="support-page">
+    <header><div class="support-kicker"><span></span> Resin support</div><h1>How can we help?</h1><p>Find the right path quickly, or email a real person on the Resin team.</p><a href="mailto:crew@looplessapp.com?subject=Resin%20support"><Mail size={16}/> Email support</a><small>Typical response within two business days.</small></header>
+    <section class="topic-grid">{#each topics as topic}<article><svelte:component this={topic.icon} size={19}/><h2>{topic.title}</h2><p>{topic.copy}</p><a href="mailto:crew@looplessapp.com?subject=Resin%20support%20-%20{encodeURIComponent(topic.title)}">Ask about this <ArrowRight size={13}/></a></article>{/each}</section>
+    <section class="quick-help"><div><span>Quick answers</span><h2>A few things worth knowing.</h2></div><div class="answers"><details><summary>Why does Resin ask for Screen Time access?</summary><p>Apple requires explicit Family Controls authorization before Resin can shield apps. Your app selections stay private to the system and Resin’s blocking features.</p></details><details><summary>Why does Chrome say protection needs setup?</summary><p>The extension needs one-time site access to redirect the distracting domains you choose. Open extension settings, grant access, then tap Retry sync.</p></details><details><summary>How do I manage or cancel Pro?</summary><p>Resin Pro is purchased through Apple. Open iPhone Settings → your name → Subscriptions to change or cancel it.</p></details><details><summary>Can I delete my account?</summary><p>Yes. Open Account in Resin and choose Delete Account, or email us if you cannot access the app.</p></details></div></section>
+    <section class="support-trust"><LockKeyhole size={20}/><div><h2>Privacy or security question?</h2><p>We will never ask for your password, Apple ID credentials, Google password, or private note contents.</p></div><a href="/privacy">Read the privacy policy →</a></section>
 </main>
+<style>
+    .support-page{padding:150px max(22px,calc((100vw - 1080px)/2)) 95px;color:#25231f}.support-page>header{text-align:center}.support-kicker{display:inline-flex;align-items:center;gap:9px;color:#817568;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.support-kicker span{width:28px;height:1px;background:#c98042}.support-page h1{margin-top:18px;font-size:clamp(52px,6vw,76px)}.support-page>header>p{margin-top:14px;color:#817568;font-size:14px}.support-page>header>a{min-height:44px;margin-top:25px;padding:0 17px;border-radius:11px;display:inline-flex;align-items:center;gap:8px;color:#fff;background:#25231f;text-decoration:none;font-size:10px;font-weight:800}.support-page>header>small{display:block;margin-top:10px;color:#9a9085;font-size:8px}.topic-grid{margin-top:68px;display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.topic-grid article{padding:24px;border:1px solid rgba(37,35,31,.1);border-radius:16px;background:rgba(255,253,248,.72)}.topic-grid article>:global(svg){color:#c98042}.topic-grid h2{margin-top:24px;font-size:19px}.topic-grid p{min-height:59px;margin-top:8px;color:#817568;font-size:9px;line-height:1.6}.topic-grid a{display:inline-flex;align-items:center;gap:5px;color:#365744;text-decoration:none;font-size:9px;font-weight:800}.quick-help{margin-top:100px;display:grid;grid-template-columns:.65fr 1.35fr;gap:80px}.quick-help>div:first-child>span{color:#a56c38;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.quick-help h2{margin-top:12px;font-size:38px;line-height:1.04}.answers{border-top:1px solid rgba(37,35,31,.1)}.answers details{border-bottom:1px solid rgba(37,35,31,.1)}.answers summary{padding:19px 0;cursor:pointer;font-family:Georgia,serif;font-size:16px;font-weight:700}.answers p{padding:0 30px 19px 0;color:#817568;font-size:10px;line-height:1.7}.support-trust{margin-top:95px;padding:27px;border-radius:16px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:17px;color:#fff;background:#2d493a}.support-trust>:global(svg){color:#e4aa69}.support-trust h2{font-size:18px}.support-trust p{margin-top:5px;color:rgba(255,255,255,.58);font-size:9px}.support-trust a{color:#efb773;text-decoration:none;font-size:9px;font-weight:800}@media(max-width:800px){.topic-grid{grid-template-columns:1fr 1fr}.quick-help{grid-template-columns:1fr;gap:35px}.support-trust{grid-template-columns:auto 1fr}.support-trust a{grid-column:2}}@media(max-width:520px){.support-page{padding:120px 18px 70px}.topic-grid{grid-template-columns:1fr}.topic-grid p{min-height:auto}.support-trust{padding:22px}}
+</style>

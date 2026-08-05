@@ -125,10 +125,11 @@
 	});
 
 	onMount(() => {
-		// Register service worker for offline caching
-		registerServiceWorker().catch(() => {
-			debugLog('Service Worker registration skipped');
-		});
+		if (!dev) {
+			registerServiceWorker().catch(() => {
+				debugLog('Service Worker registration skipped');
+			});
+		}
 
 		const {
 			data: { subscription },
@@ -141,9 +142,10 @@
 		);
 
 		// Offline queue - flush on reconnect
-		window.addEventListener('online', () => {
+		const handleOnline = () => {
 			flushQueue();
-		});
+		};
+		window.addEventListener('online', handleOnline);
 
 		// Flush queue on load if we're online
 		if (navigator.onLine) {
@@ -240,13 +242,17 @@
 
 			return () => {
 				debugLog('[Layout] Cleaning up subscriptions and polling');
+				window.removeEventListener('online', handleOnline);
 				subscription.unsubscribe();
 				supabase.removeChannel(profileSubscription);
 				clearInterval(pollInterval);
 			};
 		}
 
-		return () => subscription.unsubscribe();
+		return () => {
+			window.removeEventListener('online', handleOnline);
+			subscription.unsubscribe();
+		};
 	});
 
 </script>
@@ -256,58 +262,30 @@
 	<title>{pageTitle}</title>
 </svelte:head>
 
-<div
-	class="min-h-screen flex flex-col font-sans relative overflow-x-hidden bg-resin-bg text-resin-forest"
->
-	<!-- Premium background elements -->
-	<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-		<div
-			class="absolute top-[-10%] left-[20%] w-[70%] h-[70%] bg-resin-amber/5 blur-[120px] rounded-full animate-pulse"
-		></div>
-		<div
-			class="absolute bottom-[-10%] right-[10%] w-[50%] h-[50%] bg-resin-forest/5 blur-[100px] rounded-full"
-		></div>
-	</div>
+<div class="site-frame">
 
 	<!-- Navigation Bar -->
-	<header
-		class="w-full py-4 px-6 fixed top-0 z-50 bg-resin-bg/80 backdrop-blur-xl border-b border-resin-forest/12"
-	>
-		<div class="max-w-6xl mx-auto flex items-center justify-between">
-			<a href="/" class="flex items-center gap-2.5 group">
-				<div class="relative">
+	<header class="app-header">
+		<div class="app-header-inner">
+			<a href="/" class="brand-link">
+				<div>
 					<img
 						src="/logo.png"
-						alt="Resin Logo"
-						class="w-10 h-10 rounded-[10px] shadow-sm border border-resin-forest/10 group-hover:shadow-md transition-all duration-500 group-hover:scale-105"
+						alt=""
 					/>
-					<div
-						class="absolute inset-0 rounded-[10px] ring-1 ring-inset ring-black/5"
-					></div>
 				</div>
-				<span
-					class="text-xl font-bold font-serif text-resin-charcoal tracking-tight"
+				<strong
 					class:reward-text-glow={showRewardGlow}
-					>Resin</span
+					>Resin</strong
 				>
 			</a>
 
 			<!-- Desktop nav -->
-			<nav
-				class="hidden sm:flex items-center gap-6 text-sm font-medium text-resin-earth/80"
-			>
+			<nav class="desktop-nav">
 				{#if session}
 					{#if activeSession}
-						<div
-							class="flex items-center gap-2 px-3 py-1.5 bg-resin-amber/10 border border-resin-amber/20 rounded-md animate-pulse"
-						>
-							<div
-								class="w-2 h-2 rounded-full bg-resin-amber"
-							></div>
-							<span
-								class="text-[10px] font-bold uppercase tracking-widest text-resin-amber"
-								>Focus Active</span
-							>
+						<div class="focus-nav-pill">
+							<i></i><span>Focus active</span>
 						</div>
 					{/if}
 					<a
@@ -405,7 +383,7 @@
 						href="https://testflight.apple.com/join/yV53qa1z"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="px-5 py-2 bg-resin-charcoal text-white rounded-md hover:bg-resin-forest transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 flex items-center gap-2"
+						class="nav-cta"
 					>
 						Get the App
 						<svg
@@ -425,7 +403,7 @@
 
 			<!-- Mobile hamburger -->
 			<button
-				class="sm:hidden text-resin-earth hover:text-resin-forest transition-colors"
+				class="mobile-menu-button"
 				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
 				aria-label="Toggle mobile menu"
 			>
@@ -451,9 +429,7 @@
 
 	<!-- Mobile Menu Dropdown -->
 	{#if isMobileMenuOpen}
-		<div
-			class="sm:hidden fixed top-[72px] left-0 w-full bg-[#FCF9F2]/98 backdrop-blur-xl z-40 border-b border-resin-earth/10 flex flex-col px-6 py-6 gap-6 shadow-premium"
-		>
+		<div class="mobile-menu">
 			{#if session}
 				<a
 					href="/notes?reset"
@@ -514,20 +490,14 @@
 
 	{@render children()}
 
-	<footer
-		class="w-full py-8 border-t border-resin-earth/10 relative z-10 bg-resin-bg/80 backdrop-blur-md mt-auto"
-	>
-		<div
-			class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4"
-		>
-			<p class="text-sm text-resin-earth/70">
-				<span class="font-medium text-[15px]">Rewards</span>
-				&copy; {new Date().getFullYear()} Resin App. All rights reserved.
+	<footer class="footer-shell">
+		<div class="footer-inner">
+			<p class="footer-brand">
+				<strong>Resin</strong>
+				<span>&copy; {new Date().getFullYear()} LoopLess LLC</span>
 			</p>
 
-			<nav
-				class="flex items-center gap-6 text-sm font-medium text-resin-earth hover:text-resin-forest transition-colors"
-			>
+			<nav class="footer-nav">
 				<a
 					href="/"
 					class="hover:underline underline-offset-4 decoration-resin-amber/50"

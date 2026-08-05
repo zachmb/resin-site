@@ -20,9 +20,9 @@
 <main class="landing-shell">
     <section class="hero-section">
         <div class="hero-copy">
-            <div class="eyebrow"><span></span> Notes that lead somewhere</div>
-            <h1>Clear your mind.<br><em>Protect what matters.</em></h1>
-            <p class="hero-lede">Resin turns unstructured thoughts into a realistic plan, then helps you stay with it across your phone and browser.</p>
+            <div class="eyebrow"><span></span> One thought. One clear next step.</div>
+            <h1>Capture anywhere.<br><em>Focus without drift.</em></h1>
+            <p class="hero-lede">Start with a messy thought on web, iPhone, or Chrome. Resin shapes the plan, finds the time, and carries protected focus to the device where you work.</p>
             <div class="hero-actions">
                 <a class="primary-cta" href="/login?next=/">Start on the web <ArrowRight size={17} /></a>
                 <a class="secondary-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={17} /> Get the iOS app</a>
@@ -70,7 +70,7 @@
     </section>
 
     <section class="platform-strip" aria-label="Available platforms">
-        <span class="platform-intro">One calm system, everywhere you work</span>
+        <span class="platform-intro">Capture here. Continue there. Stay protected.</span>
         <span><Apple size={16} /> iPhone</span><span><Chrome size={16} /> Chrome</span><span class="web-glyph">↗</span><span>Web app</span>
     </section>
 
@@ -126,7 +126,7 @@
     <section class="feature-section">
         <div class="feature-intro"><div class="eyebrow"><span></span> Built for the whole loop</div><h2>Everything between<br>“I should” and “done.”</h2></div>
         <div class="feature-grid">
-            <article class="feature-wide"><div><span class="feature-tag">Capture</span><h3>A notebook that understands loose ends.</h3><p>Keep rich notes, connect related thoughts, and turn any fragment into an actionable plan when you are ready.</p></div><div class="connection-map"><span class="node main">Launch idea</span><span class="node n1">Research</span><span class="node n2">Draft</span><span class="node n3">People</span><i class="line l1"></i><i class="line l2"></i><i class="line l3"></i></div></article>
+            <article class="feature-wide"><div><span class="feature-tag">Continue anywhere</span><h3>Your next step follows you—not the distraction.</h3><p>Capture from Chrome, review the plan on web, then continue with protected focus on iPhone. Every surface shows the same task and the same current state.</p></div><div class="connection-map"><span class="node main">Next step · 25m</span><span class="node n1">Chrome capture</span><span class="node n2">Web plan</span><span class="node n3">iPhone focus</span><i class="line l1"></i><i class="line l2"></i><i class="line l3"></i></div></article>
             <article><span class="feature-tag">Schedule</span><h3>Plans that fit the day you actually have.</h3><p>Resin respects your working hours, existing calendar, and the time each step should take.</p><div class="calendar-art"><div><span>9</span><b>Deep work</b></div><div><span>10</span><b class="amber">Launch plan</b></div><div><span>11</span><b></b></div></div></article>
             <article><span class="feature-tag">Reflect</span><h3>See momentum, not a guilt dashboard.</h3><p>Simple focus and completion patterns help you understand what makes good days repeatable.</p><div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
         </div>

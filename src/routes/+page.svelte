@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-    <title>Resin</title>
+	<title>Resin — Turn scattered thoughts into protected focus</title>
 </svelte:head>
 
 {#if data.session}

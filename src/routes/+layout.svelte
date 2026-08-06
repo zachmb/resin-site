@@ -265,7 +265,7 @@
 <div class="site-frame">
 
 	<!-- Navigation Bar -->
-	<header class="app-header">
+	<header class="app-header" class:marketing-header={!session}>
 		<div class="app-header-inner">
 			<a href="/" class="brand-link">
 				<div>
@@ -467,6 +467,11 @@
 				onclick={() => (isMobileMenuOpen = false)}>Account</a
 			>
 			{:else}
+				<a
+					href="/pricing"
+					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"
+					onclick={() => (isMobileMenuOpen = false)}>Pricing</a
+				>
 				<a
 					href="/support"
 					class="text-xl font-bold font-serif text-resin-charcoal hover:text-resin-forest transition-colors"

@@ -1,9 +1,9 @@
 <script lang="ts">
     import { Apple, Check, Chrome, Globe2, Sparkles } from 'lucide-svelte';
-    const freeFeatures = ['Notes, maps, and calendar on iPhone','3 generated plans each day','OS-level app blocking','Focus streaks and rewards'];
-    const proFeatures = ['Everything in Free','Unlimited generated plans','Web dashboard and Chrome sync','Website blocking during focus','Full focus history and insights'];
+    const freeFeatures = ['Notes, maps, and calendar on iPhone','Unlimited on-device plans','OS-level app blocking','Focus streaks and rewards'];
+    const proFeatures = ['Everything in Free','Cross-device plan continuity','Web dashboard and Chrome sync','Website blocking during focus','Full focus history and insights'];
     const comparison = [
-        ['Notes and planning','iPhone','Every device'],['App blocking','iPhone','iPhone'],['Website blocking','—','Chrome'],['Generated plans','3 / day','Unlimited'],['Focus insights','7 days','Full history']
+        ['Notes and planning','iPhone','Every device'],['App blocking','iPhone','iPhone'],['Website blocking','—','Chrome'],['Generated plans','Unlimited local','Cross-device'],['Focus insights','7 days','Full history']
     ];
 </script>
 

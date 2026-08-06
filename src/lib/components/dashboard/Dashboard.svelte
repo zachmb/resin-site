@@ -28,13 +28,6 @@
         burnoutRisk?: boolean;
     }>();
 
-    const firstName = $derived(
-        session?.user?.user_metadata?.full_name?.split(" ")[0] ||
-        session?.user?.user_metadata?.name?.split(" ")[0] ||
-        profile?.email?.split("@")[0] ||
-        "explorer"
-    );
-
     let composeText = $state("");
     let showAddAutomation = $state(false);
     let autoTitle = $state("");
@@ -65,7 +58,6 @@
     let syncedProfile = $state<any>(null);
 
     // Onboarding banner
-    let showShieldModal = $state(false);
     // `localStorage` isn't reactive, so a `$derived(...)` won't update when the user dismisses.
     // Use state and flip it immediately on X.
     let showBanner = $state(false);
@@ -250,6 +242,12 @@
         } catch (err) {
             console.error('Failed to mark web onboarded:', err);
         }
+    };
+
+    const focusFirstThought = () => {
+        const composer = document.getElementById('first-thought-composer') as HTMLTextAreaElement | null;
+        composer?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => composer?.focus(), 450);
     };
 
     const formatTime = (dateString: string) => {
@@ -474,12 +472,47 @@
         </div>
     </div>
 
+    {#if showBanner}
+        <section transition:fade class="mb-8 overflow-hidden rounded-2xl border border-resin-amber/30 bg-[#fffaf1] shadow-premium">
+            <div class="grid lg:grid-cols-[1.15fr_.85fr]">
+                <div class="p-7 md:p-9">
+                    <div class="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-resin-amber">
+                        <span class="h-px w-7 bg-resin-amber"></span> Your first minute
+                    </div>
+                    <h2 class="max-w-xl font-serif text-3xl font-bold leading-tight text-resin-charcoal">
+                        Start with the thought taking up the most space.
+                    </h2>
+                    <p class="mt-3 max-w-xl text-sm leading-6 text-resin-earth/70">
+                        Don’t organize anything yet. Capture the messy version, then Resin will help turn it into a next move.
+                    </p>
+                    <div class="mt-6 flex flex-wrap items-center gap-3">
+                        <button type="button" onclick={focusFirstThought} class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-resin-charcoal px-5 text-sm font-bold text-white transition hover:bg-resin-forest">
+                            Capture my first thought <span aria-hidden="true">→</span>
+                        </button>
+                        <button type="button" onclick={dismissBanner} class="min-h-11 px-3 text-xs font-semibold text-resin-earth/60 hover:text-resin-charcoal">
+                            I know my way around
+                        </button>
+                    </div>
+                </div>
+                <div class="border-t border-resin-forest/10 bg-resin-forest/[0.045] p-7 md:p-9 lg:border-l lg:border-t-0">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-resin-earth/50">One calm loop</p>
+                    <div class="mt-5 grid gap-4">
+                        <div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-resin-amber/15 text-xs font-bold text-resin-amber">1</span><div><strong class="block text-sm text-resin-charcoal">Capture</strong><small class="text-xs text-resin-earth/55">Write the unsorted thought</small></div></div>
+                        <div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-white text-xs font-bold text-resin-forest">2</span><div><strong class="block text-sm text-resin-charcoal">Shape</strong><small class="text-xs text-resin-earth/55">Turn it into clear steps</small></div></div>
+                        <div class="flex items-center gap-3"><span class="grid h-8 w-8 place-items-center rounded-full bg-white text-xs font-bold text-resin-forest">3</span><div><strong class="block text-sm text-resin-charcoal">Begin</strong><small class="text-xs text-resin-earth/55">Protect one focused block</small></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    {/if}
+
     <!-- Quick Compose Card -->
     <section class="mb-8">
         <div
             class="glass-card rounded-xl p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
         >
             <textarea
+                id="first-thought-composer"
                 bind:value={composeText}
                 placeholder="What's on your mind? Start a note, a plan, anything..."
                 class="w-full bg-white/50 border border-white/30 rounded-lg p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
@@ -826,48 +859,6 @@
                 </div>
             </div>
         </section>
-    {/if}
-
-    <!-- Onboarding Banner -->
-    {#if showBanner}
-        <div transition:fade class="mb-8">
-            <div class="glass-card rounded-xl p-8 border-2 border-resin-amber/40 bg-gradient-to-r from-resin-amber/10 to-transparent shadow-premium">
-                <div class="flex items-start justify-between gap-6">
-                    <div class="flex-1">
-                        <h2 class="text-2xl font-bold text-resin-charcoal mb-2 flex items-center gap-2">
-                            🌲 Welcome to Resin{#if session}, {firstName}{/if}!
-                        </h2>
-                        <p class="text-sm text-resin-earth/70 mb-6">
-                            Here's how to get the most out of your focus sessions:
-                        </p>
-                        <div class="flex flex-wrap gap-3">
-                            <a
-                                href="https://testflight.apple.com/join/yV53qa1z"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-resin-charcoal text-white font-semibold hover:bg-resin-forest transition-colors text-sm"
-                            >
-                                📱 Get the iOS App
-                            </a>
-                            <button
-                                type="button"
-                                onclick={() => showShieldModal = true}
-                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/50 border border-resin-forest/10 text-resin-charcoal font-semibold hover:bg-white transition-colors text-sm"
-                            >
-                                🔒 Install Browser Extension
-                            </button>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onclick={dismissBanner}
-                        class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-resin-forest/10 transition-colors text-resin-earth/60 hover:text-resin-charcoal"
-                    >
-                        ✕
-                    </button>
-                </div>
-            </div>
-        </div>
     {/if}
 
     <!-- Burnout Risk Banner -->

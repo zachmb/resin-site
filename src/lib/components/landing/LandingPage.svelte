@@ -58,7 +58,7 @@
             <h1>Your mind can stay messy.<br /><em>Your next step won’t.</em></h1>
             <p class="hero-lede">Resin turns scattered thoughts into a plan you can start—then protects the time to follow through.</p>
             <div class="hero-actions">
-                <a class="primary-cta" href="/login?next=/">Start free on the web <ArrowRight size={17} /></a>
+                <a class="primary-cta" href="/login?mode=start&next=/">Start free on the web <ArrowRight size={17} /></a>
                 <a class="secondary-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={17} /> Get Resin for iPhone</a>
             </div>
             <div class="trust-row">
@@ -241,7 +241,7 @@
         <div class="eyebrow light"><span></span> Start with one thought</div>
         <h2>Make the next step<br /><em>feel lighter.</em></h2>
         <p>Capture the mess. Shape the plan. Protect the time.</p>
-        <div class="final-actions"><a class="amber-cta" href="/login?next=/">Start free on the web <ArrowRight size={17} /></a><a class="quiet-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={16} /> Get the iOS app</a></div>
+        <div class="final-actions"><a class="amber-cta" href="/login?mode=start&next=/">Start free on the web <ArrowRight size={17} /></a><a class="quiet-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={16} /> Get the iOS app</a></div>
         <small>No ads · AI optional · cancel anytime</small>
     </section>
 </main>

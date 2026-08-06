@@ -265,6 +265,7 @@
 <div class="site-frame">
 
 	<!-- Navigation Bar -->
+	{#if $page.url.pathname !== '/login'}
 	<header class="app-header" class:marketing-header={!session}>
 		<div class="app-header-inner">
 			<a href="/" class="brand-link">
@@ -492,9 +493,11 @@
 			{/if}
 		</div>
 	{/if}
+	{/if}
 
 	{@render children()}
 
+	{#if $page.url.pathname !== '/login'}
 	<footer class="footer-shell">
 		<div class="footer-inner">
 			<p class="footer-brand">
@@ -541,6 +544,7 @@
 			</nav>
 		</div>
 	</footer>
+	{/if}
 
 	<!-- Offline Indicator with Sync Status (only for signed-in users) -->
 	{#if session}

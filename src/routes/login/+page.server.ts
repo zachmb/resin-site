@@ -1,17 +1,34 @@
 import { redirect } from '@sveltejs/kit'
 
+function safeNext(rawNext: string | null | undefined, origin: string): string {
+    const fallback = '/?tab=notes'
+    if (!rawNext) return fallback
+
+    try {
+        if (rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\')) {
+            return rawNext
+        }
+
+        const parsed = new URL(rawNext, origin)
+        if (parsed.origin === origin) {
+            return parsed.pathname + parsed.search
+        }
+    } catch {
+        // Fall through to fallback.
+    }
+
+    return fallback
+}
+
 export const actions = {
-    signInWithGoogle: async ({ locals: { supabase }, url }) => {
-        const next = url.searchParams.get('next') ?? '/?tab=notes'
+    signInWithGoogle: async ({ request, locals: { supabase }, url }) => {
+        const formData = await request.formData()
+        const next = safeNext(formData.get('next')?.toString() ?? url.searchParams.get('next'), url.origin)
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${url.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-                scopes: 'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent',
-                },
+                scopes: 'openid email profile',
             },
         })
 
@@ -26,8 +43,9 @@ export const actions = {
         }
     },
 
-    signInWithApple: async ({ locals: { supabase }, url }) => {
-        const next = url.searchParams.get('next') ?? '/?tab=notes'
+    signInWithApple: async ({ request, locals: { supabase }, url }) => {
+        const formData = await request.formData()
+        const next = safeNext(formData.get('next')?.toString() ?? url.searchParams.get('next'), url.origin)
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'apple',
             options: {

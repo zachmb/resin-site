@@ -20,21 +20,21 @@
             eyebrow: 'Start without sorting',
             title: 'Get the thought out before it disappears.',
             copy: 'Write the messy version from iPhone, web, or the Chrome extension. Resin gives you one calm place to begin.',
-            stat: 'One tap to capture'
+            stat: 'No organizing required'
         },
         {
             label: 'Plan',
             eyebrow: 'Turn friction into a path',
             title: 'See the next step—not the whole mountain.',
             copy: 'Resin shapes a note into realistic actions, estimates the time, and helps each step find a place in your day.',
-            stat: 'Clear steps in seconds'
+            stat: 'One recommended next move'
         },
         {
             label: 'Protect',
             eyebrow: 'Make focus easier to keep',
             title: 'Start the work with fewer escape hatches.',
             copy: 'Begin a focus window from the plan. Selected apps and sites stay out of reach while your current step stays visible.',
-            stat: 'OS-level app shielding'
+            stat: 'Intent-linked protection'
         }
     ];
 
@@ -47,23 +47,29 @@
 </script>
 
 <svelte:head>
-    <meta name="description" content="Resin turns scattered thoughts into clear plans and protects the time to follow through across iPhone, web, and Chrome." />
+    <meta name="description" content="Resin is the follow-through system for overloaded minds. Turn one messy intention into a realistic next action and protect the attention needed to begin." />
+    <meta property="og:title" content="Resin — Turn intention into protected action" />
+    <meta property="og:description" content="Shape one messy intention into a realistic next action, find time for it, and protect the attention needed to begin." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://noteresin.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://noteresin.com/" />
 </svelte:head>
 
 <main class="landing-shell">
     <section class="hero-section">
         <div class="hero-aura"></div>
         <div class="hero-copy">
-            <div class="announcement"><span>New</span> Capture on Chrome. Continue on iPhone. <ArrowRight size={13} /></div>
-            <h1>Your mind can stay messy.<br /><em>Your next step won’t.</em></h1>
-            <p class="hero-lede">Resin turns scattered thoughts into a plan you can start—then protects the time to follow through.</p>
+            <div class="announcement"><span>Resin</span> The follow-through system for overloaded minds <ArrowRight size={13} /></div>
+            <h1>Planning is easy.<br /><em>Starting is the hard part.</em></h1>
+            <p class="hero-lede">Resin turns one messy intention into a realistic next action, finds time for it, and protects the attention needed to begin.</p>
             <div class="hero-actions">
-                <a class="primary-cta" href="/login?mode=start&next=/">Start free on the web <ArrowRight size={17} /></a>
+                <a class="primary-cta" href="/login?mode=start&next=/">Start my first plan <ArrowRight size={17} /></a>
                 <a class="secondary-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={17} /> Get Resin for iPhone</a>
             </div>
             <div class="trust-row">
-                <span><Check size={13} /> No ads</span>
-                <span><Check size={13} /> Private by design</span>
+                <span><Check size={13} /> Free to start</span>
+                <span><Check size={13} /> Protection is optional</span>
                 <span><Check size={13} /> Works without AI</span>
             </div>
         </div>
@@ -124,15 +130,29 @@
     </section>
 
     <section class="platform-strip" aria-label="Resin platforms">
-        <p>One system, wherever the thought happens.</p>
+        <p>One next action, protected wherever you work.</p>
         <div><span><Apple size={16} /> iPhone</span><span><Chrome size={16} /> Chrome</span><span class="web-mark">↗</span><span>Web app</span><span><CalendarDays size={16} /> Calendar</span></div>
+    </section>
+
+    <section class="position-section">
+        <header class="section-header centered">
+            <div class="eyebrow"><span></span> Built for the gap between knowing and doing</div>
+            <h2>Not another list.<br />A system for following through.</h2>
+            <p>Most tools solve one piece of the problem. Resin connects intention, time, and attention around the one action you are trying to start.</p>
+        </header>
+        <div class="position-grid">
+            <article><span>01</span><small>TO-DO APPS</small><h3>Remember the intention.</h3><p>Useful for storage. Easy to keep reorganizing instead of beginning.</p></article>
+            <article><span>02</span><small>SMART CALENDARS</small><h3>Place the intention.</h3><p>Useful once work is defined. A calendar block still cannot hold your attention.</p></article>
+            <article><span>03</span><small>APP BLOCKERS</small><h3>Remove the distraction.</h3><p>Useful for restraint. They rarely reconnect the block to meaningful work.</p></article>
+            <article class="resin-position"><span><Sparkles size={15} /></span><small>RESIN</small><h3>Protect the next action.</h3><p>Shape what matters, place it realistically, and shield the moment you choose to begin.</p><strong>Intention → time → protected action</strong></article>
+        </div>
     </section>
 
     <section class="journey-section">
         <header class="section-header centered">
             <div class="eyebrow"><span></span> One calm loop</div>
-            <h2>Less system to manage.<br />More momentum to keep.</h2>
-            <p>The whole journey stays visible, the choices stay small, and every screen points toward a tangible next step.</p>
+            <h2>Turn what you mean to do<br />into what you actually start.</h2>
+            <p>One small loop closes the distance between a circling thought and protected action.</p>
         </header>
 
         <div class="journey-shell">
@@ -206,8 +226,8 @@
 
     <section class="feature-section">
         <header class="section-header">
-            <div><div class="eyebrow"><span></span> The whole follow-through loop</div><h2>Built for what happens<br />after you write it down.</h2></div>
-            <p>Resin connects the tools that usually drift apart: notes, realistic scheduling, protected focus, and reflection.</p>
+            <div><div class="eyebrow"><span></span> The complete follow-through loop</div><h2>Built for the moment<br />after good intentions.</h2></div>
+            <p>Resin connects what other tools leave fragmented: the thought, the next move, realistic time, and protected attention.</p>
         </header>
 
         <div class="feature-grid">
@@ -221,7 +241,7 @@
     </section>
 
     <section class="audience-strip">
-        <span>Built for</span><p>scattered thinkers</p><i></i><p>deep workers</p><i></i><p>recovering tab collectors</p><i></i><p>people with full calendars</p>
+        <span>Built for</span><p>overloaded minds</p><i></i><p>independent creators</p><i></i><p>chronic postponers</p><i></i><p>deep workers</p>
     </section>
 
     <section class="faq-section">
@@ -238,10 +258,10 @@
 
     <section class="final-cta">
         <div class="cta-orbit one"></div><div class="cta-orbit two"></div>
-        <div class="eyebrow light"><span></span> Start with one thought</div>
-        <h2>Make the next step<br /><em>feel lighter.</em></h2>
-        <p>Capture the mess. Shape the plan. Protect the time.</p>
-        <div class="final-actions"><a class="amber-cta" href="/login?mode=start&next=/">Start free on the web <ArrowRight size={17} /></a><a class="quiet-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={16} /> Get the iOS app</a></div>
+        <div class="eyebrow light"><span></span> One intention. One protected start.</div>
+        <h2>Stop managing the task.<br /><em>Start moving it.</em></h2>
+        <p>Capture the thought. Shape the next move. Protect the start.</p>
+        <div class="final-actions"><a class="amber-cta" href="/login?mode=start&next=/">Start my first plan <ArrowRight size={17} /></a><a class="quiet-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={16} /> Get the iOS app</a></div>
         <small>No ads · AI optional · cancel anytime</small>
     </section>
 </main>
@@ -294,6 +314,8 @@
 
     .platform-strip { min-height:92px; padding:0 max(24px,calc((100vw - 1180px)/2)); border-top:1px solid rgba(38,35,31,.09); border-bottom:1px solid rgba(38,35,31,.09); display:flex; align-items:center; justify-content:space-between; gap:28px; color:#746b62; }.platform-strip > p { color:#948a7f; font-size:10px; font-weight:700; }.platform-strip > div { display:flex; align-items:center; gap:26px; }.platform-strip span { display:flex; align-items:center; gap:7px; font-size:10px; font-weight:800; }.web-mark { width:25px; height:25px; border-radius:8px; display:grid!important; place-items:center; color:#fff; background:#26231f; }
 
+    .position-section { padding:125px max(24px,calc((100vw - 1180px)/2)); background:#faf7f1; }.position-grid { margin-top:60px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }.position-grid article { min-height:290px; padding:27px 24px; border:1px solid rgba(38,35,31,.09); border-radius:18px; display:flex; flex-direction:column; background:rgba(255,253,248,.72); }.position-grid article > span { width:35px; height:35px; border-radius:11px; display:grid; place-items:center; color:#a56c38; background:#efe4d7; font-size:9px; font-weight:850; }.position-grid small { margin-top:34px; color:#9a8f83; font-size:8px; font-weight:850; letter-spacing:.11em; }.position-grid h3 { margin-top:9px; font-size:24px; line-height:1.08; }.position-grid p { margin-top:13px; color:#817568; font-size:10px; line-height:1.7; }.position-grid .resin-position { border-color:rgba(201,128,66,.35); color:#fff; background:#2d493a; box-shadow:0 22px 50px rgba(45,73,58,.16); transform:translateY(-10px); }.position-grid .resin-position > span { color:#fff; background:#c98042; }.position-grid .resin-position small { color:#e7ae70; }.position-grid .resin-position p { color:rgba(255,255,255,.6); }.position-grid .resin-position strong { margin-top:auto; padding-top:22px; border-top:1px solid rgba(255,255,255,.1); color:#f0bd83; font-size:9px; }
+
     .journey-section,.feature-section,.faq-section { padding:125px max(24px,calc((100vw - 1180px)/2)); }
     .section-header.centered { max-width:780px; margin:auto; text-align:center; }.section-header.centered .eyebrow { justify-content:center; }.section-header h2 { margin-top:18px; font-size:clamp(44px,5vw,70px); line-height:.98; letter-spacing:-.048em; }.section-header.centered > p { max-width:600px; margin:22px auto 0; color:#817568; font-size:14px; line-height:1.75; }
     .journey-shell { margin-top:60px; border:1px solid rgba(38,35,31,.1); border-radius:23px; overflow:hidden; background:#fffdf8; box-shadow:0 24px 65px rgba(38,35,31,.08); }
@@ -324,13 +346,13 @@
 
     @media(max-width:980px) {
         .hero-section { min-height:1050px; }.product-stage { height:560px; }.browser-card { width:92%; }.phone-card { right:1%; }.extension-card { left:1%; }
-        .journey-content,.focus-section,.feature-grid article.feature-wide,.section-header:not(.centered),.faq-section { grid-template-columns:1fr; }.journey-copy { padding:52px; }.journey-visual { min-height:500px; }.focus-section { gap:70px; }.focus-composition { max-width:650px; width:100%; margin:auto; }.section-header:not(.centered),.faq-section { gap:30px; }.handoff-art { margin-top:20px; }
+        .position-grid { grid-template-columns:1fr 1fr; }.position-grid .resin-position { transform:none; }.journey-content,.focus-section,.feature-grid article.feature-wide,.section-header:not(.centered),.faq-section { grid-template-columns:1fr; }.journey-copy { padding:52px; }.journey-visual { min-height:500px; }.focus-section { gap:70px; }.focus-composition { max-width:650px; width:100%; margin:auto; }.section-header:not(.centered),.faq-section { gap:30px; }.handoff-art { margin-top:20px; }
     }
     @media(max-width:700px) {
         .hero-section { min-height:auto; padding:124px 18px 74px; }.announcement { font-size:8px; }.hero-copy h1 { font-size:51px; }.hero-lede { font-size:15px; }.hero-actions { flex-direction:column; }.hero-actions a { width:100%; }.trust-row { gap:10px; }
         .product-stage { height:520px; margin-top:55px; }.browser-card { width:100%; height:425px; }.browser-bar { grid-template-columns:1fr 2fr 1fr; }.browser-body { height:380px; grid-template-columns:62px 1fr; }.browser-body aside { padding:12px 6px; }.side-item { padding:6px 4px; font-size:6px; }.mini-brand { margin-bottom:20px; }.today-view { padding:24px 14px; }.today-top h2 { font-size:19px; }.today-top button { display:none; }.thought-input { margin-top:15px; }.plan-card { grid-template-columns:4px 1fr 37px; gap:8px; }.plan-card > button { display:none; }.mini-timeline { display:none; }.phone-card { width:150px; right:-3px; bottom:5px; }.phone-screen { min-height:270px; padding:17px 10px 12px; }.focus-ring { width:88px; height:88px; margin:14px auto; }.focus-ring strong { font-size:18px; }.phone-screen h3 { font-size:12px; }.blocked-pill { font-size:5px; }.extension-card { width:170px; left:-2px; bottom:30px; }.extension-card > p { font-size:9px; }.proof-chip { display:none; }
         .platform-strip { padding:24px 18px; align-items:flex-start; flex-direction:column; gap:14px; }.platform-strip > div { flex-wrap:wrap; gap:16px; }
-        .journey-section,.feature-section,.faq-section { padding:85px 18px; }.section-header h2,.faq-title h2 { font-size:42px; }.journey-shell { margin-top:40px; }.stage-tabs { min-height:63px; }.stage-tabs button { flex-direction:column; gap:2px; font-size:9px; }.journey-copy { padding:38px 25px; }.journey-copy h3 { font-size:36px; }.journey-visual { min-height:410px; }.capture-demo,.plan-demo,.protect-demo { width:84%; }
+        .position-section,.journey-section,.feature-section,.faq-section { padding:85px 18px; }.position-grid { grid-template-columns:1fr; margin-top:40px; }.position-grid article { min-height:240px; }.section-header h2,.faq-title h2 { font-size:42px; }.journey-shell { margin-top:40px; }.stage-tabs { min-height:63px; }.stage-tabs button { flex-direction:column; gap:2px; font-size:9px; }.journey-copy { padding:38px 25px; }.journey-copy h3 { font-size:36px; }.journey-visual { min-height:410px; }.capture-demo,.plan-demo,.protect-demo { width:84%; }
         .focus-section { min-height:auto; padding:85px 18px; }.focus-copy h2 { font-size:43px; }.focus-composition { min-height:480px; }.focus-window { width:94%; }.focus-window-body { min-height:280px; padding:32px 25px; }.focus-window-body h3 { font-size:28px; }.block-card { width:235px; top:35px; right:-5px; }.site-block { width:240px; right:0; bottom:16px; }
         .feature-grid { grid-template-columns:1fr; }.feature-grid article.feature-wide { grid-column:auto; padding:25px; }.feature-grid article { min-height:350px; padding:25px; }.handoff-art { height:auto; grid-template-columns:1fr; gap:8px; }.handoff-art > i { width:1px; height:28px; margin:auto; background:linear-gradient(rgba(53,86,68,.15),rgba(53,86,68,.45)); }.handoff-art > i::after { right:-2px; top:auto; bottom:0; transform:rotate(135deg); }.handoff-node { min-height:90px; }.handoff-node.web { transform:none; }.privacy-seal { width:160px; height:160px; }
         .audience-strip { justify-content:flex-start; }.audience-strip p { font-size:15px; }

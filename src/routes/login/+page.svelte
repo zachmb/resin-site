@@ -15,16 +15,16 @@
 
 <svelte:head>
     <title>{isStarting ? 'Start free' : 'Sign in'} | Resin</title>
-    <meta name="description" content="Start Resin free or sign back in. Turn a scattered thought into a plan you can protect and finish." />
+    <meta name="description" content="Start Resin free or sign back in. Turn one messy intention into a realistic next action and a protected start." />
 </svelte:head>
 
 <main class="login-page">
     <section class="login-story">
         <a class="story-brand" href="/" aria-label="Resin home"><img src="/logo.png" alt=""><span>Resin</span></a>
         <div class="story-copy">
-            <div class="story-kicker"><span></span> One calm loop</div>
-            <h1>Start with one thought.<br><em>Leave with a next move.</em></h1>
-            <p>Resin turns what is circling in your head into a realistic plan, then helps protect the time to begin it.</p>
+            <div class="story-kicker"><span></span> The follow-through system</div>
+            <h1>Turn what you mean to do<br><em>into what you actually start.</em></h1>
+            <p>Shape one messy intention into a realistic next action, then protect the attention needed to begin.</p>
             <div class="journey" aria-label="How Resin works">
                 {#each steps as step, index}
                     <div class="journey-step">
@@ -37,7 +37,7 @@
         </div>
         <div class="story-preview">
             <div class="preview-icon"><Sparkles size={17}/></div>
-            <div><span>YOUR FIRST PLAN</span><strong>Ready in under a minute</strong><small>No setup maze. Start on web, continue anywhere.</small></div>
+            <div><span>YOUR FIRST PROTECTED ACTION</span><strong>Ready in under a minute</strong><small>No setup maze. No productivity system to maintain.</small></div>
             <ShieldCheck size={19}/>
         </div>
     </section>
@@ -46,7 +46,7 @@
         <div class="login-card">
             <a class="mobile-brand" href="/"><img src="/logo.png" alt=""><span>Resin</span></a>
             <span class="login-kicker">{isStarting ? 'Start free' : 'Welcome back'}</span>
-            <h2>{isStarting ? 'Make room for what matters.' : 'Pick up where you left off.'}</h2>
+            <h2>{isStarting ? 'Start the thing that matters.' : 'Pick up where you left off.'}</h2>
             <p class="login-copy">Create an account or sign in with one secure tap.</p>
             {#if $page.url.searchParams.get('error')}<p class="notice error" role="alert">That sign-in link expired or could not be completed. Please try again.</p>{/if}
             {#if $page.url.searchParams.get('deleted')}<p class="notice success" role="status">Your Resin account has been deleted. You can start fresh whenever you are ready.</p>{/if}

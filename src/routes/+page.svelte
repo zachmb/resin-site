@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Resin — Turn scattered thoughts into protected focus</title>
+	<title>Resin — The follow-through system for overloaded minds</title>
 </svelte:head>
 
 {#if data.session}

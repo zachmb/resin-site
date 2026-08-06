@@ -7,28 +7,28 @@
     ];
 </script>
 
-<svelte:head><title>Pricing | Resin</title><meta name="description" content="Start Resin free on iPhone. Upgrade to Resin Pro for web and Chrome sync, browser blocking, and unlimited plans." /></svelte:head>
+<svelte:head><title>Pricing | Resin</title><meta name="description" content="Start Resin’s complete follow-through loop free on iPhone. Upgrade to Pro for cross-device planning, focus continuity, and Chrome protection." /></svelte:head>
 
 <main class="pricing-page">
     <header class="pricing-hero">
-        <div class="pricing-kicker"><span></span> Simple by design</div>
-        <h1>Start free.<br><em>Expand when you need it.</em></h1>
-        <p>The iPhone app is a complete focus system. Pro brings the same plan and protection to your laptop.</p>
+        <div class="pricing-kicker"><span></span> Follow-through without the feature tax</div>
+        <h1>Start free.<br><em>Protect your momentum everywhere.</em></h1>
+        <p>Free proves the complete follow-through loop on iPhone. Pro carries the same next action and protection onto your laptop.</p>
         <div class="platforms"><span><Apple size={15}/> iPhone</span><span><Globe2 size={15}/> Web</span><span><Chrome size={15}/> Chrome</span></div>
     </header>
 
     <section class="plans">
         <article>
-            <div class="plan-heading"><div><span>For getting started</span><h2>Free</h2></div><div class="price"><strong>$0</strong><small>forever</small></div></div>
-            <p class="plan-copy">Capture, plan, and block distracting apps from your iPhone.</p>
+            <div class="plan-heading"><div><span>Personal follow-through</span><h2>Free</h2></div><div class="price"><strong>$0</strong><small>forever</small></div></div>
+            <p class="plan-copy">Turn an intention into a clear plan and protected start on iPhone.</p>
             <ul>{#each freeFeatures as feature}<li><Check size={14}/>{feature}</li>{/each}</ul>
             <a class="plan-button secondary" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={16}/> Get Resin for iPhone</a>
         </article>
         <article class="pro-plan">
-            <div class="best-fit"><Sparkles size={12}/> Best for cross-device focus</div>
-            <div class="plan-heading"><div><span>For deeper follow-through</span><h2>Pro</h2></div><div class="price"><strong>$2.50</strong><small>/ month, billed yearly</small></div></div>
+            <div class="best-fit"><Sparkles size={12}/> Best for cross-device follow-through</div>
+            <div class="plan-heading"><div><span>Protected everywhere</span><h2>Pro</h2></div><div class="price"><strong>$2.50</strong><small>/ month, billed yearly</small></div></div>
             <p class="annual"><strong>Save 50%</strong> · $29.99 yearly · 7-day free trial</p>
-            <p class="plan-copy">Keep your notes, plan, and browser protection aligned everywhere.</p>
+            <p class="plan-copy">Keep the same next action, schedule, and protection aligned everywhere you work.</p>
             <ul>{#each proFeatures as feature}<li><Check size={14}/>{feature}</li>{/each}</ul>
             <a class="plan-button primary" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer">Start 7-day Pro trial</a>
             <small class="purchase-note">Subscriptions are managed securely through Apple.</small>
@@ -36,7 +36,7 @@
     </section>
 
     <section class="comparison">
-        <div><span class="pricing-kicker"><span></span> Compare plans</span><h2>Choose the surface,<br>not a feature maze.</h2></div>
+        <div><span class="pricing-kicker"><span></span> Compare plans</span><h2>Pay for continuity,<br>not more complexity.</h2></div>
         <div class="comparison-table" role="table" aria-label="Plan comparison">
             <div class="comparison-row comparison-head" role="row"><span>Feature</span><strong>Free</strong><strong>Pro</strong></div>
             {#each comparison as row}<div class="comparison-row" role="row"><span>{row[0]}</span><span>{row[1]}</span><strong>{row[2]}</strong></div>{/each}

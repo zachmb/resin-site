@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Resin — The follow-through system for overloaded minds</title>
+	<title>Resin — Follow through on what matters</title>
 </svelte:head>
 
 {#if data.session}

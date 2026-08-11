@@ -4,6 +4,7 @@
         Apple,
         CalendarDays,
         Check,
+        ChevronDown,
         Chrome,
         Clock3,
         LockKeyhole,
@@ -12,44 +13,38 @@
     } from 'lucide-svelte';
 
     let activeStage = $state(0);
-    let openFaq = $state<number | null>(null);
+    let openFaq = $state<number | null>(0);
 
     const stages = [
         {
             label: 'Capture',
-            eyebrow: 'Start without sorting',
-            title: 'Get the thought out before it disappears.',
-            copy: 'Write the messy version from iPhone, web, or the Chrome extension. Resin gives you one calm place to begin.',
-            stat: 'No organizing required'
+            title: 'Write it the way it arrives.',
+            copy: 'No folders, fields, or setup. Start with the unfinished thought from iPhone, web, or the Chrome extension.'
         },
         {
-            label: 'Plan',
-            eyebrow: 'Turn friction into a path',
-            title: 'See the next step—not the whole mountain.',
-            copy: 'Resin shapes a note into realistic actions, estimates the time, and helps each step find a place in your day.',
-            stat: 'One recommended next move'
+            label: 'Make a plan',
+            title: 'Turn ambiguity into a first move.',
+            copy: 'Resin breaks the thought into realistic steps, estimates the effort, and recommends what to do next.'
         },
         {
-            label: 'Protect',
-            eyebrow: 'Make focus easier to keep',
-            title: 'Start the work with fewer escape hatches.',
-            copy: 'Begin a focus window from the plan. Selected apps and sites stay out of reach while your current step stays visible.',
-            stat: 'Intent-linked protection'
+            label: 'Follow through',
+            title: 'Give the work a protected start.',
+            copy: 'Choose a time, begin focus, and keep distracting apps and sites out of reach while the current step stays visible.'
         }
     ];
 
     const faqs = [
-        ['What does Resin block?', 'On iPhone, Resin uses Apple’s Screen Time APIs to shield selected apps. The Chrome extension protects the distracting domains you choose during active focus sessions.'],
-        ['Where does planning happen?', 'Planning can run on-device on iOS. The web app and extension use Resin’s secure planning service so the same workflow is available from your laptop.'],
-        ['Can I use Resin without AI?', 'Yes. Capture notes, start manual focus sessions, manage block lists, and use the calendar without turning a note into a generated plan.'],
-        ['Do my devices stay in sync?', 'Your notes, focus sessions, schedules, and protection status stay coordinated across the web app, iOS app, and Chrome extension.']
+        ['Is Resin another to-do list?', 'No. Resin is designed for the moment before a task belongs on a list: when the idea is still vague, emotionally heavy, or easy to postpone. It helps you define the next move and protect time to begin it.'],
+        ['What does Resin block?', 'On iPhone, Resin uses Apple’s Screen Time APIs to shield the apps you choose. The Chrome extension blocks selected websites during an active focus session.'],
+        ['Can I use Resin without AI?', 'Yes. Notes, calendars, manual focus sessions, and blocking work without generated plans. AI-assisted planning is an optional step, not the product’s front door.'],
+        ['Do my devices stay in sync?', 'Your notes, plans, schedules, and active protection stay coordinated across the web app, iPhone app, and Chrome extension.']
     ];
 </script>
 
 <svelte:head>
-    <meta name="description" content="Resin is the follow-through system for overloaded minds. Turn one messy intention into a realistic next action and protect the attention needed to begin." />
-    <meta property="og:title" content="Resin — Turn intention into protected action" />
-    <meta property="og:description" content="Shape one messy intention into a realistic next action, find time for it, and protect the attention needed to begin." />
+    <meta name="description" content="Resin helps overloaded minds turn vague intentions into realistic next actions—and protect the attention needed to begin." />
+    <meta property="og:title" content="Resin — Follow through on what matters" />
+    <meta property="og:description" content="Capture the thought, make a realistic plan, and protect the time to begin." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://noteresin.com/" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -57,141 +52,95 @@
 </svelte:head>
 
 <main class="landing-shell">
-    <section class="hero-section">
+    <section class="hero">
         <div class="hero-copy">
-            <div class="announcement"><span>Resin</span> The follow-through system for overloaded minds <ArrowRight size={13} /></div>
-            <h1>Planning is easy.<br /><em>Starting is the hard part.</em></h1>
-            <p class="hero-lede">Resin turns one messy intention into a realistic next action, finds time for it, and protects the attention needed to begin.</p>
+            <p class="kicker">Resin <span></span> Follow through</p>
+            <h1>You know what matters.<br /><em>Now start it.</em></h1>
+            <p class="hero-lede">Resin turns the thought you keep carrying into a realistic next action, finds room for it, and protects your attention long enough to begin.</p>
             <div class="hero-actions">
-                <a class="primary-cta" href="/login?mode=start&next=/">Start my first plan <ArrowRight size={17} /></a>
-                <a class="secondary-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={17} /> Get Resin for iPhone</a>
+                <a class="button primary" href="/login?mode=start&next=/">Make my first plan <ArrowRight size={17} /></a>
+                <a class="button secondary" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={17} /> Get the iPhone app</a>
             </div>
-            <div class="trust-row">
-                <span><Check size={13} /> Free to start</span>
-                <span><Check size={13} /> Protection is optional</span>
-                <span><Check size={13} /> Works without AI</span>
+            <p class="hero-note"><Check size={14} /> Free unlimited local plans <span></span> No card required</p>
+        </div>
+
+        <div class="product-frame" aria-label="A plan moving from capture to protected focus in Resin">
+            <div class="product-toolbar">
+                <div class="window-dots"><i></i><i></i><i></i></div>
+                <span>Today</span>
+                <small><i></i> Synced</small>
+            </div>
+            <div class="product-body">
+                <aside>
+                    <div class="mini-logo">R</div>
+                    <nav aria-label="Product preview navigation">
+                        <b>Today</b><span>Plans</span><span>Notes</span><span>Focus</span><span>Calendar</span>
+                    </nav>
+                    <small>Resin for Web</small>
+                </aside>
+                <div class="product-content">
+                    <div class="product-heading"><div><small>MONDAY, AUGUST 10</small><h2>Make room for what matters.</h2></div><button>New thought</button></div>
+                    <div class="capture-field"><Sparkles size={17} class="capture-icon" /><span>Finish the launch page without spending all night on it.</span><kbd>⌘ ↵</kbd></div>
+                    <div class="today-label"><span>Now</span><i></i><small>One clear next step</small></div>
+                    <article class="active-plan">
+                        <div class="plan-mark"></div>
+                        <div class="plan-main"><small>LAUNCH PAGE · STEP 2 OF 4</small><h3>Polish the mobile story</h3><p>Keep the proof visible and test the primary action at 390px.</p></div>
+                        <div class="plan-duration"><strong>24</strong><span>min left</span></div>
+                        <button><LockKeyhole size={14} /> Begin focus</button>
+                    </article>
+                    <div class="day-row"><span>10:00</span><div class="event muted">Team standup <small>30m</small></div></div>
+                    <div class="day-row"><span>10:30</span><div class="event resin">Polish mobile story <small>24m</small></div></div>
+                </div>
+            </div>
+            <div class="phone-preview">
+                <div class="phone-top"><span>9:41</span><i></i><span>•••</span></div>
+                <small>PROTECTED FOCUS</small>
+                <div class="timer"><strong>24:18</strong><span>remaining</span></div>
+                <h3>Polish the mobile story</h3>
+                <p>Launch page · step 2 of 4</p>
+                <div class="shield-row"><ShieldCheck size={14} /> 4 distractions blocked</div>
+                <button>Pause focus</button>
             </div>
         </div>
 
-        <div class="product-stage" aria-label="Resin working across web, iPhone, and Chrome">
-            <div class="browser-card">
-                <div class="browser-bar">
-                    <div class="window-dots"><span></span><span></span><span></span></div>
-                    <div class="address-pill">noteresin.com/today</div>
-                    <div class="sync-state"><i></i> synced</div>
-                </div>
-                <div class="browser-body">
-                    <aside>
-                        <div class="mini-brand">R</div>
-                        <div class="side-item active">Today</div>
-                        <div class="side-item">Notes</div>
-                        <div class="side-item">Focus</div>
-                        <div class="side-item">Calendar</div>
-                    </aside>
-                    <div class="today-view">
-                        <div class="today-top"><div><span>Today</span><h2>Good afternoon, Alex.</h2></div><button>+ New thought</button></div>
-                        <div class="thought-input"><Sparkles size={13} color="#c98042" /><span>What would feel lighter once it had a plan?</span><kbd>⌘ ↵</kbd></div>
-                        <div class="schedule-label"><span>Now</span><i></i><small>2 tasks · 52 min</small></div>
-                        <div class="plan-card">
-                            <div class="plan-accent"></div>
-                            <div class="plan-copy"><span>Launch plan</span><h3>Finish the landing page</h3><p>Next: Polish the mobile story</p></div>
-                            <div class="plan-time"><strong>25</strong><span>min</span></div>
-                            <button><LockKeyhole size={12} /> Focus</button>
-                        </div>
-                        <div class="mini-timeline"><span>10:00</span><div class="timeline-block">Review final copy <small>12m</small></div><span>10:30</span><div class="timeline-empty">Open time</div></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="phone-card">
-                <div class="phone-status"><span>9:41</span><i></i><span>•••</span></div>
-                <div class="phone-screen">
-                    <div class="phone-kicker">Protected focus</div>
-                    <div class="focus-ring"><div><strong>24:18</strong><span>remaining</span></div></div>
-                    <h3>Polish the mobile story</h3>
-                    <p>Launch plan · step 2 of 3</p>
-                    <div class="blocked-pill"><ShieldCheck size={13} /> 4 distractions blocked</div>
-                    <button>Pause focus</button>
-                </div>
-            </div>
-
-            <div class="extension-card">
-                <div class="extension-top"><span><Chrome size={14} /> Resin</span><i>•••</i></div>
-                <small>QUICK CAPTURE</small>
-                <p>Remember to simplify the mobile hero and test the CTA.</p>
-                <div><span>Saved to Inbox</span><Check size={13} /></div>
-            </div>
-
+        <div class="platform-row">
+            <p>One current step, wherever you work.</p>
+            <div><span><Apple size={16} /> iPhone</span><span><Chrome size={16} /> Chrome</span><span class="web-icon">↗</span><span>Web</span><span><CalendarDays size={16} /> Calendar</span></div>
         </div>
     </section>
 
-    <section class="platform-strip" aria-label="Resin platforms">
-        <p>One next action, protected wherever you work.</p>
-        <div><span><Apple size={16} /> iPhone</span><span><Chrome size={16} /> Chrome</span><span class="web-mark">↗</span><span>Web app</span><span><CalendarDays size={16} /> Calendar</span></div>
-    </section>
-
-    <section class="position-section">
-        <header class="section-header centered">
-            <div class="eyebrow"><span></span> Built for the gap between knowing and doing</div>
-            <h2>Not another list.<br />A system for following through.</h2>
-            <p>Most tools solve one piece of the problem. Resin connects intention, time, and attention around the one action you are trying to start.</p>
-        </header>
-        <div class="position-grid">
-            <article><span>01</span><small>TO-DO APPS</small><h3>Remember the intention.</h3><p>Useful for storage. Easy to keep reorganizing instead of beginning.</p></article>
-            <article><span>02</span><small>SMART CALENDARS</small><h3>Place the intention.</h3><p>Useful once work is defined. A calendar block still cannot hold your attention.</p></article>
-            <article><span>03</span><small>APP BLOCKERS</small><h3>Remove the distraction.</h3><p>Useful for restraint. They rarely reconnect the block to meaningful work.</p></article>
-            <article class="resin-position"><span><Sparkles size={15} /></span><small>RESIN</small><h3>Protect the next action.</h3><p>Shape what matters, place it realistically, and shield the moment you choose to begin.</p><strong>Intention → time → protected action</strong></article>
+    <section class="problem-section">
+        <div class="section-index">01 / WHY RESIN</div>
+        <div class="problem-heading">
+            <h2>Most productivity tools begin <em>after</em> the hardest part.</h2>
+            <p>They assume the work is already clear, scheduled, and easy to start. Resin is built for the murky part in between.</p>
+        </div>
+        <div class="comparison-list">
+            <div><span>To-do apps</span><p>Store the task</p><small>But leave it vague</small></div>
+            <div><span>Smart calendars</span><p>Reserve the time</p><small>But cannot make you begin</small></div>
+            <div><span>App blockers</span><p>Remove distraction</p><small>But forget what it was for</small></div>
+            <div class="resin-row"><span>Resin</span><p>Clarify, place, and protect</p><small>The whole path to starting</small></div>
         </div>
     </section>
 
-    <section class="journey-section">
-        <header class="section-header centered">
-            <div class="eyebrow"><span></span> One calm loop</div>
-            <h2>Turn what you mean to do<br />into what you actually start.</h2>
-            <p>One small loop closes the distance between a circling thought and protected action.</p>
-        </header>
-
-        <div class="journey-shell">
-            <div class="stage-tabs" role="tablist" aria-label="Resin workflow">
+    <section class="workflow-section">
+        <div class="section-index">02 / THE WORKFLOW</div>
+        <div class="workflow-heading"><h2>From “I should” to<br />“I started.”</h2><p>A short loop designed for overloaded days—not ideal ones.</p></div>
+        <div class="workflow-shell">
+            <div class="workflow-tabs" role="tablist" aria-label="How Resin works">
                 {#each stages as stage, index}
-                    <button class:active={activeStage === index} onclick={() => activeStage = index} role="tab" aria-selected={activeStage === index}>
-                        <span>0{index + 1}</span>{stage.label}
-                    </button>
+                    <button class:active={activeStage === index} onclick={() => activeStage = index} role="tab" aria-selected={activeStage === index}><span>0{index + 1}</span>{stage.label}</button>
                 {/each}
             </div>
-
-            <div class="journey-content">
-                <div class="journey-copy">
-                    <div class="eyebrow"><span></span>{stages[activeStage].eyebrow}</div>
-                    <h3>{stages[activeStage].title}</h3>
-                    <p>{stages[activeStage].copy}</p>
-                    <div class="stage-stat"><Check size={15} /> {stages[activeStage].stat}</div>
-                </div>
-
-                <div class="journey-visual" class:plan-mode={activeStage === 1} class:protect-mode={activeStage === 2}>
+            <div class="workflow-detail">
+                <div class="workflow-copy"><p>0{activeStage + 1}</p><h3>{stages[activeStage].title}</h3><div>{stages[activeStage].copy}</div></div>
+                <div class="workflow-demo">
                     {#if activeStage === 0}
-                        <div class="capture-demo">
-                            <span>INBOX · JUST NOW</span>
-                            <p>Need to finish the launch page, reply to Maya, and stop avoiding mobile QA.</p>
-                            <div><span>Don’t organize yet</span><kbd>⌘ ↵</kbd></div>
-                        </div>
+                        <div class="note-demo"><small>INBOX · JUST NOW</small><p>I need to finish the launch page, reply to Maya, and stop avoiding mobile QA.</p><span>Saved. Sort it out later.</span></div>
                     {:else if activeStage === 1}
-                        <div class="plan-demo">
-                            <div><span>Your plan</span><strong>Launch page</strong><small>52 min total</small></div>
-                            <p><b><Check size={11} /></b><span>Review final product copy</span><small>12m</small></p>
-                            <p><b>2</b><span>Polish mobile sections</span><small>25m</small></p>
-                            <p><b>3</b><span>Run the final build</span><small>15m</small></p>
-                            <button>Place in my day <ArrowRight size={13} /></button>
-                        </div>
+                        <div class="steps-demo"><header><span>Launch the new page</span><small>52 min total</small></header><p><b><Check size={12} /></b><span>Review final copy</span><small>12m</small></p><p><b>2</b><span>Polish mobile sections</span><small>25m</small></p><p><b>3</b><span>Run final checks</span><small>15m</small></p><button>Place this in my day <ArrowRight size={14} /></button></div>
                     {:else}
-                        <div class="protect-demo">
-                            <div class="mini-ring"><LockKeyhole size={24} /></div>
-                            <span>FOCUS READY</span>
-                            <h4>45 minutes protected</h4>
-                            <div><span>Instagram</span><b>Blocked</b></div>
-                            <div><span>Reddit</span><b>Blocked</b></div>
-                            <div><span>YouTube</span><b>Blocked</b></div>
-                        </div>
+                        <div class="protect-demo"><div><LockKeyhole size={25} /></div><small>READY WHEN YOU ARE</small><h4>25 minutes protected</h4><p><span>Instagram</span><b>Blocked</b></p><p><span>Reddit</span><b>Blocked</b></p><p><span>YouTube</span><b>Blocked</b></p></div>
                     {/if}
                 </div>
             </div>
@@ -200,52 +149,38 @@
 
     <section class="focus-section">
         <div class="focus-copy">
-            <div class="eyebrow light"><span></span> Focus with follow-through</div>
-            <h2>A timer tells you to focus.<br /><em>Resin clears the way.</em></h2>
-            <p>Your next action stays visible while selected apps and sites step out of reach. No guilt dashboard. No streak anxiety. Just a quieter place to continue.</p>
+            <div class="section-index light">03 / PROTECTED ATTENTION</div>
+            <h2>A focus timer tells you to try harder.<br /><em>Resin changes the room.</em></h2>
+            <p>Your current step stays visible while chosen apps and sites step out of reach. When focus ends, protection ends with it.</p>
             <div class="focus-points">
-                <div><span><Clock3 size={18} /></span><div><strong>Begin in seconds</strong><small>Choose 15 minutes, two hours, or anything between.</small></div></div>
-                <div><span><LockKeyhole size={18} /></span><div><strong>Block for real</strong><small>Apple Screen Time protection and synced website blocking.</small></div></div>
-                <div><span><Sparkles size={18} /></span><div><strong>Return gently</strong><small>Blocked surfaces point back to what you meant to do.</small></div></div>
+                <div><Clock3 size={19} /><span><strong>Start in seconds</strong><small>Use the recommended duration or choose your own.</small></span></div>
+                <div><ShieldCheck size={19} /><span><strong>Protect across devices</strong><small>Apple Screen Time and synced website blocking.</small></span></div>
+                <div><Sparkles size={19} /><span><strong>Return to the reason</strong><small>Blocked pages point back to the step you chose.</small></span></div>
             </div>
-            <a href="/focus">Explore focus <ArrowRight size={16} /></a>
+            <a href="/focus">See how focus works <ArrowRight size={16} /></a>
         </div>
-        <div class="focus-composition">
-            <div class="focus-window">
-                <div class="focus-window-top"><span>Current focus</span><i></i></div>
-                <div class="focus-window-body"><small>UP NEXT</small><h3>Polish mobile sections</h3><p>Keep the hero compact, make the product proof obvious, and test at 390px.</p><div><span>25 min</span><b>Step 2 of 3</b></div></div>
-            </div>
-            <div class="block-card"><ShieldCheck size={22} color="#e8aa69" /><div><strong>Protected across devices</strong><span>Changes sync when focus starts and ends.</span></div></div>
-            <div class="site-block"><span>reddit.com</span><strong>Not right now.</strong><p>You’re focusing on “Polish mobile sections.”</p><button>Return to task</button></div>
+        <div class="focus-preview">
+            <div class="focus-card"><small>CURRENT FOCUS</small><h3>Polish the mobile story</h3><p>Keep the proof visible and test the primary action at 390px.</p><div><span>24:18 remaining</span><b>Step 2 of 4</b></div></div>
+            <div class="blocked-card"><span>reddit.com</span><ShieldCheck size={23} class="blocked-icon" /><h4>Not right now.</h4><p>You chose to focus on “Polish the mobile story.”</p><button>Return to Resin</button></div>
         </div>
     </section>
 
-    <section class="feature-section">
-        <header class="section-header">
-            <div><div class="eyebrow"><span></span> The complete follow-through loop</div><h2>Built for the moment<br />after good intentions.</h2></div>
-            <p>Resin connects what other tools leave fragmented: the thought, the next move, realistic time, and protected attention.</p>
-        </header>
-
-        <div class="feature-grid">
-            <article class="feature-wide">
-                <div class="feature-copy"><span class="feature-tag">Continue anywhere</span><h3>The same next step follows you—not the distraction.</h3><p>Capture from Chrome, shape the plan on web, and begin protected focus on iPhone without rebuilding context at every handoff.</p><div class="mini-checks"><span><Check size={13} /> Shared current task</span><span><Check size={13} /> Synced focus state</span><span><Check size={13} /> One calm inbox</span></div></div>
-                <div class="handoff-art"><div class="handoff-node chrome"><span class="handoff-icon"><Chrome size={16} /></span><span>Captured</span><small>Chrome</small></div><i></i><div class="handoff-node web"><span class="web-mark">↗</span><span>Planned</span><small>Web</small></div><i></i><div class="handoff-node iphone"><span class="handoff-icon"><Apple size={16} /></span><span>Protected</span><small>iPhone</small></div></div>
-            </article>
-            <article class="schedule-feature"><span class="feature-tag">Scheduling</span><h3>A plan that fits the day you actually have.</h3><p>Respect working hours, existing events, and honest task lengths.</p><div class="calendar-art"><div><span>9:00</span><b>Team standup</b></div><div><span>10:00</span><b class="amber">Launch plan · 52m</b></div><div><span>11:00</span><b class="open">Open time</b></div></div></article>
-            <article class="privacy-feature"><span class="feature-tag">Designed with restraint</span><h3>Useful without turning your life into a scoreboard.</h3><p>AI is optional. Your focus can be manual. Your progress is context—not a source of pressure.</p><div class="privacy-seal"><ShieldCheck size={31} /><strong>Private by design</strong><span>Clear controls · no ads</span></div></article>
+    <section class="details-section">
+        <div class="section-index">04 / BUILT FOR REAL DAYS</div>
+        <div class="details-heading"><h2>Structure without the performance.</h2><p>Resin works when you are focused, scattered, motivated, or somewhere in between.</p></div>
+        <div class="details-grid">
+            <article><span><CalendarDays size={20} /></span><small>SCHEDULING</small><h3>A plan that respects your calendar.</h3><p>See the meetings already in your day, keep honest task lengths, and schedule around the time you actually have.</p></article>
+            <article><span><Chrome size={20} /></span><small>CONTINUITY</small><h3>Capture here. Continue there.</h3><p>Your notes, plans, current step, and focus state stay coordinated across iPhone, web, and Chrome.</p></article>
+            <article><span><ShieldCheck size={20} /></span><small>RESTRAINT</small><h3>Useful without becoming a scoreboard.</h3><p>No ads. No guilt dashboard. AI is optional, and unlimited local planning is free.</p></article>
         </div>
-    </section>
-
-    <section class="audience-strip">
-        <span>Built for</span><p>overloaded minds</p><i></i><p>independent creators</p><i></i><p>chronic postponers</p><i></i><p>deep workers</p>
     </section>
 
     <section class="faq-section">
-        <div class="faq-title"><div class="eyebrow"><span></span> Questions, answered</div><h2>Know what you’re<br />starting with.</h2><p>Simple at the surface. Clear about what happens underneath.</p></div>
+        <div class="faq-heading"><div class="section-index">05 / QUESTIONS</div><h2>Before you begin.</h2><p>Clear answers about what Resin does—and what it does not.</p></div>
         <div class="faq-list">
             {#each faqs as faq, index}
                 <div class="faq-item">
-                    <button onclick={() => openFaq = openFaq === index ? null : index} aria-expanded={openFaq === index}><span>{faq[0]}</span><i class:open={openFaq === index}>+</i></button>
+                    <button onclick={() => openFaq = openFaq === index ? null : index} aria-expanded={openFaq === index}><span>{faq[0]}</span><ChevronDown size={18} class={openFaq === index ? 'faq-icon open' : 'faq-icon'} /></button>
                     {#if openFaq === index}<p>{faq[1]}</p>{/if}
                 </div>
             {/each}
@@ -253,102 +188,54 @@
     </section>
 
     <section class="final-cta">
-        <div class="eyebrow light"><span></span> One intention. One protected start.</div>
-        <h2>Stop managing the task.<br /><em>Start moving it.</em></h2>
-        <p>Capture the thought. Shape the next move. Protect the start.</p>
-        <div class="final-actions"><a class="amber-cta" href="/login?mode=start&next=/">Start my first plan <ArrowRight size={17} /></a><a class="quiet-cta" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={16} /> Get the iOS app</a></div>
-        <small>No ads · AI optional · cancel anytime</small>
+        <p>Resin · Follow through</p>
+        <h2>Carry less.<br /><em>Start one thing.</em></h2>
+        <div class="final-actions"><a class="button amber" href="/login?mode=start&next=/">Make my first plan <ArrowRight size={17} /></a><a class="button dark-quiet" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={17} /> Get Resin for iPhone</a></div>
+        <small>Free unlimited local plans · No card required · AI optional</small>
     </section>
 </main>
 
 <style>
-    :global(body) { background:#f4efe7; }
-    .landing-shell { color:#26231f; overflow:hidden; background:#f4efe7; }
-    h1,h2,h3,h4 { font-family:var(--font-serif),Georgia,serif; }
-    button,a { transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease; }
-    a:hover,button:hover { transform:translateY(-1px); }
-    a:focus-visible,button:focus-visible { outline:2px solid #d69350; outline-offset:3px; }
-    .eyebrow { display:flex; align-items:center; gap:10px; color:#817568; font-size:10px; font-weight:850; letter-spacing:.13em; text-transform:uppercase; }
-    .eyebrow > span { width:31px; height:1px; background:#c98042; }
-    .eyebrow.light { color:rgba(255,255,255,.58); }.eyebrow.light > span { background:#dfa15d; }
-
-    .hero-section { min-height:1120px; padding:156px max(24px,calc((100vw - 1180px)/2)) 100px; position:relative; }
-    .hero-copy { max-width:900px; margin:auto; text-align:center; position:relative; z-index:2; }
-    .announcement { width:max-content; max-width:100%; min-height:34px; margin:0 auto 26px; padding:5px 10px 5px 6px; border:1px solid rgba(38,35,31,.1); border-radius:999px; display:flex; align-items:center; gap:8px; color:#73695f; background:rgba(255,253,248,.68); box-shadow:0 7px 20px rgba(38,35,31,.05); font-size:10px; font-weight:700; }
-    .announcement > span { padding:5px 8px; border-radius:999px; color:#fff; background:#355644; font-size:8px; letter-spacing:.08em; text-transform:uppercase; }
-    .hero-copy h1 { font-size:clamp(60px,7.4vw,106px); line-height:.9; letter-spacing:-.058em; text-wrap:balance; }
-    .hero-copy h1 em,.final-cta h2 em { color:#c98042; font-style:normal; }
-    .hero-lede { max-width:680px; margin:29px auto 0; color:#756b60; font-size:19px; line-height:1.65; text-wrap:balance; }
-    .hero-actions { display:flex; justify-content:center; flex-wrap:wrap; gap:10px; margin-top:32px; }
-    .hero-actions a,.final-actions a { min-height:52px; padding:0 26px; border-radius:13px; display:inline-flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; font-size:14px; font-weight:750; letter-spacing:-.01em; }
-    .primary-cta { color:#fff; background:#26231f; box-shadow:0 13px 30px rgba(38,35,31,.17); }.primary-cta:hover { background:#355644; box-shadow:0 16px 34px rgba(53,86,68,.2); }
-    .secondary-cta { color:#26231f; border:1px solid rgba(38,35,31,.11); background:rgba(255,253,248,.72); }
-    .trust-row { display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin-top:20px; color:#817568; font-size:9px; font-weight:700; }.trust-row span { display:flex; align-items:center; gap:5px; }
-
-    .product-stage { max-width:1080px; height:600px; margin:76px auto 0; position:relative; perspective:1400px; }
-    .browser-card { width:82%; height:510px; margin:auto; border:1px solid rgba(38,35,31,.12); border-radius:22px; overflow:hidden; background:#fffdf8; box-shadow:0 45px 100px rgba(38,35,31,.16); transform:rotateX(1deg); }
-    .browser-bar { height:45px; padding:0 15px; border-bottom:1px solid rgba(38,35,31,.08); display:grid; grid-template-columns:1fr 1.6fr 1fr; align-items:center; color:#8e8479; background:#faf7f1; font-size:8px; }
-    .window-dots { display:flex; gap:5px; }.window-dots span { width:7px; height:7px; border-radius:50%; background:#ded6ca; }
-    .address-pill { padding:7px 12px; border:1px solid rgba(38,35,31,.07); border-radius:7px; text-align:center; background:#fff; }
-    .sync-state { justify-self:end; display:flex; align-items:center; gap:5px; font-weight:700; }.sync-state i { width:6px; height:6px; border-radius:50%; background:#47705a; box-shadow:0 0 0 3px rgba(71,112,90,.1); }
-    .browser-body { height:465px; display:grid; grid-template-columns:112px 1fr; }.browser-body aside { padding:18px 13px; border-right:1px solid rgba(38,35,31,.07); background:#faf7f1; }
-    .mini-brand { width:29px; height:29px; margin-bottom:28px; border-radius:9px; display:grid; place-items:center; color:#d69350; background:#26231f; font-family:Georgia,serif; font-weight:800; }
-    .side-item { margin:5px 0; padding:8px 9px; border-radius:7px; color:#958a7e; font-size:8px; font-weight:750; }.side-item.active { color:#355644; background:#e3ebe4; }
-    .today-view { padding:33px 38px; }.today-top { display:flex; align-items:flex-end; justify-content:space-between; }.today-top span { color:#968b7f; font-size:8px; font-weight:850; letter-spacing:.1em; text-transform:uppercase; }.today-top h2 { margin-top:5px; font-size:27px; letter-spacing:-.03em; }.today-top button { min-height:30px; padding:0 10px; border:0; border-radius:8px; color:#fff; background:#26231f; font-size:7px; font-weight:800; }
-    .thought-input { height:44px; margin-top:20px; padding:0 13px; border:1px solid rgba(38,35,31,.09); border-radius:10px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px; color:#a0968b; background:#fff; box-shadow:0 5px 16px rgba(38,35,31,.04); font-size:8px; }.thought-input kbd { padding:3px 5px; border:1px solid rgba(38,35,31,.09); border-radius:4px; font-size:6px; }
-    .schedule-label { margin-top:22px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:9px; color:#7d7267; font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }.schedule-label i { height:1px; background:rgba(38,35,31,.08); }.schedule-label small { color:#aaa095; font-size:7px; text-transform:none; letter-spacing:0; }
-    .plan-card { min-height:106px; margin-top:10px; padding:15px 14px; border:1px solid rgba(38,35,31,.09); border-radius:13px; display:grid; grid-template-columns:5px 1fr 45px auto; align-items:center; gap:12px; background:#fff; box-shadow:0 10px 25px rgba(38,35,31,.055); }.plan-accent { width:4px; align-self:stretch; border-radius:999px; background:#c98042; }.plan-copy > span { color:#9a8f83; font-size:7px; font-weight:850; text-transform:uppercase; letter-spacing:.09em; }.plan-copy h3 { margin-top:4px; font-size:17px; }.plan-copy p { margin-top:5px; color:#817568; font-size:7px; }.plan-time { text-align:center; }.plan-time strong,.plan-time span { display:block; }.plan-time strong { font:700 18px Georgia,serif; }.plan-time span { color:#9a8f83; font-size:6px; text-transform:uppercase; }.plan-card > button { min-height:29px; padding:0 9px; border:0; border-radius:7px; display:flex; align-items:center; gap:5px; color:#fff; background:#355644; font-size:7px; font-weight:800; }
-    .mini-timeline { margin-top:14px; display:grid; grid-template-columns:33px 1fr; gap:0 8px; color:#9d9388; font-size:7px; }.mini-timeline > div { min-height:32px; padding:0 9px; border-left:2px solid #b8cbbd; display:flex; align-items:center; justify-content:space-between; color:#486050; background:#e8eee8; font-weight:750; }.mini-timeline > div.timeline-empty { margin-top:5px; border-left-color:#e0d8cd; color:#a2988d; background:#faf7f1; font-weight:600; }.mini-timeline small { font-size:6px; }
-    .phone-card { width:210px; padding:8px; border:1px solid rgba(255,255,255,.7); border-radius:33px; position:absolute; right:0; bottom:4px; background:#171a17; box-shadow:0 30px 65px rgba(38,35,31,.24); transform:rotate(3deg); }
-    .phone-status { height:29px; padding:0 10px; display:flex; align-items:center; justify-content:space-between; color:#fff; font-size:6px; }.phone-status i { width:52px; height:16px; border-radius:999px; background:#050605; }
-    .phone-screen { min-height:355px; padding:24px 15px 17px; border-radius:26px; text-align:center; background:#f4efe7; }.phone-kicker { color:#817568; font-size:7px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }.focus-ring { width:122px; height:122px; margin:20px auto 17px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(#c98042 0 72%,rgba(38,35,31,.08) 72%); position:relative; }.focus-ring::after { content:""; position:absolute; inset:7px; border-radius:50%; background:#f4efe7; }.focus-ring > div { position:relative; z-index:1; }.focus-ring strong,.focus-ring span { display:block; }.focus-ring strong { font:700 25px Georgia,serif; }.focus-ring span { margin-top:2px; color:#8d8378; font-size:6px; text-transform:uppercase; letter-spacing:.08em; }.phone-screen h3 { font-size:16px; }.phone-screen > p { margin-top:4px; color:#817568; font-size:7px; }.blocked-pill { width:max-content; margin:17px auto; padding:7px 9px; border-radius:999px; display:flex; align-items:center; gap:5px; color:#355644; background:#e2eae3; font-size:7px; font-weight:800; }.phone-screen > button { width:100%; min-height:34px; border:1px solid rgba(38,35,31,.1); border-radius:9px; color:#62594f; background:rgba(255,255,255,.55); font-size:7px; font-weight:800; }
-    .extension-card { width:230px; padding:14px; border:1px solid rgba(38,35,31,.1); border-radius:14px; position:absolute; left:0; bottom:33px; background:rgba(255,253,248,.97); box-shadow:0 20px 50px rgba(38,35,31,.15); transform:rotate(-3deg); }.extension-top,.extension-card > div:last-child { display:flex; align-items:center; justify-content:space-between; }.extension-top span { display:flex; align-items:center; gap:6px; font-size:8px; font-weight:850; }.extension-top i { color:#aaa095; font-style:normal; }.extension-card > small { display:block; margin-top:17px; color:#9b9186; font-size:6px; font-weight:850; letter-spacing:.1em; }.extension-card > p { margin:7px 0 13px; font:12px/1.45 Georgia,serif; }.extension-card > div:last-child { padding-top:9px; border-top:1px solid rgba(38,35,31,.07); color:#47705a; font-size:7px; font-weight:800; }
-
-    .platform-strip { min-height:92px; padding:0 max(24px,calc((100vw - 1180px)/2)); border-top:1px solid rgba(38,35,31,.09); border-bottom:1px solid rgba(38,35,31,.09); display:flex; align-items:center; justify-content:space-between; gap:28px; color:#746b62; }.platform-strip > p { color:#948a7f; font-size:10px; font-weight:700; }.platform-strip > div { display:flex; align-items:center; gap:26px; }.platform-strip span { display:flex; align-items:center; gap:7px; font-size:10px; font-weight:800; }.web-mark { width:25px; height:25px; border-radius:8px; display:grid!important; place-items:center; color:#fff; background:#26231f; }
-
-    .position-section { padding:125px max(24px,calc((100vw - 1180px)/2)); background:#faf7f1; }.position-grid { margin-top:60px; display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }.position-grid article { min-height:290px; padding:27px 24px; border:1px solid rgba(38,35,31,.09); border-radius:18px; display:flex; flex-direction:column; background:rgba(255,253,248,.72); }.position-grid article > span { width:35px; height:35px; border-radius:11px; display:grid; place-items:center; color:#a56c38; background:#efe4d7; font-size:9px; font-weight:850; }.position-grid small { margin-top:34px; color:#9a8f83; font-size:8px; font-weight:850; letter-spacing:.11em; }.position-grid h3 { margin-top:9px; font-size:24px; line-height:1.08; }.position-grid p { margin-top:13px; color:#817568; font-size:10px; line-height:1.7; }.position-grid .resin-position { border-color:rgba(201,128,66,.35); color:#fff; background:#2d493a; box-shadow:0 22px 50px rgba(45,73,58,.16); transform:translateY(-10px); }.position-grid .resin-position > span { color:#fff; background:#c98042; }.position-grid .resin-position small { color:#e7ae70; }.position-grid .resin-position p { color:rgba(255,255,255,.6); }.position-grid .resin-position strong { margin-top:auto; padding-top:22px; border-top:1px solid rgba(255,255,255,.1); color:#f0bd83; font-size:9px; }
-
-    .journey-section,.feature-section,.faq-section { padding:125px max(24px,calc((100vw - 1180px)/2)); }
-    .section-header.centered { max-width:780px; margin:auto; text-align:center; }.section-header.centered .eyebrow { justify-content:center; }.section-header h2 { margin-top:18px; font-size:clamp(44px,5vw,70px); line-height:.98; letter-spacing:-.048em; }.section-header.centered > p { max-width:600px; margin:22px auto 0; color:#817568; font-size:14px; line-height:1.75; }
-    .journey-shell { margin-top:60px; border:1px solid rgba(38,35,31,.1); border-radius:23px; overflow:hidden; background:#fffdf8; box-shadow:0 24px 65px rgba(38,35,31,.08); }
-    .stage-tabs { min-height:72px; padding:10px; border-bottom:1px solid rgba(38,35,31,.08); display:grid; grid-template-columns:repeat(3,1fr); gap:5px; background:#faf7f1; }.stage-tabs button { border:0; border-radius:11px; display:flex; align-items:center; justify-content:center; gap:9px; color:#8b8176; background:transparent; font-size:11px; font-weight:800; }.stage-tabs button > span { color:#aaa095; font-size:8px; }.stage-tabs button.active { color:#fff; background:#355644; box-shadow:0 8px 20px rgba(53,86,68,.16); }.stage-tabs button.active > span { color:#dfba91; }
-    .journey-content { min-height:535px; display:grid; grid-template-columns:.78fr 1.22fr; }.journey-copy { padding:65px 55px; align-self:center; }.journey-copy h3 { margin-top:20px; font-size:clamp(36px,4vw,54px); line-height:1.02; letter-spacing:-.04em; }.journey-copy > p { margin-top:19px; color:#817568; font-size:14px; line-height:1.75; }.stage-stat { width:max-content; margin-top:27px; padding:9px 11px; border-radius:999px; display:flex; align-items:center; gap:7px; color:#355644; background:#e5ece6; font-size:9px; font-weight:800; }
-    .journey-visual { display:grid; place-items:center; position:relative; overflow:hidden; background:#e3ebe4; }.journey-visual.plan-mode { background:#efe3d4; }.journey-visual.protect-mode { background:#2d493a; }
-    .capture-demo,.plan-demo,.protect-demo { width:min(380px,72%); position:relative; z-index:1; }
-    .capture-demo { padding:30px; border:1px solid rgba(38,35,31,.09); border-radius:16px; background:#fffdf8; box-shadow:0 22px 45px rgba(38,35,31,.13); transform:rotate(-2deg); }.capture-demo > span,.plan-demo > div span,.protect-demo > span { color:#9a8f83; font-size:8px; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }.capture-demo > p { margin-top:17px; font:22px/1.35 Georgia,serif; }.capture-demo > div { margin-top:35px; padding-top:13px; border-top:1px solid rgba(38,35,31,.08); display:flex; align-items:center; justify-content:space-between; color:#9a9085; font-size:8px; }.capture-demo kbd { padding:4px 6px; border:1px solid rgba(38,35,31,.1); border-radius:5px; }
-    .plan-demo { padding:24px; border:1px solid rgba(38,35,31,.09); border-radius:16px; background:#fffdf8; box-shadow:0 22px 45px rgba(38,35,31,.13); transform:rotate(1.5deg); }.plan-demo > div strong,.plan-demo > div small { display:block; }.plan-demo > div strong { margin-top:4px; font:24px Georgia,serif; }.plan-demo > div small { margin-top:4px; color:#91877b; font-size:8px; }.plan-demo > p { display:grid; grid-template-columns:24px 1fr auto; align-items:center; gap:9px; padding:12px 0; border-top:1px solid rgba(38,35,31,.07); font-size:9px; }.plan-demo > p:first-of-type { margin-top:18px; }.plan-demo b { width:22px; height:22px; border-radius:7px; display:grid; place-items:center; color:#355644; background:#e3ebe4; }.plan-demo small { color:#978d81; }.plan-demo > button { width:100%; min-height:39px; margin-top:10px; border:0; border-radius:9px; display:flex; align-items:center; justify-content:center; gap:7px; color:#fff; background:#c98042; font-size:9px; font-weight:800; }
-    .protect-demo { padding:31px; border:1px solid rgba(255,255,255,.1); border-radius:17px; color:#fff; background:rgba(255,255,255,.06); backdrop-filter:blur(16px); box-shadow:0 25px 50px rgba(0,0,0,.2); }.mini-ring { width:65px; height:65px; margin-bottom:25px; border-radius:21px; display:grid; place-items:center; color:#fff; background:#c98042; box-shadow:0 15px 30px rgba(0,0,0,.2); }.protect-demo > span { color:rgba(255,255,255,.4); }.protect-demo h4 { margin:7px 0 18px; font-size:25px; }.protect-demo > div:not(.mini-ring) { padding:11px 0; border-top:1px solid rgba(255,255,255,.09); display:flex; align-items:center; justify-content:space-between; color:rgba(255,255,255,.7); font-size:9px; }.protect-demo b { color:#efbd83; font-size:8px; text-transform:uppercase; }
-
-    .focus-section { min-height:820px; padding:115px max(24px,calc((100vw - 1180px)/2)); display:grid; grid-template-columns:.92fr 1.08fr; gap:95px; align-items:center; color:#fff; background:#2d493a; position:relative; overflow:hidden; }.focus-copy,.focus-composition { position:relative; z-index:1; }.focus-copy h2 { margin-top:21px; font-size:clamp(48px,5vw,72px); line-height:.98; letter-spacing:-.048em; }.focus-copy h2 em { color:#e9ad70; font-style:normal; }.focus-copy > p { max-width:570px; margin-top:24px; color:rgba(255,255,255,.62); font-size:14px; line-height:1.75; }.focus-points { display:grid; gap:17px; margin-top:34px; }.focus-points > div { display:flex; align-items:center; gap:13px; }.focus-points > div > span { width:40px; height:40px; border:1px solid rgba(255,255,255,.11); border-radius:12px; display:grid; place-items:center; color:#e5a563; background:rgba(255,255,255,.04); }.focus-points strong,.focus-points small { display:block; }.focus-points strong { font-size:11px; }.focus-points small { margin-top:3px; color:rgba(255,255,255,.45); font-size:9px; }.focus-copy > a { display:inline-flex; align-items:center; gap:7px; margin-top:34px; color:#efbd83; text-decoration:none; font-size:11px; font-weight:800; }
-    .focus-composition { min-height:550px; }.focus-window { width:83%; border:1px solid rgba(255,255,255,.12); border-radius:20px; overflow:hidden; background:#f4efe7; box-shadow:0 40px 85px rgba(0,0,0,.24); transform:rotate(-2deg); }.focus-window-top { height:42px; padding:0 14px; border-bottom:1px solid rgba(38,35,31,.08); display:flex; align-items:center; justify-content:space-between; color:#817568; background:#faf7f1; font-size:8px; font-weight:800; }.focus-window-top i { width:7px; height:7px; border-radius:50%; background:#c98042; box-shadow:0 0 0 4px rgba(201,128,66,.1); }.focus-window-body { min-height:320px; padding:43px; color:#26231f; }.focus-window-body > small { color:#9a8f83; font-size:7px; font-weight:850; letter-spacing:.11em; }.focus-window-body h3 { margin-top:11px; font-size:35px; line-height:1.05; }.focus-window-body > p { max-width:390px; margin-top:16px; color:#817568; font-size:11px; line-height:1.7; }.focus-window-body > div { margin-top:45px; padding-top:16px; border-top:1px solid rgba(38,35,31,.09); display:flex; align-items:center; justify-content:space-between; color:#a56b38; font-size:9px; font-weight:800; }.focus-window-body b { color:#817568; }
-    .block-card { width:290px; padding:15px; border:1px solid rgba(255,255,255,.1); border-radius:14px; display:flex; align-items:center; gap:12px; position:absolute; top:55px; right:-6px; color:#fff; background:rgba(31,53,41,.94); box-shadow:0 18px 40px rgba(0,0,0,.22); }.block-card strong,.block-card span { display:block; }.block-card strong { font-size:9px; }.block-card span { margin-top:3px; color:rgba(255,255,255,.45); font-size:7px; }
-    .site-block { width:285px; padding:22px; border:1px solid rgba(38,35,31,.11); border-radius:17px; position:absolute; right:5px; bottom:24px; color:#26231f; background:#fffdf8; box-shadow:0 24px 55px rgba(0,0,0,.22); transform:rotate(3deg); }.site-block > span { color:#a0968b; font-size:7px; font-weight:850; text-transform:uppercase; }.site-block strong { display:block; margin-top:11px; font:23px Georgia,serif; }.site-block p { margin-top:7px; color:#817568; font-size:9px; line-height:1.55; }.site-block button { width:100%; min-height:35px; margin-top:17px; border:0; border-radius:9px; color:#fff; background:#355644; font-size:8px; font-weight:800; }
-
-    .feature-section { background:#faf7f1; }.section-header:not(.centered) { display:grid; grid-template-columns:1fr .7fr; gap:85px; align-items:end; }.section-header:not(.centered) > p { color:#817568; font-size:14px; line-height:1.75; }
-    .feature-grid { margin-top:60px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }.feature-grid article { min-height:390px; padding:33px; border:1px solid rgba(38,35,31,.09); border-radius:20px; background:#fffdf8; overflow:hidden; position:relative; }.feature-grid article.feature-wide { grid-column:1/-1; min-height:430px; display:grid; grid-template-columns:.82fr 1.18fr; gap:55px; align-items:center; }.feature-tag { color:#a56c38; font-size:8px; font-weight:850; letter-spacing:.11em; text-transform:uppercase; }.feature-grid h3 { max-width:500px; margin-top:13px; font-size:34px; line-height:1.06; letter-spacing:-.032em; }.feature-grid p { max-width:500px; margin-top:14px; color:#817568; font-size:12px; line-height:1.72; }.mini-checks { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }.mini-checks span { padding:7px 9px; border-radius:999px; display:flex; align-items:center; gap:5px; color:#486050; background:#e7eee8; font-size:7px; font-weight:800; }
-    .handoff-art { height:250px; display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:12px; }.handoff-art > i { width:45px; height:1px; background:linear-gradient(90deg,rgba(53,86,68,.15),rgba(53,86,68,.45)); position:relative; }.handoff-art > i::after { content:""; width:5px; height:5px; border-top:1px solid #65806d; border-right:1px solid #65806d; position:absolute; right:0; top:-2px; transform:rotate(45deg); }.handoff-node { min-height:130px; padding:20px 12px; border:1px solid rgba(38,35,31,.09); border-radius:15px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:#fff; box-shadow:0 14px 30px rgba(38,35,31,.07); }.handoff-icon,.handoff-node > .web-mark { margin-bottom:13px; }.handoff-node > span:not(.web-mark) { font:18px Georgia,serif; }.handoff-node small { margin-top:4px; color:#998f83; font-size:7px; }.handoff-node.web { transform:translateY(-18px); background:#f0e3d4; }.handoff-node.iphone { background:#e4ebe5; }
-    .calendar-art { margin-top:33px; padding:13px; border:1px solid rgba(38,35,31,.07); border-radius:14px; background:#faf7f1; }.calendar-art > div { min-height:58px; display:grid; grid-template-columns:38px 1fr; align-items:center; gap:9px; border-top:1px solid rgba(38,35,31,.06); color:#958b80; font-size:8px; }.calendar-art > div:first-child { border:0; }.calendar-art b { height:37px; padding:0 10px; border-radius:8px; display:flex; align-items:center; color:#486050; background:#e3ebe4; font-size:8px; }.calendar-art b.amber { color:#8b6038; background:#efddc7; }.calendar-art b.open { color:#a0968b; background:#f2eee8; font-weight:600; }
-    .privacy-feature { background:#2d493a!important; color:#fff; }.privacy-feature .feature-tag { color:#efbd83; }.privacy-feature p { color:rgba(255,255,255,.5); }.privacy-seal { width:180px; height:180px; margin:34px auto 0; border:1px solid rgba(255,255,255,.14); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#efbd83; }.privacy-seal strong { margin-top:13px; color:#fff; font:17px Georgia,serif; }.privacy-seal span { margin-top:4px; color:rgba(255,255,255,.4); font-size:7px; }
-
-    .audience-strip { min-height:110px; padding:24px max(24px,calc((100vw - 1180px)/2)); border-top:1px solid rgba(38,35,31,.09); border-bottom:1px solid rgba(38,35,31,.09); display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:16px; color:#817568; }.audience-strip > span { color:#a56c38; font-size:8px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }.audience-strip p { font:18px Georgia,serif; }.audience-strip i { width:4px; height:4px; border-radius:50%; background:#c98042; opacity:.55; }
-
-    .faq-section { display:grid; grid-template-columns:.72fr 1.28fr; gap:100px; }.faq-title h2 { margin-top:18px; font-size:clamp(42px,4.7vw,65px); line-height:1; letter-spacing:-.045em; }.faq-title p { margin-top:19px; color:#817568; font-size:13px; line-height:1.7; }.faq-list { border-top:1px solid rgba(38,35,31,.12); }.faq-item { border-bottom:1px solid rgba(38,35,31,.12); }.faq-item button { width:100%; padding:23px 0; border:0; display:flex; align-items:center; justify-content:space-between; text-align:left; color:#26231f; background:transparent; font:700 18px Georgia,serif; }.faq-item button i { width:29px; height:29px; border:1px solid rgba(38,35,31,.1); border-radius:50%; display:grid; place-items:center; color:#817568; font:normal 17px Inter,sans-serif; transition:transform .2s; }.faq-item button i.open { transform:rotate(45deg); }.faq-item > p { max-width:680px; padding:0 50px 22px 0; color:#817568; font-size:12px; line-height:1.75; }
-
-    .final-cta { min-height:560px; margin:0 max(16px,calc((100vw - 1280px)/2)) 16px; padding:90px 25px; border-radius:28px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; background:#26231f; position:relative; overflow:hidden; }.final-cta > * { position:relative; z-index:1; }.final-cta h2 { margin-top:18px; font-size:clamp(50px,6vw,82px); line-height:.94; letter-spacing:-.05em; }.final-cta > p { margin-top:20px; color:rgba(255,255,255,.55); font-size:14px; }.final-actions { display:flex; gap:10px; margin-top:29px; }.amber-cta { color:#26231f; background:#d69350; }.quiet-cta { color:#fff; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.04); }.final-cta > small { margin-top:18px; color:rgba(255,255,255,.3); font-size:8px; letter-spacing:.05em; }
-
-    @media(max-width:980px) {
-        .hero-section { min-height:1050px; }.product-stage { height:560px; }.browser-card { width:92%; }.phone-card { right:1%; }.extension-card { left:1%; }
-        .position-grid { grid-template-columns:1fr 1fr; }.position-grid .resin-position { transform:none; }.journey-content,.focus-section,.feature-grid article.feature-wide,.section-header:not(.centered),.faq-section { grid-template-columns:1fr; }.journey-copy { padding:52px; }.journey-visual { min-height:500px; }.focus-section { gap:70px; }.focus-composition { max-width:650px; width:100%; margin:auto; }.section-header:not(.centered),.faq-section { gap:30px; }.handoff-art { margin-top:20px; }
-    }
+    :global(body) { background:#f3eee6; }
+    .landing-shell { --ink:#27231f; --muted:#786f65; --amber:#c67f3d; --green:#355744; color:var(--ink); overflow:hidden; background:#f3eee6; }
+    h1,h2,h3,h4,p { margin:0; } h1,h2,h3,h4 { font-family:var(--font-serif),Georgia,serif; font-weight:400; } button,a { transition:background .18s ease,border-color .18s ease,transform .18s ease; } a:hover,button:hover { transform:translateY(-1px); } a:focus-visible,button:focus-visible { outline:2px solid var(--amber); outline-offset:3px; }
+    .hero { padding:166px max(24px,calc((100vw - 1180px)/2)) 54px; }
+    .hero-copy { max-width:880px; margin:0 auto; text-align:center; }
+    .kicker,.section-index { color:#8b8176; font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }.kicker { display:flex; align-items:center; justify-content:center; gap:10px; }.kicker span { width:30px; height:1px; background:#b9afa4; }
+    .hero h1 { margin-top:27px; font-size:clamp(64px,7.2vw,102px); line-height:.9; letter-spacing:-.058em; text-wrap:balance; }.hero h1 em,.final-cta h2 em { color:var(--amber); font-style:normal; }
+    .hero-lede { max-width:650px; margin:29px auto 0; color:var(--muted); font-size:18px; line-height:1.65; text-wrap:balance; }
+    .hero-actions,.final-actions { display:flex; justify-content:center; gap:10px; margin-top:30px; }.button { min-height:52px; padding:0 24px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; font-size:14px; font-weight:750; }.primary { color:#fff; background:var(--ink); box-shadow:0 12px 26px rgba(39,35,31,.14); }.primary:hover { background:var(--green); }.secondary { border:1px solid rgba(39,35,31,.13); color:var(--ink); background:#fbf8f2; }
+    .hero-note { margin-top:17px; display:flex; align-items:center; justify-content:center; gap:9px; color:#80776d; font-size:10px; }.hero-note span { width:3px; height:3px; border-radius:50%; background:#b9afa4; }
+    .product-frame { max-width:1110px; height:660px; margin:78px auto 0; border:1px solid rgba(39,35,31,.13); border-radius:18px; position:relative; background:#fffdf9; box-shadow:0 35px 80px rgba(61,46,31,.13); }
+    .product-toolbar { height:48px; padding:0 18px; border-bottom:1px solid rgba(39,35,31,.08); display:grid; grid-template-columns:1fr 1fr 1fr; align-items:center; color:#9b9288; font-size:8px; }.product-toolbar > span { text-align:center; }.product-toolbar > small { justify-self:end; display:flex; align-items:center; gap:5px; }.product-toolbar > small i { width:6px; height:6px; border-radius:50%; background:#6a8a72; }.window-dots { display:flex; gap:5px; }.window-dots i { width:7px; height:7px; border-radius:50%; background:#d9d1c7; }
+    .product-body { height:calc(100% - 48px); display:grid; grid-template-columns:170px 1fr; }.product-body aside { padding:28px 20px 20px; border-right:1px solid rgba(39,35,31,.08); display:flex; flex-direction:column; background:#faf7f1; }.mini-logo { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; color:#ebb16f; background:var(--ink); font:18px Georgia,serif; }.product-body nav { display:grid; gap:8px; margin-top:42px; }.product-body nav span,.product-body nav b { padding:10px 12px; border-radius:7px; color:#8d847a; font-size:10px; }.product-body nav b { color:#3f5948; background:#e5ece6; }.product-body aside > small { margin-top:auto; color:#aaa198; font-size:7px; }
+    .product-content { padding:54px 56px; }.product-heading { display:flex; align-items:flex-end; justify-content:space-between; }.product-heading small,.active-plan small { color:#9b9187; font-size:8px; font-weight:800; letter-spacing:.12em; }.product-heading h2 { margin-top:9px; font-size:37px; letter-spacing:-.035em; }.product-heading button { min-height:34px; padding:0 13px; border:1px solid rgba(39,35,31,.11); border-radius:8px; color:#fff; background:var(--ink); font-size:9px; font-weight:700; }
+    .capture-field { min-height:62px; margin-top:27px; padding:0 18px; border:1px solid rgba(39,35,31,.1); border-radius:10px; display:flex; align-items:center; gap:12px; color:#8d8379; box-shadow:0 9px 24px rgba(39,35,31,.06); font-size:11px; }:global(.capture-icon) { color:var(--amber); }.capture-field kbd { margin-left:auto; padding:4px 6px; border:1px solid rgba(39,35,31,.1); border-radius:5px; color:#a39a90; background:#f8f5ef; font:7px inherit; }
+    .today-label { margin-top:35px; display:flex; align-items:center; gap:10px; color:#786f65; font-size:8px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }.today-label i { height:1px; flex:1; background:rgba(39,35,31,.09); }.today-label small { color:#aaa198; font-size:7px; letter-spacing:0; text-transform:none; }
+    .active-plan { min-height:128px; margin-top:13px; padding:18px; border:1px solid rgba(39,35,31,.1); border-radius:11px; display:grid; grid-template-columns:4px 1fr 54px auto; align-items:center; gap:16px; background:#fff; box-shadow:0 12px 28px rgba(39,35,31,.06); }.plan-mark { width:4px; height:76px; border-radius:4px; background:var(--amber); }.plan-main h3 { margin-top:7px; font-size:21px; }.plan-main p { margin-top:5px; color:#8d847a; font-size:9px; }.plan-duration { text-align:center; }.plan-duration strong,.plan-duration span { display:block; }.plan-duration strong { font:25px Georgia,serif; }.plan-duration span { color:#999087; font-size:7px; }.active-plan > button { min-height:34px; padding:0 11px; border:0; border-radius:8px; display:flex; align-items:center; gap:6px; color:#fff; background:var(--green); font-size:8px; font-weight:750; }
+    .day-row { display:grid; grid-template-columns:42px 1fr; align-items:center; gap:12px; margin-top:12px; color:#aaa198; font-size:8px; }.event { min-height:38px; padding:0 12px; border-left:3px solid #a9b7ad; display:flex; align-items:center; justify-content:space-between; color:#5f7365; background:#edf1ed; font-weight:700; }.event small { font-weight:500; }.event.resin { border-color:var(--amber); color:#8a5d33; background:#f1e4d5; }
+    .phone-preview { width:210px; min-height:410px; padding:13px 14px 17px; border:7px solid var(--ink); border-radius:34px; position:absolute; right:-38px; bottom:-28px; color:#fff; text-align:center; background:#2f4f3d; box-shadow:0 30px 60px rgba(39,35,31,.26); transform:rotate(2deg); }.phone-top { display:flex; justify-content:space-between; color:rgba(255,255,255,.65); font-size:7px; }.phone-top i { width:46px; height:13px; border-radius:10px; background:#1f3328; }.phone-preview > small { display:block; margin-top:32px; color:#e4b57e; font-size:7px; font-weight:800; letter-spacing:.13em; }.timer { width:132px; height:132px; margin:18px auto; border:1px solid rgba(255,255,255,.16); border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:inset 0 0 0 8px rgba(255,255,255,.04); }.timer strong { font:27px Georgia,serif; }.timer span { margin-top:3px; color:rgba(255,255,255,.48); font-size:7px; }.phone-preview h3 { font-size:17px; }.phone-preview > p { margin-top:4px; color:rgba(255,255,255,.5); font-size:7px; }.shield-row { margin:18px auto 0; display:flex; align-items:center; justify-content:center; gap:6px; color:#dbbe9b; font-size:7px; }.phone-preview > button { width:100%; min-height:36px; margin-top:20px; border:1px solid rgba(255,255,255,.17); border-radius:8px; color:#fff; background:rgba(255,255,255,.08); font-size:8px; }
+    .platform-row { max-width:1110px; margin:58px auto 0; padding-top:25px; border-top:1px solid rgba(39,35,31,.1); display:flex; align-items:center; justify-content:space-between; color:#857c72; }.platform-row p { font:16px Georgia,serif; }.platform-row > div { display:flex; align-items:center; gap:24px; }.platform-row span { display:flex; align-items:center; gap:6px; font-size:9px; font-weight:700; }.platform-row .web-icon { width:17px; height:17px; border:1px solid currentColor; border-radius:5px; display:grid; place-items:center; }
+    .problem-section,.workflow-section,.details-section,.faq-section { padding:112px max(24px,calc((100vw - 1110px)/2)); }.problem-section { border-top:1px solid rgba(39,35,31,.1); }.problem-heading,.workflow-heading,.details-heading { margin-top:38px; display:grid; grid-template-columns:1.3fr .7fr; gap:90px; align-items:end; }.problem-heading h2,.workflow-heading h2,.details-heading h2 { font-size:clamp(48px,5vw,70px); line-height:.98; letter-spacing:-.045em; }.problem-heading h2 em { color:var(--amber); font-style:normal; }.problem-heading p,.workflow-heading p,.details-heading p { color:var(--muted); font-size:14px; line-height:1.75; }
+    .comparison-list { margin-top:72px; border-top:1px solid rgba(39,35,31,.12); }.comparison-list > div { min-height:84px; border-bottom:1px solid rgba(39,35,31,.12); display:grid; grid-template-columns:.65fr 1fr .75fr; align-items:center; gap:20px; }.comparison-list span { color:#8c8379; font-size:10px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }.comparison-list p { font:24px Georgia,serif; }.comparison-list small { color:#8b8278; font-size:11px; }.comparison-list .resin-row { margin:0 -20px; padding:0 20px; border-color:transparent; color:#fff; background:var(--green); }.comparison-list .resin-row span,.comparison-list .resin-row small { color:rgba(255,255,255,.6); }
+    .workflow-section { background:#faf7f1; }.workflow-shell { margin-top:66px; border:1px solid rgba(39,35,31,.11); background:#fffdf9; }.workflow-tabs { min-height:74px; border-bottom:1px solid rgba(39,35,31,.1); display:grid; grid-template-columns:repeat(3,1fr); }.workflow-tabs button { border:0; border-right:1px solid rgba(39,35,31,.09); display:flex; align-items:center; justify-content:center; gap:12px; color:#8d847a; background:transparent; font-size:11px; font-weight:750; }.workflow-tabs button:last-child { border-right:0; }.workflow-tabs button span { color:#b0a79e; font-size:8px; }.workflow-tabs button.active { color:#fff; background:var(--green); }.workflow-tabs button.active span { color:#e8be90; }
+    .workflow-detail { min-height:500px; display:grid; grid-template-columns:.85fr 1.15fr; }.workflow-copy { padding:78px 60px; }.workflow-copy > p { color:var(--amber); font-size:10px; font-weight:800; letter-spacing:.12em; }.workflow-copy h3 { max-width:380px; margin-top:24px; font-size:45px; line-height:1.03; letter-spacing:-.04em; }.workflow-copy > div { max-width:420px; margin-top:22px; color:var(--muted); font-size:14px; line-height:1.75; }.workflow-demo { display:flex; align-items:center; justify-content:center; background:#eee7dd; }
+    .note-demo,.steps-demo,.protect-demo { width:76%; border:1px solid rgba(39,35,31,.1); border-radius:12px; background:#fff; box-shadow:0 20px 50px rgba(39,35,31,.12); }.note-demo { padding:30px; transform:rotate(-1.5deg); }.note-demo small,.protect-demo > small { color:#a0764e; font-size:8px; font-weight:800; letter-spacing:.12em; }.note-demo p { margin-top:24px; font:27px/1.4 Georgia,serif; }.note-demo span { display:block; margin-top:30px; padding-top:16px; border-top:1px solid rgba(39,35,31,.08); color:#968d84; font-size:9px; }
+    .steps-demo { overflow:hidden; }.steps-demo header { padding:20px; display:flex; justify-content:space-between; border-bottom:1px solid rgba(39,35,31,.08); }.steps-demo header span { font:19px Georgia,serif; }.steps-demo header small,.steps-demo p small { color:#998f85; font-size:8px; }.steps-demo p { min-height:55px; padding:0 20px; border-bottom:1px solid rgba(39,35,31,.07); display:grid; grid-template-columns:25px 1fr auto; align-items:center; gap:9px; font-size:10px; }.steps-demo p b { width:20px; height:20px; border-radius:50%; display:grid; place-items:center; color:#fff; background:var(--green); font-size:8px; }.steps-demo button { min-height:38px; margin:16px 20px; padding:0 13px; border:0; border-radius:8px; display:flex; align-items:center; gap:8px; color:#fff; background:var(--ink); font-size:8px; font-weight:750; }
+    .protect-demo { padding:35px; color:#fff; text-align:center; background:var(--green); }.protect-demo > div { width:58px; height:58px; margin:0 auto 20px; border:1px solid rgba(255,255,255,.16); border-radius:50%; display:grid; place-items:center; color:#e6b67e; }.protect-demo > small { color:#e6b67e; }.protect-demo h4 { margin:11px 0 25px; font-size:27px; }.protect-demo p { min-height:38px; border-top:1px solid rgba(255,255,255,.1); display:flex; align-items:center; justify-content:space-between; color:rgba(255,255,255,.65); font-size:9px; }.protect-demo p b { color:#e7be91; }
+    .focus-section { min-height:760px; padding:110px max(24px,calc((100vw - 1110px)/2)); display:grid; grid-template-columns:.9fr 1.1fr; gap:95px; align-items:center; color:#fff; background:#263d31; }.section-index.light { color:rgba(255,255,255,.45); }.focus-copy h2 { margin-top:35px; font-size:clamp(48px,5vw,68px); line-height:.98; letter-spacing:-.045em; }.focus-copy h2 em { color:#e0a261; font-style:normal; }.focus-copy > p { max-width:560px; margin-top:25px; color:rgba(255,255,255,.56); font-size:14px; line-height:1.75; }.focus-points { margin-top:34px; display:grid; gap:18px; }.focus-points > div { display:flex; gap:14px; color:#e2ad72; }.focus-points span strong,.focus-points span small { display:block; }.focus-points strong { color:#fff; font-size:11px; }.focus-points small { margin-top:4px; color:rgba(255,255,255,.47); font-size:9px; line-height:1.5; }.focus-copy > a { width:max-content; margin-top:33px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,.25); display:flex; align-items:center; gap:8px; color:#fff; text-decoration:none; font-size:11px; font-weight:750; }
+    .focus-preview { min-height:520px; position:relative; }.focus-card { width:82%; min-height:360px; padding:45px; border-radius:14px; color:var(--ink); background:#fffdf9; box-shadow:0 30px 70px rgba(0,0,0,.22); transform:rotate(-2deg); }.focus-card small { color:#a1744a; font-size:8px; font-weight:800; letter-spacing:.12em; }.focus-card h3 { max-width:420px; margin-top:20px; font-size:38px; line-height:1.03; }.focus-card p { max-width:390px; margin-top:18px; color:#82786e; font-size:11px; line-height:1.7; }.focus-card > div { margin-top:75px; padding-top:17px; border-top:1px solid rgba(39,35,31,.1); display:flex; justify-content:space-between; color:#9f6b3d; font-size:9px; font-weight:800; }.focus-card b { color:#847b71; }
+    .blocked-card { width:295px; padding:25px; border:1px solid rgba(39,35,31,.12); border-radius:12px; position:absolute; right:0; bottom:0; color:var(--ink); background:#f3eee6; box-shadow:0 24px 55px rgba(0,0,0,.25); }.blocked-card > span { color:#91887e; font-size:8px; }:global(.blocked-icon) { display:block; margin-top:28px; color:var(--amber); }.blocked-card h4 { margin-top:12px; font-size:26px; }.blocked-card p { margin-top:7px; color:#7d746a; font-size:9px; line-height:1.6; }.blocked-card button { width:100%; min-height:38px; margin-top:21px; border:0; border-radius:8px; color:#fff; background:var(--green); font-size:8px; font-weight:750; }
+    .details-heading { grid-template-columns:1fr .6fr; }.details-grid { margin-top:70px; border-top:1px solid rgba(39,35,31,.12); display:grid; grid-template-columns:repeat(3,1fr); }.details-grid article { min-height:340px; padding:36px 30px; border-right:1px solid rgba(39,35,31,.12); }.details-grid article:first-child { padding-left:0; }.details-grid article:last-child { padding-right:0; border-right:0; }.details-grid article > span { width:42px; height:42px; border:1px solid rgba(39,35,31,.12); border-radius:10px; display:grid; place-items:center; color:var(--green); background:#faf7f1; }.details-grid small { display:block; margin-top:50px; color:#a07146; font-size:8px; font-weight:800; letter-spacing:.13em; }.details-grid h3 { margin-top:15px; font-size:29px; line-height:1.08; }.details-grid p { margin-top:15px; color:var(--muted); font-size:11px; line-height:1.75; }
+    .faq-section { border-top:1px solid rgba(39,35,31,.1); display:grid; grid-template-columns:.7fr 1.3fr; gap:100px; }.faq-heading h2 { margin-top:35px; font-size:58px; letter-spacing:-.04em; }.faq-heading > p { max-width:300px; margin-top:18px; color:var(--muted); font-size:12px; line-height:1.7; }.faq-list { border-top:1px solid rgba(39,35,31,.14); }.faq-item { border-bottom:1px solid rgba(39,35,31,.14); }.faq-item button { width:100%; min-height:74px; padding:0; border:0; display:flex; align-items:center; justify-content:space-between; color:var(--ink); background:transparent; text-align:left; font:20px Georgia,serif; }:global(.faq-icon) { color:#8f867c; transition:transform .2s ease; }:global(.faq-icon.open) { transform:rotate(180deg); }.faq-item > p { max-width:660px; padding:0 45px 24px 0; color:var(--muted); font-size:12px; line-height:1.75; }
+    .final-cta { min-height:570px; margin:0 16px 16px; padding:85px 24px; border-radius:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; background:var(--ink); }.final-cta > p { color:#d8a56d; font-size:9px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }.final-cta h2 { margin-top:24px; font-size:clamp(56px,6.5vw,88px); line-height:.92; letter-spacing:-.05em; }.amber { color:var(--ink); background:#d59351; }.dark-quiet { border:1px solid rgba(255,255,255,.18); color:#fff; background:rgba(255,255,255,.05); }.final-cta > small { margin-top:19px; color:rgba(255,255,255,.36); font-size:8px; letter-spacing:.04em; }
+    @media(max-width:980px) { .product-frame { margin-right:25px; }.phone-preview { right:-25px; }.problem-heading,.workflow-heading,.details-heading,.focus-section,.faq-section { grid-template-columns:1fr; gap:32px; }.workflow-detail { grid-template-columns:1fr; }.workflow-demo { min-height:440px; }.focus-section { gap:70px; }.focus-preview { max-width:650px; width:100%; }.details-grid { grid-template-columns:1fr; }.details-grid article,.details-grid article:first-child,.details-grid article:last-child { min-height:0; padding:34px 0; border-right:0; border-bottom:1px solid rgba(39,35,31,.12); }.details-grid small { margin-top:28px; } }
     @media(max-width:700px) {
-        .hero-section { min-height:auto; padding:124px 18px 74px; }.announcement { font-size:8px; }.hero-copy h1 { font-size:51px; }.hero-lede { font-size:15px; }.hero-actions { flex-direction:column; }.hero-actions a { width:100%; }.trust-row { gap:10px; }
-        .product-stage { height:520px; margin-top:55px; }.browser-card { width:100%; height:425px; }.browser-bar { grid-template-columns:1fr 2fr 1fr; }.browser-body { height:380px; grid-template-columns:62px 1fr; }.browser-body aside { padding:12px 6px; }.side-item { padding:6px 4px; font-size:6px; }.mini-brand { margin-bottom:20px; }.today-view { padding:24px 14px; }.today-top h2 { font-size:19px; }.today-top button { display:none; }.thought-input { margin-top:15px; }.plan-card { grid-template-columns:4px 1fr 37px; gap:8px; }.plan-card > button { display:none; }.mini-timeline { display:none; }.phone-card { width:150px; right:-3px; bottom:5px; }.phone-screen { min-height:270px; padding:17px 10px 12px; }.focus-ring { width:88px; height:88px; margin:14px auto; }.focus-ring strong { font-size:18px; }.phone-screen h3 { font-size:12px; }.blocked-pill { font-size:5px; }.extension-card { width:170px; left:-2px; bottom:30px; }.extension-card > p { font-size:9px; }
-        .platform-strip { padding:24px 18px; align-items:flex-start; flex-direction:column; gap:14px; }.platform-strip > div { flex-wrap:wrap; gap:16px; }
-        .position-section,.journey-section,.feature-section,.faq-section { padding:85px 18px; }.position-grid { grid-template-columns:1fr; margin-top:40px; }.position-grid article { min-height:240px; }.section-header h2,.faq-title h2 { font-size:42px; }.journey-shell { margin-top:40px; }.stage-tabs { min-height:63px; }.stage-tabs button { flex-direction:column; gap:2px; font-size:9px; }.journey-copy { padding:38px 25px; }.journey-copy h3 { font-size:36px; }.journey-visual { min-height:410px; }.capture-demo,.plan-demo,.protect-demo { width:84%; }
-        .focus-section { min-height:auto; padding:85px 18px; }.focus-copy h2 { font-size:43px; }.focus-composition { min-height:480px; }.focus-window { width:94%; }.focus-window-body { min-height:280px; padding:32px 25px; }.focus-window-body h3 { font-size:28px; }.block-card { width:235px; top:35px; right:-5px; }.site-block { width:240px; right:0; bottom:16px; }
-        .feature-grid { grid-template-columns:1fr; }.feature-grid article.feature-wide { grid-column:auto; padding:25px; }.feature-grid article { min-height:350px; padding:25px; }.handoff-art { height:auto; grid-template-columns:1fr; gap:8px; }.handoff-art > i { width:1px; height:28px; margin:auto; background:linear-gradient(rgba(53,86,68,.15),rgba(53,86,68,.45)); }.handoff-art > i::after { right:-2px; top:auto; bottom:0; transform:rotate(135deg); }.handoff-node { min-height:90px; }.handoff-node.web { transform:none; }.privacy-seal { width:160px; height:160px; }
-        .audience-strip { justify-content:flex-start; }.audience-strip p { font-size:15px; }
-        .faq-item button { font-size:16px; }.final-cta { min-height:480px; padding:70px 18px; }.final-actions { width:100%; flex-direction:column; }.final-actions a { width:100%; }
+        .hero { padding:124px 18px 42px; }.hero h1 { margin-top:22px; font-size:52px; line-height:.94; }.hero-lede { font-size:15px; line-height:1.6; }.hero-actions,.final-actions { width:100%; flex-direction:column; }.button { width:100%; }.hero-note { flex-wrap:wrap; }
+        .product-frame { height:500px; margin:58px 0 0; border-radius:13px; }.product-toolbar { height:38px; }.product-body { height:calc(100% - 38px); grid-template-columns:58px 1fr; }.product-body aside { padding:15px 7px; }.mini-logo { width:28px; height:28px; margin:auto; }.product-body nav { margin-top:25px; }.product-body nav span,.product-body nav b { padding:7px 3px; text-align:center; font-size:6px; }.product-body aside > small { display:none; }.product-content { padding:30px 14px; }.product-heading h2 { font-size:21px; }.product-heading button { display:none; }.capture-field { min-height:50px; margin-top:18px; padding:0 10px; font-size:7px; }.capture-field kbd { display:none; }.today-label { margin-top:25px; }.active-plan { min-height:112px; padding:12px 10px; grid-template-columns:3px 1fr 34px; gap:8px; }.plan-mark { height:67px; }.plan-main h3 { font-size:14px; }.plan-main p { font-size:6px; line-height:1.4; }.plan-duration strong { font-size:18px; }.active-plan > button { display:none; }.day-row { grid-template-columns:30px 1fr; }.phone-preview { width:145px; min-height:280px; right:-10px; bottom:-20px; padding:9px; border-width:5px; border-radius:25px; }.phone-preview > small { margin-top:16px; }.timer { width:82px; height:82px; margin:12px auto; }.timer strong { font-size:19px; }.phone-preview h3 { font-size:11px; }.shield-row { margin-top:10px; font-size:5px; }.phone-preview > button { min-height:29px; margin-top:10px; }.platform-row { margin-top:45px; align-items:flex-start; flex-direction:column; gap:16px; }.platform-row > div { flex-wrap:wrap; gap:14px; }
+        .problem-section,.workflow-section,.details-section,.faq-section { padding:82px 18px; }.problem-heading,.workflow-heading,.details-heading { margin-top:27px; }.problem-heading h2,.workflow-heading h2,.details-heading h2 { font-size:43px; }.comparison-list { margin-top:48px; }.comparison-list > div { min-height:108px; grid-template-columns:1fr 1fr; gap:7px 12px; }.comparison-list small { grid-column:2; }.comparison-list p { font-size:19px; }.comparison-list .resin-row { margin:0 -10px; padding:0 10px; }
+        .workflow-shell { margin-top:45px; }.workflow-tabs { min-height:65px; }.workflow-tabs button { flex-direction:column; gap:4px; font-size:8px; }.workflow-detail { min-height:0; }.workflow-copy { padding:42px 25px; }.workflow-copy h3 { margin-top:17px; font-size:37px; }.workflow-demo { min-height:390px; }.note-demo,.steps-demo,.protect-demo { width:86%; }.note-demo { padding:24px; }.note-demo p { font-size:21px; }
+        .focus-section { min-height:0; padding:82px 18px; }.focus-copy h2 { margin-top:28px; font-size:43px; }.focus-preview { min-height:450px; }.focus-card { width:94%; min-height:310px; padding:32px 25px; }.focus-card h3 { font-size:30px; }.focus-card > div { margin-top:52px; }.blocked-card { width:245px; padding:21px; }.details-grid { margin-top:45px; }.faq-heading h2 { margin-top:27px; font-size:43px; }.faq-item button { min-height:70px; font-size:17px; }.final-cta { min-height:500px; padding:70px 18px; }.final-cta h2 { font-size:54px; }
     }
-    @media(prefers-reduced-motion:reduce) { * { transition:none!important; }.phone-card,.extension-card,.focus-window,.site-block,.capture-demo,.plan-demo { transform:none; } }
+    @media(prefers-reduced-motion:reduce) { * { transition:none!important; }.phone-preview,.note-demo,.focus-card { transform:none; } }
 </style>

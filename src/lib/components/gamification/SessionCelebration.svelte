@@ -27,7 +27,7 @@
 </script>
 
 {#if visible}
-    <div class="fixed inset-0 pointer-events-none z-50 flex items-center justify-center" in:fade={{ duration: 200 }} out:fade={{ duration: 300 }}>
+    <div class="fixed inset-0 pointer-events-none flex items-center justify-center" style="z-index: var(--z-ceremony, 200);" in:fade={{ duration: 200 }} out:fade={{ duration: 300 }}>
         <!-- Confetti/particle background -->
         {#each particles as particle}
             <div

@@ -8,7 +8,7 @@
 </script>
 
 {#if commands.length > 0}
-	<div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+	<div class="mt-6 p-4 bg-resin-amber/5 rounded-xl border border-resin-amber/20">
 		<div class="flex items-center gap-2 mb-3">
 			<span class="text-lg">⚡</span>
 			<h3 class="font-semibold text-resin-charcoal">
@@ -20,7 +20,7 @@
 			{#each commands as command (command.fullCommand)}
 				{@const meta = getCommandMetadata(command.type)}
 				<div
-					class="p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-300 transition-colors"
+					class="p-3 bg-white rounded-lg border border-resin-earth/10 hover:border-resin-amber/40 transition-colors"
 				>
 					<div class="flex items-start gap-2">
 						<span class="text-lg">{meta.icon}</span>
@@ -33,22 +33,16 @@
 							</div>
 						</div>
 					</div>
-					<div class="mt-2 text-xs text-blue-600 font-medium">
+					<div class="mt-2 text-xs text-resin-amber font-medium">
 						{meta.description}
 					</div>
 				</div>
 			{/each}
 		</div>
 
-		<div class="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700 border border-blue-100">
+		<div class="mt-3 p-2 bg-resin-amber/5 rounded text-xs text-resin-earth border border-resin-amber/15">
 			💡 <strong>Tip:</strong> These commands will trigger automations when you save this note. Set them up
 			in your account settings to connect to external services.
 		</div>
 	</div>
 {/if}
-
-<style lang="postcss">
-	:global(.dark) {
-		background: linear-gradient(to right, rgb(30 41 59 / 0.5), rgb(55 48 163 / 0.1));
-	}
-</style>

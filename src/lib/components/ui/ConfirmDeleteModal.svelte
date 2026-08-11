@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
+	import { scrollLock } from '$lib/actions/scrollLock';
 
 	interface Props {
 		isOpen: boolean;
@@ -28,7 +29,9 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+		class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4"
+		style="z-index: var(--z-modal, 100);"
+		use:scrollLock={isOpen}
 		transition:fade={{ duration: 200 }}
 		onmousedown={(e) => {
 			if (e.target === e.currentTarget) onCancel();

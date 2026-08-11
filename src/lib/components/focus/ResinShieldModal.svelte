@@ -1,5 +1,6 @@
 <script lang="ts">
     import { fade, slide } from "svelte/transition";
+    import { scrollLock } from "$lib/actions/scrollLock";
 
     let { isOpen = $bindable(false) } = $props<{ isOpen: boolean }>();
 
@@ -17,7 +18,9 @@
 
 {#if isOpen}
 	    <div
-	        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
+	        class="fixed inset-0 flex items-center justify-center p-4 bg-resin-charcoal/60 backdrop-blur-sm overflow-y-auto"
+	        style="z-index: var(--z-modal, 100);"
+	        use:scrollLock={isOpen}
 	        transition:fade={{ duration: 200 }}
 	        onclick={close}
             onkeydown={(event) => (event.key === "Enter" || event.key === "Escape") && close()}

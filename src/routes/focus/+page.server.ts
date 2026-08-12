@@ -17,7 +17,7 @@ function parseFocusWindow(date: string, time: string, duration: number): { start
     return { startTime, endTime };
 }
 
-export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser, session }, setHeaders }) => {
+export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser, session }, setHeaders, url }) => {
     // Disable server caching for fresh data
     setHeaders({
         'cache-control': 'no-cache, no-store, must-revalidate'
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
     const user = await getUser();
 
     if (!user || !session) {
-        throw redirect(303, '/login?next=/focus');
+        throw redirect(303, `/login?next=${encodeURIComponent(url.pathname + url.search)}`);
     }
 
     const supabase = await getAuthenticatedSupabase();

@@ -49,4 +49,19 @@ test.describe('Landing funnel', () => {
         await expect(page.getByRole('link', { name: 'Make my first plan' }).first()).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Follow through' })).toBeVisible();
     });
+
+    test('publishes the canonical API host for extension requests', async ({ request }) => {
+        const response = await request.get('/api/config');
+        expect(response.ok()).toBeTruthy();
+
+        const config = await response.json();
+        expect(config.api.baseUrl).toBe('https://www.noteresin.com');
+    });
+
+    test('preserves extension recovery intent through sign-in', async ({ page }) => {
+        await page.goto('/focus?recovery=make-smaller');
+
+        expect(new URL(page.url()).pathname).toBe('/login');
+        expect(new URL(page.url()).searchParams.get('next')).toBe('/focus?recovery=make-smaller');
+    });
 });

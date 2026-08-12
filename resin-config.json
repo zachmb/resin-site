@@ -1,7 +1,7 @@
 {
   "environment": "production",
   "api": {
-    "baseUrl": "https://noteresin.com",
+    "baseUrl": "https://www.noteresin.com",
     "version": "v1",
     "requestTimeout": 30000,
     "retry": {

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { Settings } from 'lucide-svelte';
+    import { Settings, ShieldCheck, RefreshCw, BarChart3 } from 'lucide-svelte';
 
     let { extensionInstalled = false } = $props<{
         extensionInstalled?: boolean;
@@ -47,7 +47,7 @@
                     <div
                         class="flex items-center gap-2 text-resin-charcoal font-bold text-sm"
                     >
-                        <span>🔒</span> Blocking Active
+                        <ShieldCheck size={15} class="text-resin-charcoal/70" /> Blocking Active
                     </div>
                     <p class="text-xs text-resin-earth/60 leading-relaxed">
                         Focus sessions are being enforced.
@@ -57,7 +57,7 @@
                     <div
                         class="flex items-center gap-2 text-resin-charcoal font-bold text-sm"
                     >
-                        <span>🔄</span> Synced
+                        <RefreshCw size={15} class="text-resin-charcoal/70" /> Synced
                     </div>
                     <p class="text-xs text-resin-earth/60 leading-relaxed">
                         Your sessions sync automatically.
@@ -67,7 +67,7 @@
                     <div
                         class="flex items-center gap-2 text-resin-charcoal font-bold text-sm"
                     >
-                        <span>📊</span> Analytics
+                        <BarChart3 size={15} class="text-resin-charcoal/70" /> Analytics
                     </div>
                     <p class="text-xs text-resin-earth/60 leading-relaxed">
                         Track your blocking history.
@@ -130,7 +130,7 @@
                     <div
                         class="flex items-center gap-2 text-resin-charcoal font-bold text-sm"
                     >
-                        <span>🔒</span> Total Blocking
+                        <ShieldCheck size={15} class="text-resin-charcoal/70" /> Total Blocking
                     </div>
                     <p class="text-xs text-resin-earth/60 leading-relaxed">
                         Enforce your focus across all browser tabs.
@@ -140,7 +140,7 @@
                     <div
                         class="flex items-center gap-2 text-resin-charcoal font-bold text-sm"
                     >
-                        <span>🔄</span> Instant Sync
+                        <RefreshCw size={15} class="text-resin-charcoal/70" /> Instant Sync
                     </div>
                     <p class="text-xs text-resin-earth/60 leading-relaxed">
                         Automatically activates when you start a session.
@@ -150,7 +150,7 @@
                     <div
                         class="flex items-center gap-2 text-resin-charcoal font-bold text-sm"
                     >
-                        <span>📊</span> Focus Analytics
+                        <BarChart3 size={15} class="text-resin-charcoal/70" /> Focus Analytics
                     </div>
                     <p class="text-xs text-resin-earth/60 leading-relaxed">
                         Track and review your blocked attempts.

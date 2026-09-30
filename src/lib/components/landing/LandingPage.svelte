@@ -80,7 +80,6 @@
         <img class="hero-bg" src="/img/landing/hero.jpg" alt="" aria-hidden="true" />
         <div class="hero-scrim"></div>
         <div class="hero-inner">
-            <p class="hero-kicker">Resin · Follow through on what matters</p>
             <h1>You know what matters.<br /><span>Now start it.</span></h1>
             <p class="hero-lede">Resin turns the thought you keep carrying into a realistic next action, finds room for it in your day, and protects your attention long enough to begin.</p>
             <div class="hero-actions">
@@ -94,7 +93,6 @@
     <!-- CAPABILITIES: three big colored core-loop cards -->
     <section class="cap-section">
         <div class="cap-head">
-            <p class="eyebrow">The loop</p>
             <h2>From “I should” to “I started.”</h2>
             <p class="cap-sub">A short loop designed for overloaded days, not ideal ones — capture, plan, and protect the start.</p>
         </div>
@@ -102,7 +100,6 @@
             {#each capabilities as cap, i}
                 <article class="cap-card {cap.tone}">
                     <div class="cap-copy">
-                        <span class="cap-num">0{i + 1} · {cap.label}</span>
                         <h3>{cap.title}</h3>
                         <p>{cap.copy}</p>
                         <div class="cap-chips">{#each cap.chips as chip}<span>{chip}</span>{/each}</div>
@@ -123,7 +120,7 @@
             {#each showcase as card}
                 <article class="showcase-card">
                     <div class="showcase-media"><img src={card.img} alt={card.alt} loading="lazy" width="1100" height="820" /></div>
-                    <div class="showcase-body"><small>{card.label}</small><h3>{card.title}</h3><p>{card.copy}</p></div>
+                    <div class="showcase-body"><h3>{card.title}</h3><p>{card.copy}</p></div>
                 </article>
             {/each}
         </div>
@@ -138,7 +135,6 @@
     <!-- FAQ -->
     <section class="faq-section">
         <div class="faq-head">
-            <p class="eyebrow">Questions</p>
             <h2>Before you begin.</h2>
         </div>
         <div class="faq-list">
@@ -158,7 +154,6 @@
         <img class="final-bg" src="/img/landing/misty.jpg" alt="" aria-hidden="true" />
         <div class="final-scrim"></div>
         <div class="final-inner">
-            <p class="eyebrow light">Resin · Follow through</p>
             <h2>Carry less.<br /><span>Start one thing.</span></h2>
             <div class="hero-actions">
                 <a class="btn btn-primary" href="/login?mode=start&next=/">Make my first plan <ArrowRight size={18} /></a>
@@ -177,15 +172,13 @@
     .btn:hover { transform:translateY(-2px); }
     .btn-primary { color:#fff; background:var(--ink); box-shadow:0 14px 30px rgba(37,35,31,.22); }.btn-primary:hover { background:var(--forest); }
     .btn-ghost { color:#fff; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.4); backdrop-filter:blur(6px); }.btn-ghost:hover { background:rgba(255,255,255,.24); }
-    .eyebrow { color:var(--amber); font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }.eyebrow.light { color:#e7bd8f; }
 
     /* HERO */
     .hero { position:relative; min-height:92vh; display:flex; align-items:flex-end; padding:0; overflow:hidden; }
     .hero-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .hero-scrim { position:absolute; inset:0; background:linear-gradient(180deg, rgba(20,26,20,.34) 0%, rgba(20,26,20,.06) 34%, rgba(20,26,20,.5) 78%, rgba(15,20,15,.82) 100%); }
     .hero-inner { position:relative; width:100%; max-width:1180px; margin:0 auto; padding:0 max(24px,calc((100vw - 1180px)/2)) clamp(56px,8vh,104px); }
-    .hero-kicker { color:rgba(255,255,255,.82); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
-    .hero h1 { margin-top:20px; color:#fff; font-size:clamp(52px,8.4vw,124px); text-shadow:0 2px 30px rgba(0,0,0,.28); }.hero h1 span { color:#f0c79a; }
+    .hero h1 { color:#fff; font-size:clamp(52px,8.4vw,124px); text-shadow:0 2px 30px rgba(0,0,0,.28); }.hero h1 span { color:#f0c79a; }
     .hero-lede { max-width:600px; margin-top:24px; color:rgba(255,255,255,.9); font-size:clamp(16px,1.5vw,20px); line-height:1.6; text-shadow:0 1px 16px rgba(0,0,0,.3); }
     .hero-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:32px; }
     .hero-note { margin-top:20px; display:flex; align-items:center; gap:9px; color:rgba(255,255,255,.7); font-size:12px; }.hero-note span { width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.5); }
@@ -196,11 +189,10 @@
     .cap-stack { margin-top:54px; display:grid; gap:22px; }
     .cap-card { border-radius:30px; overflow:hidden; display:grid; grid-template-columns:1.05fr .95fr; min-height:400px; color:#fff; }
     .cap-card.forest { background:#2f5040; }.cap-card.clay { background:#a95f34; }.cap-card.deep { background:#20342a; }
-    .cap-copy { padding:clamp(36px,4vw,64px); display:flex; flex-direction:column; justify-content:center; }
-    .cap-num { font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.66); }
-    .cap-card h3 { margin-top:18px; font-size:clamp(30px,3.4vw,46px); line-height:1.02; max-width:15ch; }
-    .cap-card .cap-copy p { margin-top:18px; max-width:46ch; color:rgba(255,255,255,.82); font-size:15px; line-height:1.7; }
-    .cap-chips { margin-top:26px; display:flex; flex-wrap:wrap; gap:9px; }.cap-chips span { padding:8px 13px; border-radius:999px; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.2); font-size:12px; font-weight:600; }
+    .cap-copy { padding:clamp(44px,4.8vw,80px); display:flex; flex-direction:column; justify-content:center; }
+    .cap-card h3 { font-size:clamp(30px,3.4vw,46px); line-height:1.02; max-width:15ch; }
+    .cap-card .cap-copy p { margin-top:22px; max-width:46ch; color:rgba(255,255,255,.82); font-size:15px; line-height:1.75; }
+    .cap-chips { margin-top:30px; display:flex; flex-wrap:wrap; gap:10px; }.cap-chips span { padding:9px 15px; border-radius:999px; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.2); font-size:12px; font-weight:600; }
     .cap-media { position:relative; overflow:hidden; }.cap-media img { width:100%; height:100%; object-fit:cover; display:block; }
 
     /* SHOWCASE */
@@ -210,16 +202,16 @@
     .showcase-card { border:1px solid rgba(37,35,31,.1); border-radius:22px; overflow:hidden; background:#fffdf9; box-shadow:0 16px 38px rgba(61,46,31,.08); transition:transform .2s ease, box-shadow .2s ease; }
     .showcase-card:hover { transform:translateY(-3px); box-shadow:0 26px 54px rgba(61,46,31,.14); }
     .showcase-media { aspect-ratio:11/8; overflow:hidden; background:#eee7dd; }.showcase-media img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s ease; }.showcase-card:hover .showcase-media img { transform:scale(1.05); }
-    .showcase-body { padding:22px 22px 26px; }.showcase-body small { color:var(--amber); font-size:10px; font-weight:800; letter-spacing:.14em; }.showcase-body h3 { margin-top:11px; font-size:20px; }.showcase-body p { margin-top:10px; color:var(--muted); font-size:13px; line-height:1.6; }
+    .showcase-body { padding:30px 28px 34px; }.showcase-body h3 { font-size:20px; }.showcase-body p { margin-top:13px; color:var(--muted); font-size:13px; line-height:1.65; }
     .platform-strip { margin-top:44px; padding-top:26px; border-top:1px solid rgba(37,35,31,.1); display:flex; flex-wrap:wrap; gap:28px; color:var(--muted); }.platform-strip span { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink); }
 
     /* FAQ */
     .faq-section { padding:clamp(70px,8vh,120px) max(24px,calc((100vw - 1180px)/2)); border-top:1px solid rgba(37,35,31,.09); display:grid; grid-template-columns:.7fr 1.3fr; gap:64px; }
     .faq-head h2 { margin-top:14px; font-size:clamp(36px,4vw,56px); }
     .faq-list { border-top:1px solid rgba(37,35,31,.14); }.faq-item { border-bottom:1px solid rgba(37,35,31,.14); }
-    .faq-item button { width:100%; min-height:74px; padding:0; border:0; display:flex; align-items:center; justify-content:space-between; gap:20px; color:var(--ink); background:transparent; text-align:left; cursor:pointer; font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; letter-spacing:-.02em; }
+    .faq-item button { width:100%; min-height:84px; padding:24px 0; border:0; display:flex; align-items:center; justify-content:space-between; gap:20px; color:var(--ink); background:transparent; text-align:left; cursor:pointer; font-family:'Manrope',sans-serif; font-size:19px; font-weight:700; letter-spacing:-.02em; }
     :global(.faq-icon) { color:#8f867c; transition:transform .2s ease; flex-shrink:0; }:global(.faq-icon.open) { transform:rotate(180deg); }
-    .faq-item > p { max-width:680px; padding:0 40px 26px 0; color:var(--muted); font-size:14px; line-height:1.75; }
+    .faq-item > p { max-width:680px; padding:2px 40px 30px 0; color:var(--muted); font-size:14px; line-height:1.75; }
 
     /* FINAL CTA */
     .final-cta { position:relative; margin:0; min-height:66vh; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; }

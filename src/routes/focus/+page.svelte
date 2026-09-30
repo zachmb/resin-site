@@ -127,12 +127,24 @@
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const dayOfWeekAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+    const localDateString = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const localDateTimeToIso = (date: string, time: string) => {
+        const value = new Date(`${date}T${time}`);
+        return Number.isFinite(value.getTime()) ? value.toISOString() : '';
+    };
+
     const startEditingSession = (session: any) => {
         editingSessionId = session.id;
         const startDate = new Date(session.start_time);
         const hours = String(startDate.getHours()).padStart(2, '0');
         const minutes = String(startDate.getMinutes()).padStart(2, '0');
-        const dateStr = startDate.toISOString().split('T')[0];
+        const dateStr = localDateString(startDate);
         const duration = Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000);
 
         editSessionData = {
@@ -529,6 +541,7 @@
                 class="glass-card rounded-lg p-6 mb-6 border border-resin-forest/20 bg-resin-forest/5"
                 transition:slide
             >
+                <input type="hidden" name="start_iso" value={localDateTimeToIso(scheduleDate, scheduleTime)} />
                 <div class="space-y-4">
                     <div>
 	                        <label for="schedule-title" class="block text-xs font-bold text-resin-charcoal mb-2">
@@ -633,6 +646,7 @@
                                 class="space-y-4"
                             >
                                 <input type="hidden" name="sessionId" value={session.id} />
+                                <input type="hidden" name="start_iso" value={localDateTimeToIso(editSessionData[session.id].date, editSessionData[session.id].time)} />
 
                                 <div>
 	                                    <label for={`edit-title-${session.id}`} class="block text-xs font-bold text-resin-charcoal mb-2">
@@ -883,6 +897,7 @@
                     class="glass-card rounded-lg p-6 mb-6 border border-resin-amber/20 bg-resin-amber/5"
                     transition:slide
                 >
+                    <input type="hidden" name="start_iso" value={localDateTimeToIso(inviteDate, inviteTime)} />
                     <div class="space-y-4">
                         <div>
 	                            <label for="invite-collaborator" class="block text-xs font-bold text-resin-charcoal mb-2">

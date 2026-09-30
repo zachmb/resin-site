@@ -94,11 +94,11 @@ async function sendBlockingSyncPush(
     });
 }
 
-function parseFocusWindow(date: string, time: string, duration: number): { startTime: Date; endTime: Date } | { error: string } {
+function parseFocusWindow(startIso: string, duration: number): { startTime: Date; endTime: Date } | { error: string } {
     if (!Number.isFinite(duration) || duration < MIN_FOCUS_MINUTES || duration > MAX_FOCUS_MINUTES) {
         return { error: `Duration must be between ${MIN_FOCUS_MINUTES} and ${MAX_FOCUS_MINUTES} minutes` };
     }
-    const startTime = new Date(`${date}T${time}`);
+    const startTime = new Date(startIso);
     if (!Number.isFinite(startTime.getTime())) {
         return { error: 'Invalid session start time' };
     }
@@ -345,15 +345,14 @@ export const actions: Actions = {
 
         const data = await request.formData();
         const title = sanitizeFocusTitle(data.get('title')?.toString());
-        const date = data.get('date')?.toString() || '';
-        const time = data.get('time')?.toString() || '';
+        const startIso = data.get('start_iso')?.toString() || '';
         const duration = parseInt(data.get('duration')?.toString() || '30');
 
-        if (!title || !date || !time) {
+        if (!title || !startIso) {
             return { success: false, error: 'Missing required fields' };
         }
 
-        const focusWindow = parseFocusWindow(date, time, duration);
+        const focusWindow = parseFocusWindow(startIso, duration);
         if ('error' in focusWindow) {
             return { success: false, error: focusWindow.error };
         }
@@ -525,15 +524,14 @@ export const actions: Actions = {
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
         const title = sanitizeFocusTitle(data.get('title')?.toString());
-        const date = data.get('date')?.toString() || '';
-        const time = data.get('time')?.toString() || '';
+        const startIso = data.get('start_iso')?.toString() || '';
         const duration = parseInt(data.get('duration')?.toString() || '30');
 
-        if (!sessionId || !title || !date || !time) {
+        if (!sessionId || !title || !startIso) {
             return { success: false, error: 'Missing required fields' };
         }
 
-        const focusWindow = parseFocusWindow(date, time, duration);
+        const focusWindow = parseFocusWindow(startIso, duration);
         if ('error' in focusWindow) {
             return { success: false, error: focusWindow.error };
         }
@@ -708,11 +706,10 @@ export const actions: Actions = {
         const data = await request.formData();
         const collaboratorId = data.get('collaboratorId')?.toString();
         const title = sanitizeFocusTitle(data.get('title')?.toString());
-        const date = data.get('date')?.toString() || '';
-        const time = data.get('time')?.toString() || '';
+        const startIso = data.get('start_iso')?.toString() || '';
         const duration = parseInt(data.get('duration')?.toString() || '30');
 
-        if (!collaboratorId || !title || !date || !time) {
+        if (!collaboratorId || !title || !startIso) {
             return { success: false, error: 'Missing required fields' };
         }
 
@@ -730,7 +727,7 @@ export const actions: Actions = {
             }
 
             // Create shared focus session
-            const focusWindow = parseFocusWindow(date, time, duration);
+            const focusWindow = parseFocusWindow(startIso, duration);
             if ('error' in focusWindow) {
                 return { success: false, error: focusWindow.error };
             }

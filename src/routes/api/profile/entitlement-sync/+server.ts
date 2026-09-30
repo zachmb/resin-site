@@ -5,12 +5,17 @@
  * The iOS app is local-first and may not have a Supabase JWT, so this mirrors
  * the existing notes/blocking sync model: email + RESIN_SYNC_KEY.
  *
- * Body: { email: string, api_key: string, is_pro: boolean }
+ * Body: { email: string, api_key: string, is_pro: boolean, signed_transaction?: string }
+ *
+ * Granting Pro (free → pro) requires `signed_transaction`: the App Store's
+ * `Transaction.jwsRepresentation`, verified server-side against Apple's roots.
+ * A client-claimed `is_pro` alone can never grant Pro (fail-closed).
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { adminClient, isProAccountType, isValidResinSyncKey, normalizeEmail, resolveExistingUserIdByEmail } from '$lib/server/auth';
 import { readBoundedJsonBody, RequestBodyError } from '$lib/server/requestBody';
+import { verifyProEntitlement } from '$lib/server/storekit';
 
 const MAX_REQUEST_BODY_LENGTH = 8_000;
 const NO_STORE_HEADERS = {
@@ -25,9 +30,9 @@ export const POST: RequestHandler = async ({ request, setHeaders }) => {
 		'expires': '0'
 	});
 
-	let body: { email?: string; api_key?: string; is_pro?: boolean };
+	let body: { email?: string; api_key?: string; is_pro?: boolean; signed_transaction?: string };
 	try {
-		body = await readBoundedJsonBody<{ email?: string; api_key?: string; is_pro?: boolean }>(
+		body = await readBoundedJsonBody<{ email?: string; api_key?: string; is_pro?: boolean; signed_transaction?: string }>(
 			request,
 			MAX_REQUEST_BODY_LENGTH
 		);
@@ -38,7 +43,7 @@ export const POST: RequestHandler = async ({ request, setHeaders }) => {
 		}, { status, headers: NO_STORE_HEADERS });
 	}
 
-	const { email, api_key, is_pro } = body;
+	const { email, api_key, is_pro, signed_transaction } = body;
 
 	if (!isValidResinSyncKey(api_key)) {
 		return json({ error: 'Invalid API key' }, { status: 401, headers: NO_STORE_HEADERS });
@@ -72,12 +77,19 @@ export const POST: RequestHandler = async ({ request, setHeaders }) => {
 		: 'free';
 	const currentlyPro = isProAccountType(currentAccountType);
 
+	// Granting Pro is the money-sensitive path: require a cryptographically
+	// verified App Store transaction, never the client's word alone. Any failure
+	// (missing/forged JWS, wrong bundle/product, revoked, expired) falls closed.
 	if (is_pro && !currentlyPro) {
-		return json({
-			error: 'Server StoreKit verification required',
-			code: 'STOREKIT_SERVER_VERIFICATION_REQUIRED',
-			account_type: currentAccountType
-		}, { status: 403, headers: NO_STORE_HEADERS });
+		const verification = await verifyProEntitlement(signed_transaction);
+		if (!verification.verified) {
+			return json({
+				error: 'Server StoreKit verification required',
+				code: 'STOREKIT_SERVER_VERIFICATION_REQUIRED',
+				reason: verification.reason,
+				account_type: currentAccountType
+			}, { status: 403, headers: NO_STORE_HEADERS });
+		}
 	}
 
 	if (!is_pro && currentlyPro) {

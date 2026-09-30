@@ -1,287 +1,146 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { fly, fade } from 'svelte/transition';
+	import { Ban, RefreshCw, Activity, Lock, ShieldCheck, Smartphone, SlidersHorizontal, Target, ArrowRight } from 'lucide-svelte';
+
+	const features = [
+		{ icon: Ban, title: 'Blocks sites while you focus', copy: 'When you start a focus session, the sites you picked get blocked in Chrome.' },
+		{ icon: RefreshCw, title: 'Syncs on its own', copy: 'Start a session in Resin and Chrome starts blocking automatically. You set it up once.' },
+		{ icon: Activity, title: 'Shows if it is working', copy: 'See at a glance whether this browser is protected, needs setup, or is catching up.' }
+	];
+
+	const steps = [
+		['Add it to Chrome', 'Get Resin Shield from the Chrome Web Store. Sign in with the same email as your Resin Pro account.'],
+		['Pick what to block', 'Add the sites that distract you most — like social media, videos, or news.'],
+		['Start focusing', 'Begin a session in Resin. The sites you picked get blocked right away.'],
+		['Check it is on', 'The little popup shows if this browser is protected, needs setup, or is catching up.']
+	];
+
+	const why = [
+		{ icon: Lock, title: 'Private by default', copy: 'Resin only blocks the sites you picked. It never reads your pages, forms, passwords, or history.' },
+		{ icon: Activity, title: 'Always shows its status', copy: 'The popup tells you if blocking is on: Protected, Waiting, Needs setup, or Catching up.' },
+		{ icon: ShieldCheck, title: 'Blocks the smart way', copy: 'Chrome blocks the sites during your session, so a bored click cannot pull you away.' },
+		{ icon: Smartphone, title: 'Works with your phone', copy: 'Block sites on your laptop while you use Resin on your phone. One setup, both places.' },
+		{ icon: SlidersHorizontal, title: 'Ready to go', copy: 'Comes with common distractions already picked. Change them anytime.' },
+		{ icon: Target, title: 'Different rules when you need them', copy: 'Block more for deep work, less for light tasks.' }
+	];
+
+	const faqs = [
+		['Can I turn it off during a session?', 'Yes. Chrome always lets you turn off extensions or take away site access. Resin just shows you when that happens — the popup says Needs setup or Catching up, and you can turn it back on anytime.'],
+		['Does it work on any website?', 'Yes. You can block any site. It comes with common ones ready to go — YouTube, Reddit, Twitter, Facebook, TikTok, Instagram, and news. Add your own anytime.'],
+		['What about apps, not websites?', 'This blocks websites. To block apps on your phone (like the YouTube app), use focus mode in the Resin iPhone app. They work together.'],
+		['Can I block just one page on a site?', 'Not yet. Right now Resin blocks a whole site, which is simpler and easier to trust while you focus. If you need a site for work, take it off your block list before you start.'],
+		['Does it cost anything?', 'The iPhone app is free. The web app and Chrome blocking come with Resin Pro, which you buy in the iPhone app.']
+	];
 </script>
 
 <svelte:head>
 	<title>Resin Web Shield - Chrome Extension | Resin</title>
 </svelte:head>
 
-<main class="w-full min-h-screen pt-20 pb-32 px-4 sm:px-6 relative z-10">
-	<!-- Background decoration -->
+<main class="ext-page w-full min-h-screen pt-24 pb-32 px-4 sm:px-6 relative z-10">
 	<div class="absolute top-0 left-0 w-96 h-96 bg-resin-amber/5 rounded-full blur-3xl -z-10"></div>
 	<div class="absolute bottom-0 right-0 w-96 h-96 bg-resin-forest/5 rounded-full blur-3xl -z-10"></div>
 
 	<div class="max-w-5xl mx-auto">
 		<!-- Header -->
 		<div class="text-center mb-16" in:fly={{ y: -20, duration: 800 }}>
-			<div class="inline-flex items-center justify-center w-20 h-20 rounded-xl bg-resin-charcoal text-white shadow-xl mb-6">
+			<div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-resin-charcoal text-white shadow-xl mb-6">
 				<img src="/resinext-logo.png" alt="Resin Web Shield" class="w-12 h-12 object-contain" />
 			</div>
-			<h1 class="text-5xl md:text-6xl font-bold text-resin-charcoal mb-4">
+			<h1 class="text-5xl md:text-6xl font-bold text-resin-charcoal mb-5">
 				Resin <span class="text-resin-amber">Shield</span>
 			</h1>
-			<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-resin-amber/15 text-resin-charcoal text-xs font-bold uppercase tracking-wide mb-4">
-				<span>Resin Pro</span>
-				<span class="text-resin-earth/45">web + extension sync</span>
-			</div>
-			<p class="text-xl text-resin-earth/70 max-w-2xl mx-auto">
-				Transform your iPhone focus plans into laptop blocking power. Stop distractions across your browser in real-time.
+			<p class="text-xl text-resin-earth/75 max-w-2xl mx-auto leading-relaxed">
+				Turn your iPhone focus sessions into website blocking on your laptop. The sites that distract you get blocked in Chrome while you work.
 			</p>
 		</div>
 
-		<!-- Hero Features Grid -->
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
-			<div
-				class="glass-card rounded-lg p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all"
-				in:fly={{ x: -20, duration: 600, delay: 100 }}
-			>
-				<div class="text-4xl mb-4">🔒</div>
-				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Session Site Blocking</h3>
-				<p class="text-sm text-resin-earth/70">
-					Redirect distracting sites during active focus sessions using Chrome’s privacy-preserving request rules.
-				</p>
-			</div>
-
-			<div
-				class="glass-card rounded-lg p-8 border border-resin-amber/10 bg-gradient-to-br from-resin-amber/5 to-transparent hover:border-resin-amber/30 transition-all"
-				in:fly={{ x: 0, duration: 600, delay: 200 }}
-			>
-				<div class="text-4xl mb-4">⚡</div>
-				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Instant Sync</h3>
-				<p class="text-sm text-resin-earth/70">
-					Start a session in Resin and the extension syncs protection automatically after one-time Chrome site access.
-				</p>
-			</div>
-
-			<div
-				class="glass-card rounded-lg p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all"
-				in:fly={{ x: 20, duration: 600, delay: 300 }}
-			>
-				<div class="text-4xl mb-4">📊</div>
-				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Clear Protection Status</h3>
-				<p class="text-sm text-resin-earth/70">
-					See whether this browser is protected, waiting for setup, or recovering from a sync issue.
-				</p>
-			</div>
+		<!-- Feature cards -->
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
+			{#each features as f, i}
+				{@const Icon = f.icon}
+				<div class="glass-card rounded-2xl p-8 border border-resin-forest/10 bg-gradient-to-br from-resin-forest/5 to-transparent hover:border-resin-forest/30 transition-all" in:fly={{ y: 16, duration: 600, delay: 100 + i * 100 }}>
+					<div class="w-11 h-11 rounded-xl bg-resin-forest/10 text-resin-forest flex items-center justify-center mb-5"><Icon size={22} /></div>
+					<h3 class="text-lg font-bold text-resin-charcoal mb-2">{f.title}</h3>
+					<p class="text-sm text-resin-earth/70 leading-relaxed">{f.copy}</p>
+				</div>
+			{/each}
 		</div>
 
-		<!-- How It Works -->
-		<section class="mb-20">
-			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12 text-center">How It Works</h2>
-
-			<div class="space-y-8">
-				<!-- Step 1 -->
-				<div class="flex gap-6 md:gap-8 items-start">
-					<div class="flex-shrink-0">
-						<div class="flex items-center justify-center h-12 w-12 rounded-full bg-resin-amber text-white font-bold text-lg">
-							1
+		<!-- How it works -->
+		<section class="mb-24">
+			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12 text-center">How it works</h2>
+			<div class="space-y-8 max-w-3xl mx-auto">
+				{#each steps as step, i}
+					<div class="flex gap-6 items-start">
+						<div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-resin-amber text-white font-bold text-lg">{i + 1}</div>
+						<div class="flex-1">
+							<h3 class="text-xl font-bold text-resin-charcoal mb-2">{step[0]}</h3>
+							<p class="text-resin-earth/70 leading-relaxed">{step[1]}</p>
 						</div>
 					</div>
-					<div class="flex-1">
-						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Install the Extension</h3>
-						<p class="text-resin-earth/70">
-							Download Resin Web Shield from the Chrome Web Store. Sign in with the same email you use for Resin Pro.
-						</p>
-					</div>
-				</div>
-
-				<!-- Step 2 -->
-				<div class="flex gap-6 md:gap-8 items-start">
-					<div class="flex-shrink-0">
-						<div class="flex items-center justify-center h-12 w-12 rounded-full bg-resin-amber text-white font-bold text-lg">
-							2
-						</div>
-					</div>
-					<div class="flex-1">
-						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Configure Your Block List</h3>
-						<p class="text-resin-earth/70">
-							Open web settings and add the websites that distract you most. Common presets include social media, entertainment, and news sites.
-						</p>
-					</div>
-				</div>
-
-				<!-- Step 3 -->
-				<div class="flex gap-6 md:gap-8 items-start">
-					<div class="flex-shrink-0">
-						<div class="flex items-center justify-center h-12 w-12 rounded-full bg-resin-amber text-white font-bold text-lg">
-							3
-						</div>
-					</div>
-					<div class="flex-1">
-						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Start a Focus Session</h3>
-						<p class="text-resin-earth/70">
-							Create an Amber plan or blocking session in Resin. The extension activates your configured rules and clearly shows if Chrome needs setup.
-						</p>
-					</div>
-				</div>
-
-				<!-- Step 4 -->
-				<div class="flex gap-6 md:gap-8 items-start">
-					<div class="flex-shrink-0">
-						<div class="flex items-center justify-center h-12 w-12 rounded-full bg-resin-amber text-white font-bold text-lg">
-							4
-						</div>
-					</div>
-					<div class="flex-1">
-						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Check Protection Status</h3>
-						<p class="text-resin-earth/70">
-							The popup shows whether this browser is protected, needs setup, waiting for device sync, or recovering.
-						</p>
-					</div>
-				</div>
+				{/each}
 			</div>
 		</section>
 
-		<!-- Key Features Detail -->
-		<section class="mb-20">
-			<div class="glass-card rounded-xl p-12 border border-resin-forest/15 bg-gradient-to-br from-resin-forest/5 to-transparent">
-				<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12">Why Resin Web Shield Stands Out</h2>
-
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-					<div>
-						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">🔐</span> Privacy First
-						</h4>
-						<p class="text-resin-earth/70">
-							Resin redirects only configured blocked domains during focus. It does not read page content, form fields, passwords, or browsing history.
-						</p>
-					</div>
-
-					<div>
-						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">🟢</span> Protection Status
-						</h4>
-						<p class="text-resin-earth/70">
-							The toolbar popup makes sync confidence visible with Protected, Waiting, Needs setup, and Recovering states.
-						</p>
-					</div>
-
-					<div>
-						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">🛡️</span> Request-Rule Blocking
-						</h4>
-						<p class="text-resin-earth/70">
-							Blocking is enforced by Chrome’s request rules during active sessions. It’s designed to reduce impulse-clicks and keep you pointed at the next step.
-						</p>
-					</div>
-
-					<div>
-						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">📱</span> iOS Sync
-						</h4>
-						<p class="text-resin-earth/70">
-							Block websites on your browser while using Resin on your phone. One focus ecosystem across devices.
-						</p>
-					</div>
-
-					<div>
-						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">⚙️</span> Smart Defaults
-						</h4>
-						<p class="text-resin-earth/70">
-							Pre-configured block lists for common distractions. Modify anytime without breaking existing settings.
-						</p>
-					</div>
-
-					<div>
-						<h4 class="text-lg font-bold text-resin-charcoal mb-3 flex items-center gap-2">
-							<span class="text-2xl">🎯</span> Session-Specific Rules
-						</h4>
-						<p class="text-resin-earth/70">
-							Temporarily adjust block lists for specific sessions. Different rules for deep work vs. light tasks.
-						</p>
-					</div>
+		<!-- Why people like it -->
+		<section class="mb-24">
+			<div class="glass-card rounded-2xl p-10 md:p-12 border border-resin-forest/15 bg-gradient-to-br from-resin-forest/5 to-transparent">
+				<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12">Why people like it</h2>
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-9">
+					{#each why as w}
+						{@const Icon = w.icon}
+						<div>
+							<h4 class="text-lg font-bold text-resin-charcoal mb-2 flex items-center gap-3">
+								<span class="w-9 h-9 rounded-lg bg-resin-amber/12 text-resin-amber flex items-center justify-center flex-shrink-0"><Icon size={18} /></span>
+								{w.title}
+							</h4>
+							<p class="text-resin-earth/70 leading-relaxed">{w.copy}</p>
+						</div>
+					{/each}
 				</div>
 			</div>
 		</section>
 
 		<!-- FAQ -->
-		<section class="mb-20">
-			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12 text-center">Frequently Asked</h2>
-
-			<div class="space-y-6 max-w-3xl mx-auto">
-				<details class="group border-l-4 border-resin-amber bg-white/40 p-6 rounded-lg hover:bg-white/60 transition-colors">
-					<summary class="cursor-pointer flex items-center justify-between font-bold text-resin-charcoal">
-						Can I disable the extension during a session?
-						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
-					</summary>
-					<p class="text-resin-earth/70 mt-4">
-						Chrome always lets you disable extensions or revoke site access. Resin makes drift visible instead: the popup shows Needs setup or Recovering, removes stale rules when possible, and lets you retry sync without shame.
-					</p>
-				</details>
-
-				<details class="group border-l-4 border-resin-amber bg-white/40 p-6 rounded-lg hover:bg-white/60 transition-colors">
-					<summary class="cursor-pointer flex items-center justify-between font-bold text-resin-charcoal">
-						Does it work with all websites?
-						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
-					</summary>
-					<p class="text-resin-earth/70 mt-4">
-						Yes, any website or domain can be blocked. Common presets include YouTube, Reddit, Twitter, Facebook, TikTok, Instagram, and news sites. Add custom URLs anytime.
-					</p>
-				</details>
-
-				<details class="group border-l-4 border-resin-amber bg-white/40 p-6 rounded-lg hover:bg-white/60 transition-colors">
-					<summary class="cursor-pointer flex items-center justify-between font-bold text-resin-charcoal">
-						What about apps outside the browser?
-						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
-					</summary>
-					<p class="text-resin-earth/70 mt-4">
-						This extension blocks websites. For full-device blocking of apps (like YouTube app on phone), use Resin's iOS app with Focus mode. They complement each other.
-					</p>
-				</details>
-
-				<details class="group border-l-4 border-resin-amber bg-white/40 p-6 rounded-lg hover:bg-white/60 transition-colors">
-					<summary class="cursor-pointer flex items-center justify-between font-bold text-resin-charcoal">
-						Can I whitelist specific pages on blocked sites?
-						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
-					</summary>
-					<p class="text-resin-earth/70 mt-4">
-						Not yet. Today Resin blocks at the domain level, which is safer and easier to understand during focus. If you need a site for work, remove that domain from your block list before the session.
-					</p>
-				</details>
-
-				<details class="group border-l-4 border-resin-amber bg-white/40 p-6 rounded-lg hover:bg-white/60 transition-colors">
-					<summary class="cursor-pointer flex items-center justify-between font-bold text-resin-charcoal">
-						Is there a cost?
-						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
-					</summary>
-					<p class="text-resin-earth/70 mt-4">
-						The iPhone app is free. Web app + Chrome extension sync are included with Resin Pro, purchased inside the iOS app.
-					</p>
-				</details>
+		<section class="mb-24">
+			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-12 text-center">Common questions</h2>
+			<div class="space-y-5 max-w-3xl mx-auto">
+				{#each faqs as faq}
+					<details class="group border-l-4 border-resin-amber bg-white/40 p-6 rounded-lg hover:bg-white/60 transition-colors">
+						<summary class="cursor-pointer flex items-center justify-between gap-4 font-bold text-resin-charcoal">
+							{faq[0]}
+							<span class="text-xl group-open:rotate-180 transition-transform">›</span>
+						</summary>
+						<p class="text-resin-earth/70 mt-4 leading-relaxed">{faq[1]}</p>
+					</details>
+				{/each}
 			</div>
 		</section>
 
-		<!-- CTA Section -->
-		<section
-			class="glass-card rounded-xl p-12 border border-resin-amber/20 bg-gradient-to-r from-resin-amber/10 to-resin-forest/5 text-center"
-			in:fade={{ duration: 600, delay: 400 }}
-		>
-			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-4">
-				Ready to Take Resin to Your Laptop?
-			</h2>
-			<p class="text-lg text-resin-earth/70 mb-8 max-w-2xl mx-auto">
-				Install Resin Web Shield, then upgrade in the iOS app to sync plans and protection across devices.
+		<!-- CTA -->
+		<section class="glass-card rounded-2xl p-12 border border-resin-amber/20 bg-gradient-to-r from-resin-amber/10 to-resin-forest/5 text-center" in:fade={{ duration: 600, delay: 400 }}>
+			<h2 class="text-3xl md:text-4xl font-bold text-resin-charcoal mb-4">Ready for Resin on your laptop?</h2>
+			<p class="text-lg text-resin-earth/70 mb-8 max-w-2xl mx-auto leading-relaxed">
+				Add Resin Shield to Chrome, then go Pro in the iPhone app to keep your plans and blocking in sync everywhere.
 			</p>
 			<div class="flex flex-col sm:flex-row gap-4 justify-center">
 				<!-- TODO(launch): once the Chrome Web Store listing is approved, set the
 				     real store URL (https://chromewebstore.google.com/detail/<EXTENSION_ID>)
 				     and change the label back to "Add to Chrome". -->
-					<a
-						href="mailto:support@noteresin.com?subject=Notify%20me%20when%20Resin%20Web%20Shield%20is%20live"
-						class="px-10 py-4 bg-resin-charcoal text-white rounded-lg font-bold text-lg hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
-					>
-						<span>Chrome Web Store — in review. Notify me</span>
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
+				<a
+					href="mailto:support@noteresin.com?subject=Notify%20me%20when%20Resin%20Web%20Shield%20is%20live"
+					class="px-9 py-4 bg-resin-charcoal text-white rounded-xl font-bold text-base hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
+				>
+					<span>In review on the Chrome Web Store — email me when it's live</span>
+					<ArrowRight size={18} />
 				</a>
 				<button
 					onclick={() => goto('/')}
-					class="px-10 py-4 bg-white text-resin-charcoal border-2 border-resin-charcoal rounded-lg font-bold text-lg hover:bg-resin-charcoal/5 transition-all shadow-xl active:scale-95"
+					class="px-9 py-4 bg-white text-resin-charcoal border-2 border-resin-charcoal rounded-xl font-bold text-base hover:bg-resin-charcoal/5 transition-all shadow-xl active:scale-95"
 				>
-					Back to Dashboard
+					Back to home
 				</button>
 			</div>
 		</section>
@@ -289,9 +148,8 @@
 </main>
 
 <style>
-	:global {
-		details summary::-webkit-details-marker {
-			display: none;
-		}
+	.ext-page :global(h1),.ext-page :global(h2),.ext-page :global(h3),.ext-page :global(h4) {
+		font-family:'Manrope','Inter',system-ui,sans-serif; font-weight:800; letter-spacing:-.03em;
 	}
+	:global(.ext-page details summary::-webkit-details-marker) { display:none; }
 </style>

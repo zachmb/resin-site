@@ -11,6 +11,8 @@
         Sparkles,
         CalendarDays
     } from 'lucide-svelte';
+    import { fly, fade } from 'svelte/transition';
+    import { cubicOut } from 'svelte/easing';
 
     let openFaq = $state<number | null>(0);
 
@@ -76,7 +78,7 @@
     <section class="hero">
         <img class="hero-bg" src="/img/landing/hero.jpg" alt="" aria-hidden="true" />
         <div class="hero-scrim"></div>
-        <div class="hero-inner">
+        <div class="hero-inner" in:fly={{ y: 26, duration: 600, easing: cubicOut }}>
             <h1>You know what matters.<br /><span>Now start it.</span></h1>
             <p class="hero-lede">Got something you keep meaning to do? Resin turns it into small steps, finds time for it in your day, and blocks distractions so you can start.</p>
             <div class="hero-actions">
@@ -95,7 +97,7 @@
         </div>
         <div class="cap-stack">
             {#each capabilities as cap, i}
-                <article class="cap-card {cap.tone}">
+                <article class="cap-card {cap.tone}" in:fly={{ y: 28, duration: 500, delay: i * 90, easing: cubicOut }}>
                     <div class="cap-copy">
                         <h3>{cap.title}</h3>
                         <p>{cap.copy}</p>
@@ -114,8 +116,8 @@
             <p>Simple help to make it easier to start and finish what matters.</p>
         </div>
         <div class="showcase-grid">
-            {#each showcase as card}
-                <article class="showcase-card">
+            {#each showcase as card, i}
+                <article class="showcase-card" in:fly={{ y: 22, duration: 450, delay: i * 80, easing: cubicOut }}>
                     <div class="showcase-media"><img src={card.img} alt={card.alt} loading="lazy" width="1100" height="820" /></div>
                     <div class="showcase-body"><h3>{card.title}</h3><p>{card.copy}</p></div>
                 </article>
@@ -165,7 +167,7 @@
     .landing-shell { --ink:#25231f; --muted:#6f665c; --amber:#c07a3c; --forest:#365744; --paper:#f3eee6; color:var(--ink); background:var(--paper); overflow-x:clip; font-family:'Inter','DM Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
     .landing-shell :global(*) { box-sizing:border-box; }
     h1,h2,h3,p { margin:0; } h1,h2,h3 { font-family:'Manrope','Inter',system-ui,sans-serif; font-weight:800; letter-spacing:-.035em; line-height:.98; }
-    .btn { min-height:54px; padding:0 26px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; font-size:15px; font-weight:700; transition:transform .18s ease, background .18s ease, box-shadow .18s ease; }
+    .btn { min-height:54px; padding:0 26px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; font-size:15px; font-weight:700; transition:transform .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1); }
     .btn:hover { transform:translateY(-2px); }
     .btn-primary { color:#fff; background:var(--ink); box-shadow:0 14px 30px rgba(37,35,31,.22); }.btn-primary:hover { background:var(--forest); }
     .btn-ghost { color:#fff; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.4); backdrop-filter:blur(6px); }.btn-ghost:hover { background:rgba(255,255,255,.24); }
@@ -196,9 +198,9 @@
     .showcase-section { padding:clamp(70px,8vh,120px) max(24px,calc((100vw - 1180px)/2)); border-top:1px solid rgba(37,35,31,.09); }
     .showcase-head { max-width:640px; }.showcase-head h2 { font-size:clamp(40px,5vw,68px); }.showcase-head p { margin-top:18px; color:var(--muted); font-size:16px; line-height:1.7; }
     .showcase-grid { margin-top:52px; display:grid; grid-template-columns:repeat(4,1fr); gap:22px; }
-    .showcase-card { border:1px solid rgba(37,35,31,.1); border-radius:22px; overflow:hidden; background:#fffdf9; box-shadow:0 16px 38px rgba(61,46,31,.08); transition:transform .2s ease, box-shadow .2s ease; }
+    .showcase-card { border:1px solid rgba(37,35,31,.1); border-radius:22px; overflow:hidden; background:#fffdf9; box-shadow:0 16px 38px rgba(61,46,31,.08); transition:transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1); }
     .showcase-card:hover { transform:translateY(-3px); box-shadow:0 26px 54px rgba(61,46,31,.14); }
-    .showcase-media { aspect-ratio:11/8; overflow:hidden; background:#eee7dd; }.showcase-media img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s ease; }.showcase-card:hover .showcase-media img { transform:scale(1.05); }
+    .showcase-media { aspect-ratio:11/8; overflow:hidden; background:#eee7dd; }.showcase-media img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s cubic-bezier(.4,0,.2,1); }.showcase-card:hover .showcase-media img { transform:scale(1.05); }
     .showcase-body { padding:30px 28px 34px; }.showcase-body h3 { font-size:20px; }.showcase-body p { margin-top:13px; color:var(--muted); font-size:13px; line-height:1.65; }
     .platform-strip { margin-top:44px; padding-top:26px; border-top:1px solid rgba(37,35,31,.1); display:flex; flex-wrap:wrap; gap:28px; color:var(--muted); }.platform-strip span { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink); }
 

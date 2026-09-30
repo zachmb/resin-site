@@ -8,6 +8,12 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 
+const RESERVED_BLOCK_DOMAINS = new Set([
+	'noteresin.com',
+	'resin.com',
+	'supabase.co'
+]);
+
 function normalizeBlockedDomain(raw: string): string | null {
 	if (!raw || typeof raw !== 'string') return null;
 	let domain = raw.trim().toLowerCase();
@@ -17,12 +23,17 @@ function normalizeBlockedDomain(raw: string): string | null {
 	if (!/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)) {
 		return null;
 	}
+	if ([...RESERVED_BLOCK_DOMAINS].some((reserved) => domain === reserved || domain.endsWith(`.${reserved}`))) {
+		return null;
+	}
 	return domain;
 }
 
 const MAX_CUSTOM_BLOCKED_DOMAINS = 1000;
+const MAX_BLOCKED_DOMAINS_JSON_BYTES = 64_000;
+const MAX_BLOCKED_DOMAIN_LENGTH = 253;
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, setHeaders }) => {
 	const supabase = locals.supabase;
 
 	const {
@@ -34,15 +45,21 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(303, '/login');
 	}
 
+	setHeaders({
+		'cache-control': 'no-cache, no-store, must-revalidate',
+		pragma: 'no-cache',
+		expires: '0'
+	});
+
 	// Load profile with extension settings
 	const { data: profile, error: profileError } = await supabase
 		.from('profiles')
-		.select('*')
+		.select('account_type, extension_enabled, blocking_enabled, auto_block_sessions, extension_notifications')
 		.eq('id', user.id)
 		.single();
 
 	if (profileError) {
-		console.error('[extension-settings/+page.server] Profile load error:', profileError);
+		console.error('[extension-settings/+page.server] Profile load error');
 		// If profile doesn't exist, we might be in a broken state, but we'll try to continue
 	}
 
@@ -50,10 +67,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const { data: customBlocks, error: blocksError } = await supabase
 		.from('user_custom_blocks')
 		.select('domain')
-		.eq('user_id', user.id);
+		.eq('user_id', user.id)
+		.order('domain', { ascending: true })
+		.limit(MAX_CUSTOM_BLOCKED_DOMAINS);
 
 	if (blocksError) {
-		console.warn('[extension-settings/+page.server] Custom blocks load error:', blocksError);
+		console.warn('[extension-settings/+page.server] Custom blocks load error');
 	}
 
 	const blockedDomains = customBlocks ? customBlocks.map((b) => b.domain) : [];
@@ -101,18 +120,24 @@ export const actions: Actions = {
 		const autoBlockSessions = formData.get('autoBlockSessions') === 'on';
 		const notificationsEnabled = formData.get('notificationsEnabled') === 'on';
 		const blockedDomainsStr = (formData.get('blockedDomains') as string) || '[]';
+		if (blockedDomainsStr.length > MAX_BLOCKED_DOMAINS_JSON_BYTES) {
+			return fail(400, { error: 'Too many blocked domains submitted' });
+		}
 
 		let blockedDomains: string[] = [];
 		try {
 			blockedDomains = JSON.parse(blockedDomainsStr);
-		} catch (e) {
-			console.error('[extension-settings] Failed to parse blockedDomains:', e);
+		} catch {
+			console.error('[extension-settings] Failed to parse blockedDomains');
 			return fail(400, { error: 'Invalid blockedDomains format' });
 		}
 		if (!Array.isArray(blockedDomains)) {
 			return fail(400, { error: 'Invalid blockedDomains format' });
 		}
-		const invalidDomains = blockedDomains.filter((domain) => !normalizeBlockedDomain(String(domain)));
+		const invalidDomains = blockedDomains.filter((domain) => {
+			const rawDomain = String(domain);
+			return rawDomain.length > MAX_BLOCKED_DOMAIN_LENGTH || !normalizeBlockedDomain(rawDomain);
+		});
 		if (invalidDomains.length > 0) {
 			return fail(400, {
 				error: `Remove or fix invalid domain${invalidDomains.length === 1 ? '' : 's'}: ${invalidDomains
@@ -144,7 +169,7 @@ export const actions: Actions = {
 				.eq('id', user.id);
 
 			if (profileError) {
-				console.error('[extension-settings] Profile update error:', profileError);
+				console.error('[extension-settings] Profile update error');
 				return fail(500, { error: 'Failed to save settings to profile' });
 			}
 
@@ -154,10 +179,11 @@ export const actions: Actions = {
 			const { data: existingBlocks, error: existingBlocksError } = await supabase
 				.from('user_custom_blocks')
 				.select('domain')
-				.eq('user_id', user.id);
+				.eq('user_id', user.id)
+				.limit(MAX_CUSTOM_BLOCKED_DOMAINS + 1);
 
 			if (existingBlocksError) {
-				console.error('[extension-settings] Failed to load existing blocks:', existingBlocksError.message);
+				console.error('[extension-settings] Failed to load existing blocks');
 				return fail(500, { error: 'Failed to synchronize block list' });
 			}
 
@@ -177,7 +203,7 @@ export const actions: Actions = {
 					.insert(blocksToInsert);
 
 				if (insertError) {
-					console.error('[extension-settings] Failed to insert new blocks:', insertError.message);
+					console.error('[extension-settings] Failed to insert new blocks');
 					return fail(500, { error: 'Failed to update block list' });
 				}
 			}
@@ -190,7 +216,7 @@ export const actions: Actions = {
 					.in('domain', domainsToRemove);
 
 				if (deleteError) {
-					console.error('[extension-settings] Failed to remove old blocks:', deleteError.message);
+					console.error('[extension-settings] Failed to remove old blocks');
 					return fail(500, { error: 'Settings saved, but some removed domains may still be protected. Try saving again.' });
 				}
 			}
@@ -199,8 +225,8 @@ export const actions: Actions = {
 				success: true,
 				message: '✓ Settings saved! Changes will sync to your extension instantly.'
 			};
-		} catch (err) {
-			console.error('[extension-settings] Unexpected error:', err);
+		} catch {
+			console.error('[extension-settings] Unexpected error');
 			return fail(500, { error: 'Unexpected error while saving settings' });
 		}
 	}

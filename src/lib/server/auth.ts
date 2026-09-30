@@ -5,6 +5,10 @@ import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { timingSafeEqual } from 'crypto';
 
+const MAX_JWT_LENGTH = 8192;
+const MIN_RESIN_SYNC_KEY_LENGTH = 32;
+const JWT_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
 /**
  * Service-role Supabase client (bypasses RLS). Only ever use it scoped by a
  * verified user id from {@link getAuthenticatedUserId} — never by a body-supplied id.
@@ -21,43 +25,25 @@ export const RESIN_SYNC_KEY = env.RESIN_SYNC_KEY;
 
 export function isValidResinSyncKey(candidate: unknown): boolean {
 	if (typeof candidate !== 'string' || typeof RESIN_SYNC_KEY !== 'string') return false;
+	if (candidate.length < MIN_RESIN_SYNC_KEY_LENGTH || RESIN_SYNC_KEY.length < MIN_RESIN_SYNC_KEY_LENGTH) return false;
 	const provided = Buffer.from(candidate);
 	const expected = Buffer.from(RESIN_SYNC_KEY);
 	if (provided.length !== expected.length) return false;
 	return timingSafeEqual(provided, expected);
 }
 
-/**
- * Find (or create) a Supabase user id for an email — the account-resolution used
- * by the iOS sync endpoints. Mirrors /api/notes/sync. Returns null on hard error.
- */
-export async function resolveUserIdByEmail(email: string): Promise<string | null> {
-	const { data: existingProfile } = await adminClient
-		.from('profiles')
-		.select('id')
-		.eq('email', email)
-		.maybeSingle();
-	if (existingProfile?.id) return existingProfile.id;
+const MAX_EMAIL_LENGTH = 254;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-	const { data: listData, error: listError } = await adminClient.auth.admin.listUsers();
-	if (listError) {
-		console.error('[resolveUserIdByEmail] listUsers failed:', listError.message);
-		return null;
-	}
-	const authUser = listData.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-	if (authUser) return authUser.id;
-
-	const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-		email,
-		email_confirm: true
-	});
-	if (createError || !newUser?.user) {
-		console.error('[resolveUserIdByEmail] createUser failed:', createError?.message);
-		return null;
-	}
-	return newUser.user.id;
+export function normalizeEmail(value: unknown): string | null {
+	if (typeof value !== 'string') return null;
+	const email = value.trim().toLowerCase();
+	if (!email || email.length > MAX_EMAIL_LENGTH || !EMAIL_RE.test(email)) return null;
+	return email;
 }
 
+/** Resolve only an existing, profile-backed account. Sync must never create or
+ * confirm an auth identity from an email supplied by a device request. */
 export async function resolveExistingUserIdByEmail(email: string): Promise<string | null> {
 	const { data: existingProfile, error: profileError } = await adminClient
 		.from('profiles')
@@ -66,18 +52,11 @@ export async function resolveExistingUserIdByEmail(email: string): Promise<strin
 		.maybeSingle();
 
 	if (profileError) {
-		console.error('[resolveExistingUserIdByEmail] profile lookup failed:', profileError.message);
+		console.error('[resolveExistingUserIdByEmail] profile lookup failed');
 		return null;
 	}
 	if (existingProfile?.id) return existingProfile.id;
-
-	const { data: listData, error: listError } = await adminClient.auth.admin.listUsers();
-	if (listError) {
-		console.error('[resolveExistingUserIdByEmail] listUsers failed:', listError.message);
-		return null;
-	}
-
-	return listData.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
+	return null;
 }
 
 /**
@@ -90,8 +69,10 @@ export async function getAuthenticatedUserId(event: RequestEvent): Promise<strin
 	const authHeader = event.request.headers.get('authorization') ?? '';
 	const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 	if (jwt) {
+		if (jwt.length > MAX_JWT_LENGTH || !JWT_RE.test(jwt)) return null;
 		const { data: { user }, error } = await adminClient.auth.getUser(jwt);
 		if (!error && user) return user.id;
+		return null;
 	}
 	// Fall back to the verified cookie session for browser callers.
 	const localsGetUser = (event.locals as { getUser?: () => Promise<{ id: string } | null> }).getUser;
@@ -115,7 +96,7 @@ export async function userHasProAccess(userId: string): Promise<boolean> {
 		.maybeSingle();
 
 	if (error) {
-		console.error('[userHasProAccess] profile lookup failed:', error.message);
+		console.error('[userHasProAccess] profile lookup failed');
 		return false;
 	}
 

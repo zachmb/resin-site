@@ -39,15 +39,15 @@ async function handler(req: Request): Promise<Response> {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 1. Verify request is authenticated
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const token = parseBearerToken(authHeader)
+    if (!token) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: missing Authorization header' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
-    const token = authHeader.replace('Bearer ', '')
     const secret = new TextEncoder().encode(jwtSecret)
 
     let verified
@@ -56,7 +56,7 @@ async function handler(req: Request): Promise<Response> {
     } catch (e) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: invalid token' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -64,7 +64,7 @@ async function handler(req: Request): Promise<Response> {
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: no user ID in token' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -86,14 +86,14 @@ async function handler(req: Request): Promise<Response> {
       })
 
     if (insertError) {
-      console.error('[attestation-challenge] Insert error:', insertError)
+      console.error('[attestation-challenge] Insert error')
       return new Response(
-        JSON.stringify({ error: 'Failed to create challenge', details: insertError.message }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to create challenge' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
-    console.log('[attestation-challenge] Generated nonce for user', userId)
+    console.log('[attestation-challenge] Generated challenge')
 
     // 4. Return nonce to client
     return new Response(
@@ -106,13 +106,18 @@ async function handler(req: Request): Promise<Response> {
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     )
-  } catch (err) {
-    console.error('[attestation-challenge] Error:', err)
+  } catch {
+    console.error('[attestation-challenge] Error')
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(err) }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   }
 }
 
 Deno.serve(handler)
+
+function parseBearerToken(authHeader: string): string | null {
+  const match = authHeader.match(/^Bearer\s+([A-Za-z0-9._-]+)$/)
+  return match?.[1] ?? null
+}

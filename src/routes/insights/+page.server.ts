@@ -1,6 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
+const MAX_INSIGHT_COMPLETED_SESSIONS = 1000;
+
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
     const supabase = await getAuthenticatedSupabase();
     const user = await getUser();
@@ -25,12 +27,13 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         `)
         .eq('user_id', user.id)
         .eq('status', 'completed')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(MAX_INSIGHT_COMPLETED_SESSIONS);
 
     // Fetch user profile for streak and stone info
     const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('current_streak')
         .eq('id', user.id)
         .single();
 

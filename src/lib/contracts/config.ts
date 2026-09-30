@@ -252,8 +252,8 @@ export function parseConfig(jsonString: string): ResinConfig {
     const config = JSON.parse(jsonString) as ResinConfig;
     validateConfig(config);
     return config;
-  } catch (error) {
-    throw new Error(`Failed to parse config: ${error instanceof Error ? error.message : String(error)}`);
+  } catch {
+    throw new Error('Failed to parse config');
   }
 }
 

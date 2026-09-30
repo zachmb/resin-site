@@ -17,21 +17,15 @@ if ('serviceWorker' in navigator) {
 				type: 'INIT_PERIODIC_SYNC'
 			});
 		}
-	}).catch((err) => {
-		console.error('SW ready failed:', err);
+	}).catch(() => {
+		console.error('SW ready failed');
 	});
 }
 
 // Handle page visibility to optimize resource usage
 if (typeof document !== 'undefined') {
 	document.addEventListener('visibilitychange', () => {
-		if (document.hidden) {
-			// Page is hidden - reduce update frequency
-			console.log('Page hidden - reducing update frequency');
-		} else {
-			// Page is visible - resume normal frequency
-			console.log('Page visible - resuming normal update frequency');
-		}
+		// Reserved for future throttling/resume hooks.
 	});
 }
 

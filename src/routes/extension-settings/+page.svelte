@@ -18,6 +18,7 @@
     let messageType = $state<'success' | 'error'>('success');
 	    let isPro = $derived(data?.isPro ?? false);
         const maxCustomBlockedDomains = 1000;
+        const reservedBlockDomains = ['noteresin.com', 'resin.com', 'supabase.co'];
 
         $effect(() => {
             extensionEnabled = data?.extensionEnabled ?? false;
@@ -32,9 +33,9 @@
         domain = domain.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");
         domain = domain.split("/")[0].split("?")[0].split("#")[0].split(":")[0];
         domain = domain.replace(/^www\./, "");
-        return /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)
-            ? domain
-            : null;
+        if (!/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)) return null;
+        if (reservedBlockDomains.some((reserved) => domain === reserved || domain.endsWith(`.${reserved}`))) return null;
+        return domain;
     }
 
     function addDomain() {
@@ -138,7 +139,7 @@
             </div>
             <p class="text-sm text-resin-earth/70 mb-4">
                 {extensionEnabled
-                    ? "✓ Extension is active and monitoring your browsing"
+                    ? "✓ Extension is active and ready to apply your focus rules"
                     : "Extension is disabled. Click the toggle to enable it."}
             </p>
         </div>
@@ -186,13 +187,13 @@
             <!-- Notifications -->
             <div class="flex items-center justify-between p-4 bg-white/50 rounded-lg border border-resin-earth/10">
                 <div>
-                    <p class="font-semibold text-resin-charcoal">Notifications</p>
-                    <p class="text-xs text-resin-earth/60 mt-1">Receive alerts when accessing blocked sites</p>
+                    <p class="font-semibold text-resin-charcoal">Sync nudges</p>
+                    <p class="text-xs text-resin-earth/60 mt-1">Allow Resin to send focus-session nudges to your connected devices</p>
                 </div>
                 <button
                     role="switch"
                     aria-checked={notificationsEnabled}
-                    aria-label="Notifications"
+                    aria-label="Sync nudges"
                     onclick={() => { notificationsEnabled = !notificationsEnabled; }}
                     disabled={!isPro}
                     class="w-12 h-7 rounded-full transition-colors {notificationsEnabled ? 'bg-resin-forest' : 'bg-resin-earth/20'} flex items-center {notificationsEnabled ? 'justify-end' : 'justify-start'} p-0.5"
@@ -291,9 +292,9 @@
             <h3 class="font-bold text-resin-charcoal mb-2">About the Extension</h3>
             <ul class="text-sm text-resin-earth/70 space-y-1">
                 <li>✓ Blocks distracting websites during focus sessions with Resin Pro</li>
-                <li>✓ Tracks time spent on sites for productivity insights</li>
+                <li>✓ Uses redirect rules only for domains you choose or active focus sessions</li>
                 <li>✓ Syncs settings across all your devices</li>
-                <li>✓ Works locally - respects your privacy</li>
+                <li>✓ Does not read page content, browsing history, cookies, forms, or keystrokes</li>
             </ul>
         </div>
     </div>

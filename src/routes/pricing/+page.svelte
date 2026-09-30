@@ -31,7 +31,7 @@
             <p class="plan-copy">Keep the same next action, schedule, and protection aligned everywhere you work.</p>
             <ul>{#each proFeatures as feature}<li><Check size={14}/>{feature}</li>{/each}</ul>
             <a class="plan-button primary" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer">Start 7-day Pro trial</a>
-            <small class="purchase-note">Subscriptions are managed securely through Apple.</small>
+            <small class="purchase-note">Subscriptions are managed by Apple and can be canceled in iPhone Settings.</small>
         </article>
     </section>
 
@@ -43,7 +43,7 @@
         </div>
     </section>
 
-    <section class="pricing-note"><div><h2>Not ready for Pro?<br>Start with one thought.</h2><p>Use Resin free on the web with no credit card, then add iPhone and Chrome whenever the workflow earns a place in your day.</p></div><a href="/login?mode=start&next=/">Start free on the web →</a></section>
+    <section class="pricing-note"><div><h2>Not ready for Pro?<br>Start with one thought.</h2><p>Use Resin free on iPhone with no credit card, then add web and Chrome whenever the workflow earns a place in your day.</p></div><a href="/login?mode=start&next=/">Try the web planner →</a></section>
 </main>
 
 <style>

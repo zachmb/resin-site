@@ -12,6 +12,40 @@
 import { APNS_KEY_ID, APNS_TEAM_ID, APNS_PRIVATE_KEY, APNS_BUNDLE_ID } from '$env/static/private'
 
 const APNS_HOST = 'https://api.push.apple.com'
+const APNS_PUSH_TIMEOUT_MS = 8000
+const APNS_MAX_ERROR_RESPONSE_BYTES = 2_000
+const APNS_MAX_PAYLOAD_BYTES = 4_096
+const APNS_DEVICE_TOKEN_RE = /^[a-f0-9]{64}$/i
+const APNS_KNOWN_REASONS = new Set([
+    'BadCollapseId',
+    'BadDeviceToken',
+    'BadExpirationDate',
+    'BadMessageId',
+    'BadPriority',
+    'BadTopic',
+    'DeviceTokenNotForTopic',
+    'DuplicateHeaders',
+    'IdleTimeout',
+    'MissingDeviceToken',
+    'MissingTopic',
+    'PayloadEmpty',
+    'TopicDisallowed',
+    'BadCertificate',
+    'BadCertificateEnvironment',
+    'ExpiredProviderToken',
+    'Forbidden',
+    'InvalidProviderToken',
+    'MissingProviderToken',
+    'BadPath',
+    'MethodNotAllowed',
+    'Unregistered',
+    'PayloadTooLarge',
+    'TooManyProviderTokenUpdates',
+    'TooManyRequests',
+    'InternalServerError',
+    'ServiceUnavailable',
+    'Shutdown'
+])
 
 // ── JWT helpers ────────────────────────────────────────────────────────────────
 
@@ -82,11 +116,23 @@ const PERMANENT_TOKEN_FAILURES = new Set([
 function parseAPNsReason(body: string): string {
     try {
         const parsed = JSON.parse(body) as { reason?: unknown }
-        if (typeof parsed.reason === 'string') return parsed.reason
+        if (typeof parsed.reason === 'string' && APNS_KNOWN_REASONS.has(parsed.reason)) {
+            return parsed.reason
+        }
     } catch {
         // APNs should return JSON, but keep a safe fallback for proxies/dev.
     }
-    return body.slice(0, 80) || 'Unknown'
+    return 'Unknown'
+}
+
+async function readBoundedTextResponse(response: Response, maxLength: number): Promise<string> {
+    const contentLength = Number(response.headers.get('content-length') ?? 0)
+    if (Number.isFinite(contentLength) && contentLength > maxLength) {
+        return ''
+    }
+
+    const body = await response.text()
+    return body.length <= maxLength ? body : ''
 }
 
 export function isPermanentAPNsTokenFailure(result: APNsPushResult): boolean {
@@ -108,6 +154,11 @@ export async function sendPush(deviceToken: string, payload: APNsPayload): Promi
 export async function sendPushWithResult(deviceToken: string, payload: APNsPayload): Promise<APNsPushResult> {
     const { title, body, data = {}, pushType = 'alert' } = payload
 
+    if (!APNS_DEVICE_TOKEN_RE.test(deviceToken)) {
+        console.warn('[APNs] Push skipped: invalid device token')
+        return { success: false, status: 400, reason: 'BadDeviceToken' }
+    }
+
     const apnsPayload = {
         aps: {
             alert: pushType === 'alert' ? { title, body } : undefined,
@@ -116,25 +167,37 @@ export async function sendPushWithResult(deviceToken: string, payload: APNsPaylo
         },
         ...data,
     }
+    const bodyJson = JSON.stringify(apnsPayload)
+    if (new TextEncoder().encode(bodyJson).byteLength > APNS_MAX_PAYLOAD_BYTES) {
+        console.warn('[APNs] Push skipped: payload too large')
+        return { success: false, status: 400, reason: 'PayloadTooLarge' }
+    }
 
     const jwt = await makeJWT()
 
     const url = `${APNS_HOST}/3/device/${deviceToken}`
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            authorization: `bearer ${jwt}`,
-            'apns-topic': APNS_BUNDLE_ID,
-            'apns-push-type': pushType,
-            'apns-priority': pushType === 'alert' ? '10' : '5',
-            'content-type': 'application/json',
-        },
-        body: JSON.stringify(apnsPayload),
-    })
+    let response: Response
+    try {
+        response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                authorization: `bearer ${jwt}`,
+                'apns-topic': APNS_BUNDLE_ID,
+                'apns-push-type': pushType,
+                'apns-priority': pushType === 'alert' ? '10' : '5',
+                'content-type': 'application/json',
+            },
+            body: bodyJson,
+            signal: AbortSignal.timeout(APNS_PUSH_TIMEOUT_MS),
+        })
+    } catch {
+        console.error('[APNs] Push request failed')
+        return { success: false, status: 0, reason: 'ServiceUnavailable' }
+    }
 
     if (!response.ok) {
-        const reason = parseAPNsReason(await response.text())
-        console.error(`[APNs] Push failed (${response.status}):`, reason)
+        const reason = parseAPNsReason(await readBoundedTextResponse(response, APNS_MAX_ERROR_RESPONSE_BYTES))
+        console.error('[APNs] Push failed')
         return { success: false, status: response.status, reason }
     }
 

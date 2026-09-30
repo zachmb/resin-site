@@ -18,7 +18,15 @@ const secretPatterns = [
 const findings = [];
 
 for (const file of trackedFiles) {
-	const text = readFileSync(file, 'utf8');
+	let text;
+	try {
+		text = readFileSync(file, 'utf8');
+	} catch (err) {
+		// A tracked file may be deleted in the working tree before the deletion is
+		// staged/committed — skip it rather than crashing the scan.
+		if (err?.code === 'ENOENT') continue;
+		throw err;
+	}
 	const lines = text.split(/\r?\n/);
 
 	for (const { name, pattern } of secretPatterns) {

@@ -2,6 +2,11 @@ import { error, redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { generateForestTrees } from '$lib/utils/forestGenerator';
 
+const MAX_REWARD_SESSIONS = 1000;
+const MAX_REWARD_FEEDBACK = 500;
+const MAX_REWARD_ACHIEVEMENTS = 200;
+const MAX_UNNOTIFIED_ACHIEVEMENTS = 100;
+
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getUser } }) => {
     try {
         const user = await getUser();
@@ -15,12 +20,15 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         // Run all independent queries in parallel
         const [profileResult, sessionsResult, feedbackResult, achievementsResult] = await Promise.all([
             // Fetch profile
-            supabase.from('profiles').select('*').eq('id', userId).single(),
+            supabase.from('profiles').select('total_stones, current_streak, longest_streak, forest_health').eq('id', userId).single(),
             // Fetch sessions with tasks
             supabase
                 .from('amber_sessions')
                 .select(`
-                    *,
+                    id,
+                    display_title,
+                    status,
+                    created_at,
                     amber_tasks (
                         estimated_minutes,
                         start_time,
@@ -28,26 +36,29 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
                     )
                 `)
                 .eq('user_id', userId)
-                .order('created_at', { ascending: false }),
+                .order('created_at', { ascending: false })
+                .limit(MAX_REWARD_SESSIONS),
             // Fetch task feedback
             supabase
                 .from('amber_task_feedback')
-                .select('*')
+                .select('rating, comments, created_at')
                 .eq('user_id', userId)
-                .order('created_at', { ascending: false }),
+                .order('created_at', { ascending: false })
+                .limit(MAX_REWARD_FEEDBACK),
             // Fetch achievements
             supabase
                 .from('user_achievements')
                 .select('achievement_id, unlocked_at, notified')
                 .eq('user_id', userId)
                 .order('unlocked_at', { ascending: false })
+                .limit(MAX_REWARD_ACHIEVEMENTS)
         ]);
 
-        const { data: profile, error: profileError } = profileResult;
-        if (profileError) {
-            console.error('[Forest Load] Profile fetch error:', profileError);
-            throw error(500, `Profile fetch failed: ${profileError.message}`);
-        }
+	        const { data: profile, error: profileError } = profileResult;
+	        if (profileError) {
+	            console.error('[Forest Load] Profile fetch error');
+	            throw error(500, 'Profile fetch failed');
+	        }
         if (!profile) {
             console.error('[Forest Load] Profile is null');
             throw error(404, 'User profile not found');
@@ -194,7 +205,10 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
     };
 
     // Mark unnotified achievements as notified (toast fires once per page load)
-    const unnotified = (userAchievements || []).filter((a: any) => !a.notified).map((a: any) => a.achievement_id);
+    const unnotified = (userAchievements || [])
+        .filter((a: any) => !a.notified)
+        .map((a: any) => a.achievement_id)
+        .slice(0, MAX_UNNOTIFIED_ACHIEVEMENTS);
     if (unnotified.length > 0) {
         await supabase
             .from('user_achievements')
@@ -219,8 +233,8 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
         // Re-throw SvelteKit redirects and HTTP errors - they must not be swallowed
         if (err?.status && err?.location) throw err; // redirect()
         if (err?.status && err?.body) throw err;     // error()
-        console.error('[Forest Load Error]', err);
-        throw error(500, 'Failed to load forest page. Please try again.');
+	        console.error('[Forest Load Error]');
+	        throw error(500, 'Failed to load forest page. Please try again.');
     }
 };
 

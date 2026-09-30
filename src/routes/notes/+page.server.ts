@@ -4,6 +4,10 @@ import { runActivationPipeline } from '$lib/services/amber';
 import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification';
 import { userHasProAccess } from '$lib/server/auth';
 
+const MAX_NOTES_PAGE_NOTES = 500;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return null;
     const lines = content.split('\n');
@@ -18,15 +22,41 @@ const extractTitle = (content: string) => {
 };
 
 const normalizeNote = (note: any) => ({
-    ...note,
+    id: note.id,
     title: note.display_title ?? note.title ?? '',
-    content: note.raw_text ?? note.content ?? ''
+    content: note.raw_text ?? note.content ?? '',
+    status: note.status,
+    created_at: note.created_at,
+    updated_at: note.updated_at
 });
 
 
 const isMissingColumnError = (error: any) => {
     if (!error) return false;
     return error.code === 'PGRST204' || String(error.message || '').includes("Could not find");
+};
+
+const logDbIssue = (scope: string, error: any) => {
+    console.error(scope, {
+        code: error?.code,
+        name: error?.name,
+        hasMessage: Boolean(error?.message)
+    });
+};
+
+const hasAcceptedFriendship = async (supabase: any, userId: string, friendId: string) => {
+    const { data, error } = await supabase
+        .from('friendships')
+        .select('id')
+        .eq('status', 'accepted')
+        .or(`and(requester_id.eq.${userId},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${userId})`)
+        .maybeSingle();
+
+    if (error) {
+        logDbIssue('[notes] Friendship lookup failed', error);
+        return false;
+    }
+    return Boolean(data);
 };
 
 const insertNote = async (supabase: any, row: { user_id: string; title: string; content: string; created_at: string }) => {
@@ -70,8 +100,6 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
 
 const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; title: string; content: string }) => {
     const now = new Date().toISOString();
-    console.log(`[updateNoteRow] Starting update for note ${row.id.substring(0, 8)} by user ${row.user_id.substring(0, 8)}`);
-    console.log(`[updateNoteRow] Content: "${row.content.substring(0, 50)}..." (${row.content.length} chars)`);
 
     // First check if note exists before updating
     const checkResult = await supabase
@@ -81,11 +109,6 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         .eq('user_id', row.user_id)
         .single();
 
-    console.log(`[updateNoteRow] Pre-update check:`, {
-        exists: !!checkResult.data,
-        currentContent: checkResult.data?.raw_text?.substring(0, 50)
-    });
-
     // Update amber_sessions with raw_text and display_title
     const updateResult = await supabase
         .from('amber_sessions')
@@ -94,14 +117,8 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         .eq('user_id', row.user_id)
         .select('id');
 
-    console.log(`[updateNoteRow] Update result:`, {
-        hasError: !!updateResult.error,
-        errorMsg: updateResult.error?.message,
-        dataLength: updateResult.data?.length
-    });
-
     if (updateResult.error) {
-        console.error(`[updateNoteRow] Update error:`, updateResult.error);
+        logDbIssue('[updateNoteRow] Update error', updateResult.error);
         return { data: null, error: updateResult.error };
     }
 
@@ -110,8 +127,6 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         console.error(`[updateNoteRow] No rows updated - RLS likely blocked it`);
         return { data: null, error: new Error('RLS blocked update (no rows matched policy)') };
     }
-
-    console.log(`[updateNoteRow] Update successful, now verifying...`);
 
     // Add delay to ensure database has committed
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -124,30 +139,19 @@ const updateNoteRow = async (supabase: any, row: { id: string; user_id: string; 
         .eq('user_id', row.user_id)
         .single();
 
-    console.log(`[updateNoteRow] Verify fetch result:`, {
-        hasError: !!verifyResult.error,
-        hasData: !!verifyResult.data,
-        contentLength: verifyResult.data?.raw_text?.length,
-        content: verifyResult.data?.raw_text?.substring(0, 50)
-    });
-
     if (verifyResult.error || !verifyResult.data) {
-        console.error('[updateNoteRow] Verification fetch failed:', verifyResult.error);
+        logDbIssue('[updateNoteRow] Verification fetch failed', verifyResult.error);
         return { data: null, error: new Error('Failed to verify update') };
     }
 
     // Verify the content actually changed
     if (verifyResult.data.raw_text !== row.content) {
-        console.error('[updateNoteRow] CONTENT MISMATCH - Database has different content!', {
+        console.error('[updateNoteRow] Content mismatch after save', {
             sentLength: row.content.length,
-            storedLength: verifyResult.data.raw_text?.length,
-            sent: row.content.substring(0, 100),
-            stored: verifyResult.data.raw_text?.substring(0, 100)
+            storedLength: verifyResult.data.raw_text?.length
         });
         return { data: null, error: new Error('Update verification failed - content not saved') };
     }
-
-    console.log(`[updateNoteRow] Verification successful!`);
 
     // Return the updated row with known data
     return {
@@ -180,17 +184,18 @@ export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticated
     try {
         const { data: rawNotes, error: notesError } = await supabase
             .from('amber_sessions')
-            .select('id, display_title, raw_text, status, created_at, updated_at, user_id')
+            .select('id, display_title, raw_text, status, created_at, updated_at')
             .eq('user_id', userId)
-            .order('updated_at', { ascending: false });
+            .order('updated_at', { ascending: false })
+            .limit(MAX_NOTES_PAGE_NOTES);
 
         if (notesError) {
-            console.error('[notes:load] Error fetching notes:', notesError.message);
+            logDbIssue('[notes:load] Error fetching notes', notesError);
         } else {
             notes = (rawNotes || []).map(normalizeNote);
         }
-    } catch (err) {
-        console.error('[notes:load] Unexpected error:', err);
+    } catch {
+        console.error('[notes:load] Unexpected error');
     }
 
     // Fetch profile with resilience
@@ -198,7 +203,7 @@ export const load: PageServerLoad = async ({ locals: { getUser, getAuthenticated
     try {
         const { data: profileData } = await supabase
             .from('profiles')
-            .select('id, username, full_name, avatar_url, total_stones, current_streak')
+            .select('username, full_name, avatar_url, total_stones, current_streak')
             .eq('id', userId)
             .single();
         profile = profileData;
@@ -232,7 +237,7 @@ export const actions: Actions = {
         });
 
         if (error) {
-            console.error('[createNote] Error creating note:', error);
+            logDbIssue('[createNote] Error creating note', error);
             return fail(500, { error: 'Could not create note' });
         }
 
@@ -245,13 +250,11 @@ export const actions: Actions = {
             // Trigger sync
             await syncStonesFromNotes(userId);
             await recordDailyActivity(userId);
-        } catch (syncErr) {
-            console.warn('[createNote] Sync error (non-blocking):', syncErr);
+        } catch {
+            console.warn('[createNote] Sync error (non-blocking)');
         }
 
         const normalizedNote = normalizeNote(newNote);
-        console.log('[createNote] Successfully created note:', normalizedNote.id);
-
         return {
             success: true,
             note: normalizedNote,
@@ -284,13 +287,13 @@ export const actions: Actions = {
         });
 
         if (error) {
-            console.error('[notes] updateNote failed:', error);
-            return fail(500, { error: `Could not save note: ${error.message}` });
+            logDbIssue('[notes] updateNote failed', error);
+            return fail(500, { error: 'Could not save note' });
         }
 
         // Fire streak record in background (non-blocking)
         recordDailyActivity(userId).catch(err =>
-            console.warn('[notes] Background streak update failed:', err)
+            console.warn('[notes] Background streak update failed')
         );
 
         return { success: true, id, title, content };
@@ -308,13 +311,6 @@ export const actions: Actions = {
         const content = data.get('content') as string;
         const providedTitle = (data.get('title') as string)?.trim();
 
-        console.log('[saveNote] Received form data:', {
-            id,
-            contentLength: content?.length,
-            contentPreview: content?.substring(0, 100),
-            title: providedTitle
-        });
-
         // Use provided title if available, otherwise extract from content
         const title = providedTitle || extractTitle(content);
 
@@ -328,16 +324,16 @@ export const actions: Actions = {
             });
 
             if (error) {
-                console.error('[notes] saveNote (insert) failed:', error);
-                return fail(500, { error: `Could not create note: ${error.message}` });
+                logDbIssue('[notes] saveNote (insert) failed', error);
+                return fail(500, { error: 'Could not create note' });
             }
 
             // Trigger syncs in background (non-blocking)
             syncStonesFromNotes(userId).catch(err =>
-                console.warn('[notes] Background stone sync failed:', err)
+                console.warn('[notes] Background stone sync failed')
             );
             recordDailyActivity(userId).catch(err =>
-                console.warn('[notes] Background streak update failed:', err)
+                console.warn('[notes] Background streak update failed')
             );
 
             return { success: true, note: normalizeNote(newNote), isNew: true };
@@ -351,27 +347,18 @@ export const actions: Actions = {
             });
 
             if (error) {
-                console.error('[notes] saveNote (update) failed:', error);
+                logDbIssue('[notes] saveNote (update) failed', error);
                 return fail(500, {
-                    error: `Could not save note: ${error.message}`,
-                    code: error.code,
-                    details: error.details
+                    error: 'Could not save note'
                 });
             }
 
             // Fire streak update in background (non-blocking)
             recordDailyActivity(userId).catch(err =>
-                console.warn('[notes] Background streak update failed:', err)
+                console.warn('[notes] Background streak update failed')
             );
 
             const normalizedResult = normalizeNote(updatedNote);
-            console.log('[saveNote] Returning from server:', {
-                id: normalizedResult.id,
-                contentLength: normalizedResult.content?.length,
-                contentPreview: normalizedResult.content?.substring(0, 100),
-                title: normalizedResult.title
-            });
-
             // Small delay to ensure database commit is complete
             // This prevents load function from seeing stale data due to transaction isolation
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -398,14 +385,14 @@ export const actions: Actions = {
 
         const { count, error } = await supabase
             .from('amber_sessions')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('id', id)
             .eq('user_id', userId);
 
         // Check for explicit errors
         if (error) {
-            console.error('[deleteNote] Delete error:', error);
-            return fail(500, { error: 'Could not delete note', code: error.code });
+            logDbIssue('[deleteNote] Delete error', error);
+            return fail(500, { error: 'Could not delete note' });
         }
 
         // Check RLS silent failure (count === 0 means no rows were affected)
@@ -413,8 +400,6 @@ export const actions: Actions = {
             console.warn('[deleteNote] RLS silent failure - no rows affected');
             return fail(403, { error: 'Could not delete note. Check your permissions.', code: 'RLS_SILENT_FAILURE' });
         }
-
-        console.log('[deleteNote] Successfully deleted note:', id);
 
         return { success: true, deletedId: id };
     },
@@ -435,6 +420,7 @@ export const actions: Actions = {
         const data = await request.formData();
         const content = data.get('noteContent') as string;
         const providedTitle = (data.get('title') as string)?.trim();
+        const timezone = data.get('timezone')?.toString().slice(0, 64) || 'UTC';
 
         if (!content || !content.trim()) return fail(400, { error: 'Note content cannot be empty' });
 
@@ -454,12 +440,13 @@ export const actions: Actions = {
             sessionId = newNote.id;
         } else {
             // Update existing
-            await updateNoteRow(supabase, {
+            const { error: updateError } = await updateNoteRow(supabase, {
                 id: sessionId,
                 user_id: userId,
                 title: title || '',
                 content
             });
+            if (updateError) return fail(500, { error: 'Could not save note before activation' });
         }
 
         try {
@@ -475,10 +462,10 @@ export const actions: Actions = {
 
             // Fire the background activation without awaiting
             // This will update the entry with full details once AI responds
-            const activationPromise = runActivationPipeline(userId, sessionId, content, {
-                timezone: 'America/Chicago' // Default or get from profile/request
-            }).catch((err: any) => {
-                console.error('[notes] Background activation failed:', err);
+            runActivationPipeline(userId, sessionId, content, {
+                timezone
+            }).catch(() => {
+                console.error('[notes] Background activation failed');
             });
 
             return {
@@ -486,9 +473,9 @@ export const actions: Actions = {
                 message: 'Plan created! DeepSeek is generating your schedule...',
                 sessionId: sessionId
             };
-        } catch (err: any) {
-            console.error('[notes] Activation failed:', err);
-            return fail(500, { error: err.message || 'Activation failed' });
+        } catch {
+            console.error('[notes] Activation failed');
+            return fail(500, { error: 'Activation failed' });
         }
     },
 
@@ -511,7 +498,7 @@ export const actions: Actions = {
             .eq('user_id', userId);
 
         if (error) {
-            console.error('[notes] Cancel failed:', error);
+            logDbIssue('[notes] Cancel failed', error);
             return fail(500, { error: 'Could not cancel note' });
         }
 
@@ -537,7 +524,7 @@ export const actions: Actions = {
             .eq('user_id', userId);
 
         if (error) {
-            console.error('[notes] Complete failed:', error);
+            logDbIssue('[notes] Complete failed', error);
             return fail(500, { error: 'Could not mark note as completed' });
         }
 
@@ -556,6 +543,12 @@ export const actions: Actions = {
         const sharedWithId = data.get('shared_with_id') as string;
 
         if (!noteId || !sharedWithId) return fail(400, { error: 'Missing parameters' });
+        if (!UUID_RE.test(noteId) || !UUID_RE.test(sharedWithId) || sharedWithId === userId) {
+            return fail(400, { error: 'Invalid share target' });
+        }
+        if (!(await hasAcceptedFriendship(supabase, userId, sharedWithId))) {
+            return fail(403, { error: 'Notes can only be shared with accepted friends' });
+        }
 
         // Verify user owns this note
         const { data: note, error: noteError } = await supabase
@@ -578,7 +571,7 @@ export const actions: Actions = {
             });
 
         if (error) {
-            console.error('[notes] Share failed:', error);
+            logDbIssue('[notes] Share failed', error);
             return fail(500, { error: 'Could not share note' });
         }
 
@@ -597,6 +590,9 @@ export const actions: Actions = {
         const sharedWithId = data.get('shared_with_id') as string;
 
         if (!noteId || !sharedWithId) return fail(400, { error: 'Missing parameters' });
+        if (!UUID_RE.test(noteId) || !UUID_RE.test(sharedWithId)) {
+            return fail(400, { error: 'Invalid share target' });
+        }
 
         const { error } = await supabase
             .from('shared_notes')
@@ -606,7 +602,7 @@ export const actions: Actions = {
             .eq('shared_with_id', sharedWithId);
 
         if (error) {
-            console.error('[notes] Unshare failed:', error);
+            logDbIssue('[notes] Unshare failed', error);
             return fail(500, { error: 'Could not unshare note' });
         }
 

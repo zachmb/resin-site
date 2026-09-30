@@ -74,11 +74,11 @@ async function handler(req: Request): Promise<Response> {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     })
 
-  } catch (err) {
-    console.error('[server-time] Error:', err)
+  } catch {
+    console.error('[server-time] Error')
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(err) }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   }
 }

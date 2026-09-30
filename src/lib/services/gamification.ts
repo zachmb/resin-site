@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { adminClient } from '$lib/server/auth';
 import { ACHIEVEMENT_DEFINITIONS, type AchievementContext } from '$lib/data/achievements';
 
-const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false }
-});
+const MAX_RECENT_SESSION_ROWS = 1000;
+const MAX_STREAK_HISTORY_ROWS = 5000;
+const MAX_ACHIEVEMENT_ROWS = 200;
 
 function dateStringInTimeZone(date: Date, timeZone: string): string {
     // Produces YYYY-MM-DD for the provided timezone.
@@ -55,17 +53,18 @@ export async function calculateSessionReward(userId: string, sessionDurationMinu
     const baseStones = 3; // Base award for every completion
 
     // Fetch user's recent session history for streak calculation
-    const { data: recentSessions } = await admin
+    const { data: recentSessions } = await adminClient
         .from('amber_sessions')
         .select('status, bonus_stones_awarded, created_at')
         .eq('user_id', userId)
         .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(MAX_RECENT_SESSION_ROWS);
 
     const completedCount = (recentSessions || []).filter((s: any) => s.status === 'completed').length;
 
     // Get current profile for streak tracking
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('sessions_completed_streak, last_session_date, forest_health')
         .eq('id', userId)
@@ -170,31 +169,31 @@ export async function syncStonesFromNotes(
     opts?: { force?: boolean }
 ): Promise<number> {
     const force = opts?.force === true;
-    const { count, error } = await admin
+    const { count, error } = await adminClient
         .from('amber_sessions')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId);
 
     if (error) {
-        console.error('[Gamification] Error counting sessions:', error);
+        console.error('[Gamification] Error counting sessions');
         return 0;
     }
 
     const totalStones = count || 0;
 
     // Fetch existing stones to avoid overwriting a higher count (e.g. from local iOS notes not yet synced)
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('total_stones')
         .eq('id', userId)
         .single();
 
     if (!force && profile && profile.total_stones > totalStones) {
-        console.log(`[Gamification] Skipping stone sync for ${userId}: Profile has ${profile.total_stones}, DB sessions only has ${totalStones}`);
+        console.log('[Gamification] Skipping stone sync; profile total exceeds synced sessions');
         return profile.total_stones;
     }
 
-    await admin
+    await adminClient
         .from('profiles')
         .update({
             total_stones: totalStones,
@@ -202,7 +201,7 @@ export async function syncStonesFromNotes(
         })
         .eq('id', userId);
 
-    console.log(`[Gamification] Stones synced for ${userId}: ${totalStones}`);
+    console.log('[Gamification] Stones synced');
     return totalStones;
 }
 
@@ -213,11 +212,12 @@ export async function calculateLongestStreakFromHistory(
     userId: string,
     timeZone: string = 'UTC'
 ): Promise<{ longestStreak: number; longestStreakAt: string | null }> {
-    const { data: sessions, error } = await admin
+    const { data: sessions, error } = await adminClient
         .from('amber_sessions')
         .select('created_at')
         .eq('user_id', userId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(MAX_STREAK_HISTORY_ROWS);
 
     if (error || !sessions || sessions.length === 0) {
         return { longestStreak: 0, longestStreakAt: null };
@@ -276,7 +276,7 @@ export async function calculateLongestStreakFromHistory(
 export async function recordDailyActivity(userId: string): Promise<{ currentStreak: number; longestStreak: number; longestStreakAt: string | null }> {
     const now = new Date();
 
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('current_streak, last_active_date, timezone')
         .eq('id', userId)
@@ -320,7 +320,7 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
         longestStreakAt = todayStr;
     }
 
-    await admin
+    await adminClient
         .from('profiles')
         .update({
             current_streak: newStreak,
@@ -329,7 +329,7 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
         })
         .eq('id', userId);
 
-    console.log(`[Gamification] Activity recorded for ${userId}: Streak ${newStreak}, Longest ${newLongest} at ${longestStreakAt}`);
+    console.log('[Gamification] Activity recorded');
     return { currentStreak: newStreak, longestStreak: newLongest, longestStreakAt: longestStreakAt };
 }
 
@@ -338,26 +338,27 @@ export async function recordDailyActivity(userId: string): Promise<{ currentStre
  */
 async function buildAchievementContext(userId: string, sessionCompletedAt: Date): Promise<AchievementContext> {
     // Fetch user profile
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('total_stones, current_streak, forest_health')
         .eq('id', userId)
         .single();
 
     // Count total completed sessions
-    const { count: totalSessions } = await admin
+    const { count: totalSessions } = await adminClient
         .from('amber_sessions')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('status', 'completed');
 
     // Check for weekend sessions in last 7 days
-    const { data: recentSessions } = await admin
+    const { data: recentSessions } = await adminClient
         .from('amber_sessions')
         .select('created_at')
         .eq('user_id', userId)
         .eq('status', 'completed')
-        .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString());
+        .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
+        .limit(MAX_RECENT_SESSION_ROWS);
 
     const weekendDays = new Set<number>();
     (recentSessions || []).forEach((s: any) => {
@@ -387,10 +388,11 @@ async function buildAchievementContext(userId: string, sessionCompletedAt: Date)
  */
 async function checkAndAwardAchievements(userId: string, ctx: AchievementContext): Promise<string[]> {
     // Fetch which achievements user already has
-    const { data: existing } = await admin
+    const { data: existing } = await adminClient
         .from('user_achievements')
         .select('achievement_id')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .limit(MAX_ACHIEVEMENT_ROWS);
 
     const alreadyUnlocked = new Set((existing || []).map((r: any) => r.achievement_id));
 
@@ -405,7 +407,7 @@ async function checkAndAwardAchievements(userId: string, ctx: AchievementContext
     if (newlyUnlocked.length === 0) return [];
 
     // Insert newly unlocked
-    await admin.from('user_achievements').upsert(
+    await adminClient.from('user_achievements').upsert(
         newlyUnlocked.map((achievement_id) => ({
             user_id: userId,
             achievement_id,
@@ -428,8 +430,19 @@ export async function applySessionReward(
 ): Promise<ApplyRewardResult> {
     const now = new Date();
 
+    const { data: ownedSession, error: sessionLookupError } = await adminClient
+        .from('amber_sessions')
+        .select('id')
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (sessionLookupError || !ownedSession) {
+        throw new Error('Session not found or unauthorized');
+    }
+
     // Get current profile
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('total_stones, sessions_completed_streak, last_session_date, forest_health')
         .eq('id', userId)
@@ -467,7 +480,7 @@ export async function applySessionReward(
     const stonesCount = await syncStonesFromNotes(userId);
     const streakBonus = (newStreak > 1 && newStreak % 5 === 0) ? 5 : 0;
 
-    await admin
+    await adminClient
         .from('profiles')
         .update({
             sessions_completed_streak: newStreak,
@@ -480,17 +493,24 @@ export async function applySessionReward(
         .eq('id', userId);
 
     // Update session with reward info
-    await admin
+    const { data: updatedSession, error: sessionUpdateError } = await adminClient
         .from('amber_sessions')
         .update({
             bonus_stones_awarded: reward.bonusStones,
             was_celebrated: true,
             updated_at: now.toISOString()
         })
-        .eq('id', sessionId);
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .select('id')
+        .maybeSingle();
+
+    if (sessionUpdateError || !updatedSession) {
+        throw new Error('Session not found or unauthorized');
+    }
 
     // Log forest event for history
-    await admin
+    await adminClient
         .from('forest_events')
         .insert({
             user_id: userId,
@@ -519,7 +539,7 @@ export async function applySessionReward(
  * Apply forest decay when a session is broken/canceled
  */
 export async function applyForestDecay(userId: string, sessionId: string, stakeAmount: number = 0): Promise<void> {
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('forest_health, total_stones')
         .eq('id', userId)
@@ -532,7 +552,7 @@ export async function applyForestDecay(userId: string, sessionId: string, stakeA
     const newForestHealth = Math.max(0, profile.forest_health - decayAmount);
     const stonesPenalty = Math.min(stakeAmount, Math.floor(stakeAmount * 0.5)); // Lose 50% of stake
 
-    await admin
+    await adminClient
         .from('profiles')
         .update({
             forest_health: newForestHealth,
@@ -543,7 +563,7 @@ export async function applyForestDecay(userId: string, sessionId: string, stakeA
         .eq('id', userId);
 
     // Log decay event
-    await admin
+    await adminClient
         .from('forest_events')
         .insert({
             user_id: userId,
@@ -597,7 +617,7 @@ export function getForestHealthStatus(forestHealth: number): {
  * Check if user should receive daily ritual reminder
  */
 export async function shouldPromptDailyRitual(userId: string): Promise<boolean> {
-    const { data: profile } = await admin
+    const { data: profile } = await adminClient
         .from('profiles')
         .select('last_session_date, daily_ritual_time')
         .eq('id', userId)

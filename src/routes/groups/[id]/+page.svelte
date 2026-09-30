@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
+    import { invalidateAll } from '$app/navigation';
 
     let { data } = $props();
 
@@ -18,6 +18,8 @@
     let focusTime = $state('');
     let focusDuration = $state('25');
     let schedulingSession = $state(false);
+    let startingNow = $state(false);
+    let focusStartError = $state('');
 
     // Generated invite link
     let inviteLinkOpen = $state(false);
@@ -88,15 +90,44 @@
         }
     }
 
-    async function handleStartNow() {
-        const formData = new FormData();
-        formData.append('title', 'Group Focus Session');
-        formData.append('duration_minutes', '25');
+    async function handleStartNow(title = 'Group Focus Session', durationMinutes = 25) {
+        if (startingNow) return;
 
-        await fetch('?/startNowSession', {
+        startingNow = true;
+        focusStartError = '';
+
+        const protectionResponse = await fetch('/api/focus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title,
+                durationMinutes,
+                groupId: data.group.id
+            })
+        });
+
+        if (!protectionResponse.ok) {
+            focusStartError = 'Could not start protection for the group. Please retry in a moment.';
+            startingNow = false;
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('duration_minutes', String(durationMinutes));
+
+        const sessionResponse = await fetch('?/startNowSession', {
             method: 'POST',
             body: formData
         });
+
+        startingNow = false;
+
+        if (sessionResponse.ok) {
+            await invalidateAll();
+        } else {
+            focusStartError = 'Protection started, but the group card did not refresh. Reload to see it.';
+        }
     }
 
     async function handleGenerateInvite() {
@@ -242,7 +273,7 @@
                             <h3 class="note-title">{note.title}</h3>
                             <p class="note-content">{note.content}</p>
                             <div class="note-meta">
-                                <span class="note-author">{note.profiles?.email?.split('@')[0]}</span>
+                                <span class="note-author">{note.authorName}</span>
                                 <span class="note-date">{new Date(note.created_at).toLocaleDateString()}</span>
                             </div>
                         </div>
@@ -265,7 +296,7 @@
                             {#each data.members as member, idx (member.userId)}
                                 <div class="legend-item">
                                     <div class="legend-dot" style="background-color: {getMemberColor(idx)}"></div>
-                                    <span>{member.email.split('@')[0]}</span>
+                                    <span>{member.displayName}</span>
                                 </div>
                             {/each}
                         </div>
@@ -275,15 +306,15 @@
                 <div class="trees-grid">
                     {#each data.members as member, memberIdx (member.userId)}
                         <div class="member-section">
-                            <h3 class="member-name">{member.email}</h3>
+                            <h3 class="member-name">{member.displayName}</h3>
                             <div class="trees-container">
-                                {#if data.memberSessionsMap[member.userId]?.length > 0}
-                                    {#each data.memberSessionsMap[member.userId] as tree, idx (idx)}
-                                        <div class="tree-wrapper" style="border-color: {getMemberColor(memberIdx)}">
-                                        </div>
-                                    {/each}
+                                {#if (data.memberSessionCounts[member.userId] ?? 0) > 0}
+                                    <div class="session-count" style="border-color: {getMemberColor(memberIdx)}">
+                                        <strong>{data.memberSessionCounts[member.userId]}</strong>
+                                        <span>completed group {data.memberSessionCounts[member.userId] === 1 ? 'session' : 'sessions'}</span>
+                                    </div>
                                 {:else}
-                                    <div class="no-trees">No sessions yet</div>
+                                    <div class="no-trees">No completed group sessions yet</div>
                                 {/if}
                             </div>
                         </div>
@@ -301,10 +332,17 @@
 
                 {#if data.userRole === 'admin'}
                     <div class="focus-admin-panel">
-                        <button class="btn-start-now" onclick={handleStartNow}>⏱ Start Session Now</button>
+                        <div class="start-now-panel">
+                            <button class="btn-start-now" onclick={() => handleStartNow()} disabled={startingNow}>
+                                {startingNow ? 'Protecting group…' : '⏱ Start Protected Session'}
+                            </button>
+                            {#if focusStartError}
+                                <p class="focus-start-error">{focusStartError}</p>
+                            {/if}
+                        </div>
 
                         <form class="schedule-form" onsubmit={(e) => { e.preventDefault(); handleScheduleSession(); }}>
-                            <h3>Schedule a Session</h3>
+                            <h3>Schedule a Reminder</h3>
                             <input
                                 type="text"
                                 placeholder="Session title..."
@@ -331,7 +369,7 @@
                                 <option value="60">1 hour</option>
                             </select>
                             <button type="submit" class="btn-schedule" disabled={schedulingSession || !focusTitle.trim() || !focusDate || !focusTime}>
-                                {schedulingSession ? 'Scheduling...' : 'Schedule'}
+                                {schedulingSession ? 'Saving...' : 'Save Reminder'}
                             </button>
                         </form>
                     </div>
@@ -351,7 +389,7 @@
                                 <div class="session-participants">
                                     {session.group_session_participants?.length || 0} joined
                                 </div>
-                                <form onsubmit={(e) => { e.preventDefault(); }} class="session-action">
+                                <form method="POST" class="session-action">
                                     <button
                                         formaction="?/joinSession"
                                         name="session_id"
@@ -361,6 +399,34 @@
                                         Join Now
                                     </button>
                                 </form>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+
+                {#if data.missedFocusSessions.length > 0}
+                    <div class="sessions-list">
+                        <h3 class="sessions-heading">⏰ Ready to Start</h3>
+                        {#each data.missedFocusSessions as session (session.id)}
+                            <div class="session-card missed">
+                                <div class="session-header">
+                                    <h4>{session.title}</h4>
+                                    <span class="badge-waiting">NOT PROTECTED YET</span>
+                                </div>
+                                <p class="session-time">Was planned for {formatDateTime(session.start_time)}</p>
+                                <p class="session-duration">{session.duration_minutes}m focus</p>
+                                <p class="session-warning">This was only a reminder. Start it now to protect everyone’s devices.</p>
+                                {#if data.userRole === 'admin'}
+                                    <button
+                                        class="btn-start-small"
+                                        onclick={() => handleStartNow(session.title, session.duration_minutes)}
+                                        disabled={startingNow}
+                                    >
+                                        {startingNow ? 'Protecting…' : 'Start Protected Now'}
+                                    </button>
+                                {:else}
+                                    <p class="session-warning">Ask an admin to start protected focus when the group is ready.</p>
+                                {/if}
                             </div>
                         {/each}
                     </div>
@@ -376,7 +442,7 @@
                                 </div>
                                 <p class="session-time">{formatDateTime(session.start_time)}</p>
                                 <p class="session-duration">{session.duration_minutes}m focus</p>
-                                <form onsubmit={(e) => { e.preventDefault(); }} class="session-action">
+                                <form method="POST" class="session-action">
                                     <button
                                         formaction="?/joinSession"
                                         name="session_id"
@@ -818,14 +884,24 @@
         gap: 12px;
     }
 
-    .tree-wrapper {
+    .session-count {
         border: 3px solid transparent;
         border-radius: 8px;
         padding: 12px;
         background: rgba(43, 70, 52, 0.02);
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+    }
+
+    .session-count strong {
+        font-size: 24px;
+    }
+
+    .session-count span {
+        color: rgba(43, 70, 52, 0.7);
+        font-size: 13px;
     }
 
     .no-trees {
@@ -843,6 +919,12 @@
         margin-bottom: 32px;
     }
 
+    .start-now-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .btn-start-now {
         padding: 16px;
         background: linear-gradient(135deg, #d97706, #f59e0b);
@@ -855,9 +937,54 @@
         transition: all 0.2s;
     }
 
-    .btn-start-now:hover {
+    .btn-start-now:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3);
+    }
+
+    .btn-start-now:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .btn-start-small {
+        align-self: flex-start;
+        padding: 10px 14px;
+        background: #2b4634;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btn-start-small:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .focus-start-error {
+        margin: 0;
+        color: #b45309;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .session-warning {
+        margin: 0;
+        color: rgba(43, 70, 52, 0.72);
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .badge-waiting {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
     }
 
     .schedule-form {

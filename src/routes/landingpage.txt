@@ -51,7 +51,7 @@
         },
         {
             q: "Is my data private?",
-            a: "Yes. On iOS, the AI runs entirely on your device — nothing leaves your phone. Your notes are encrypted. We don't read your content, sell your data, or use it to train AI models. You can export or delete everything at any time."
+            a: "Yes. Core iOS planning can run on-device, and web/Chrome activations may use Resin's secure server pipeline when you ask AI to plan from another surface. We don't sell your data, use private notes to train AI models, or track your browsing history. You can export or delete your data at any time."
         },
         {
             q: "How is the iOS app free if it uses AI?",
@@ -686,7 +686,7 @@ The real problem is I don't have a system. Maybe:
                                 <div class="font-serif font-medium" style="font-size:13px; color:rgba(255,255,255,0.85);">Morning vocab: 15 new words</div>
                                 <div style="font-size:10px; margin-top:3px; color:rgba(232,168,87,0.65);">15 min · task 1 of 6</div>
                             </div>
-                            <p class="italic" style="font-size:11px; color:rgba(255,255,255,0.25); max-width:280px; line-height:1.6;">"Focus is deciding what you're not going to do." — Steve Jobs</p>
+                            <p class="italic" style="font-size:11px; color:rgba(255,255,255,0.25); max-width:280px; line-height:1.6;">This detour can wait. Keep the thread warm.</p>
                         </div>
                     </div>
                 </div>

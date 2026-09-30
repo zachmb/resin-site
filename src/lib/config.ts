@@ -31,14 +31,15 @@ export async function getConfig(): Promise<ResinConfig> {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`);
+        throw new Error('Failed to fetch config');
       }
 
       const config = (await response.json()) as ResinConfig;
       cachedConfig = config;
       return config;
     } catch (error) {
-      console.error('[getConfig] Error loading configuration:', error);
+      console.error('[getConfig] Error loading configuration');
+      configPromise = null;
       throw error;
     }
   })();

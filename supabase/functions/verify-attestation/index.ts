@@ -53,6 +53,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const MAX_REQUEST_BODY_BYTES = 96_000
+const MAX_ATTESTATION_OBJECT_CHARS = 80_000
+const KEY_ID_RE = /^[A-Za-z0-9+/=_-]{16,512}$/
+const NONCE_RE = /^[a-f0-9]{64}$/i
+
 async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -68,15 +73,15 @@ async function handler(req: Request): Promise<Response> {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 1. AUTHENTICATION: Verify request is authenticated
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const token = parseBearerToken(authHeader)
+    if (!token) {
       return new Response(
         JSON.stringify({ valid: false, error: 'Unauthorized', token: '' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
-    const token = authHeader.replace('Bearer ', '')
     const secret = new TextEncoder().encode(jwtSecret)
 
     let verified
@@ -85,24 +90,41 @@ async function handler(req: Request): Promise<Response> {
     } catch (e) {
       return new Response(
         JSON.stringify({ valid: false, error: 'Invalid token', token: '' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
     const userId = verified.payload.sub as string
 
     // 2. PARSE REQUEST: Extract attestation blob and metadata
-    const body = await req.json()
+    let body: Record<string, unknown>
+    try {
+      body = await readBoundedJsonBody(req, MAX_REQUEST_BODY_BYTES)
+    } catch (error) {
+      const status = error instanceof Error && error.message === 'request_body_too_large' ? 413 : 400
+      return new Response(
+        JSON.stringify({ valid: false, error: status === 413 ? 'Request body too large' : 'Invalid JSON body', token: '' }),
+        { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
     const { attestation_object, key_id, nonce } = body as {
       attestation_object: string
       key_id: string
       nonce: string
     }
 
-    if (!attestation_object || !key_id || !nonce) {
+    if (
+      typeof attestation_object !== 'string' ||
+      attestation_object.length === 0 ||
+      attestation_object.length > MAX_ATTESTATION_OBJECT_CHARS ||
+      typeof key_id !== 'string' ||
+      !KEY_ID_RE.test(key_id) ||
+      typeof nonce !== 'string' ||
+      !NONCE_RE.test(nonce)
+    ) {
       return new Response(
         JSON.stringify({ valid: false, error: 'Missing required fields', token: '' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -112,43 +134,55 @@ async function handler(req: Request): Promise<Response> {
       .select('id, expires_at, consumed_at')
       .eq('nonce', nonce)
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
 
     if (nonceError || !nonceRecord) {
-      console.error('[verify-attestation] Nonce not found:', nonceError)
+      console.error('[verify-attestation] Nonce not found')
       return new Response(
         JSON.stringify({ valid: false, error: 'Invalid or expired nonce', token: '' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
     if (nonceRecord.consumed_at) {
-      console.error('[verify-attestation] 🚨 Replay attack detected! Nonce already used:', nonce)
+      console.error('[verify-attestation] 🚨 Replay attack detected! Nonce already used')
       return new Response(
         JSON.stringify({ valid: false, error: 'Nonce already consumed (replay attack)', token: '' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
     if (new Date(nonceRecord.expires_at) < new Date()) {
-      console.error('[verify-attestation] Nonce expired:', nonce)
+      console.error('[verify-attestation] Nonce expired')
       return new Response(
         JSON.stringify({ valid: false, error: 'Nonce expired', token: '' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
     // 4. MARK NONCE AS CONSUMED: Prevent replay attacks before expensive crypto
-    const { error: consumeError } = await supabase
+    const { data: consumedChallenge, error: consumeError } = await supabase
       .from('attestation_challenges')
       .update({ consumed_at: new Date().toISOString() })
-      .eq('nonce', nonce)
+      .eq('id', nonceRecord.id)
+      .eq('user_id', userId)
+      .is('consumed_at', null)
+      .select('id')
+      .maybeSingle()
 
     if (consumeError) {
-      console.error('[verify-attestation] Failed to consume nonce:', consumeError)
+      console.error('[verify-attestation] Failed to consume nonce')
       return new Response(
         JSON.stringify({ valid: false, error: 'Failed to consume nonce', token: '' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
+
+    if (!consumedChallenge) {
+      console.error('[verify-attestation] 🚨 Replay race detected while consuming nonce')
+      return new Response(
+        JSON.stringify({ valid: false, error: 'Nonce already consumed (replay attack)', token: '' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -160,11 +194,11 @@ async function handler(req: Request): Promise<Response> {
         c => c.charCodeAt(0)
       )
       attestationData = attestationBuffer
-    } catch (e) {
-      console.error('[verify-attestation] Failed to decode attestation:', e)
+    } catch {
+      console.error('[verify-attestation] Failed to decode attestation')
       return new Response(
         JSON.stringify({ valid: false, error: 'Invalid attestation format', token: '' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -186,10 +220,10 @@ async function handler(req: Request): Promise<Response> {
         clientDataHash: clientDataHash,
       })
     } catch (e) {
-      console.error('[verify-attestation] Signature verification failed:', e)
+      console.error('[verify-attestation] Signature verification failed')
       return new Response(
         JSON.stringify({ valid: false, error: 'Hardware attestation failed signature check', token: '' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -197,7 +231,7 @@ async function handler(req: Request): Promise<Response> {
       console.error('[verify-attestation] ❌ Attestation verification returned false')
       return new Response(
         JSON.stringify({ valid: false, error: 'Hardware attestation failed signature check', token: '' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -223,7 +257,7 @@ async function handler(req: Request): Promise<Response> {
       })
 
     if (keyError) {
-      console.error('[verify-attestation] Failed to store key:', keyError)
+      console.error('[verify-attestation] Failed to store key')
       // Don't fail here - key is still valid, just not persisted for next time
     }
 
@@ -242,7 +276,7 @@ async function handler(req: Request): Promise<Response> {
       .setExpirationTime('24h')
       .sign(secret_key)
 
-    console.log('[verify-attestation] ✅ Attestation verified for user', userId)
+    console.log('[verify-attestation] ✅ Attestation verified')
     console.log('[verify-attestation] 🔐 Fortress sealed: Identity Moat established')
 
     return new Response(
@@ -257,16 +291,40 @@ async function handler(req: Request): Promise<Response> {
       }
     )
   } catch (err) {
-    console.error('[verify-attestation] 🚨 Critical System Error:', err)
+    console.error('[verify-attestation] 🚨 Critical system error')
     return new Response(
       JSON.stringify({
         valid: false,
         error: 'Internal server error',
         token: '',
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   }
 }
 
 Deno.serve(handler)
+
+function parseBearerToken(authHeader: string): string | null {
+  const match = authHeader.match(/^Bearer\s+([A-Za-z0-9._-]+)$/)
+  return match?.[1] ?? null
+}
+
+async function readBoundedJsonBody(req: Request, maxBytes: number): Promise<Record<string, unknown>> {
+  const contentLength = Number(req.headers.get('content-length') ?? 0)
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new Error('request_body_too_large')
+  }
+
+  const rawBody = await req.text()
+  if (rawBody.length > maxBytes) {
+    throw new Error('request_body_too_large')
+  }
+
+  const parsed = JSON.parse(rawBody) as unknown
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('invalid_json_body')
+  }
+
+  return parsed as Record<string, unknown>
+}

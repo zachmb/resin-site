@@ -6,25 +6,30 @@
 interface CacheEntry<T> {
     data: T;
     timestamp: number;
+    expiresAt: number;
     version: number;
 }
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const CACHE_PREFIX = 'resin_cache_';
+const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-export function setCacheData<T>(key: string, data: T, ttlMs: number = 24 * 60 * 60 * 1000): void {
+export function setCacheData<T>(key: string, data: T, ttlMs: number = DEFAULT_CACHE_TTL_MS): void {
     try {
         if (typeof window === 'undefined') return;
 
+        const timestamp = Date.now();
+        const safeTtlMs = Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : DEFAULT_CACHE_TTL_MS;
         const entry: CacheEntry<T> = {
             data,
-            timestamp: Date.now(),
+            timestamp,
+            expiresAt: timestamp + safeTtlMs,
             version: CACHE_VERSION
         };
 
         localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
-    } catch (err) {
-        console.warn(`[LocalCache] Failed to set cache for ${key}:`, err);
+    } catch {
+        console.warn('[LocalCache] Failed to set cache');
     }
 }
 
@@ -37,15 +42,21 @@ export function getCacheData<T>(key: string): T | null {
 
         const entry: CacheEntry<T> = JSON.parse(item);
 
-        // Version check
-        if (entry.version !== CACHE_VERSION) {
+        const now = Date.now();
+        if (
+            entry.version !== CACHE_VERSION ||
+            !Number.isFinite(entry.timestamp) ||
+            !Number.isFinite(entry.expiresAt) ||
+            entry.timestamp > now ||
+            entry.expiresAt <= now
+        ) {
             removeCacheData(key);
             return null;
         }
 
         return entry.data;
-    } catch (err) {
-        console.warn(`[LocalCache] Failed to read cache for ${key}:`, err);
+    } catch {
+        console.warn('[LocalCache] Failed to read cache');
         return null;
     }
 }
@@ -54,8 +65,8 @@ export function removeCacheData(key: string): void {
     try {
         if (typeof window === 'undefined') return;
         localStorage.removeItem(CACHE_PREFIX + key);
-    } catch (err) {
-        console.warn(`[LocalCache] Failed to remove cache for ${key}:`, err);
+    } catch {
+        console.warn('[LocalCache] Failed to remove cache');
     }
 }
 
@@ -66,7 +77,18 @@ export function getCacheTimestamp(key: string): number | null {
         const item = localStorage.getItem(CACHE_PREFIX + key);
         if (!item) return null;
 
-        const entry: CacheEntry<any> = JSON.parse(item);
+        const entry: CacheEntry<unknown> = JSON.parse(item);
+        const now = Date.now();
+        if (
+            entry.version !== CACHE_VERSION ||
+            !Number.isFinite(entry.timestamp) ||
+            !Number.isFinite(entry.expiresAt) ||
+            entry.timestamp > now ||
+            entry.expiresAt <= now
+        ) {
+            removeCacheData(key);
+            return null;
+        }
         return entry.timestamp;
     } catch (err) {
         return null;
@@ -89,7 +111,7 @@ export function clearAllCache(): void {
                 localStorage.removeItem(key);
             }
         });
-    } catch (err) {
-        console.warn('[LocalCache] Failed to clear all cache:', err);
+    } catch {
+        console.warn('[LocalCache] Failed to clear all cache');
     }
 }

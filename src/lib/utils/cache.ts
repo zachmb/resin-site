@@ -106,7 +106,7 @@ export async function cachedFetch(
 			});
 
 			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}`);
+				throw new Error('Request failed');
 			}
 
 			const data = await response.json();

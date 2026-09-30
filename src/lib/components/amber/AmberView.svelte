@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { enhance } from "$app/forms";
+    import { deserialize, enhance } from "$app/forms";
     import { page } from "$app/stores";
     import { invalidateAll, goto } from "$app/navigation";
     import { fly, fade } from "svelte/transition";
@@ -37,6 +37,7 @@
     let showClearConfirm = $state(false);
     let dateToClear = $state<Date | null>(null);
     let clearingDate = $state<string | null>(null);
+    let clearDayError = $state<string | null>(null);
     let schedulingSessionIds = $state<Set<string>>(new Set());
     let schedulingStep = $state(0);
     let schedulingStepInterval: ReturnType<typeof setInterval> | null = null;
@@ -127,12 +128,17 @@
     let editingDuration = $state(0);
     let editingDescription = $state('');
     let savingTask = $state(false);
+    let taskSaveError = $state<string | null>(null);
     let intensityValue = $state(0.5);
     let totalDuration = $state(0);
     let startTimeDate = $state('');
     let startTimeOffset = $state(0);
     let isSavingAdjustments = $state(false);
+    let adjustmentError = $state<string | null>(null);
+    let calendarError = $state<string | null>(null);
     let showDeleteModal = $state(false);
+    let deletingSession = $state(false);
+    let deleteError = $state<string | null>(null);
     let deleteFormRef = $state<HTMLFormElement | null>(null);
     let adjustmentSaveTimeout: ReturnType<typeof setTimeout>;
     let aiPickedDuration = $state(0);
@@ -140,6 +146,11 @@
 
     const intensityLabels = ['Relaxed', 'Focused', 'Strict', 'Max'];
     const intensityColors = ['#2B4634', '#D97706', '#EA580C', '#DC2626'];
+
+    function getActionError(result: { data?: unknown }, fallback: string) {
+        const data = result.data as Record<string, unknown> | null | undefined;
+        return typeof data?.error === 'string' ? data.error : fallback;
+    }
 
     const intensityLabel = $derived(intensityLabels[Math.min(3, Math.floor(intensityValue / 0.25))]);
     const intensityColor = $derived(intensityColors[Math.min(3, Math.floor(intensityValue / 0.25))]);
@@ -298,14 +309,30 @@
         }
     });
 
+    const submitAction = async (action: string, formData: FormData) => {
+        const response = await fetch(`?/${action}`, { method: 'POST', body: formData });
+        const result = deserialize(await response.text());
+        if (result.type === 'redirect') {
+            await goto(result.location);
+            return;
+        }
+        const data = 'data' in result
+            ? result.data as { success?: boolean; error?: string } | undefined
+            : undefined;
+        if (result.type !== 'success' || data?.success === false) {
+            throw new Error(data?.error || 'Resin could not save that adjustment.');
+        }
+    };
+
     const saveIntensity = async () => {
         if (!selectedSession) return;
         isSavingAdjustments = true;
+        adjustmentError = null;
         try {
             const formData = new FormData();
             formData.append('sessionId', selectedSession.id);
             formData.append('intensity', intensityValue.toString());
-            await fetch('?/updateIntensity', { method: 'POST', body: formData });
+            await submitAction('updateIntensity', formData);
 
             // Optimistically update task badges in selectedSession
             if (selectedSession) {
@@ -316,6 +343,8 @@
                     else { task.requires_focus = true; task.requires_camera_verification = true; }
                 }
             }
+        } catch (error) {
+            adjustmentError = error instanceof Error ? error.message : 'Resin could not save that adjustment.';
         } finally {
             isSavingAdjustments = false;
         }
@@ -324,13 +353,16 @@
     const scaleDurations = async () => {
         if (!selectedSession) return;
         isSavingAdjustments = true;
+        adjustmentError = null;
         try {
             const currentTotal = (selectedSession.amber_tasks || []).reduce((s: number, t: any) => s + (t.estimated_minutes ?? 0), 0);
             if (currentTotal === 0) return;
             const formData = new FormData();
             formData.append('sessionId', selectedSession.id);
             formData.append('newTotal', totalDuration.toString());
-            await fetch('?/scaleDurations', { method: 'POST', body: formData });
+            await submitAction('scaleDurations', formData);
+        } catch (error) {
+            adjustmentError = error instanceof Error ? error.message : 'Resin could not save that adjustment.';
         } finally {
             isSavingAdjustments = false;
         }
@@ -339,11 +371,14 @@
     const saveStartTime = async () => {
         if (!selectedSession || !startTimeDate) return;
         isSavingAdjustments = true;
+        adjustmentError = null;
         try {
             const formData = new FormData();
             formData.append('sessionId', selectedSession.id);
             formData.append('startTime', startTimeDate);
-            await fetch('?/shiftStartTimes', { method: 'POST', body: formData });
+            await submitAction('shiftStartTimes', formData);
+        } catch (error) {
+            adjustmentError = error instanceof Error ? error.message : 'Resin could not save that adjustment.';
         } finally {
             isSavingAdjustments = false;
         }
@@ -352,11 +387,14 @@
     const shiftTimes = async () => {
         if (!selectedSession) return;
         isSavingAdjustments = true;
+        adjustmentError = null;
         try {
             const formData = new FormData();
             formData.append('sessionId', selectedSession.id);
             formData.append('offsetMinutes', startTimeOffset.toString());
-            await fetch('?/shiftStartTimes', { method: 'POST', body: formData });
+            await submitAction('shiftStartTimes', formData);
+        } catch (error) {
+            adjustmentError = error instanceof Error ? error.message : 'Resin could not save that adjustment.';
         } finally {
             isSavingAdjustments = false;
         }
@@ -651,10 +689,16 @@
 	                                                       class="w-full mt-1" style="accent-color: #D97706" />
                                             </div>
                                             {/if}
+                                            {#if taskSaveError}
+                                                <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert">
+                                                    {taskSaveError}
+                                                </div>
+                                            {/if}
                                             <div class="flex gap-2 pt-2">
                                                 <button
                                                     onclick={async () => {
                                                         savingTask = true;
+                                                        taskSaveError = null;
                                                         try {
                                                             const formData = new FormData();
                                                             formData.append('sessionId', selectedSession.id);
@@ -663,34 +707,30 @@
                                                             formData.append('description', editingDescription);
                                                             formData.append('estimatedMinutes', editingDuration.toString());
 
-                                                            const res = await fetch('?/updateTask', {
-                                                                method: 'POST',
-                                                                body: formData
-                                                            });
+                                                            await submitAction('updateTask', formData);
+                                                            task.title = editingTitle;
+                                                            task.description = editingDescription;
+                                                            task.estimated_minutes = editingDuration;
 
-                                                            if (res.ok) {
-                                                                task.title = editingTitle;
-                                                                task.description = editingDescription;
-                                                                task.estimated_minutes = editingDuration;
+                                                            // Handle time offset if provided
+                                                            if (editingTaskOffset !== 0 && task.start_time) {
+                                                                const offsetForm = new FormData();
+                                                                offsetForm.append('sessionId', selectedSession.id);
+                                                                offsetForm.append('taskId', task.id);
+                                                                offsetForm.append('offsetMinutes', editingTaskOffset.toString());
+                                                                await submitAction('shiftSingleTask', offsetForm);
 
-                                                                // Handle time offset if provided
-                                                                if (editingTaskOffset !== 0 && task.start_time) {
-                                                                    const offsetForm = new FormData();
-                                                                    offsetForm.append('sessionId', selectedSession.id);
-                                                                    offsetForm.append('taskId', task.id);
-                                                                    offsetForm.append('offsetMinutes', editingTaskOffset.toString());
-                                                                    await fetch('?/shiftSingleTask', { method: 'POST', body: offsetForm });
-
-                                                                    // Update task times in-place
-                                                                    task.start_time = new Date(new Date(task.start_time).getTime() + editingTaskOffset * 60000).toISOString();
-                                                                    if (task.end_time) {
-                                                                        task.end_time = new Date(new Date(task.end_time).getTime() + editingTaskOffset * 60000).toISOString();
-                                                                    }
-                                                                    editingTaskOffset = 0;
+                                                                // Update task times in-place only after server confirmation
+                                                                task.start_time = new Date(new Date(task.start_time).getTime() + editingTaskOffset * 60000).toISOString();
+                                                                if (task.end_time) {
+                                                                    task.end_time = new Date(new Date(task.end_time).getTime() + editingTaskOffset * 60000).toISOString();
                                                                 }
-
-                                                                editingTaskId = null;
+                                                                editingTaskOffset = 0;
                                                             }
+
+                                                            editingTaskId = null;
+                                                        } catch (error) {
+                                                            taskSaveError = error instanceof Error ? error.message : 'Resin could not save that task.';
                                                         } finally {
                                                             savingTask = false;
                                                         }
@@ -739,6 +779,7 @@
                                             </div>
                                             <button
                                                 onclick={() => {
+                                                    taskSaveError = null;
                                                     editingTaskId = task.id;
                                                     editingTitle = task.title;
                                                     editingDescription = task.description || '';
@@ -768,6 +809,12 @@
                                     </div>
                                 {/if}
                             </div>
+
+                            {#if adjustmentError}
+                                <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert">
+                                    {adjustmentError}
+                                </div>
+                            {/if}
 
                             <!-- Intensity -->
                             <div class="space-y-3">
@@ -1075,13 +1122,14 @@
                             action="?/delete"
                             bind:this={deleteFormRef}
                             use:enhance={() => {
+                                deletingSession = true;
+                                deleteError = null;
                                 // Capture the session ID before the enhance handler modifies state
                                 const deletedSessionId = selectedSession?.id;
                                 return async ({ result }) => {
-                                    console.log('[Delete] Action result:', result);
+                                    deletingSession = false;
                                     if (result.type === 'success') {
                                         if (result.data?.success) {
-                                            console.log('[Delete] Server confirmed deletion, updating UI');
                                             showDeleteModal = false;
                                             selectedSessionId = null;
                                             clearCache();
@@ -1089,22 +1137,17 @@
 
                                             // Call parent delete handler to update local state and sync
                                             if (onDelete && deletedSessionId) {
-                                                console.log('[Delete] Calling parent onDelete handler for:', deletedSessionId);
                                                 await onDelete(deletedSessionId);
                                             } else {
-                                                console.log('[Delete] No onDelete handler, falling back to invalidateAll');
                                                 await invalidateAll();
                                             }
                                         } else {
-                                            console.error('Delete failed:', result.data?.error);
-                                            showDeleteModal = false;
+                                            deleteError = getActionError(result, 'Resin could not delete that plan. Please try again.');
                                         }
                                     } else if (result.type === 'failure') {
-                                        console.error('Delete failed:', result.data?.error);
-                                        showDeleteModal = false;
+                                        deleteError = getActionError(result, 'Resin could not delete that plan. Please try again.');
                                     } else if (result.type === 'error') {
-                                        console.error('Delete error:', result.error?.message);
-                                        showDeleteModal = false;
+                                        deleteError = 'Resin could not delete that plan. Please try again.';
                                     }
                                 };
                             }}
@@ -1117,7 +1160,7 @@
                             <button
                                 type="button"
                                 onclick={() => {
-                                    console.log('[Delete] Delete button clicked for session:', selectedSession?.id);
+                                    deleteError = null;
                                     showDeleteModal = true;
                                 }}
                                 class="px-3 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all text-sm font-bold flex items-center justify-center gap-1.5"
@@ -1185,17 +1228,16 @@
             <AmberCalendar
                 sessions={recentSessions}
                 onReschedule={async (task, newStart, newEnd) => {
+                    calendarError = null;
                     try {
                         // Get auth token from page data
                         const session = $page.data.session;
                         if (!session || !session.access_token) {
-                            console.error('[AmberCalendar] Not authenticated. Session:', session);
+                            calendarError = 'Your session expired. Sign in again before moving this task.';
                             return;
                         }
 
                         const url = '/api/amber/reschedule';
-                        console.log('[AmberCalendar] Rescheduling task:', task.id, 'from', newStart, 'to', newEnd);
-                        console.log('[AmberCalendar] Fetch URL:', url);
 
                         const response = await fetch(url, {
                             method: 'POST',
@@ -1206,24 +1248,30 @@
                             body: JSON.stringify({
                                 task_id: task.id,
                                 new_start_time: newStart,
-                                new_end_time: newEnd
+                                new_end_time: newEnd,
+                                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                             })
                         });
 
-                        const responseData = await response.json();
-                        console.log('[AmberCalendar] Reschedule response:', response.status, responseData);
+                        const payload = await response.json().catch(() => null) as {
+                            error?: string;
+                            calendar_warning?: boolean;
+                        } | null;
 
                         if (response.ok) {
-                            console.log('[AmberCalendar] Reschedule successful, invalidating all');
                             await invalidateAll();
+                            if (payload?.calendar_warning) {
+                                calendarError = 'Task moved in Resin, but Google Calendar could not be updated.';
+                            }
                         } else {
-                            console.error('[AmberCalendar] Reschedule failed:', response.status, responseData);
+                            calendarError = payload?.error || 'Resin could not move that task. Please try again.';
                         }
-                    } catch (err) {
-                        console.error('[AmberCalendar] Reschedule error:', err);
+                    } catch {
+                        calendarError = 'Resin could not move that task. Check your connection and try again.';
                     }
                 }}
                 onClearDay={(day) => {
+                    clearDayError = null;
                     dateToClear = day;
                     showClearConfirm = true;
                 }}
@@ -1249,12 +1297,20 @@
                 <p class="text-sm text-resin-earth/70 leading-relaxed">
                     Remove all Amber plans scheduled for <strong class="text-resin-charcoal">{dateToClear.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</strong>. Calendar events will be deleted.
                 </p>
+                {#if clearDayError}
+                    <p class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                        {clearDayError}
+                    </p>
+                {/if}
             </div>
 
             <!-- Actions -->
             <div class="flex gap-3">
                 <button
-                    onclick={() => showClearConfirm = false}
+                    onclick={() => {
+                        clearDayError = null;
+                        showClearConfirm = false;
+                    }}
                     disabled={clearingDate !== null}
                     class="flex-1 px-4 py-3 text-sm font-bold text-resin-earth/70 bg-white/50 hover:bg-white/80 border border-resin-forest/10 rounded-xl transition-all disabled:opacity-50"
                 >
@@ -1265,13 +1321,17 @@
                     action="?/clearDay"
                     use:enhance={() => {
                         clearingDate = dateToClear?.toISOString() || null;
+                        clearDayError = null;
                         return async ({ result }) => {
                             clearingDate = null;
                             if (result.type === 'success' && (result.data as any)?.success) {
+                                clearDayError = null;
                                 showClearConfirm = false;
                                 await invalidateAll();
                             } else if (result.type === 'success' || result.type === 'failure') {
-                                console.error('Clear day action failed:', result.data);
+                                clearDayError = getActionError(result, 'Resin could not clear that day. Please try again.');
+                            } else if (result.type === 'error') {
+                                clearDayError = 'Resin could not clear that day. Please try again.';
                             }
                         };
                     }}
@@ -1519,6 +1579,18 @@
     />
 {/if}
 
+{#if calendarError}
+    <div
+        class="fixed bottom-8 right-8 max-w-sm z-40 rounded-xl p-4 bg-red-50 text-red-800 shadow-lg border border-red-200"
+        transition:fly={{ x: 400, duration: 300 }}
+        role="alert"
+    >
+        <p class="font-semibold text-sm">Calendar sync needs attention</p>
+        <p class="text-xs mt-1">{calendarError}</p>
+        <button class="text-xs font-bold underline mt-2" onclick={() => (calendarError = null)}>Dismiss</button>
+    </div>
+{/if}
+
 {#if activationError}
     <div
         class="fixed bottom-8 right-8 max-w-sm z-40 rounded-xl p-4 bg-resin-amber/95 text-resin-charcoal shadow-lg border border-white/30"
@@ -1562,14 +1634,15 @@
     isOpen={showDeleteModal}
     title="Delete This Plan?"
     message="Deleting this plan will permanently remove it and all its tasks. This action cannot be undone."
+    isLoading={deletingSession}
+    error={deleteError}
     onConfirm={() => {
-        console.log('[Delete] Modal confirmed, submitting form...');
-        showDeleteModal = false;
-        console.log('[Delete] deleteFormRef:', deleteFormRef);
         deleteFormRef?.requestSubmit();
-        console.log('[Delete] Form submitted');
     }}
-    onCancel={() => (showDeleteModal = false)}
+    onCancel={() => {
+        deleteError = null;
+        showDeleteModal = false;
+    }}
 />
 
 <style>

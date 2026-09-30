@@ -9,10 +9,69 @@ import { createClient } from '@supabase/supabase-js';
 import { isPermanentAPNsTokenFailure, sendPushWithResult } from './apns';
 import { syncStonesFromNotes } from '$lib/services/gamification';
 import type { Chronotype } from '$lib/types';
+import { readBoundedJsonResponse } from '$lib/server/requestBody';
 
 const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false }
 });
+
+const MIN_TASK_WINDOW_MS = 60 * 1000;
+const MAX_TASK_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_RAW_TEXT_LENGTH = 8000;
+const MAX_PREFERENCES_LENGTH = 4000;
+const MAX_DISPLAY_TEXT_LENGTH = 120;
+const MAX_DESCRIPTION_LENGTH = 6000;
+const MAX_GOOGLE_TOKEN_RESPONSE_LENGTH = 16_000;
+const MAX_GOOGLE_CALENDAR_RESPONSE_LENGTH = 64_000;
+const MAX_DEEPSEEK_RESPONSE_LENGTH = 64_000;
+const MAX_USER_PUSH_DEVICE_TOKENS = 50;
+const OUTBOUND_FETCH_TIMEOUT_MS = 10_000;
+const CONTROL_CHAR_RE = /[\u0000-\u001F\u007F]/g;
+const TIMEZONE_RE = /^[A-Za-z0-9_+\-/.]{1,64}$/;
+
+function cleanUserText(value: unknown, maxLength: number): string {
+    return typeof value === 'string'
+        ? value.replace(CONTROL_CHAR_RE, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength)
+        : '';
+}
+
+function normalizeTimezone(value: unknown): string {
+    const candidate = typeof value === 'string' ? value.trim() : 'UTC';
+    if (!TIMEZONE_RE.test(candidate)) return 'UTC';
+
+    try {
+        new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date());
+        return candidate;
+    } catch {
+        return 'UTC';
+    }
+}
+
+function normalizedHour(value: unknown, fallback: number): number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 23
+        ? value
+        : fallback;
+}
+
+function safeDisplayText(value: unknown, fallback: string): string {
+    return cleanUserText(value, MAX_DISPLAY_TEXT_LENGTH) || fallback;
+}
+
+function safePlanDescription(steps: unknown): string {
+    return Array.isArray(steps)
+        ? steps.map(step => cleanUserText(String(step), 500)).filter(Boolean).join('\n').slice(0, MAX_DESCRIPTION_LENGTH)
+        : '';
+}
+
+function validateScheduleWindow(startIso: string, endIso: string, durationMinutes: number): string | null {
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    const windowMs = end.getTime() - start.getTime();
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 'Planner returned an invalid time';
+    if (windowMs < MIN_TASK_WINDOW_MS || windowMs > MAX_TASK_WINDOW_MS) return 'Planner returned an unsupported focus window';
+    if (!Number.isFinite(durationMinutes) || durationMinutes < 1 || durationMinutes > 24 * 60) return 'Planner returned an invalid duration';
+    return null;
+}
 
 export interface DeepSeekTask {
     type: 'action' | 'intention' | 'habit';
@@ -45,11 +104,16 @@ export async function getGoogleAccessToken(userId: string): Promise<string> {
             grant_type: 'refresh_token',
             refresh_token: creds.google_refresh_token,
         }),
+        signal: AbortSignal.timeout(OUTBOUND_FETCH_TIMEOUT_MS)
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(`Google token refresh failed: ${JSON.stringify(data)}`);
-    return data.access_token as string;
+    if (!res.ok) throw new Error('Google token refresh failed');
+    const data = await readBoundedJsonResponse<{ access_token?: unknown }>(
+        res,
+        MAX_GOOGLE_TOKEN_RESPONSE_LENGTH
+    );
+    if (typeof data.access_token !== 'string') throw new Error('Google token refresh failed');
+    return data.access_token;
 }
 
 export async function getFreeBusy(accessToken: string, timezone: string): Promise<string> {
@@ -64,12 +128,24 @@ export async function getFreeBusy(accessToken: string, timezone: string): Promis
             timeZone: timezone,
             items: [{ id: 'primary' }],
         }),
+        signal: AbortSignal.timeout(OUTBOUND_FETCH_TIMEOUT_MS)
     });
     if (!res.ok) return '';
-    const data = await res.json();
-    const busy = data.calendars?.primary?.busy ?? [];
+    const data = await readBoundedJsonResponse<{ calendars?: { primary?: { busy?: unknown } } }>(
+        res,
+        MAX_GOOGLE_CALENDAR_RESPONSE_LENGTH
+    );
+    const busy = Array.isArray(data.calendars?.primary?.busy) ? data.calendars.primary.busy : [];
     if (busy.length === 0) return 'No busy blocks in the next 48 hours.';
-    return busy.map((b: any) => `Busy: ${b.start} → ${b.end}`).join('\n');
+    return busy
+        .filter((block): block is { start: string; end: string } =>
+            Boolean(block) &&
+            typeof block === 'object' &&
+            typeof (block as { start?: unknown }).start === 'string' &&
+            typeof (block as { end?: unknown }).end === 'string'
+        )
+        .map((b) => `Busy: ${b.start} → ${b.end}`)
+        .join('\n');
 }
 
 export async function createCalendarEvent(
@@ -92,14 +168,15 @@ export async function createCalendarEvent(
             method: 'POST',
             headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
+            signal: AbortSignal.timeout(OUTBOUND_FETCH_TIMEOUT_MS)
         }
     );
     if (!res.ok) {
-        console.error('[amber_service] Calendar event creation failed:', await res.text());
+        console.error('[amber_service] Calendar event creation failed');
         return null;
     }
-    const ev = await res.json();
-    return ev.id ?? null;
+    const ev = await readBoundedJsonResponse<{ id?: unknown }>(res, MAX_GOOGLE_CALENDAR_RESPONSE_LENGTH);
+    return typeof ev.id === 'string' ? ev.id : null;
 }
 
 export async function deleteCalendarEvent(accessToken: string, eventId: string): Promise<boolean> {
@@ -111,7 +188,7 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string):
         }
     );
     if (!res.ok && res.status !== 404) {
-        console.error('[amber_service] Calendar event deletion failed:', await res.text());
+        console.error('[amber_service] Calendar event deletion failed');
         return false;
     }
     return true;
@@ -139,7 +216,7 @@ export async function updateCalendarEvent(
         }
     );
     if (!res.ok) {
-        console.error('[amber_service] Calendar event update failed:', await res.text());
+        console.error('[amber_service] Calendar event update failed');
         return false;
     }
     return true;
@@ -160,23 +237,30 @@ export async function listCalendarEvents(
 
     const res = await fetch(url.toString(), {
         method: 'GET',
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(OUTBOUND_FETCH_TIMEOUT_MS)
     });
 
     if (!res.ok) {
-        console.error('[amber_service] Failed to list calendar events:', await res.text());
+        console.error('[amber_service] Failed to list calendar events');
         return [];
     }
 
-    const data = await res.json();
-    return (data.items || []).map((item: any) => ({
-        id: item.id,
-        title: item.summary || 'Busy',
-        start: item.start.dateTime || item.start.date,
-        end: item.end.dateTime || item.end.date,
-        allDay: !!item.start.date,
+    const data = await readBoundedJsonResponse<{ items?: unknown }>(res, MAX_GOOGLE_CALENDAR_RESPONSE_LENGTH);
+    const items = Array.isArray(data.items) ? data.items : [];
+    return items.filter((item): item is {
+        id?: unknown;
+        summary?: unknown;
+        start?: { dateTime?: unknown; date?: unknown };
+        end?: { dateTime?: unknown; date?: unknown };
+    } => Boolean(item) && typeof item === 'object').map((item) => ({
+        id: typeof item.id === 'string' ? item.id : '',
+        title: typeof item.summary === 'string' ? item.summary : 'Busy',
+        start: typeof item.start?.dateTime === 'string' ? item.start.dateTime : item.start?.date,
+        end: typeof item.end?.dateTime === 'string' ? item.end.dateTime : item.end?.date,
+        allDay: typeof item.start?.date === 'string',
         type: 'external'
-    }));
+    })).filter((item) => typeof item.start === 'string' && typeof item.end === 'string');
 }
 
 export async function computeUserInsights(userId: string): Promise<string> {
@@ -319,8 +403,8 @@ export async function computeUserInsights(userId: string): Promise<string> {
         }
 
         return lines.join('\n');
-    } catch (err) {
-        console.error('Error computing user insights:', err);
+    } catch {
+        console.error('Error computing user insights');
         return '';
     }
 }
@@ -435,21 +519,47 @@ ${freeBusy}${prefsAppend}${energyProfileSection}`;
             response_format: { type: 'json_object' },
             temperature: 0.2,
         }),
+        signal: AbortSignal.timeout(OUTBOUND_FETCH_TIMEOUT_MS)
     });
 
-    if (!res.ok) throw new Error(`DeepSeek error: ${await res.text()}`);
-    const completion = await res.json();
-    return JSON.parse(completion.choices?.[0]?.message?.content ?? '{}') as DeepSeekTask;
+    if (!res.ok) throw new Error('DeepSeek request failed');
+    const completion = await readBoundedJsonResponse<unknown>(res, MAX_DEEPSEEK_RESPONSE_LENGTH);
+    if (!completion || typeof completion !== 'object') throw new Error('Invalid DeepSeek response');
+    const choices = (completion as { choices?: unknown }).choices;
+    const firstChoice = Array.isArray(choices) ? choices[0] : null;
+    const message = firstChoice && typeof firstChoice === 'object'
+        ? (firstChoice as { message?: unknown }).message
+        : null;
+    const content = message && typeof message === 'object'
+        ? (message as { content?: unknown }).content
+        : null;
+    if (typeof content !== 'string' || content.length > MAX_DEEPSEEK_RESPONSE_LENGTH) {
+        throw new Error('Invalid DeepSeek response');
+    }
+    return JSON.parse(content) as DeepSeekTask;
 }
 
 export async function runActivationPipeline(userId: string, sessionId: string, rawText: string, options: any = {}) {
-    const {
+    let {
         intensity = 0.5,
         start_hour = 16,
         end_hour = 22,
         user_preferences = '',
         timezone = 'UTC'
     } = options;
+    rawText = cleanUserText(rawText, MAX_RAW_TEXT_LENGTH);
+    user_preferences = cleanUserText(user_preferences, MAX_PREFERENCES_LENGTH);
+    timezone = normalizeTimezone(timezone);
+    intensity = typeof intensity === 'number' && Number.isFinite(intensity) ? Math.min(1, Math.max(0, intensity)) : 0.5;
+    start_hour = normalizedHour(start_hour, 16);
+    end_hour = normalizedHour(end_hour, 22);
+    if (start_hour >= end_hour) {
+        start_hour = 16;
+        end_hour = 22;
+    }
+    if (!rawText) {
+        throw new Error('Activation text is required');
+    }
 
     // 1. Mark session as processing
     await admin.from('amber_sessions').update({ status: 'processing' }).eq('id', sessionId).eq('user_id', userId);
@@ -461,8 +571,8 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         try {
             gToken = await getGoogleAccessToken(userId);
             freeBusy = await getFreeBusy(gToken!, timezone);
-        } catch (authErr) {
-            console.warn(`[amber_service] Skipping calendar sync for user ${userId} (no token/access)`);
+        } catch {
+            console.warn('[amber_service] Skipping calendar sync (no token/access)');
         }
 
         // 2.5. Compute learned insights from past sessions
@@ -484,8 +594,12 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         let dayEndHour = end_hour;
 
         if (availSchedule && Array.isArray(availSchedule) && availSchedule[dayOfWeek]) {
-            dayStartHour = availSchedule[dayOfWeek].start || start_hour;
-            dayEndHour = availSchedule[dayOfWeek].end || end_hour;
+            dayStartHour = normalizedHour(availSchedule[dayOfWeek].start, start_hour);
+            dayEndHour = normalizedHour(availSchedule[dayOfWeek].end, end_hour);
+            if (dayStartHour >= dayEndHour) {
+                dayStartHour = start_hour;
+                dayEndHour = end_hour;
+            }
         }
 
         // Calculate 7-day focus success rate
@@ -504,14 +618,22 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         // 3. Call DeepSeek with enhanced user context
         const chronotype = (profile as any)?.chronotype || 'neutral';
         const plan = await callDeepSeek(rawText, freeBusy, intensity, dayStartHour, dayEndHour, timezone, enrichedPreferences, chronotype, focusSuccessRate);
+        const scheduleError = validateScheduleWindow(
+            plan.scheduling.start_time,
+            plan.scheduling.end_time,
+            plan.scheduling.duration_minutes
+        );
+        if (scheduleError) throw new Error(scheduleError);
+        const displayTitle = safeDisplayText(plan.display_title, 'Focus session');
+        const description = safePlanDescription(plan.ai_plan);
 
         // 4. Calendar event (if token exists)
         let calEventId = null;
         if (gToken) {
             try {
-                calEventId = await createCalendarEvent(gToken!, plan, plan.display_title, timezone);
-            } catch (calErr) {
-                console.warn(`[amber_service] Calendar creation failed (non-fatal):`, calErr);
+                calEventId = await createCalendarEvent(gToken!, plan, displayTitle, timezone);
+            } catch {
+                console.warn('[amber_service] Calendar creation failed (non-fatal)');
             }
         }
 
@@ -520,7 +642,7 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             id: sessionId,
             user_id: userId,
             raw_text: rawText,
-            display_title: plan.display_title,
+            display_title: displayTitle,
             status: 'scheduled',
             intensity: intensity.toFixed(2),
         });
@@ -529,8 +651,8 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
         const taskRow = {
             id: crypto.randomUUID(),
             session_id: sessionId,
-            title: plan.display_title,
-            description: plan.ai_plan.join('\n'),
+            title: displayTitle,
+            description,
             estimated_minutes: plan.scheduling.duration_minutes,
             sequence_order: 1,
             start_time: plan.scheduling.start_time,
@@ -550,12 +672,17 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             .select('token')
             .eq('user_id', userId)
             .eq('device_type', 'ios')
-            .eq('is_active', true);
+            .eq('is_active', true)
+            .limit(MAX_USER_PUSH_DEVICE_TOKENS + 1);
         if (tokens && tokens.length > 0) {
+            if (tokens.length > MAX_USER_PUSH_DEVICE_TOKENS) {
+                console.warn('[amber] APNs fanout capped for user');
+            }
+            const pushTokens = tokens.slice(0, MAX_USER_PUSH_DEVICE_TOKENS);
             const startStr = new Date(plan.scheduling.start_time).toLocaleTimeString('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' });
-            const results = await Promise.allSettled(tokens.map(async ({ token }) => {
+            const results = await Promise.allSettled(pushTokens.map(async ({ token }) => {
                 const result = await sendPushWithResult(token, {
-                    title: `${plan.display_title} scheduled`,
+                    title: 'Focus session scheduled',
                     body: `Starting at ${startStr} · ${plan.scheduling.duration_minutes} min`,
                     data: { amber_session_id: sessionId }
                 });
@@ -571,7 +698,7 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
             if (permanentlyFailedTokens.length > 0) {
                 await admin
                     .from('device_tokens')
-                    .update({ is_active: false, updated_at: new Date().toISOString() })
+                    .update({ is_active: false, last_used_at: null, updated_at: new Date().toISOString() })
                     .eq('user_id', userId)
                     .in('token', permanentlyFailedTokens);
             }
@@ -579,7 +706,7 @@ export async function runActivationPipeline(userId: string, sessionId: string, r
 
         return { success: true, plan };
     } catch (err) {
-        console.error('[amber_service] Pipeline failed:', err);
+        console.error('[amber_service] Pipeline failed');
         await admin.from('amber_sessions').update({ status: 'failed' }).eq('id', sessionId).eq('user_id', userId);
         throw err;
     }

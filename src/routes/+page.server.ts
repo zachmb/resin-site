@@ -2,6 +2,21 @@ import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
 import { syncStonesFromNotes, recordDailyActivity } from '$lib/services/gamification';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_HOME_TODAY_TASKS = 100;
+const MAX_HOME_WEEK_SESSIONS = 500;
+const MAX_HOME_WEEK_TASKS = 1000;
+const MAX_HOME_AUTOMATIONS = 50;
+
+const logHomeIssue = (scope: string, error: unknown) => {
+    const issue = error as { code?: unknown; name?: unknown; message?: unknown };
+    console.error(scope, {
+        code: typeof issue?.code === 'string' ? issue.code : undefined,
+        name: typeof issue?.name === 'string' ? issue.name : undefined,
+        hasMessage: typeof issue?.message === 'string' && issue.message.length > 0
+    });
+};
+
 const extractTitle = (content: string) => {
     if (!content || !content.trim()) return '';
     const lines = content.split('\n');
@@ -30,7 +45,7 @@ const insertNote = async (supabase: any, row: { user_id: string; title: string; 
         .select('id');
 
     if (insertResult.error) {
-        console.error('[home] Insert failed:', insertResult.error.message);
+        console.error('[home] Insert failed');
         throw insertResult.error;
     }
 
@@ -81,14 +96,14 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
     // 1. Profile
     const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, total_stones, current_streak, extension_enabled, web_onboarded')
         .eq('id', userId)
         .single();
 
     // 2. Recent Notes (amber_sessions)
     const { data: recentNotes } = await supabase
         .from('amber_sessions')
-        .select('*')
+        .select('id, display_title, title, raw_text, content, status, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(6);
@@ -97,13 +112,20 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
     const { data: todayTasks } = await supabase
         .from('amber_tasks')
         .select(`
-            *,
+            id,
+            session_id,
+            title,
+            description,
+            requires_focus,
+            start_time,
+            end_time,
             amber_sessions!inner(user_id)
         `)
         .eq('amber_sessions.user_id', userId)
         .gte('start_time', startOfDay)
         .lte('start_time', endOfDay)
-        .order('start_time', { ascending: true });
+        .order('start_time', { ascending: true })
+        .limit(MAX_HOME_TODAY_TASKS);
 
     // 4. All sessions this week (for heatmap + stats)
     const { data: weekSessions } = await supabase
@@ -111,7 +133,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
         .select('id, display_title, status, created_at')
         .eq('user_id', userId)
         .gte('created_at', startOfWeek.toISOString())
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(MAX_HOME_WEEK_SESSIONS);
 
     // 5. All tasks this week (for focus minutes)
     const { data: weekTasks } = await supabase
@@ -119,12 +142,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
         .select('id, title, estimated_minutes, requires_focus, start_time, end_time, amber_sessions!inner(user_id)')
         .eq('amber_sessions.user_id', userId)
         .gte('start_time', startOfWeek.toISOString())
-        .order('start_time', { ascending: true });
+        .order('start_time', { ascending: true })
+        .limit(MAX_HOME_WEEK_TASKS);
 
     // 6. Recent feedback (for taste insights)
     const { data: feedback } = await supabase
         .from('amber_task_feedback')
-        .select('*')
+        .select('rating, comments, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);
@@ -132,9 +156,10 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
     // 7. Focus automations
     const { data: automations } = await supabase
         .from('focus_automations')
-        .select('*')
+        .select('id, title, time, duration_minutes, days_of_week, enabled')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(MAX_HOME_AUTOMATIONS);
 
     // Build weekly stats
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -231,7 +256,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, getUser } }) =>
     return {
         profile,
         recentNotes: recentNotes || [],
-        todayTasks: todayTasks || [],
+        todayTasks: (todayTasks || []).map(({ amber_sessions: _owner, ...task }: any) => task),
         weeklyStats,
         automations: automations || [],
         isNewUser,
@@ -262,7 +287,7 @@ export const actions: Actions = {
         });
 
         if (error) {
-            console.error('Error creating note:', error);
+            logHomeIssue('[home] quickNote create failed', error);
             return fail(500, { error: 'Failed to create note' });
         }
 
@@ -294,7 +319,7 @@ export const actions: Actions = {
         });
 
         if (error) {
-            console.error('Error creating note:', error);
+            logHomeIssue('[home] quickSchedule create failed', error);
             return fail(500, { error: 'Failed to create note' });
         }
 
@@ -331,15 +356,15 @@ export const actions: Actions = {
                     days_of_week: daysOfWeek,
                     enabled: true
                 })
-                .select()
+                .select('id, title, time, duration_minutes, days_of_week, enabled')
                 .single();
 
             if (error) throw error;
 
             return { success: true, automation };
-        } catch (err) {
-            console.error('Error creating automation:', err);
-            return fail(500, { error: String(err) });
+        } catch {
+            console.error('Error creating automation');
+            return fail(500, { error: 'Failed to create automation' });
         }
     },
 
@@ -351,7 +376,7 @@ export const actions: Actions = {
         const data = await request.formData();
         const automationId = data.get('automationId')?.toString();
 
-        if (!automationId) return fail(400, { error: 'Missing automation ID' });
+        if (!automationId || !UUID_RE.test(automationId)) return fail(400, { error: 'Invalid automation ID' });
 
         try {
             const { error } = await supabase
@@ -364,8 +389,8 @@ export const actions: Actions = {
 
             return { success: true };
         } catch (err) {
-            console.error('Error deleting automation:', err);
-            return fail(500, { error: String(err) });
+            logHomeIssue('[home] delete automation failed', err);
+            return fail(500, { error: 'Failed to delete automation' });
         }
     },
 
@@ -383,8 +408,8 @@ export const actions: Actions = {
             if (error) throw error;
             return { success: true };
         } catch (err) {
-            console.error('Error marking web onboarded:', err);
-            return fail(500, { error: String(err) });
+            logHomeIssue('[home] mark web onboarded failed', err);
+            return fail(500, { error: 'Failed to update onboarding state' });
         }
     }
 };

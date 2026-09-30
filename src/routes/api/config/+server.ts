@@ -22,7 +22,7 @@ import configOverrides from '../../../../resin-config.json';
 // Cache config in memory to avoid reading file on every request
 let cachedConfig: ResinConfig | null = null;
 
-const DEFAULT_APP_URL = 'https://noteresin.com';
+const DEFAULT_APP_URL = 'https://www.noteresin.com';
 const DEFAULT_SUPABASE_URL = 'https://vqzaadhoccgtywewtkrm.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_P_-T0hzfXzuzOsx9Ff8gMw_3SwUpdgm';
 
@@ -107,8 +107,8 @@ function loadConfig(): ResinConfig {
   try {
     cachedConfig = mergeConfig(configOverrides as Partial<ResinConfig>);
     return cachedConfig;
-  } catch (error) {
-    console.error('[/api/config] Failed to merge resin-config.json:', error);
+  } catch {
+    console.error('[/api/config] Failed to merge resin-config.json');
     cachedConfig = createDefaultConfig();
     return cachedConfig;
   }
@@ -166,18 +166,29 @@ function toPublicConfig(config: ResinConfig): ResinConfig {
       anonKey: config.supabase.anonKey,
       realtime: {
         enabled: config.supabase.realtime.enabled,
-        channels: [...config.supabase.realtime.channels]
+        channels: []
       }
     },
     features: publicFeatureFlags(config.features),
     minVersions: { ...config.minVersions },
     recommendedVersions: { ...config.recommendedVersions },
     analytics: { ...config.analytics },
-    notifications: { ...config.notifications },
-    rateLimit: { ...config.rateLimit },
-    auth: { ...config.auth },
+    notifications: {
+      enabled: config.notifications.enabled,
+      provider: config.notifications.provider,
+      timeoutMs: config.notifications.timeoutMs
+    },
+    rateLimit: {
+      requestsPerMinute: 0,
+      requestsPerHour: 0
+    },
+    auth: {
+      provider: config.auth.provider,
+      sessionTimeout: 0,
+      refreshTokenExpiryDays: 0
+    },
     build: {
-      timestamp: config.build.timestamp,
+      timestamp: '',
       configVersion: config.build.configVersion
     }
   };
@@ -194,11 +205,11 @@ export const GET = async (event: RequestEvent) => {
         'Cache-Control': 'public, max-age=3600, stale-while-revalidate=300'
       }
     });
-  } catch (error) {
-    console.error('[/api/config] Error:', error);
+  } catch {
+    console.error('[/api/config] Error');
     return json(
       { error: 'Failed to load config' },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store, max-age=0' } }
     );
   }
 };

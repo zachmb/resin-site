@@ -1,35 +1,89 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { page } from "$app/stores";
     import { fade } from "svelte/transition";
 
-    let { session, profile, tasteData, deviceTokens = [], commandConfigs = [], friends = [], incomingRequests = [], outgoingRequests = [] } = $props<{
+    let { session, profile, profileSettingsLoadFailed = false, tasteData, deviceTokens = [], deviceTokensLoadFailed = false, commandConfigs = [], commandConfigsLoadFailed = false, friends = [], friendsLoadFailed = false, incomingRequests = [], outgoingRequests = [] } = $props<{
         session: any;
         profile: any;
+        profileSettingsLoadFailed?: boolean;
         tasteData?: any;
         deviceTokens?: any[];
+        deviceTokensLoadFailed?: boolean;
         commandConfigs?: any[];
+        commandConfigsLoadFailed?: boolean;
         friends?: any[];
+        friendsLoadFailed?: boolean;
         incomingRequests?: any[];
         outgoingRequests?: any[];
     }>();
 
     let loading = $state(false);
     let successMessage = $state("");
+    let settingsError = $state("");
+    let accountDeletionError = $state("");
+    let tokenError = $state("");
+    let friendActionError = $state("");
+    let removingFriendId = $state<string | null>(null);
+    let friendRequestActionId = $state<string | null>(null);
+    let deviceActionError = $state("");
+    let removingDeviceId = $state<string | null>(null);
     let showDocs = $state(false);
     let generatedToken = $state("");
     let mobileShowContent = $state(false);
-    let activeCategory = $state<
-        "profile" | "preferences" | "friends" | "integrations" | "api" | "privacy" | "taste" | "devices" | "hardened"
-    >("profile");
+    let deleteConfirmation = $state("");
+    type AccountCategory =
+        | "profile"
+        | "preferences"
+        | "friends"
+        | "integrations"
+        | "api"
+        | "privacy"
+        | "taste"
+        | "devices"
+        | "hardened";
+
+    const accountCategories = new Set<AccountCategory>([
+        "profile",
+        "preferences",
+        "friends",
+        "integrations",
+        "api",
+        "privacy",
+        "taste",
+        "devices",
+        "hardened"
+    ]);
+
+    function categoryFromUrl(): AccountCategory {
+        const section = $page.url.searchParams.get("section") as AccountCategory | null;
+        return section && accountCategories.has(section) ? section : "profile";
+    }
+
+    const initialCategory = categoryFromUrl();
+    let urlCategory = $state<AccountCategory>(initialCategory);
+    let activeCategory = $state<AccountCategory>(initialCategory);
+
+    $effect(() => {
+        const category = categoryFromUrl();
+        if (category !== urlCategory) {
+            urlCategory = category;
+            activeCategory = category;
+        }
+    });
 
     // Hardened mode management
     let showHardenedModal = $state(false);
     let hardenedConfirmed = $state(false);
     let showEmergencyUnlock = $state(false);
+    let hardenedModeError = $state("");
+    let hardenedModeSaving = $state(false);
 
     // Command config management
     let editingCommandType = $state<string | null>(null);
     let commandConfigForm = $state<Record<string, string>>({});
+    let commandConfigError = $state("");
+    let commandConfigAction = $state<"save" | "delete" | null>(null);
 
     const commandTypes = [
         { type: 'send-email', icon: '📧', label: 'Email', fields: ['email_address'] },
@@ -73,6 +127,7 @@
     }
 
     function startEditingCommand(type: string) {
+        commandConfigError = "";
         editingCommandType = type;
         const existing = getCommandConfig(type);
         if (existing?.config) {
@@ -83,21 +138,28 @@
     }
 
     function cancelEditing() {
+        commandConfigError = "";
         editingCommandType = null;
         commandConfigForm = {};
     }
 
-    const handleSubmit = () => {
+    const handleSettingsSubmit = () => {
         loading = true;
         successMessage = "";
-        return async ({ result }: { result: any }) => {
+        settingsError = "";
+        return async ({ result, update }: { result: any; update: () => Promise<void> }) => {
             loading = false;
-            if (result.type === "success") {
+            if (result.type === "success" && result.data?.success === true) {
                 successMessage = "Settings saved successfully!";
                 setTimeout(() => {
                     successMessage = "";
                 }, 3000);
+            } else {
+                settingsError = result.type === "failure" && typeof result.data?.error === "string"
+                    ? result.data.error
+                    : "Settings could not be saved. Please try again.";
             }
+            await update();
         };
     };
 
@@ -111,8 +173,10 @@
         });
     };
 
-    const formatRelativeTime = (dateString: string) => {
+    const formatRelativeTime = (dateString?: string | null) => {
+        if (!dateString) return "Never";
         const date = new Date(dateString);
+        if (!Number.isFinite(date.getTime())) return "Unknown";
         const now = new Date();
         const diff = now.getTime() - date.getTime();
         const minutes = Math.floor(diff / 60000);
@@ -132,8 +196,16 @@
     };
 
     const getPlatformIcon = (platform: string) => {
-        if (platform === "apns") return { icon: "📱", label: "iOS App" };
-        return { icon: "🔒", label: "Browser Extension" };
+        if (platform === "apns" || platform === "ios") return { icon: "📱", label: "iOS App" };
+        if (platform === "extension") return { icon: "🧩", label: "Browser Extension" };
+        if (platform === "web") return { icon: "🌐", label: "Web App" };
+        return { icon: "🔒", label: "Connected Device" };
+    };
+
+    const isDeviceRecent = (dateString?: string | null) => {
+        if (!dateString) return false;
+        const time = new Date(dateString).getTime();
+        return Number.isFinite(time) && Date.now() - time < 24 * 60 * 60 * 1000;
     };
 
     const categories = [
@@ -368,10 +440,15 @@
                 </div>
 
                 <div class="overflow-y-auto flex-1 p-6 custom-scrollbar">
+                    {#if profileSettingsLoadFailed}
+                        <p class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+                            Preferences could not be loaded completely. Reload before saving so existing availability and privacy settings are not overwritten with defaults.
+                        </p>
+                    {/if}
                     <form
                         method="POST"
                         action="?/updateProfile"
-                        use:enhance={handleSubmit}
+                        use:enhance={handleSettingsSubmit}
                         class="space-y-6"
                     >
                         <!-- Weekly Availability -->
@@ -457,13 +534,44 @@
                                     </p>
                                 </div>
                             </label>
+                            <label
+                                class="flex items-start gap-4 cursor-pointer group mt-6"
+                            >
+                                <div
+                                    class="relative flex items-center justify-center pt-1"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="sync_notes"
+                                        class="peer sr-only"
+                                        checked={profile?.sync_notes === true}
+                                    />
+                                    <div
+                                        class="w-11 h-6 bg-resin-earth/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-resin-forest shadow-inner"
+                                    ></div>
+                                </div>
+                                <div class="space-y-1 flex-1">
+                                    <div
+                                        class="text-sm font-semibold text-resin-charcoal group-hover:text-resin-forest transition-colors"
+                                    >
+                                        Share Note Context with API Clients
+                                    </div>
+                                    <p
+                                        class="text-xs text-resin-earth/70 font-light leading-relaxed"
+                                    >
+                                        Allow personal access tokens to include
+                                        recent Amber note text in schedule API
+                                        responses.
+                                    </p>
+                                </div>
+                            </label>
                         </section>
 
                         <!-- Save Button -->
                         <div
                             class="border-t border-resin-forest/5 pt-6 flex items-center justify-between gap-4"
                         >
-                            <div class="h-6">
+                            <div class="min-h-6">
                                 {#if successMessage}
                                     <span
                                         transition:fade
@@ -484,11 +592,15 @@
                                         </svg>
                                         {successMessage}
                                     </span>
+                                {:else if settingsError}
+                                    <span class="text-sm font-semibold text-red-700" role="alert">
+                                        {settingsError}
+                                    </span>
                                 {/if}
                             </div>
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={loading || profileSettingsLoadFailed}
                                 class="px-6 py-2.5 bg-resin-forest text-white rounded-xl font-bold text-sm hover:bg-resin-charcoal transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
                             >
                                 {#if loading}
@@ -535,6 +647,16 @@
                 <div
                     class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
                 >
+                    {#if friendActionError}
+                        <p class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                            {friendActionError}
+                        </p>
+                    {/if}
+                    {#if friendsLoadFailed}
+                        <p class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+                            Friends and pending requests could not be loaded completely. Reload before assuming a connection or request is absent.
+                        </p>
+                    {/if}
                     <!-- Add Friend Section -->
                     <section
                         class="bg-white/50 rounded-xl p-6 border border-resin-forest/5"
@@ -550,13 +672,19 @@
                             action="?/addFriend"
                             use:enhance={() => {
                                 loading = true;
-                                return async ({ result }) => {
+                                friendActionError = "";
+                                return async ({ result, update }) => {
                                     loading = false;
-                                    if (result.type === "success") {
+                                    if (result.type === "success" && result.data?.success === true) {
                                         successMessage = "Friend request sent!";
                                         setTimeout(() => {
                                             successMessage = "";
                                         }, 3000);
+                                        await update();
+                                    } else {
+                                        friendActionError = result.type === "failure" && typeof result.data?.error === "string"
+                                            ? result.data.error
+                                            : "Friend request could not be sent. Please try again.";
                                     }
                                 };
                             }}
@@ -635,7 +763,7 @@
                                     >
                                         <div>
                                             <p class="text-sm font-semibold text-resin-charcoal">
-                                                {friend.email}
+                                                {friend.displayName}
                                             </p>
                                             <p class="text-xs text-resin-earth/60">
                                                 Friends since {new Date(friend.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -644,29 +772,42 @@
                                         <form
                                             method="POST"
                                             action="?/removeFriend"
-                                            use:enhance={() => {
-                                                return async ({ result }) => {
-                                                    if (result.type === "success") {
+                                            use:enhance={({ cancel }) => {
+                                                if (!window.confirm(`Remove ${friend.displayName} from your friends?`)) {
+                                                    cancel();
+                                                    return;
+                                                }
+                                                removingFriendId = friend.id;
+                                                friendActionError = "";
+                                                return async ({ result, update }) => {
+                                                    removingFriendId = null;
+                                                    if (result.type === "success" && result.data?.success === true) {
                                                         successMessage = "Friend removed";
                                                         setTimeout(() => {
                                                             successMessage = "";
                                                         }, 3000);
+                                                    } else {
+                                                        friendActionError = result.type === "failure" && typeof result.data?.error === "string"
+                                                            ? result.data.error
+                                                            : "Friend could not be removed. Please try again.";
                                                     }
+                                                    await update();
                                                 };
                                             }}
                                         >
                                             <input type="hidden" name="friendship_id" value={friend.id} />
                                             <button
                                                 type="submit"
-                                                class="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all"
+                                                disabled={removingFriendId !== null}
+                                                class="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                Remove
+                                                {removingFriendId === friend.id ? "Removing…" : "Remove"}
                                             </button>
                                         </form>
                                     </div>
                                 {/each}
                             </div>
-                        {:else}
+                        {:else if !friendsLoadFailed}
                             <div
                                 class="bg-white/50 rounded-lg p-8 border border-dashed border-resin-forest/10 text-center"
                             >
@@ -698,7 +839,7 @@
                                     >
                                         <div>
                                             <p class="text-sm font-semibold text-resin-charcoal">
-                                                {request.fromEmail}
+                                                {request.fromDisplayName}
                                             </p>
                                             <p class="text-xs text-resin-earth/60">
                                                 sent {new Date(request.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -709,13 +850,21 @@
                                                 method="POST"
                                                 action="?/acceptFriend"
                                                 use:enhance={() => {
-                                                    return async ({ result }) => {
-                                                        if (result.type === "success") {
+                                                    friendRequestActionId = request.id;
+                                                    friendActionError = "";
+                                                    return async ({ result, update }) => {
+                                                        friendRequestActionId = null;
+                                                        if (result.type === "success" && result.data?.success === true) {
                                                             successMessage = "Friend request accepted!";
                                                             setTimeout(() => {
                                                                 successMessage = "";
                                                             }, 3000);
+                                                        } else {
+                                                            friendActionError = result.type === "failure" && typeof result.data?.error === "string"
+                                                                ? result.data.error
+                                                                : "Friend request could not be accepted. Please try again.";
                                                         }
+                                                        await update();
                                                     };
                                                 }}
                                                 class="inline"
@@ -723,22 +872,31 @@
                                                 <input type="hidden" name="request_id" value={request.id} />
                                                 <button
                                                     type="submit"
-                                                    class="px-3 py-1.5 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-all"
+                                                    disabled={friendRequestActionId !== null}
+                                                    class="px-3 py-1.5 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    Accept
+                                                    {friendRequestActionId === request.id ? "Working…" : "Accept"}
                                                 </button>
                                             </form>
                                             <form
                                                 method="POST"
                                                 action="?/rejectFriend"
                                                 use:enhance={() => {
-                                                    return async ({ result }) => {
-                                                        if (result.type === "success") {
+                                                    friendRequestActionId = request.id;
+                                                    friendActionError = "";
+                                                    return async ({ result, update }) => {
+                                                        friendRequestActionId = null;
+                                                        if (result.type === "success" && result.data?.success === true) {
                                                             successMessage = "Friend request rejected";
                                                             setTimeout(() => {
                                                                 successMessage = "";
                                                             }, 3000);
+                                                        } else {
+                                                            friendActionError = result.type === "failure" && typeof result.data?.error === "string"
+                                                                ? result.data.error
+                                                                : "Friend request could not be rejected. Please try again.";
                                                         }
+                                                        await update();
                                                     };
                                                 }}
                                                 class="inline"
@@ -746,9 +904,10 @@
                                                 <input type="hidden" name="request_id" value={request.id} />
                                                 <button
                                                     type="submit"
-                                                    class="px-3 py-1.5 text-xs font-bold text-resin-earth/60 bg-resin-earth/5 hover:bg-resin-earth/10 rounded-lg transition-all"
+                                                    disabled={friendRequestActionId !== null}
+                                                    class="px-3 py-1.5 text-xs font-bold text-resin-earth/60 bg-resin-earth/5 hover:bg-resin-earth/10 rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    Reject
+                                                    {friendRequestActionId === request.id ? "Working…" : "Reject"}
                                                 </button>
                                             </form>
                                         </div>
@@ -776,7 +935,7 @@
                                     >
                                         <div>
                                             <p class="text-sm font-semibold text-resin-charcoal">
-                                                {request.toEmail}
+                                                {request.toDisplayName}
                                             </p>
                                             <p class="text-xs text-resin-earth/60">
                                                 sent {new Date(request.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -786,22 +945,31 @@
                                             method="POST"
                                             action="?/cancelFriendRequest"
                                             use:enhance={() => {
-                                                return async ({ result }) => {
-                                                    if (result.type === "success") {
+                                                friendRequestActionId = request.id;
+                                                friendActionError = "";
+                                                return async ({ result, update }) => {
+                                                    friendRequestActionId = null;
+                                                    if (result.type === "success" && result.data?.success === true) {
                                                         successMessage = "Request canceled";
                                                         setTimeout(() => {
                                                             successMessage = "";
                                                         }, 3000);
+                                                    } else {
+                                                        friendActionError = result.type === "failure" && typeof result.data?.error === "string"
+                                                            ? result.data.error
+                                                            : "Friend request could not be canceled. Please try again.";
                                                     }
+                                                    await update();
                                                 };
                                             }}
                                         >
                                             <input type="hidden" name="request_id" value={request.id} />
                                             <button
                                                 type="submit"
-                                                class="px-3 py-1.5 text-xs font-bold text-resin-earth/60 bg-resin-earth/5 hover:bg-resin-earth/10 rounded-lg transition-all"
+                                                disabled={friendRequestActionId !== null}
+                                                class="px-3 py-1.5 text-xs font-bold text-resin-earth/60 bg-resin-earth/5 hover:bg-resin-earth/10 rounded-lg transition-all disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                Cancel
+                                                {friendRequestActionId === request.id ? "Canceling…" : "Cancel"}
                                             </button>
                                         </form>
                                     </div>
@@ -979,6 +1147,7 @@
                                     window.open(
                                         "https://github.com/zachmb/resinext",
                                         "_blank",
+                                        "noopener,noreferrer",
                                     )}
                                 class="w-full py-3 bg-white text-resin-charcoal rounded-xl font-bold text-sm hover:bg-resin-amber hover:text-white transition-all shadow-lg active:scale-95"
                             >
@@ -1002,6 +1171,11 @@
                             </p>
                         </div>
 
+                        {#if commandConfigsLoadFailed}
+                            <p class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+                                Saved integrations could not be loaded. Reload before changing credentials or assuming an integration is inactive.
+                            </p>
+                        {:else}
                         <div class="space-y-3">
                             {#each commandTypes as cmdType}
                                 {@const existingConfig = getCommandConfig(cmdType.type)}
@@ -1036,6 +1210,12 @@
                                             Configure {cmdType.label}
                                         </h4>
 
+                                        {#if commandConfigError}
+                                            <p class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                                                {commandConfigError}
+                                            </p>
+                                        {/if}
+
                                         {#each cmdType.fields as field}
                                             <div>
 	                                                <label
@@ -1066,9 +1246,17 @@
                                                 method="POST"
                                                 action="?/saveCommandConfig"
                                                 use:enhance={() => {
-                                                    return async ({ result }) => {
-                                                        if (result.type === "success") {
+                                                    commandConfigError = "";
+                                                    commandConfigAction = "save";
+                                                    return async ({ result, update }) => {
+                                                        commandConfigAction = null;
+                                                        if (result.type === "success" && result.data?.success === true) {
                                                             cancelEditing();
+                                                            await update();
+                                                        } else {
+                                                            commandConfigError = result.type === "failure" && typeof result.data?.error === "string"
+                                                                ? result.data.error
+                                                                : "Configuration could not be saved. Your existing integration was not changed.";
                                                         }
                                                     };
                                                 }}
@@ -1077,36 +1265,51 @@
                                                 <input type="hidden" name="config" value={JSON.stringify(commandConfigForm)} />
                                                 <button
                                                     type="submit"
-                                                    class="flex-1 px-3 py-2 text-xs font-bold text-white bg-resin-forest hover:bg-resin-forest/90 rounded-lg transition-colors"
+                                                    disabled={commandConfigAction !== null}
+                                                    class="flex-1 px-3 py-2 text-xs font-bold text-white bg-resin-forest hover:bg-resin-forest/90 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    Save
+                                                    {commandConfigAction === "save" ? "Saving…" : "Save"}
                                                 </button>
                                             </form>
                                             <button
                                                 type="button"
                                                 onclick={cancelEditing}
-                                                class="flex-1 px-3 py-2 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-colors"
+                                                disabled={commandConfigAction !== null}
+                                                class="flex-1 px-3 py-2 text-xs font-bold text-resin-forest bg-resin-forest/10 hover:bg-resin-forest/20 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 Cancel
                                             </button>
                                             {#if getCommandConfig(cmdType.type)}
                                                 <form
-                                                    method="POST"
-                                                    action="?/deleteCommandConfig"
-                                                    use:enhance={() => {
-                                                        return async ({ result }) => {
-                                                            if (result.type === "success") {
-                                                                cancelEditing();
-                                                            }
-                                                        };
+                                                method="POST"
+                                                action="?/deleteCommandConfig"
+                                                use:enhance={({ cancel }) => {
+                                                    if (!window.confirm(`Delete the ${cmdType.label} integration and its saved credentials?`)) {
+                                                        cancel();
+                                                        return;
+                                                    }
+                                                    commandConfigError = "";
+                                                    commandConfigAction = "delete";
+                                                    return async ({ result, update }) => {
+                                                        commandConfigAction = null;
+                                                        if (result.type === "success" && result.data?.success === true) {
+                                                            cancelEditing();
+                                                            await update();
+                                                        } else {
+                                                            commandConfigError = result.type === "failure" && typeof result.data?.error === "string"
+                                                                ? result.data.error
+                                                                : "Configuration could not be deleted. The integration may still be active.";
+                                                        }
+                                                    };
                                                     }}
                                                 >
                                                     <input type="hidden" name="configId" value={getCommandConfig(cmdType.type)?.id || ''} />
                                                     <button
                                                         type="submit"
-                                                        class="px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                                        disabled={commandConfigAction !== null}
+                                                        class="px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                                                     >
-                                                        Delete
+                                                        {commandConfigAction === "delete" ? "Deleting…" : "Delete"}
                                                     </button>
                                                 </form>
                                             {/if}
@@ -1115,6 +1318,7 @@
                                 {/if}
                             {/each}
                         </div>
+                        {/if}
                     </section>
                 </div>
             {:else if activeCategory === "api"}
@@ -1229,58 +1433,109 @@
                                 >
                             {/if}
                         </div>
-                        <form
-                            method="POST"
-                            action="?/generateToken"
-                            use:enhance={() => {
-                                loading = true;
-                                return async ({ result, update }) => {
-                                    loading = false;
-                                    const token = result.type === "success" && typeof result.data === "object" && result.data && "token" in result.data
-                                        ? String(result.data.token)
-                                        : "";
-                                    if (token) {
-                                        generatedToken = token;
-                                        successMessage = "Token generated. Copy it now — it will be hidden after you leave this page.";
-                                        setTimeout(() => {
-                                            successMessage = "";
-                                        }, 6000);
+                        <div class="flex flex-wrap gap-3">
+                            <form
+                                method="POST"
+                                action="?/generateToken"
+                                use:enhance={({ cancel }) => {
+                                    if (!window.confirm('Generate a new token? Any existing API token will stop working immediately.')) {
+                                        cancel();
+                                        return;
                                     }
-                                    await update();
-                                };
-                            }}
-                        >
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                class="px-6 py-2.5 bg-resin-amber text-resin-charcoal rounded-xl font-bold text-sm hover:bg-resin-amber/90 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
+                                    loading = true;
+                                    tokenError = "";
+                                    return async ({ result, update }) => {
+                                        loading = false;
+                                        const token = result.type === "success" && typeof result.data === "object" && result.data && "token" in result.data
+                                            ? String(result.data.token)
+                                            : "";
+                                        if (token) {
+                                            generatedToken = token;
+                                            successMessage = "Token generated. Copy it now — it will be hidden after you leave this page.";
+                                            setTimeout(() => {
+                                                successMessage = "";
+                                            }, 6000);
+                                        } else {
+                                            tokenError = result.type === "failure" && typeof result.data?.error === "string"
+                                                ? result.data.error
+                                                : "Token generation failed. Your existing token was not changed.";
+                                        }
+                                        await update();
+                                    };
+                                }}
                             >
-                                {#if loading}
-                                    <svg
-                                        class="animate-spin h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            class="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                        ></circle>
-                                        <path
-                                            class="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                        ></path>
-                                    </svg>
-                                {/if}
-                                {loading
-                                    ? "Generating..."
-                                    : "Generate New Token"}
-                            </button>
-                        </form>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    class="px-6 py-2.5 bg-resin-amber text-resin-charcoal rounded-xl font-bold text-sm hover:bg-resin-amber/90 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {#if loading}
+                                        <svg
+                                            class="animate-spin h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                class="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                stroke-width="4"
+                                            ></circle>
+                                            <path
+                                                class="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            ></path>
+                                        </svg>
+                                    {/if}
+                                    {loading
+                                        ? "Generating..."
+                                        : "Generate New Token"}
+                                </button>
+                            </form>
+                            <form
+                                method="POST"
+                                action="?/revokeToken"
+                                use:enhance={({ cancel }) => {
+                                    if (!window.confirm('Revoke this token? Connected API clients will lose access immediately.')) {
+                                        cancel();
+                                        return;
+                                    }
+                                    loading = true;
+                                    tokenError = "";
+                                    return async ({ result, update }) => {
+                                        loading = false;
+                                        if (result.type === "success" && result.data?.success === true) {
+                                            generatedToken = "";
+                                            successMessage = "Token revoked. API clients cannot use the old token anymore.";
+                                            setTimeout(() => {
+                                                successMessage = "";
+                                            }, 6000);
+                                        } else {
+                                            tokenError = result.type === "failure" && typeof result.data?.error === "string"
+                                                ? result.data.error
+                                                : "Token revocation failed. The existing token may still work.";
+                                        }
+                                        await update();
+                                    };
+                                }}
+                            >
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    class="px-6 py-2.5 bg-white/70 text-resin-earth border border-resin-earth/20 rounded-xl font-bold text-sm hover:bg-white transition-all shadow-sm disabled:opacity-50"
+                                >
+                                    Revoke Token
+                                </button>
+                            </form>
+                        </div>
+                        {#if tokenError}
+                            <p class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                                {tokenError}
+                            </p>
+                        {/if}
                     </section>
                 </div>
             {:else if activeCategory === "privacy"}
@@ -1372,6 +1627,82 @@
                                     Our terms and conditions
                                 </p>
                             </a>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3
+                            class="text-xs font-bold text-red-500/70 uppercase tracking-widest mb-3"
+                        >
+                            Account Deletion
+                        </h3>
+                        <div
+                            class="bg-red-50/80 rounded-xl p-6 border border-red-200/70 space-y-4"
+                        >
+                            <div>
+                                <h4 class="font-semibold text-red-950 mb-2">
+                                    Delete your Resin account
+                                </h4>
+                                <p class="text-sm text-red-900/80">
+                                    This permanently removes your account,
+                                    profile, devices, focus history, friend
+                                    links, integrations, and saved Resin data.
+                                    There is no shame exit: if Resin is not
+                                    helping, you can leave cleanly.
+                                </p>
+                                <p class="mt-3 text-xs text-red-900/70">
+                                    Apple subscriptions are managed separately:
+                                    if you have Resin Pro, cancel it in iPhone
+                                    Settings → your name → Subscriptions.
+                                    Need help? Email support@noteresin.com.
+                                </p>
+                            </div>
+                            <form
+                                method="POST"
+                                action="?/deleteAccount"
+                                use:enhance={() => {
+                                    loading = true;
+                                    accountDeletionError = "";
+                                    return async ({ result, update }) => {
+                                        loading = false;
+                                        if (result.type === "redirect") {
+                                            await update();
+                                            return;
+                                        }
+                                        accountDeletionError = result.type === "failure" && typeof result.data?.error === "string"
+                                            ? result.data.error
+                                            : "Your account could not be deleted. Please try again or contact support@noteresin.com.";
+                                    };
+                                }}
+                                class="space-y-3"
+                            >
+                                <label class="block">
+                                    <span
+                                        class="text-xs font-semibold text-red-950/70"
+                                    >
+                                        Type DELETE to confirm
+                                    </span>
+                                    <input
+                                        name="delete_confirmation"
+                                        bind:value={deleteConfirmation}
+                                        autocomplete="off"
+                                        placeholder="DELETE"
+                                        class="mt-1 w-full rounded-lg border border-red-200 bg-white/80 px-3 py-2 text-sm text-resin-charcoal focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                                    />
+                                </label>
+                                {#if accountDeletionError}
+                                    <p class="rounded-lg border border-red-300 bg-white/80 p-3 text-sm text-red-900" role="alert">
+                                        {accountDeletionError}
+                                    </p>
+                                {/if}
+                                <button
+                                    type="submit"
+                                    disabled={deleteConfirmation !== "DELETE" || loading}
+                                    class="px-4 py-2 rounded-lg bg-red-700 text-white font-semibold hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    {loading ? "Deleting..." : "Permanently delete account"}
+                                </button>
+                            </form>
                         </div>
                     </section>
                 </div>
@@ -1535,6 +1866,22 @@
                 <div
                     class="overflow-y-auto flex-1 p-6 space-y-6 custom-scrollbar"
                 >
+                    {#if deviceActionError}
+                        <p
+                            class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+                            role="alert"
+                        >
+                            {deviceActionError}
+                        </p>
+                    {/if}
+                    {#if deviceTokensLoadFailed}
+                        <p
+                            class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+                            role="alert"
+                        >
+                            Connected devices could not be loaded. Reload before assuming no other devices have access to focus sync.
+                        </p>
+                    {/if}
                     {#if deviceTokens && deviceTokens.length > 0}
                         <div class="space-y-3">
                             {#each deviceTokens as device (device.id)}
@@ -1549,23 +1896,53 @@
                                             <h3
                                                 class="font-semibold text-resin-charcoal"
                                             >
-                                                {getPlatformIcon(device.platform)
-                                                    .label}
+                                                {device.device_name ||
+                                                    getPlatformIcon(device.platform)
+                                                        .label}
                                             </h3>
                                             <p
                                                 class="text-xs text-resin-earth/60"
                                             >
                                                 Last seen:{" "}
                                                 {formatRelativeTime(
-                                                    device.updated_at
+                                                    device.last_used_at
                                                 )}
+                                            </p>
+                                            <p
+                                                class="text-xs font-semibold {device.is_active && isDeviceRecent(device.last_used_at) ? 'text-resin-forest' : device.is_active ? 'text-resin-amber' : 'text-resin-earth/45'}"
+                                            >
+                                                {device.is_active && isDeviceRecent(device.last_used_at)
+                                                    ? "Active recently"
+                                                    : device.is_active
+                                                        ? "Not seen recently"
+                                                        : "Disabled"}
                                             </p>
                                         </div>
                                     </div>
                                     <form
                                         method="POST"
                                         action="?/removeDevice"
-                                        use:enhance={handleSubmit}
+                                        use:enhance={({ cancel }) => {
+                                            const deviceName = device.device_name || getPlatformIcon(device.platform).label;
+                                            if (!window.confirm(`Remove ${deviceName}? Resin will stop syncing focus sessions to this device.`)) {
+                                                cancel();
+                                                return;
+                                            }
+                                            removingDeviceId = device.id;
+                                            deviceActionError = "";
+                                            return async ({ result, update }) => {
+                                                removingDeviceId = null;
+                                                if (result.type === "success" && result.data?.success === true) {
+                                                    successMessage = `${deviceName} removed`;
+                                                    setTimeout(() => successMessage = "", 3000);
+                                                } else {
+                                                    deviceActionError = result.type === "failure" && typeof result.data?.error === "string"
+                                                        ? result.data.error
+                                                        : "Device removal failed. It may still receive focus sync updates.";
+                                                }
+                                                await update();
+                                            };
+                                        }}
                                         class="flex-shrink-0 ml-4"
                                     >
                                         <input
@@ -1575,15 +1952,16 @@
                                         />
                                         <button
                                             type="submit"
-                                            class="px-3 py-2 text-sm font-semibold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all"
+                                            disabled={removingDeviceId !== null}
+                                            class="px-3 py-2 text-sm font-semibold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            Remove
+                                            {removingDeviceId === device.id ? "Removing…" : "Remove"}
                                         </button>
                                     </form>
                                 </div>
                             {/each}
                         </div>
-                    {:else}
+                    {:else if !deviceTokensLoadFailed}
                         <div
                             class="bg-white/50 rounded-xl p-8 border border-dashed border-resin-forest/10 text-center"
                         >
@@ -1627,6 +2005,11 @@
                         </div>
                     </div>
 
+                    {#if profileSettingsLoadFailed}
+                        <p class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+                            Hardened Mode status could not be loaded. Reload before enabling or unlocking it.
+                        </p>
+                    {:else}
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <div>
@@ -1642,7 +2025,10 @@
                             {#if profile?.hardened_mode_enabled}
                                 <button
                                     type="button"
-                                    onclick={() => showEmergencyUnlock = true}
+                                    onclick={() => {
+                                        hardenedModeError = "";
+                                        showEmergencyUnlock = true;
+                                    }}
                                     class="px-4 py-2 text-sm font-semibold text-red-600 bg-red-400/10 border border-red-400/20 rounded-lg hover:bg-red-400/20 transition-all"
                                 >
                                     🚨 Emergency Unlock
@@ -1650,7 +2036,10 @@
                             {:else}
                                 <button
                                     type="button"
-                                    onclick={() => showHardenedModal = true}
+                                    onclick={() => {
+                                        hardenedModeError = "";
+                                        showHardenedModal = true;
+                                    }}
                                     class="px-4 py-2 text-sm font-semibold text-white bg-resin-forest hover:bg-resin-forest/90 rounded-lg transition-all"
                                 >
                                     Enable Hardened Mode
@@ -1658,6 +2047,7 @@
                             {/if}
                         </div>
                     </div>
+                    {/if}
 
                     <div class="bg-white/50 rounded-xl p-4 border border-resin-forest/5 space-y-3">
                         <h4 class="font-semibold text-resin-charcoal text-sm">How it works:</h4>
@@ -1699,6 +2089,11 @@
                             <li>Forces full commitment to the session</li>
                         </ul>
                     </div>
+                    {#if hardenedModeError}
+                        <p class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                            {hardenedModeError}
+                        </p>
+                    {/if}
                     {#if !hardenedConfirmed}
                         <p class="text-sm text-resin-earth/60">
                             Click the button below twice to confirm:
@@ -1716,12 +2111,19 @@
                             action="?/toggleHardenedMode"
                             use:enhance={({ formData }) => {
                                 formData.append('enabled', 'true');
+                                hardenedModeSaving = true;
+                                hardenedModeError = '';
                                 return async ({ result }) => {
-                                    if (result.type === 'success') {
+                                    hardenedModeSaving = false;
+                                    if (result.type === 'success' && result.data?.success === true) {
                                         showHardenedModal = false;
                                         hardenedConfirmed = false;
                                         successMessage = 'Hardened mode enabled!';
                                         setTimeout(() => successMessage = '', 3000);
+                                    } else {
+                                        hardenedModeError = result.type === 'failure' && typeof result.data?.error === 'string'
+                                            ? result.data.error
+                                            : 'Hardened mode could not be enabled. Please try again.';
                                     }
                                 };
                             }}
@@ -1729,16 +2131,19 @@
                         >
                             <button
                                 type="submit"
+                                disabled={hardenedModeSaving}
                                 class="w-full px-4 py-3 bg-resin-forest hover:bg-resin-forest/90 text-white font-semibold rounded-lg transition-all"
                             >
-                                ✓ Enable Hardened Mode
+                                {hardenedModeSaving ? 'Enabling…' : '✓ Enable Hardened Mode'}
                             </button>
                             <button
                                 type="button"
                                 onclick={() => {
+                                    hardenedModeError = '';
                                     showHardenedModal = false;
                                     hardenedConfirmed = false;
                                 }}
+                                disabled={hardenedModeSaving}
                                 class="w-full px-4 py-3 bg-resin-earth/10 hover:bg-resin-earth/20 text-resin-charcoal font-semibold rounded-lg transition-all"
                             >
                                 Cancel
@@ -1764,17 +2169,29 @@
                     <p class="text-sm text-resin-earth/60">
                         Use this if Resin crashed, the plan changed, or you simply can’t do this right now.
                     </p>
+                    {#if hardenedModeError}
+                        <p class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+                            {hardenedModeError}
+                        </p>
+                    {/if}
                     <form
                         method="POST"
                         action="?/emergencyUnlock"
                         use:enhance={() => {
+                            hardenedModeSaving = true;
+                            hardenedModeError = '';
                             return async ({ result }) => {
-                                if (result.type === 'success') {
+                                hardenedModeSaving = false;
+                                if (result.type === 'success' && result.data?.success === true) {
                                     showEmergencyUnlock = false;
                                     successMessage = 'Hardened mode disabled. Open the iOS app if device protection still appears active.';
                                     setTimeout(() => successMessage = '', 3000);
                                     // Reload to update profile
                                     setTimeout(() => location.reload(), 500);
+                                } else {
+                                    hardenedModeError = result.type === 'failure' && typeof result.data?.error === 'string'
+                                        ? result.data.error
+                                        : 'Emergency unlock failed. Please try again or contact support.';
                                 }
                             };
                         }}
@@ -1782,13 +2199,18 @@
                     >
                         <button
                             type="submit"
+                            disabled={hardenedModeSaving}
                             class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all"
                         >
-                            Unlock Now
+                            {hardenedModeSaving ? 'Unlocking…' : 'Unlock Now'}
                         </button>
                         <button
                             type="button"
-                            onclick={() => showEmergencyUnlock = false}
+                            onclick={() => {
+                                hardenedModeError = '';
+                                showEmergencyUnlock = false;
+                            }}
+                            disabled={hardenedModeSaving}
                             class="w-full px-4 py-3 bg-resin-earth/10 hover:bg-resin-earth/20 text-resin-charcoal font-semibold rounded-lg transition-all"
                         >
                             Cancel

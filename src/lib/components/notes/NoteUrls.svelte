@@ -11,6 +11,22 @@
     let showInput = $state(false);
     let newUrl = $state("");
     let error = $state("");
+    const MAX_URL_LENGTH = 2048;
+
+    function normalizeBookmarkUrl(value: string): string | null {
+        const trimmed = value.trim();
+        if (!trimmed || trimmed.length > MAX_URL_LENGTH) return null;
+
+        try {
+            const parsed = new URL(trimmed);
+            if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+                return null;
+            }
+            return parsed.toString();
+        } catch {
+            return null;
+        }
+    }
 
     function validateAndAdd() {
         error = "";
@@ -21,20 +37,18 @@
             return;
         }
 
-        // Simple URL validation
-        try {
-            new URL(trimmed);
-        } catch {
-            error = "Invalid URL format";
+        const normalizedUrl = normalizeBookmarkUrl(trimmed);
+        if (!normalizedUrl) {
+            error = "Enter a valid HTTP or HTTPS URL without credentials";
             return;
         }
 
-        if (urls.includes(trimmed)) {
+        if (urls.some((url: string) => normalizeBookmarkUrl(url) === normalizedUrl)) {
             error = "This URL is already saved";
             return;
         }
 
-        onAddUrl(trimmed);
+        onAddUrl(normalizedUrl);
         newUrl = "";
         showInput = false;
     }
@@ -59,17 +73,22 @@
     {#if urls.length > 0}
         <div class="space-y-1.5" in:fade>
             {#each urls as url (url)}
+                {@const safeUrl = normalizeBookmarkUrl(url)}
                 <div class="flex items-center gap-2 px-2 py-1.5 rounded bg-resin-forest/5 border border-resin-forest/10 group hover:border-resin-forest/30 transition-colors" in:slide>
                     <ExternalLink size={12} class="text-resin-forest/60 flex-shrink-0" />
-                    <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="text-xs text-resin-forest hover:text-resin-forest/80 truncate"
-                        title={url}
-                    >
-                        {getHostname(url)}
-                    </a>
+                    {#if safeUrl}
+                        <a
+                            href={safeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-xs text-resin-forest hover:text-resin-forest/80 truncate"
+                            title={safeUrl}
+                        >
+                            {getHostname(safeUrl)}
+                        </a>
+                    {:else}
+                        <span class="text-xs text-red-600 truncate">Unsafe link blocked</span>
+                    {/if}
                     <button
                         onclick={() => onRemoveUrl(url)}
                         class="ml-auto flex-shrink-0 p-0.5 rounded text-resin-earth/30 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"

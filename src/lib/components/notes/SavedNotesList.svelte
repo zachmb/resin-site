@@ -59,10 +59,10 @@
                             createError = '';
                         } else if (result.type === "failure") {
                             createError = (result.data as any)?.error || 'Failed to create note';
-                            console.error('[SavedNotesList] Create error:', result.data);
+                            console.error('[SavedNotesList] Create error');
                         } else if (result.type === "error") {
                             createError = 'An error occurred while creating the note';
-                            console.error('[SavedNotesList] Error:', result.error);
+                            console.error('[SavedNotesList] Error');
                         }
                         await update();
                     };

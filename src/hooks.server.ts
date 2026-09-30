@@ -5,9 +5,101 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 
 const apiCorsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Max-Age': '86400',
+}
+const routeOwnedCorsPrefixes = [
+    '/api/activate',
+    '/api/activity/update-daily',
+    '/api/amber/data',
+    '/api/amber/reschedule',
+    '/api/amber/sessions',
+    '/api/auth/apple-notifications',
+    '/api/auth/save-credentials',
+    '/api/auth/token',
+    '/api/blocking/check-domain',
+    '/api/blocking/get-blocked-domains',
+    '/api/blocking/sync',
+    '/api/blocking/verify-sync',
+    '/api/commands/send-email',
+    '/api/calendar/activity',
+    '/api/devices/heartbeat',
+    '/api/devices/list',
+    '/api/devices/register-ios',
+    '/api/devices/register-token',
+    '/api/devices/unregister-ios',
+    '/api/devices/unregister-token',
+    '/api/emergency/trigger',
+    '/api/focus',
+    '/api/focus/expand-automations',
+    '/api/focus/sync-status',
+    '/api/gamification/apply-reward',
+    '/api/gamification/forest-status',
+    '/api/groups/create',
+    '/api/insights/generate',
+    '/api/notes/data',
+    '/api/notes/sync',
+    '/api/notifications/send-focus-session',
+    '/api/profile/entitlement-sync',
+    '/api/profile/sync',
+    '/api/register-device',
+    '/api/schedule',
+    '/api/time-drift/log'
+]
+const routeOwnedCorsV1Prefixes = routeOwnedCorsPrefixes.map((prefix) => prefix.replace('/api/', '/api/v1/'))
+const csrfProtectedMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+const mutationContentTypes = new Set([
+    'application/x-www-form-urlencoded',
+    'multipart/form-data',
+    'text/plain'
+])
+
+function isCsrfCandidate(event: Parameters<Handle>[0]['event']) {
+    if (!csrfProtectedMethods.has(event.request.method)) return false
+
+    if (event.url.pathname.startsWith('/api/')) {
+        // Native apps and signed webhooks generally omit Origin. Browser callers
+        // using cross-origin CORS must present their own Bearer credential rather
+        // than silently falling back to the user's Resin cookies.
+        if (!event.request.headers.has('origin')) return false
+        const authorization = event.request.headers.get('authorization') ?? ''
+        return !authorization.startsWith('Bearer ')
+    }
+
+    const contentType = event.request.headers.get('content-type')?.toLowerCase() ?? ''
+    if (![...mutationContentTypes].some((type) => contentType.startsWith(type))) return false
+    return true
+}
+
+function isSameOriginMutation(event: Parameters<Handle>[0]['event']) {
+    const origin = event.request.headers.get('origin')
+    if (origin) return origin === event.url.origin
+
+    const referer = event.request.headers.get('referer')
+    if (!referer) return true
+
+    try {
+        return new URL(referer).origin === event.url.origin
+    } catch {
+        return false
+    }
+}
+
+function appendVary(headers: Headers, value: string) {
+    const existing = headers.get('Vary')
+    if (existing === '*') return
+    const values = existing?.split(',').map((entry) => entry.trim().toLowerCase()) ?? []
+    if (values.includes(value.toLowerCase())) return
+    headers.set('Vary', existing ? `${existing}, ${value}` : value)
+}
+
+const csrfHandle: Handle = async ({ event, resolve }) => {
+    if (isCsrfCandidate(event) && !isSameOriginMutation(event)) {
+        return new Response('Cross-origin form submissions are not allowed.', { status: 403 })
+    }
+
+    return resolve(event)
 }
 
 const supabaseHandle: Handle = async ({ event, resolve }) => {
@@ -100,7 +192,9 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
 
 // Add CORS headers to all /api/* responses so the iOS app can call them directly
 const corsHandle: Handle = async ({ event, resolve }) => {
-    if (event.url.pathname.startsWith('/api/') && event.request.method === 'OPTIONS') {
+    const isRouteOwnedCors = [...routeOwnedCorsPrefixes, ...routeOwnedCorsV1Prefixes].some((prefix) => event.url.pathname === prefix || event.url.pathname.startsWith(`${prefix}/`))
+
+    if (event.url.pathname.startsWith('/api/') && event.request.method === 'OPTIONS' && !isRouteOwnedCors) {
         return new Response(null, {
             status: 204,
             headers: apiCorsHeaders,
@@ -109,7 +203,7 @@ const corsHandle: Handle = async ({ event, resolve }) => {
 
     const response = await resolve(event)
 
-    if (event.url.pathname.startsWith('/api/')) {
+    if (event.url.pathname.startsWith('/api/') && !isRouteOwnedCors) {
         for (const [header, value] of Object.entries(apiCorsHeaders)) {
             response.headers.set(header, value)
         }
@@ -151,9 +245,11 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
         url.pathname.startsWith('/friends') ||
         url.pathname.startsWith('/account')
     ) {
-        // HTML pages: cache with revalidation for freshness
-        // MUST be private to prevent CDNs from caching personalized content
-        response.headers.set('Cache-Control', 'private, max-age=300, s-maxage=3600, stale-while-revalidate=86400')
+        // These pages render user-specific notes, focus state, rewards, devices,
+        // and account data. Do not retain them in browser or shared caches.
+        response.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
+        response.headers.set('Pragma', 'no-cache')
+        response.headers.set('Expires', '0')
     } else if (url.pathname.startsWith('/notes')) {
         // Notes page: always fetch fresh (managed by setHeaders in load function)
         // Don't override - let the load function's no-cache directives take precedence
@@ -179,10 +275,10 @@ const cacheHandle: Handle = async ({ event, resolve }) => {
 
     // Enable compression for text-based content
     if (response.headers.get('Content-Type')?.includes('text')) {
-        response.headers.set('Vary', 'Accept-Encoding')
+        appendVary(response.headers, 'Accept-Encoding')
     }
 
     return response
 }
 
-export const handle = sequence(supabaseHandle, corsHandle, cacheHandle)
+export const handle = sequence(csrfHandle, supabaseHandle, corsHandle, cacheHandle)

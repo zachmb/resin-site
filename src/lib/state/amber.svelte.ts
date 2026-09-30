@@ -15,6 +15,11 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AmberSession, AmberTask } from '$lib/types';
+import { dev } from '$app/environment';
+
+const debugLog = (...args: unknown[]) => {
+	if (dev) console.log(...args);
+};
 
 export class AmberStore {
 	// ============================================================================
@@ -73,7 +78,7 @@ export class AmberStore {
 	 */
 	setSessions(newSessions: AmberSession[]) {
 		this._sessions = newSessions;
-		console.log('[AmberStore] Sessions initialized:', newSessions.length);
+		debugLog('[AmberStore] Sessions initialized:', newSessions.length);
 	}
 
 	/**
@@ -108,17 +113,17 @@ export class AmberStore {
 		this._deletingIds.add(sessionId);
 
 		try {
-			console.log('[AmberStore] Attempting delete for:', sessionId);
+			debugLog('[AmberStore] Attempting delete');
 
 			// Try amber_sessions first
 			const { count: amberCount, error: amberError } = await this.supabase
 				.from('amber_sessions')
-				.delete()
+				.delete({ count: 'exact' })
 				.eq('id', sessionId)
 				.eq('user_id', this.userId);
 
 			if (!amberError && amberCount && amberCount > 0) {
-				console.log('[AmberStore] Delete successful (amber_sessions)');
+				debugLog('[AmberStore] Delete successful (amber_sessions)');
 				// Clean up calendar events if any
 				if (snapshot.amber_tasks?.length) {
 					await this.cleanupCalendarEvents(snapshot.amber_tasks);
@@ -135,16 +140,14 @@ export class AmberStore {
 				.eq('user_id', this.userId);
 
 			if (!blockError && blockCount && blockCount > 0) {
-				console.log('[AmberStore] Delete successful (blocking_sessions)');
 				this._deletingIds.delete(sessionId);
 				return true;
 			}
 
 			// If we get here, both deletes returned count===0 (RLS silent failure)
-			const error = amberError || blockError || 'RLS policy prevented deletion';
-			throw new Error(`Delete failed: ${error}`);
+			throw new Error('Delete failed');
 		} catch (err) {
-			console.error('[AmberStore] Delete error:', err);
+			console.error('[AmberStore] Delete error');
 
 			// Rollback: restore the session
 			this._sessions.push(snapshot);
@@ -178,24 +181,22 @@ export class AmberStore {
 		this._activatingIds.add(sessionId);
 
 		try {
-			console.log('[AmberStore] Activating session:', sessionId);
-
 			// Update session status
-			const { count, error } = await this.supabase
+			const { data: updatedSession, error } = await this.supabase
 				.from('amber_sessions')
 				.update({ status: 'scheduled', updated_at: new Date().toISOString() })
 				.eq('id', sessionId)
-				.eq('user_id', this.userId);
+				.eq('user_id', this.userId)
+				.select('id')
+				.maybeSingle();
 
 			if (error) {
-				throw new Error(`Activation failed: ${error.message}`);
+				throw new Error('Activation failed');
 			}
 
-			if (!count || count === 0) {
+			if (!updatedSession) {
 				throw new Error('RLS policy prevented activation (no rows affected)');
 			}
-
-			console.log('[AmberStore] Activation successful');
 
 			// Update local state
 			const sessionIndex = this._sessions.findIndex((s) => s.id === sessionId);
@@ -208,7 +209,7 @@ export class AmberStore {
 
 			return true;
 		} catch (err) {
-			console.error('[AmberStore] Activation error:', err);
+			console.error('[AmberStore] Activation error');
 			return false;
 		} finally {
 			// Remove from activating set
@@ -222,7 +223,7 @@ export class AmberStore {
 	cleanup() {
 		if (this.realtimeChannel && this.supabase) {
 			this.supabase.removeChannel(this.realtimeChannel);
-			console.log('[AmberStore] Realtime subscriptions cleaned up');
+			debugLog('[AmberStore] Realtime subscriptions cleaned up');
 		}
 		this._sessions = [];
 		this._deletingIds.clear();
@@ -245,7 +246,7 @@ export class AmberStore {
 			this.supabase.removeChannel(this.realtimeChannel);
 		}
 
-		console.log('[AmberStore] Setting up Realtime subscriptions');
+		debugLog('[AmberStore] Setting up Realtime subscriptions');
 
 		// Single unified channel for all amber-related changes
 		this.realtimeChannel = this.supabase
@@ -262,7 +263,6 @@ export class AmberStore {
 					filter: `user_id=eq.${this.userId}`
 				},
 				(payload) => {
-					console.log('[AmberStore] Realtime DELETE on amber_sessions:', payload.old.id);
 					const index = this._sessions.findIndex((s) => s.id === payload.old.id);
 					if (index > -1) {
 						this._sessions.splice(index, 1);
@@ -280,7 +280,6 @@ export class AmberStore {
 					filter: `user_id=eq.${this.userId}`
 				},
 				(payload) => {
-					console.log('[AmberStore] Realtime DELETE on blocking_sessions:', payload.old.id);
 					const index = this._sessions.findIndex((s) => s.id === payload.old.id);
 					if (index > -1) {
 						this._sessions.splice(index, 1);
@@ -297,7 +296,6 @@ export class AmberStore {
 					filter: `user_id=eq.${this.userId}`
 				},
 				(payload) => {
-					console.log('[AmberStore] Realtime UPDATE on amber_sessions:', payload.new.id);
 					const newSession = payload.new as AmberSession;
 					const index = this._sessions.findIndex((s) => s.id === newSession.id);
 					if (index > -1) {
@@ -305,9 +303,7 @@ export class AmberStore {
 					}
 				}
 			)
-			.subscribe((status) => {
-				console.log('[AmberStore] Realtime subscription status:', status);
-			});
+			.subscribe(() => {});
 	}
 
 	/**
@@ -321,11 +317,11 @@ export class AmberStore {
 		if (calendarEventIds.length === 0) return;
 
 		try {
-			console.log('[AmberStore] Cleaning up calendar events:', calendarEventIds);
+			debugLog('[AmberStore] Cleaning up calendar events:', calendarEventIds.length);
 			// This would normally call deleteCalendarEvent for each ID
 			// For now, we just log
 		} catch (err) {
-			console.warn('[AmberStore] Calendar cleanup warning:', err);
+			console.warn('[AmberStore] Calendar cleanup warning');
 		}
 	}
 }

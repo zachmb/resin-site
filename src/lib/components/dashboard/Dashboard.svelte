@@ -107,6 +107,7 @@
     let successAmber = $state(false);
     let navigatingToAmber = $state(false);
     let startingFocus = $state(false);
+    const NOTE_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     let autoDays = $state<Record<string, boolean>>({
         Mon: false,
         Tue: false,
@@ -133,15 +134,21 @@
     // AI Activation state (from extension)
     let aiStatus = $state<'idle' | 'scheduling' | 'success' | 'error'>('idle');
     let aiMessage = $state("");
-    let aiSessionId = $state<string | null>(null);
 
     onMount(() => {
         // Try to load from localStorage first (fastest), fallback to server data
         const cachedProfile = localStorage.getItem('resin_profile');
         if (cachedProfile) {
             try {
-                syncedProfile = JSON.parse(cachedProfile);
+                const parsedProfile = JSON.parse(cachedProfile);
+                if (parsedProfile?.id === profile?.id) {
+                    syncedProfile = parsedProfile;
+                } else {
+                    localStorage.removeItem('resin_profile');
+                    syncedProfile = profile;
+                }
             } catch {
+                localStorage.removeItem('resin_profile');
                 syncedProfile = profile; // Fallback if cache is corrupted
             }
         } else {
@@ -230,7 +237,7 @@
                     },
                     (payload) => {
                         // Update profile data when iOS syncs (stones, streak, etc)
-                        if (payload.new) {
+                        if (payload.new?.id === profile?.id) {
                             syncedProfile = payload.new;
                             // Cache the fresh data
                             localStorage.setItem('resin_profile', JSON.stringify(payload.new));
@@ -250,14 +257,11 @@
             const handleAIStarted = (e: any) => {
                 aiStatus = 'scheduling';
                 aiMessage = "AI is scheduling your focus plan...";
-                aiSessionId = e.detail?.sessionId;
-                console.log('[Dashboard] AI Scheduling started:', aiSessionId);
             };
 
             const handleAISuccess = async (e: any) => {
                 aiStatus = 'success';
                 aiMessage = "Your plan is ready!";
-                console.log('[Dashboard] AI Scheduling success:', e.detail);
                 
                 // Refresh data to show new plan
                 await invalidateAll();
@@ -276,7 +280,6 @@
                 aiMessage = looksTechnical
                     ? "Couldn't schedule this right now — your note is saved, try again."
                     : raw;
-                console.log('[Dashboard] AI Scheduling error:', e.detail);
                 
                 // Clear error message after 8 seconds
                 setTimeout(() => {
@@ -307,8 +310,8 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             });
-        } catch (err) {
-            console.error('Failed to mark web onboarded:', err);
+        } catch {
+            console.error('Failed to mark web onboarded');
         }
     };
 
@@ -480,8 +483,8 @@
                                 if (data.status === "success") {
                                     await goto("/focus");
                                 }
-                            } catch (err) {
-                                console.error("Failed to start focus session:", err);
+                            } catch {
+                                console.error("Failed to start focus session");
                             } finally {
                                 startingFocus = false;
                             }
@@ -598,22 +601,6 @@
                             if (savingNote) return;
                             savingNote = true;
                             const content = composeText;
-
-                            // Generate temporary ID for immediate navigation
-                            const tempId = 'temp_' + Date.now();
-
-                            // Immediately navigate to note editor with temp ID
-                            await goto(`/notes?id=${tempId}&content=${encodeURIComponent(content)}`);
-
-                            // Clear compose and show success briefly
-                            successNote = true;
-                            composeText = "";
-                            setTimeout(() => {
-                                successNote = false;
-                                savingNote = false;
-                            }, 500);
-
-                            // Save to server in background (non-blocking)
                             try {
                                 const formData = new FormData();
                                 formData.append('content', content);
@@ -623,17 +610,26 @@
                                     body: formData
                                 });
 
-                                if (res.ok) {
-                                    const result = await res.json();
-                                    // Invalidate caches for fresh data on next load
-                                    if (typeof window !== 'undefined') {
-                                        localStorage.removeItem('resin_cache_notes_data');
-                                        localStorage.removeItem('resin_cache_amber_data');
-                                    }
-                                    await invalidateAll();
+                                if (!res.ok) {
+                                    throw new Error('Quick note save failed');
                                 }
-                            } catch (err) {
-                                console.error('Background save failed:', err);
+
+                                const result = await res.json();
+                                if (typeof result.noteId !== 'string' || !NOTE_ID_RE.test(result.noteId)) {
+                                    throw new Error('Quick note response was invalid');
+                                }
+
+                                localStorage.removeItem('resin_cache_notes_data');
+                                localStorage.removeItem('resin_cache_amber_data');
+                                await invalidateAll();
+                                successNote = true;
+                                composeText = "";
+                                await goto(`/notes?id=${encodeURIComponent(result.noteId)}`);
+                            } catch {
+                                console.error('Quick note save failed');
+                            } finally {
+                                successNote = false;
+                                savingNote = false;
                             }
                         }}
                         class="px-6 py-2 rounded-md text-sm font-bold text-resin-charcoal bg-white/60 border border-white/40 hover:bg-white hover:border-resin-forest/30 transition-all disabled:opacity-90 disabled:cursor-not-allowed active:scale-95 flex items-center gap-2 min-w-[120px] justify-center"

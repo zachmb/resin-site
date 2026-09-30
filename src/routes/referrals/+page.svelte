@@ -8,12 +8,14 @@
     let copied = $state(false);
 
     function copyCode() {
+        if (!data.referralCode) return;
         navigator.clipboard.writeText(data.referralCode);
         copied = true;
         setTimeout(() => (copied = false), 2000);
     }
 
     function getShareText(): string {
+        if (!data.referralCode) return "Join me on Resin and let's focus together! 🌲";
         return `Join me on Resin! Use code ${data.referralCode} when you sign up. Let's focus together! 🌲`;
     }
 
@@ -28,7 +30,11 @@
         if (platform === "copy") {
             copyCode();
         } else if (urls[platform as keyof typeof urls]) {
-            window.open(urls[platform as keyof typeof urls] as string, "_blank");
+            window.open(
+                urls[platform as keyof typeof urls] as string,
+                "_blank",
+                "noopener,noreferrer"
+            );
         }
     }
 </script>
@@ -99,22 +105,28 @@
                 Your Referral Code
             </h2>
 
-            <div class="flex items-center gap-3 p-4 bg-resin-amber/10 rounded-lg border-2 border-dashed border-resin-amber/30">
-                <code class="flex-1 text-lg font-mono font-bold text-resin-charcoal">{data.referralCode}</code>
-                <button
-                    onclick={copyCode}
-                    class="px-4 py-2 rounded-lg {copied
-                        ? 'bg-resin-forest text-white'
-                        : 'bg-resin-amber text-resin-charcoal hover:bg-resin-amber/90'} transition-colors font-bold text-sm flex items-center gap-1"
-                >
-                    <Copy size={14} />
-                    {copied ? "Copied!" : "Copy"}
-                </button>
-            </div>
+            {#if data.referralCode}
+                <div class="flex items-center gap-3 p-4 bg-resin-amber/10 rounded-lg border-2 border-dashed border-resin-amber/30">
+                    <code class="flex-1 text-lg font-mono font-bold text-resin-charcoal">{data.referralCode}</code>
+                    <button
+                        onclick={copyCode}
+                        class="px-4 py-2 rounded-lg {copied
+                            ? 'bg-resin-forest text-white'
+                            : 'bg-resin-amber text-resin-charcoal hover:bg-resin-amber/90'} transition-colors font-bold text-sm flex items-center gap-1"
+                    >
+                        <Copy size={14} />
+                        {copied ? "Copied!" : "Copy"}
+                    </button>
+                </div>
 
-            <p class="text-xs text-resin-earth/60 mt-3">
-                Share this code with friends. When they use it to sign up, you'll both get rewards!
-            </p>
+                <p class="text-xs text-resin-earth/60 mt-3">
+                    Share this code with friends. When they use it to sign up, you'll both get rewards!
+                </p>
+            {:else}
+                <div class="p-4 rounded-lg border border-amber-300 bg-amber-50 text-sm text-amber-800">
+                    Your referral code is not available yet. Please contact support before sharing an invite.
+                </div>
+            {/if}
         </div>
 
         <!-- Share Options -->
@@ -124,19 +136,22 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button
                     onclick={() => shareVia("twitter")}
-                    class="p-4 rounded-lg bg-gradient-to-br from-sky-100 to-blue-100 hover:from-sky-200 hover:to-blue-200 transition-colors font-semibold text-blue-600 flex items-center justify-center gap-2"
+                    disabled={!data.referralCode}
+                    class="p-4 rounded-lg bg-gradient-to-br from-sky-100 to-blue-100 hover:from-sky-200 hover:to-blue-200 transition-colors font-semibold text-blue-600 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     𝕏 Twitter
                 </button>
                 <button
                     onclick={() => shareVia("copy")}
-                    class="p-4 rounded-lg bg-gradient-to-br from-resin-forest/10 to-resin-forest/5 hover:from-resin-forest/20 hover:to-resin-forest/10 transition-colors font-semibold text-resin-forest flex items-center justify-center gap-2"
+                    disabled={!data.referralCode}
+                    class="p-4 rounded-lg bg-gradient-to-br from-resin-forest/10 to-resin-forest/5 hover:from-resin-forest/20 hover:to-resin-forest/10 transition-colors font-semibold text-resin-forest flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <Copy size={16} /> Copy Link
                 </button>
                 <button
                     onclick={() => shareVia("facebook")}
-                    class="p-4 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 transition-colors font-semibold text-blue-700 flex items-center justify-center gap-2"
+                    disabled={!data.referralCode}
+                    class="p-4 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 transition-colors font-semibold text-blue-700 flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     f Facebook
                 </button>
@@ -158,7 +173,7 @@
                     {#each data.referrals as referral}
                         <div class="flex items-center justify-between p-3 bg-white/50 rounded-lg border border-resin-forest/10">
                             <div>
-                                <p class="text-sm font-semibold text-resin-charcoal">{referral.profiles?.email || "User"}</p>
+                                <p class="text-sm font-semibold text-resin-charcoal">{referral.referredUserName}</p>
                                 <p class="text-xs text-resin-earth/60">
                                     Referred on {new Date(referral.referral_date).toLocaleDateString()}
                                 </p>

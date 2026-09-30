@@ -11,7 +11,7 @@
 	let foundUser: { id: string; email: string } | null = null;
 	let isSearching = false;
 	let showJointPlanModal = false;
-	let jointPlanCollaborator: { id: string; email: string } | null = null;
+	let jointPlanCollaborator: { id: string; displayName: string } | null = null;
 	let jointPlanText = '';
 	let jointPlanIntensity = 50;
 
@@ -35,11 +35,11 @@
 		isSearching = false;
 	}
 
-	function getInitial(email: string): string {
-		return (email.charAt(0) || 'U').toUpperCase();
+	function getInitial(displayName: string): string {
+		return (displayName.charAt(0) || 'U').toUpperCase();
 	}
 
-	function openJointPlanModal(friend: any) {
+	function openJointPlanModal(friend: { id: string; displayName: string }) {
 		jointPlanCollaborator = friend;
 		jointPlanText = '';
 		jointPlanIntensity = 50;
@@ -140,13 +140,12 @@
 								<div
 									class="w-14 h-14 rounded-full bg-gradient-to-br from-resin-forest/20 to-resin-forest/10 text-resin-forest font-bold text-lg flex items-center justify-center"
 								>
-									{getInitial(friend.email)}
+									{getInitial(friend.displayName)}
 								</div>
 								<div class="flex-1 min-w-0">
 									<p class="font-bold text-resin-charcoal">
-										{friend.email.split('@')[0]}
+										{friend.displayName}
 									</p>
-									<p class="text-xs text-resin-earth/60 truncate">{friend.email}</p>
 								</div>
 							</div>
 							<div class="flex gap-2">
@@ -196,13 +195,12 @@
 								<div
 									class="w-14 h-14 rounded-full bg-gradient-to-br from-resin-amber/20 to-resin-amber/10 text-resin-amber font-bold text-lg flex items-center justify-center"
 								>
-									{getInitial(request.email)}
+									{getInitial(request.displayName)}
 								</div>
 								<div class="flex-1 min-w-0">
 									<p class="font-bold text-resin-charcoal">
-										{request.email.split('@')[0]}
+										{request.displayName}
 									</p>
-									<p class="text-xs text-resin-earth/60 truncate">{request.email}</p>
 								</div>
 							</div>
 							<div class="flex gap-2">
@@ -247,13 +245,12 @@
 								<div
 									class="w-14 h-14 rounded-full bg-gradient-to-br from-resin-earth/20 to-resin-earth/10 text-resin-earth font-bold text-lg flex items-center justify-center flex-shrink-0"
 								>
-									{getInitial(request.email)}
+									{getInitial(request.displayName)}
 								</div>
 								<div class="flex-1 min-w-0">
 									<p class="font-bold text-resin-charcoal">
-										{request.email.split('@')[0]}
+										{request.displayName}
 									</p>
-									<p class="text-xs text-resin-earth/60 truncate">{request.email}</p>
 									<p class="text-xs text-resin-earth/50 font-mono mt-2">Awaiting response...</p>
 								</div>
 							</div>
@@ -292,7 +289,7 @@
 			on:click={(e) => e.stopPropagation()}
 		>
 			<h3 class="text-2xl font-bold text-resin-charcoal mb-2">
-				Joint Plan with {jointPlanCollaborator.email.split('@')[0]}
+				Joint Plan with {jointPlanCollaborator.displayName}
 			</h3>
 			<p class="text-resin-earth/60 text-sm mb-6">
 				Create a collaborative plan that works with both of your schedules

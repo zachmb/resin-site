@@ -112,7 +112,7 @@ class AmberStore {
             // Try amber_sessions first
             const { count: amberCount, error: amberError } = await this.supabase
                 .from('amber_sessions')
-                .delete()
+                .delete({ count: 'exact' })
                 .eq('id', sessionId)
                 .eq('user_id', this.userId);
 
@@ -138,7 +138,6 @@ class AmberStore {
                 .eq('user_id', this.userId);
 
             if (!blockError && blockCount && blockCount > 0) {
-                console.log('[AmberStore] Delete successful (blocking_sessions)');
                 this.deletingIds.update((ids) => {
                     ids.delete(sessionId);
                     return ids;
@@ -147,10 +146,9 @@ class AmberStore {
             }
 
             // If we get here, both deletes returned count===0 (RLS silent failure)
-            const error = amberError || blockError || 'RLS policy prevented deletion';
-            throw new Error(`Delete failed: ${error}`);
+            throw new Error('Delete failed');
         } catch (err) {
-            console.error('[AmberStore] Delete error:', err);
+            console.error('[AmberStore] Delete error');
 
             // Rollback: restore the session
             if (snapshot) {
@@ -190,24 +188,23 @@ class AmberStore {
         });
 
         try {
-            console.log('[AmberStore] Activating session:', sessionId);
-
             // Update session status
-            const { count, error } = await this.supabase
+            const { data: updatedSession, error } = await this.supabase
                 .from('amber_sessions')
                 .update({ status: 'scheduled', updated_at: new Date().toISOString() })
                 .eq('id', sessionId)
-                .eq('user_id', this.userId);
+                .eq('user_id', this.userId)
+                .select('id')
+                .maybeSingle();
 
             if (error) {
-                throw new Error(`Activation failed: ${error.message}`);
+                throw new Error('Activation failed');
             }
 
-            if (!count || count === 0) {
+            if (!updatedSession) {
                 throw new Error('RLS policy prevented activation (no rows affected)');
             }
 
-            console.log('[AmberStore] Activation successful');
             // Update local state
             this.sessions.update((sessions) =>
                 sessions.map((s) =>
@@ -217,7 +214,7 @@ class AmberStore {
 
             return true;
         } catch (err) {
-            console.error('[AmberStore] Activation error:', err);
+            console.error('[AmberStore] Activation error');
             return false;
         } finally {
             // Remove from activating set
@@ -257,7 +254,6 @@ class AmberStore {
                     filter: `user_id=eq.${this.userId}`
                 },
                 (payload) => {
-                    console.log('[AmberStore] Realtime DELETE on amber_sessions:', payload.old.id);
                     this.sessions.update((sessions) =>
                         sessions.filter((s) => s.id !== payload.old.id)
                     );
@@ -277,7 +273,6 @@ class AmberStore {
                     filter: `user_id=eq.${this.userId}`
                 },
                 (payload) => {
-                    console.log('[AmberStore] Realtime DELETE on blocking_sessions:', payload.old.id);
                     this.sessions.update((sessions) =>
                         sessions.filter((s) => s.id !== payload.old.id)
                     );
@@ -293,16 +288,13 @@ class AmberStore {
                     filter: `user_id=eq.${this.userId}`
                 },
                 (payload) => {
-                    console.log('[AmberStore] Realtime UPDATE on amber_sessions:', payload.new.id);
                     const newSession = payload.new as AmberSession;
                     this.sessions.update((sessions) =>
                         sessions.map((s) => (s.id === newSession.id ? newSession : s))
                     );
                 }
             )
-            .subscribe((status) => {
-                console.log('[AmberStore] Realtime subscription status:', status);
-            });
+            .subscribe(() => {});
     }
 
     /**
@@ -316,11 +308,10 @@ class AmberStore {
         if (calendarEventIds.length === 0) return;
 
         try {
-            console.log('[AmberStore] Cleaning up calendar events:', calendarEventIds);
             // This would normally call deleteCalendarEvent for each ID
             // For now, we just log
-        } catch (err) {
-            console.warn('[AmberStore] Calendar cleanup warning:', err);
+        } catch {
+            console.warn('[AmberStore] Calendar cleanup warning');
         }
     }
 

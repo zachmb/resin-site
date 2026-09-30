@@ -7,7 +7,7 @@
     </h1>
 
     <div class="prose prose-resin max-w-none text-resin-earth/90 space-y-6">
-        <p><strong>Last Updated:</strong> July 9, 2026</p>
+        <p><strong>Last Updated:</strong> September 25, 2026</p>
 
         <p><strong>Company:</strong> LoopLess LLC, State of Illinois, United States</p>
 
@@ -53,23 +53,23 @@
         </p>
         <ul class="list-disc list-inside mt-2 space-y-1">
             <li>Focus session schedules and durations</li>
-            <li>Apps and websites you've configured for blocking (scheduling preferences only)</li>
+            <li>Website domains you've configured for Chrome/web blocking</li>
+            <li>Whether protection is enabled and the sync status needed to keep devices in agreement</li>
             <li>Session completion status and achievements</li>
             <li>Focus automation preferences and recurring schedules</li>
         </ul>
-        <p class="mt-2"><strong>Important for iOS:</strong> The iOS app uses Apple's Screen Time framework for blocking. We do NOT have access to your device's screen time data, installed apps list, or browsing history. Apple handles all app/website blocking through its native APIs. We only store your blocking preferences and schedules in our database.</p>
-        <p class="mt-2"><strong>Important for Chrome:</strong> The Chrome extension uses Chrome's declarativeNetRequest API to redirect configured distraction domains and Resin default focus domains during active focus sessions. The extension does not read page content, form data, cookies, passwords, keystrokes, or browsing history.</p>
-        <p class="mt-2">This data is used exclusively to manage your focus sessions and is not shared with third parties except Apple (for Screen Time API integration only).</p>
+        <p class="mt-2"><strong>Important for iOS:</strong> The iOS app uses Apple's Screen Time framework for blocking. We do NOT have access to your device's Screen Time reports, installed apps list, app usage history, selected app/category tokens, or browsing history. Apple keeps Screen Time selections opaque, and Resin stores those selections locally in the app group so the app and extensions can apply shields. If account sync is enabled, Resin syncs focus timing, focus metadata, and protection status — not selected app tokens.</p>
+        <p class="mt-2"><strong>Important for Chrome:</strong> The Chrome extension uses Chrome's declarativeNetRequestWithHostAccess API to redirect configured distraction domains and Resin default focus domains during active focus sessions. The extension asks for site access just-in-time before browser redirects start. It can see only the request information Chrome needs to apply those redirect rules; Resin does not store full visited URLs, paths, query strings, tab contents, form data, cookies, passwords, keystrokes, or browsing history.</p>
+        <p class="mt-2">This data is used exclusively to manage your focus sessions, sync protection across your Resin surfaces, and operate the service through the processors listed below. Apple handles Screen Time blocking through native APIs; Resin does not receive Screen Time reports, installed app lists, selected app/category tokens, app usage history, or browsing history.</p>
 
         <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
             1.4 Device and Push Notification Information
         </h3>
         <p>To send you notifications and enable cross-platform sync, we collect:</p>
         <ul class="list-disc list-inside mt-2 space-y-1">
-            <li><strong>iOS:</strong> Apple Push Notification Service (APNS) tokens</li>
+            <li><strong>iOS:</strong> Apple Push Notification Service (APNS) tokens and notification delivery metadata</li>
             <li><strong>Chrome Extension:</strong> Browser instance identifiers</li>
             <li>Device platform (iOS, Web, Chrome), device type, and last active timestamp</li>
-            <li>Device model and OS version (for compatibility)</li>
         </ul>
         <p class="mt-2">We use this information to deliver timely notifications and coordinate data synchronization between your devices.</p>
 
@@ -125,6 +125,13 @@
         </ul>
         <p class="mt-2">We do NOT request or collect location data, contacts, health data, passwords, keystrokes, or browsing history. Camera, photo library, microphone, and speech access are optional, user-initiated features and are not used for advertising or cross-app tracking.</p>
 
+        <h3 class="text-xl font-semibold text-resin-forest mt-6 mb-3">
+            1.9 Purchases and Subscription Status
+        </h3>
+        <p>
+            Resin Pro purchases are processed by Apple through StoreKit. We do not receive or store your full payment card details. The iOS app checks your App Store entitlement locally and may sync only the resulting subscription status, account email, and timestamp-like account metadata needed to unlock Pro features on the web app and Chrome extension.
+        </p>
+
         <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">
             2. How We Use Your Information
         </h2>
@@ -147,8 +154,8 @@
         <p>Resin integrates with third-party services. We share only the necessary information:</p>
         <ul class="list-disc list-inside space-y-2">
             <li><strong>Supabase:</strong> For authentication, database storage, and hosting (SOC 2 certified)</li>
-            <li><strong>Apple APNS:</strong> For iOS push notifications (device tokens only, no personal data)</li>
-            <li><strong>Apple Screen Time API:</strong> For managing app/website blocking (data remains on-device)</li>
+            <li><strong>Apple APNS:</strong> Device tokens and the notification payload needed to deliver requested alerts and silent synchronization</li>
+            <li><strong>Apple Screen Time API:</strong> For managing app/website blocking (selected app/category tokens remain on-device and are not uploaded)</li>
             <li><strong>Apple Calendar and Speech APIs:</strong> For optional iOS calendar scheduling and voice-note transcription you initiate</li>
             <li><strong>Google Calendar API:</strong> Your calendar OAuth tokens (encrypted, used only for sync)</li>
             <li><strong>DeepSeek & Google Gemini:</strong> Your notes and content (only when you explicitly request AI processing)</li>
@@ -160,7 +167,7 @@
             <li>Sell, rent, lease, or monetize your personal information to third parties</li>
             <li>Share your data with advertisers or marketing companies</li>
             <li>Use your data for behavioral advertising or targeting</li>
-            <li>Share your blocking preferences or focus data with any third party (except Apple's native APIs)</li>
+            <li>Share your blocking preferences or focus data with advertisers, data brokers, or unrelated third parties</li>
             <li>Track you across other websites or services</li>
         </ul>
 
@@ -186,13 +193,13 @@
         <ul class="list-disc list-inside space-y-2">
             <li><strong>Access:</strong> View all your personal data stored in Resin via your account settings</li>
             <li><strong>Correction:</strong> Update or correct your account information</li>
-            <li><strong>Deletion:</strong> Request deletion of your account and all associated data</li>
+            <li><strong>Deletion:</strong> Delete your account and associated Resin data from Account Settings → Privacy, or contact us for help</li>
             <li><strong>Opt-Out:</strong> Disable notifications and data sharing features in settings</li>
             <li><strong>Portability:</strong> Request your data in a portable format (JSON/CSV)</li>
             <li><strong>Revoke Access:</strong> Revoke third-party integrations (Google Calendar, etc.) at any time</li>
         </ul>
         <p class="mt-4">
-            To exercise these rights, contact us at crew@looplessapp.com. We will respond to your request within 30 days.
+            Signed-in users can delete their account from Account Settings → Privacy. To exercise other rights or get help with deletion, contact us at support@noteresin.com. We will respond to your request within 30 days.
         </p>
 
         <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">
@@ -217,7 +224,7 @@
             Resin is not intended for children under 13 (COPPA). We do not knowingly collect information from
             children under 13. If we discover that a child under 13 has provided us with personal information,
             we will delete such information and terminate the child's account immediately. Parents or guardians
-            who believe their child has provided us with information should contact us at crew@looplessapp.com.
+            who believe their child has provided us with information should contact us at support@noteresin.com.
         </p>
 
         <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">
@@ -226,12 +233,12 @@
         <p>
             <strong>For EU Residents (GDPR):</strong> You have additional rights including the right to be forgotten,
             data portability, and to object to processing. We process your data based on legitimate interest and
-            your explicit consent. You can contact our Data Protection Officer at crew@looplessapp.com.
+            your explicit consent. You can contact our Data Protection Officer at support@noteresin.com.
         </p>
         <p class="mt-2">
             <strong>For California Residents (CCPA):</strong> You have the right to know, delete, and opt-out of
             the sale of your personal information. We do not sell your personal information. You can submit a
-            CCPA request at crew@looplessapp.com.
+            CCPA request at support@noteresin.com.
         </p>
 
         <h2 class="text-2xl font-semibold text-resin-forest mt-8 mb-4">
@@ -256,7 +263,7 @@
         <div class="bg-resin-forest/5 p-4 rounded-lg mt-4 space-y-2">
             <p><strong>LoopLess LLC</strong></p>
             <p>State of Illinois, United States</p>
-            <p>Email: crew@looplessapp.com</p>
+            <p>Email: support@noteresin.com</p>
             <p class="text-sm">Response time: 30 days or less for privacy requests</p>
         </div>
 
@@ -288,7 +295,7 @@
         <p>
             For enterprise customers or organizations processing large volumes of personal data through Resin,
             we can provide a Data Processing Addendum (DPA) that outlines our responsibilities as a data processor.
-            Contact crew@looplessapp.com to request a DPA.
+            Contact support@noteresin.com to request a DPA.
         </p>
     </div>
 </main>

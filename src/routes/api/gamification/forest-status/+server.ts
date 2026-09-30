@@ -20,10 +20,15 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { getForestHealthStatus } from '@resin/core';
 import { createSupabaseGamificationAdapter } from '$lib/services/gamificationAdapter';
 
+const NO_STORE_HEADERS = {
+    'Cache-Control': 'no-store, max-age=0',
+    Pragma: 'no-cache'
+};
+
 export const GET = async (event: RequestEvent) => {
     const user = await event.locals.getUser();
     if (!user) {
-        return json({ error: 'Unauthorized' }, { status: 401 });
+        return json({ error: 'Unauthorized' }, { status: 401, headers: NO_STORE_HEADERS });
     }
 
     try {
@@ -31,7 +36,7 @@ export const GET = async (event: RequestEvent) => {
         const profile = await db.fetchUserProfile(user.id);
 
         if (!profile) {
-            return json({ error: 'User profile not found' }, { status: 404 });
+            return json({ error: 'User profile not found' }, { status: 404, headers: NO_STORE_HEADERS });
         }
 
         const forestStatus = getForestHealthStatus(profile.forestHealth);
@@ -44,9 +49,9 @@ export const GET = async (event: RequestEvent) => {
             total_stones: profile.totalStones,
             current_streak: profile.currentStreak,
             longest_streak: profile.longestStreak
-        });
-    } catch (error) {
-        console.error('[/api/gamification/forest-status]', error);
-        return json({ error: 'Internal server error' }, { status: 500 });
+        }, { headers: NO_STORE_HEADERS });
+    } catch {
+        console.error('[/api/gamification/forest-status]');
+        return json({ error: 'Internal server error' }, { status: 500, headers: NO_STORE_HEADERS });
     }
 };

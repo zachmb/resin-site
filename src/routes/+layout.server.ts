@@ -12,21 +12,14 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
         };
     }
 
-    const { data: notes } = await supabase
+    const { count: sessionCount } = await supabase
         .from('amber_sessions')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
-
-    const normalizedNotes = (notes || []).map((note: any) => ({
-        ...note,
-        title: note.display_title ?? note.title ?? '',
-        content: note.raw_text ?? note.content ?? ''
-    }));
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, total_stones, current_streak, longest_streak, longest_streak_at, last_session_date, sync_notes')
         .eq('id', session.user.id)
         .single();
 
@@ -37,7 +30,7 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
     let initLongestStreak: number | null = null;
     let initLongestStreakAt: string | null = null;
     if (profile) {
-        const hasAnySessions = normalizedNotes.length > 0;
+        const hasAnySessions = (sessionCount || 0) > 0;
         const needsStonesInit =
             profile.total_stones == null ||
             // Some older profiles defaulted to 0 even after the user had sessions.
@@ -75,7 +68,7 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
     // 1. Check for manual "Block Now" sessions
     const { data: manualSessions } = await supabase
         .from('blocking_sessions')
-        .select('*')
+        .select('id')
         .eq('user_id', session.user.id)
         .eq('is_active', true)
         .lte('start_time', now)
@@ -85,7 +78,7 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
     // 2. Check for Amber Plan focus tasks
     const { data: plannedTasks } = await supabase
         .from('amber_tasks')
-        .select('*, amber_sessions!inner(user_id)')
+        .select('id, amber_sessions!inner(user_id)')
         .eq('amber_sessions.user_id', session.user.id)
         .eq('requires_focus', true)
         .lte('start_time', now)
@@ -109,7 +102,7 @@ export const load = async ({ locals: { supabase, getSession }, depends }) => {
 
     return {
         session,
-        notes: normalizedNotes,
+        notes: [],
         profile: normalizedProfile,
         activeSession,
         pendingFriendCount

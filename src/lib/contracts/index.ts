@@ -267,8 +267,8 @@ export interface NoteConnection {
 export interface DeviceToken {
   id: string; // UUID
   user_id: string; // UUID
-  token: string; // APNs token
-  device_type: 'ios' | 'web'; // DB column device_type
+  token: string; // APNs token or stable web/extension device id
+  device_type: 'ios' | 'web' | 'extension'; // DB column device_type
   device_name?: string;
   is_active: boolean;
   created_at: string; // ISO8601
@@ -337,7 +337,6 @@ export interface ActivateRequest {
   end_hour: number;
   user_preferences: string; // JSON string
   timezone: string;
-  access_token?: string;
   google_access_token?: string;
   chronotype?: Chronotype;
   focus_success_rate?: number;
@@ -383,7 +382,7 @@ export interface ProfileSyncResponse {
  */
 export interface RegisterTokenRequest {
   token: string;
-  platform: 'ios' | 'web';
+  platform: 'ios' | 'web' | 'extension';
   device_name?: string;
 }
 

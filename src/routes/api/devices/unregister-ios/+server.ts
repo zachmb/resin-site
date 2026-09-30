@@ -9,10 +9,15 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { adminClient, isValidResinSyncKey, resolveExistingUserIdByEmail } from '$lib/server/auth';
+import { adminClient, isValidResinSyncKey, normalizeEmail, resolveExistingUserIdByEmail } from '$lib/server/auth';
+import { readBoundedJsonBody, RequestBodyError } from '$lib/server/requestBody';
 
-const MIN_APNS_TOKEN_LENGTH = 32;
-const MAX_APNS_TOKEN_LENGTH = 512;
+const APNS_TOKEN_LENGTH = 64;
+const MAX_REQUEST_BODY_LENGTH = 4_000;
+const NO_STORE_HEADERS = {
+	'Cache-Control': 'no-store, max-age=0',
+	Pragma: 'no-cache'
+};
 
 function normalizeAPNSToken(token: string): string {
 	return token.trim().toLowerCase();
@@ -20,9 +25,7 @@ function normalizeAPNSToken(token: string): string {
 
 function isValidAPNSToken(token: string): boolean {
 	return (
-		token.length >= MIN_APNS_TOKEN_LENGTH &&
-		token.length <= MAX_APNS_TOKEN_LENGTH &&
-		token.length % 2 === 0 &&
+		token.length === APNS_TOKEN_LENGTH &&
 		/^[a-f0-9]+$/.test(token)
 	);
 }
@@ -30,37 +33,40 @@ function isValidAPNSToken(token: string): boolean {
 export const POST: RequestHandler = async ({ request }) => {
 	let body: { email?: string; api_key?: string; device_token?: string };
 	try {
-		body = await request.json();
-	} catch {
-		return json({ error: 'Invalid JSON body' }, { status: 400 });
+		body = await readBoundedJsonBody(request, MAX_REQUEST_BODY_LENGTH);
+	} catch (error) {
+		const status = error instanceof RequestBodyError ? error.status : 400;
+		return json({ error: status === 413 ? 'Request body too large' : 'Invalid JSON body' }, { status, headers: NO_STORE_HEADERS });
 	}
 
 	const { email, api_key, device_token } = body;
 
 	if (!isValidResinSyncKey(api_key)) {
-		return json({ error: 'Invalid API key' }, { status: 401 });
+		return json({ error: 'Invalid API key' }, { status: 401, headers: NO_STORE_HEADERS });
 	}
-	if (!email || !email.includes('@')) {
-		return json({ error: 'Valid email required' }, { status: 400 });
+	const normalizedEmail = normalizeEmail(email);
+	if (!normalizedEmail) {
+		return json({ error: 'Valid email required' }, { status: 400, headers: NO_STORE_HEADERS });
 	}
 	if (!device_token || typeof device_token !== 'string') {
-		return json({ error: 'device_token is required' }, { status: 400 });
+		return json({ error: 'device_token is required' }, { status: 400, headers: NO_STORE_HEADERS });
 	}
 
 	const normalizedToken = normalizeAPNSToken(device_token);
 	if (!isValidAPNSToken(normalizedToken)) {
-		return json({ error: 'Invalid device token' }, { status: 400 });
+		return json({ error: 'Invalid device token' }, { status: 400, headers: NO_STORE_HEADERS });
 	}
 
-	const userId = await resolveExistingUserIdByEmail(email.trim().toLowerCase());
+	const userId = await resolveExistingUserIdByEmail(normalizedEmail);
 	if (!userId) {
-		return json({ error: 'Account not found' }, { status: 404 });
+		return json({ success: true }, { headers: NO_STORE_HEADERS });
 	}
 
 	const { error } = await adminClient
 		.from('device_tokens')
 		.update({
 			is_active: false,
+			last_used_at: null,
 			updated_at: new Date().toISOString()
 		})
 		.eq('user_id', userId)
@@ -68,8 +74,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	if (error) {
 		console.error('[unregister-ios] token cleanup failed');
-		return json({ error: 'Failed to unregister device token' }, { status: 500 });
+		return json({ error: 'Failed to unregister device token' }, { status: 500, headers: NO_STORE_HEADERS });
 	}
 
-	return json({ success: true });
+	return json({ success: true }, { headers: NO_STORE_HEADERS });
 };

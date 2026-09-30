@@ -5,9 +5,9 @@
     import { onMount } from 'svelte';
     import FocusControl from '$lib/components/focus/FocusControl.svelte';
     import { Circle, Calendar, Users, Clock, Trash2 } from 'lucide-svelte';
-    import type { PageData } from './$types';
+    import type { ActionData, PageData } from './$types';
 
-    let { data }: { data: PageData } = $props();
+    let { data, form }: { data: PageData; form?: ActionData } = $props();
 
     let activeSessions = $state<PageData['activeSessions']>([]);
     let scheduledSessions = $state<PageData['scheduledSessions']>([]);
@@ -15,6 +15,8 @@
     let groups = $state<PageData['groups']>([]);
     let showScheduleForm = $state(false);
     let showAutomationForm = $state(false);
+    let recoveryMode = $state<'make-smaller' | 'cooked' | null>(null);
+    let suggestedFocusDuration = $state<number | null>(null);
 
     let scheduleTitle = $state('');
     let scheduleDate = $state(new Date().toISOString().split('T')[0]);
@@ -52,6 +54,11 @@
     let groupFormData = $state({ name: '', description: '' });
     let groupFormError = $state('');
     let isCreatingGroup = $state(false);
+    const clearRecoveryQuery = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('recovery');
+        window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    };
 
     $effect(() => {
         activeSessions = data.activeSessions || [];
@@ -63,6 +70,10 @@
     });
 
     onMount(() => {
+        const recovery = new URLSearchParams(window.location.search).get('recovery');
+        recoveryMode = recovery === 'make-smaller' || recovery === 'cooked' ? recovery : null;
+        if (recoveryMode) clearRecoveryQuery();
+
         // Immediately invalidate and refresh data to show newly created sessions
         const refreshFocusData = async () => {
             try {
@@ -70,31 +81,13 @@
                 if (response.ok) {
                     await invalidateAll();
                 }
-            } catch (err) {
-                console.error('Error refreshing focus data:', err);
+            } catch {
+                console.error('Error refreshing focus data');
             }
         };
 
         // Refresh immediately on mount to show the latest active sessions
         refreshFocusData();
-    });
-
-    // Cache data for offline access, but always prefer server data on load
-    $effect(() => {
-        const focusCache = {
-            activeSessions,
-            scheduledSessions,
-            deviceCount,
-            groups,
-            friends,
-            sharedSessions,
-            timestamp: Date.now()
-        };
-        try {
-            localStorage.setItem('resin_focus_data', JSON.stringify(focusCache));
-        } catch (err) {
-            // Silently fail if localStorage is unavailable
-        }
     });
 
     async function handleCreateGroup() {
@@ -186,23 +179,57 @@
     const hasActiveProtectedSession = $derived(
         activeSessions.some((session: any) => session.device_scheduled === true)
     );
+    const hasActiveExtensionProtectedSession = $derived(
+        activeSessions.length > 0 && (data.extensionDeviceCount ?? 0) > 0
+    );
+    const hasUpcomingSession = $derived(scheduledSessions.length > 0);
     const pageProtectionStatus = $derived(
-        hasActiveProtectedSession
+        data.deviceStatusUnavailable
+            ? 'Recovering'
+            : hasActiveProtectedSession || hasActiveExtensionProtectedSession
             ? 'Protected'
-            : activeSessions.length > 0 || deviceCount > 0
+            : activeSessions.length > 0 && deviceCount > 0
                 ? 'Waiting for device'
+                : hasUpcomingSession && deviceCount > 0
+                ? 'Waiting for window'
                 : 'Needs setup'
     );
     const pageProtectionCopy = $derived.by(() => {
+        if (pageProtectionStatus === 'Recovering') {
+            return 'Resin could not verify connected devices just now. Refresh status or keep focusing while it recovers.';
+        }
         if (pageProtectionStatus === 'Protected') {
-            return 'A connected device confirmed protection for an active session.';
+            return hasActiveExtensionProtectedSession
+                ? 'The Chrome extension confirmed protection for an active session.'
+                : 'A connected iPhone confirmed protection for an active session.';
         }
         if (pageProtectionStatus === 'Waiting for device') {
-            return activeSessions.length > 0
-                ? 'A focus session is active; Resin is waiting for a device or extension to confirm protection.'
-                : 'Resin is waiting for a connected app or extension to confirm protection.';
+            return 'A focus session is active; Resin is waiting for a device or extension to confirm protection.';
+        }
+        if (pageProtectionStatus === 'Waiting for window') {
+            return 'A focus session is scheduled. Protection will matter when that window starts.';
+        }
+        if (deviceCount > 0) {
+            return 'No active focus window right now. Your connected device is ready for the next session.';
         }
         return 'Connect a device or choose distractions so Resin can protect future focus sessions.';
+    });
+    const recoveryCopy = $derived.by(() => {
+        if (recoveryMode === 'make-smaller') {
+            return {
+                title: 'Make the next step smaller',
+                body: 'You hit a block, which usually means the step is too vague, too big, or your nervous system needs a softer entry. Try a 10-minute version with one visible next action.',
+                cta: 'Start a tiny focus'
+            };
+        }
+        if (recoveryMode === 'cooked') {
+            return {
+                title: "You are not failing — you're cooked",
+                body: 'Take the shame out of the loop. Move the plan later, do a reset, or start a 10-minute “keep the thread warm” session only if that feels humane.',
+                cta: 'Try 10 minutes'
+            };
+        }
+        return null;
     });
 </script>
 
@@ -219,17 +246,30 @@
         <p class="text-resin-earth/60 font-medium mt-2">
             Type one thing, activate it, and Resin protects the focus window across your devices.
         </p>
-        <div class="mt-5 flex max-w-2xl flex-col gap-2 rounded-2xl border border-resin-forest/15 bg-white/65 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        {#if form?.error}
+            <div class="mt-4 max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+                {form.error}
+            </div>
+        {/if}
+        <div
+            class="mt-5 flex max-w-2xl flex-col gap-2 rounded-2xl border border-resin-forest/15 bg-white/65 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-labelledby="page-protection-label page-protection-status"
+            aria-describedby="page-protection-copy"
+        >
             <div class="flex items-start gap-3">
-                <span class="mt-1 h-2.5 w-2.5 rounded-full {pageProtectionStatus === 'Protected' ? 'bg-resin-forest' : pageProtectionStatus === 'Needs setup' ? 'bg-resin-amber' : 'bg-resin-earth/40'}"></span>
+                <span class="mt-1 h-2.5 w-2.5 rounded-full {pageProtectionStatus === 'Protected' ? 'bg-resin-forest' : pageProtectionStatus === 'Needs setup' || pageProtectionStatus === 'Recovering' ? 'bg-resin-amber' : 'bg-resin-earth/40'}" aria-hidden="true"></span>
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-resin-earth/50">Protection status</span>
-                    <div class="text-sm font-bold text-resin-charcoal">{pageProtectionStatus}</div>
-                    <p class="text-xs font-medium text-resin-earth/65">{pageProtectionCopy}</p>
+                    <span id="page-protection-label" class="text-xs font-bold uppercase tracking-wider text-resin-earth/50">Protection status</span>
+                    <div id="page-protection-status" class="text-sm font-bold text-resin-charcoal">{pageProtectionStatus}</div>
+                    <p id="page-protection-copy" class="text-xs font-medium text-resin-earth/65">{pageProtectionCopy}</p>
                 </div>
             </div>
             <button
                 onclick={() => invalidateAll()}
+                aria-label="Retry protection sync"
                 class="text-left text-xs font-bold text-resin-forest hover:text-resin-amber transition-colors sm:text-right"
             >
                 Retry sync
@@ -237,9 +277,27 @@
         </div>
     </div>
 
+    {#if recoveryCopy}
+        <section class="mb-8 rounded-3xl border border-resin-amber/25 bg-resin-amber/10 p-5 shadow-sm" transition:fade>
+            <p class="text-xs font-bold uppercase tracking-wider text-resin-amber">Recovery path</p>
+            <h2 class="mt-1 text-2xl font-serif font-bold text-resin-charcoal">{recoveryCopy.title}</h2>
+            <p class="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-resin-earth/75">{recoveryCopy.body}</p>
+            <button
+                class="mt-4 rounded-xl bg-resin-charcoal px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-resin-forest"
+                onclick={() => {
+                    suggestedFocusDuration = 10;
+                    recoveryMode = null;
+                    document.querySelector<HTMLInputElement>('input[placeholder="What are we focusing on?"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+            >
+                {recoveryCopy.cta}
+            </button>
+        </section>
+    {/if}
+
     <!-- Quick Focus (FocusControl) -->
     <section class="mb-12">
-        <FocusControl />
+        <FocusControl suggestedDuration={suggestedFocusDuration} />
     </section>
 
     <!-- Focus Groups -->
@@ -427,7 +485,13 @@
                             </div>
                         </div>
 
-                        <form method="POST" action="?/cancelSession" use:enhance>
+                        <form
+                            method="POST"
+                            action="?/cancelSession"
+                            use:enhance={({ cancel }) => {
+                                if (!window.confirm('End this focus session early and release its protection?')) cancel();
+                            }}
+                        >
                             <input type="hidden" name="sessionId" value={session.id} />
                             <button
                                 type="submit"
@@ -760,7 +824,14 @@
                                     Edit
                                 </button>
 
-                                <form method="POST" action="?/cancelSession" use:enhance class="flex-1">
+                                <form
+                                    method="POST"
+                                    action="?/cancelSession"
+                                    use:enhance={({ cancel }) => {
+                                        if (!window.confirm('Delete this scheduled focus session?')) cancel();
+                                    }}
+                                    class="flex-1"
+                                >
                                     <input type="hidden" name="sessionId" value={session.id} />
                                     <button
                                         type="submit"
@@ -826,7 +897,7 @@
                             >
                                 <option value="">Select a friend...</option>
                                 {#each friends as friend}
-                                    <option value={friend.id}>{friend.email}</option>
+                                    <option value={friend.id}>{friend.displayName}</option>
                                 {/each}
                             </select>
                         </div>

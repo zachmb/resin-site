@@ -9,11 +9,13 @@
  * Logging: Every step logged for easy debugging
  */
 
+import { dev } from '$app/environment';
 import { getCacheData, setCacheData, getCacheTimestamp } from './localCache';
 
 export interface DataManagerOptions {
     cacheKey: string;
     apiEndpoint: string;
+    cacheScope?: string | null;
     cacheTTL?: number; // milliseconds
     onDataUpdate?: (data: any) => void;
     onError?: (error: Error) => void;
@@ -25,6 +27,14 @@ export interface SyncStatus {
     error: string | null;
 }
 
+const GENERIC_SYNC_ERROR = 'Sync failed';
+
+function debugLog(message: string): void {
+    if (dev) {
+        console.log(message);
+    }
+}
+
 export class DataManager {
     private options: Required<DataManagerOptions>;
     private syncStatus: SyncStatus = {
@@ -34,11 +44,16 @@ export class DataManager {
     };
 
     constructor(options: DataManagerOptions) {
+        const scopedCacheKey = options.cacheScope
+            ? `${options.cacheKey}:${options.cacheScope.replace(/[^A-Za-z0-9_-]/g, '')}`
+            : options.cacheKey;
         this.options = {
             cacheTTL: 24 * 60 * 60 * 1000, // 24 hours default
             onDataUpdate: () => {},
             onError: () => {},
-            ...options
+            ...options,
+            cacheScope: options.cacheScope ?? null,
+            cacheKey: scopedCacheKey
         };
     }
 
@@ -51,13 +66,9 @@ export class DataManager {
         const cacheAge = this.getCacheAge();
 
         if (cached) {
-            console.log(
-                `[DataManager:${this.options.cacheKey}] ✓ Loaded from cache (age: ${cacheAge}ms)`
-            );
+            debugLog(`[DataManager] ✓ Loaded from cache (age: ${cacheAge}ms)`);
         } else {
-            console.log(
-                `[DataManager:${this.options.cacheKey}] Cache miss - will fetch fresh data`
-            );
+            debugLog('[DataManager] Cache miss - will fetch fresh data');
         }
 
         return cached || null;
@@ -71,33 +82,24 @@ export class DataManager {
     async syncInBackground(): Promise<void> {
         // Prevent concurrent syncs
         if (this.syncStatus.isSyncing) {
-            console.log(`[DataManager:${this.options.cacheKey}] ⏸ Sync already in progress`);
             return;
         }
 
         this.syncStatus.isSyncing = true;
         this.syncStatus.error = null;
 
-        console.log(`[DataManager:${this.options.cacheKey}] 🔄 Starting background sync...`);
-
         try {
             // Fetch fresh data
             const response = await fetch(this.options.apiEndpoint);
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status} from ${this.options.apiEndpoint}`);
+                throw new Error('Background sync request failed');
             }
 
             const freshData = await response.json();
-            console.log(
-                `[DataManager:${this.options.cacheKey}] ✓ Received fresh data (${JSON.stringify(freshData).length} bytes)`
-            );
 
             // Update cache
-            setCacheData(this.options.cacheKey, freshData);
-            console.log(
-                `[DataManager:${this.options.cacheKey}] 💾 Cached fresh data`
-            );
+            setCacheData(this.options.cacheKey, freshData, this.options.cacheTTL);
 
             // Update status
             this.syncStatus.lastSync = Date.now();
@@ -105,16 +107,12 @@ export class DataManager {
 
             // Notify component of new data
             this.options.onDataUpdate(freshData);
-            console.log(
-                `[DataManager:${this.options.cacheKey}] ✨ Component notified of update`
-            );
 
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            console.error(`[DataManager:${this.options.cacheKey}] ✗ Sync failed:`, err.message);
+        } catch {
+            console.error('[DataManager] Background sync failed');
 
-            this.syncStatus.error = err.message;
-            this.options.onError(err);
+            this.syncStatus.error = GENERIC_SYNC_ERROR;
+            this.options.onError(new Error(GENERIC_SYNC_ERROR));
 
         } finally {
             this.syncStatus.isSyncing = false;
@@ -142,31 +140,21 @@ export class DataManager {
      * Useful for critical updates that can't wait for background sync
      */
     async forceRefresh(): Promise<any> {
-        console.log(`[DataManager:${this.options.cacheKey}] 🚨 Force refresh requested`);
-
         try {
             const response = await fetch(this.options.apiEndpoint);
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error('Refresh request failed');
             }
 
             const freshData = await response.json();
-            setCacheData(this.options.cacheKey, freshData);
+            setCacheData(this.options.cacheKey, freshData, this.options.cacheTTL);
             this.syncStatus.lastSync = Date.now();
 
-            console.log(
-                `[DataManager:${this.options.cacheKey}] ✓ Force refresh complete`
-            );
-
             return freshData;
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            console.error(
-                `[DataManager:${this.options.cacheKey}] ✗ Force refresh failed:`,
-                err.message
-            );
-            throw err;
+        } catch {
+            console.error('[DataManager] Force refresh failed');
+            throw new Error(GENERIC_SYNC_ERROR);
         }
     }
 
@@ -175,8 +163,7 @@ export class DataManager {
      * Useful for optimistic updates or after successful form submissions
      */
     updateCache(freshData: any): void {
-        console.log(`[DataManager:${this.options.cacheKey}] 💾 Manually updating cache`);
-        setCacheData(this.options.cacheKey, freshData);
+        setCacheData(this.options.cacheKey, freshData, this.options.cacheTTL);
         this.syncStatus.lastSync = Date.now();
     }
 
@@ -184,7 +171,6 @@ export class DataManager {
      * Clear cache for this data type
      */
     clearCache(): void {
-        console.log(`[DataManager:${this.options.cacheKey}] 🗑 Cache cleared`);
         // Using localStorage.removeItem directly since localCache doesn't export it
         if (typeof window !== 'undefined') {
             localStorage.removeItem(`resin_cache_${this.options.cacheKey}`);
@@ -196,19 +182,21 @@ export class DataManager {
  * Factory functions for common data types
  */
 
-export function createNotesDataManager(onUpdate: (data: any) => void, onError: (err: Error) => void) {
+export function createNotesDataManager(onUpdate: (data: any) => void, onError: (err: Error) => void, cacheScope?: string | null) {
     return new DataManager({
         cacheKey: 'notes_data',
         apiEndpoint: '/api/notes/data',
+        cacheScope,
         onDataUpdate: onUpdate,
         onError
     });
 }
 
-export function createAmberDataManager(onUpdate: (data: any) => void, onError: (err: Error) => void) {
+export function createAmberDataManager(onUpdate: (data: any) => void, onError: (err: Error) => void, cacheScope?: string | null) {
     return new DataManager({
         cacheKey: 'amber_data',
         apiEndpoint: '/api/amber/data',
+        cacheScope,
         onDataUpdate: onUpdate,
         onError
     });

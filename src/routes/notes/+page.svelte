@@ -35,6 +35,14 @@
 
     let selectedNoteId = $state<string | null>(null);
     let localDrafts = $state<Record<string, string>>({});
+    const selectedNoteStorageKey = () => {
+        const userId = $page.data.session?.user?.id;
+        return userId ? `selectedNoteId:${userId}` : null;
+    };
+    const draftStorageKey = (noteId: string) => {
+        const userId = $page.data.session?.user?.id;
+        return userId ? `resin:draft:${userId}:${noteId}` : null;
+    };
 
     // Initialize data manager and load cached data on mount
     onMount(() => {
@@ -42,7 +50,9 @@
         localDrafts = {};
 
         // Restore selected note from localStorage
-        const savedNoteId = localStorage.getItem('selectedNoteId');
+        const selectionKey = selectedNoteStorageKey();
+        const savedNoteId = selectionKey ? localStorage.getItem(selectionKey) : null;
+        localStorage.removeItem('selectedNoteId');
         if (savedNoteId) {
             selectedNoteId = savedNoteId;
         }
@@ -51,7 +61,6 @@
         dataManager = createNotesDataManager(
             // onDataUpdate callback - called when fresh data arrives from API
             (freshData) => {
-                console.log('[notes:page] Received fresh data from DataManager');
                 if (freshData.notes?.length > 0) {
                     // Logic to prevent stale background sync from overwriting fresh SSR data
                     // If we have an 'id' in the URL, the data must contain that ID to be considered 'fresh'
@@ -68,13 +77,13 @@
                 if (freshData.friends) friends = freshData.friends;
             },
             // onError callback - silent, we already have server data
-            (error) => {
-                console.warn('[notes:page] DataManager sync error (non-critical):', error);
-            }
+            () => {
+                console.warn('[notes:page] DataManager sync error (non-critical)');
+            },
+            $page.data.session?.user?.id
         );
 
         // Only run background sync - server already gave us initial data
-        console.log('[notes:page] Server provided', notes.length, 'notes. Starting background sync...');
         dataManager.syncInBackground();
     });
 
@@ -84,10 +93,12 @@
             const idParam = $page.url.searchParams.get("id");
             if (idParam) {
                 selectedNoteId = idParam;
-                localStorage.setItem('selectedNoteId', idParam);
+                const selectionKey = selectedNoteStorageKey();
+                if (selectionKey) localStorage.setItem(selectionKey, idParam);
             } else if ($page.url.searchParams.has("reset")) {
                 selectedNoteId = notes[0]?.id || "mock";
-                localStorage.removeItem('selectedNoteId');
+                const selectionKey = selectedNoteStorageKey();
+                if (selectionKey) localStorage.removeItem(selectionKey);
                 localDrafts = {};
             }
         }
@@ -96,17 +107,17 @@
     // Save selected note ID to localStorage whenever it changes
     $effect(() => {
         if (selectedNoteId && selectedNoteId !== "mock") {
-            localStorage.setItem('selectedNoteId', selectedNoteId);
+            const selectionKey = selectedNoteStorageKey();
+            if (selectionKey) localStorage.setItem(selectionKey, selectedNoteId);
         }
     });
 
     let activeNote = $derived.by(() => {
         const id = selectedNoteId || (notes.length > 0 ? notes[0].id : "mock");
-        const urlContent = $page.url.searchParams.get("content");
         const baseNote = notes.find((n: any) => n.id === id) || {
             id: id === "mock" ? "mock" : id,
             title: "New Note",
-            content: urlContent ? decodeURIComponent(urlContent) : "# New Note\n\nStart typing to create a note...",
+            content: "# New Note\n\nStart typing to create a note...",
             created_at: new Date().toISOString(),
         };
 
@@ -114,7 +125,8 @@
         let content = localDrafts[id];
         if (!content && !id.startsWith('temp_')) {
             try {
-                const saved = localStorage.getItem(`resin:draft:${id}`);
+                const storageKey = draftStorageKey(id);
+                const saved = storageKey ? localStorage.getItem(storageKey) : null;
                 if (saved) {
                     const draft = JSON.parse(saved);
                     content = draft.content;
@@ -232,6 +244,7 @@
     {activeNote}
     {notes}
     {profile}
+    userId={$page.data.session?.user?.id ?? null}
     {connections}
     friends={data.friends || []}
     {showToast}

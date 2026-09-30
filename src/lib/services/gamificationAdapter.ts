@@ -5,14 +5,10 @@
  * can work with Supabase
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { adminClient } from '$lib/server/auth';
 import type { DatabaseAdapter } from '@resin/core';
 
-const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false }
-});
+const MAX_GAMIFICATION_SESSION_DATES = 5000;
 
 interface GameState {
     totalStones: number;
@@ -32,9 +28,9 @@ interface GameState {
 export function createSupabaseGamificationAdapter(): DatabaseAdapter {
     return {
         async fetchUserProfile(userId: string) {
-            const { data: profile, error } = await admin
+            const { data: profile, error } = await adminClient
                 .from('profiles')
-                .select('*')
+                .select('total_stones, current_streak, longest_streak, longest_streak_at, forest_health, last_session_date, last_active_date, timezone, sessions_completed_count')
                 .eq('id', userId)
                 .single();
 
@@ -54,14 +50,14 @@ export function createSupabaseGamificationAdapter(): DatabaseAdapter {
         },
 
         async fetchSessionCount(userId: string): Promise<number> {
-            const { count, error } = await admin
+            const { count, error } = await adminClient
                 .from('amber_sessions')
                 .select('id', { count: 'exact', head: true })
                 .eq('user_id', userId)
                 .eq('status', 'completed');
 
             if (error) {
-                console.error('[GamificationAdapter] Error counting sessions:', error);
+                console.error('[GamificationAdapter] Error counting sessions');
                 return 0;
             }
 
@@ -69,11 +65,12 @@ export function createSupabaseGamificationAdapter(): DatabaseAdapter {
         },
 
         async fetchSessionDates(userId: string): Promise<string[]> {
-            const { data: sessions, error } = await admin
+            const { data: sessions, error } = await adminClient
                 .from('amber_sessions')
                 .select('created_at')
                 .eq('user_id', userId)
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: false })
+                .limit(MAX_GAMIFICATION_SESSION_DATES);
 
             if (error || !sessions) return [];
 
@@ -83,7 +80,8 @@ export function createSupabaseGamificationAdapter(): DatabaseAdapter {
                     if (Number.isNaN(d.getTime())) return null;
                     return d.toISOString().split('T')[0]; // YYYY-MM-DD
                 })
-                .filter(Boolean) as string[];
+                .filter(Boolean)
+                .reverse() as string[];
         },
 
         async updateProfile(userId: string, updates: Partial<GameState>): Promise<void> {
@@ -99,26 +97,33 @@ export function createSupabaseGamificationAdapter(): DatabaseAdapter {
             if (updates.lastSessionDate !== undefined) body.last_session_date = updates.lastSessionDate?.toISOString();
             if (updates.lastActiveDate !== undefined) body.last_active_date = updates.lastActiveDate?.toISOString();
 
-            await admin
+            await adminClient
                 .from('profiles')
                 .update(body)
                 .eq('id', userId);
         },
 
-        async updateSession(sessionId: string, updates: any): Promise<void> {
+        async updateSession(userId: string, sessionId: string, updates: any): Promise<void> {
             const body: Record<string, any> = {
-                updated_at: new Date().toISOString(),
-                ...updates
+                ...updates,
+                updated_at: new Date().toISOString()
             };
 
-            await admin
+            const { data, error } = await adminClient
                 .from('amber_sessions')
                 .update(body)
-                .eq('id', sessionId);
+                .eq('id', sessionId)
+                .eq('user_id', userId)
+                .select('id')
+                .maybeSingle();
+
+            if (error || !data) {
+                throw new Error('Session not found or unauthorized');
+            }
         },
 
         async insertAchievement(userId: string, achievementId: string): Promise<void> {
-            await admin
+            await adminClient
                 .from('user_achievements')
                 .upsert({
                     user_id: userId,
@@ -137,7 +142,7 @@ export function createSupabaseGamificationAdapter(): DatabaseAdapter {
             amount: number,
             sessionId?: string
         ): Promise<void> {
-            await admin
+            await adminClient
                 .from('forest_events')
                 .insert({
                     user_id: userId,

@@ -9,9 +9,10 @@
 		onConfirm: () => void;
 		onCancel: () => void;
 		isLoading?: boolean;
+		error?: string | null;
 	}
 
-	let { isOpen, title, message, onConfirm, onCancel, isLoading = false } = $props();
+	let { isOpen, title, message, onConfirm, onCancel, isLoading = false, error = null } = $props();
 
 	let cancelButton = $state<HTMLButtonElement | null>(null);
 
@@ -34,7 +35,7 @@
 		use:scrollLock={isOpen}
 		transition:fade={{ duration: 200 }}
 		onmousedown={(e) => {
-			if (e.target === e.currentTarget) onCancel();
+			if (e.target === e.currentTarget && !isLoading) onCancel();
 		}}
 			role="dialog"
 			aria-modal="true"
@@ -53,6 +54,11 @@
 			<!-- Content -->
 			<div class="px-6 py-6">
 				<p class="text-sm text-resin-earth/70 leading-relaxed">{message}</p>
+				{#if error}
+					<p class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+						{error}
+					</p>
+				{/if}
 			</div>
 
 			<!-- Actions -->

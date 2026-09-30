@@ -2,10 +2,10 @@
  * Utility to send push notifications to iOS devices when focus session starts
  */
 
+const FOCUS_NOTIFICATION_TIMEOUT_MS = 8000;
+
 export async function notifyFocusSessionStart(options: {
-    userId: string;
     sessionId: string;
-    sessionTitle: string;
     startTime: Date;
     endTime: Date;
     groupId?: string;
@@ -17,30 +17,25 @@ export async function notifyFocusSessionStart(options: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                userId: options.userId,
                 sessionId: options.sessionId,
-                sessionTitle: options.sessionTitle,
-                startTime: options.startTime.toISOString(),
-                endTime: options.endTime.toISOString(),
                 groupId: options.groupId
-            })
+            }),
+            signal: AbortSignal.timeout(FOCUS_NOTIFICATION_TIMEOUT_MS)
         });
 
         const data = await response.json();
 
         if (response.ok && data.success) {
-            console.log(
-                `[Focus Notifier] Sent focus session notifications to ${data.notificationsSent} devices`
-            );
+            console.log('[Focus Notifier] Device wake requested');
             return {
                 success: true,
                 notificationsSent: data.notificationsSent
             };
         }
 
-        throw new Error(data.error || 'Failed to send notifications');
-    } catch (error) {
-        console.error('[Focus Notifier] Error sending notifications:', error);
+        throw new Error('Failed to send notifications');
+    } catch {
+        console.error('[Focus Notifier] Error sending notifications');
         return {
             success: false,
             notificationsSent: 0
@@ -54,26 +49,20 @@ export async function notifyFocusSessionStart(options: {
  */
 export async function onFocusSessionStart(sessionData: {
     sessionId: string;
-    title: string;
     startTime: Date;
     endTime: Date;
-    userId: string;
     groupId?: string;
 }): Promise<void> {
     // Send push notification to iOS devices
     const result = await notifyFocusSessionStart({
-        userId: sessionData.userId,
         sessionId: sessionData.sessionId,
-        sessionTitle: sessionData.title || 'Focus Session',
         startTime: sessionData.startTime,
         endTime: sessionData.endTime,
         groupId: sessionData.groupId
     });
 
     if (result.success) {
-        console.log(
-            `[Focus Session] Started "${sessionData.title}" and notified ${result.notificationsSent} iOS devices`
-        );
+        console.log('[Focus Session] Started and requested iOS device wake');
     } else {
         console.warn('[Focus Session] Could not notify iOS devices (they may not have the app installed)');
     }

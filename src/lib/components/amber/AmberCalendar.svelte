@@ -136,7 +136,6 @@
     function onMouseDown(task: AmberTask, dayIndex: number, e: MouseEvent) {
         // Don't allow dragging focus session tasks (they have IDs like 'focus-xxx')
         if (task.id.startsWith('focus-')) {
-            console.log('[AmberCalendar] Cannot reschedule focus session task');
             return;
         }
 
@@ -207,7 +206,7 @@
         try {
             await onReschedule(task, newStart.toISOString(), newEnd.toISOString());
         } catch (err) {
-            console.error('Reschedule failed:', err);
+            console.error('[AmberCalendar] Reschedule failed');
         } finally {
             isRescheduleLoading = false;
         }

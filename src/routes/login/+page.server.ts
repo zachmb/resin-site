@@ -29,14 +29,18 @@ export const actions = {
             options: {
                 redirectTo: `${url.origin}/auth/callback?next=${encodeURIComponent(next)}`,
                 scopes: 'openid email profile',
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent'
+                }
             },
         })
 
 
-        if (error) {
-            console.error(error)
-            return { error: 'Could not authenticate with Google' }
-        }
+	    if (error) {
+	            console.error('[login] Google OAuth sign-in failed')
+	            return { error: 'Could not authenticate with Google' }
+	        }
 
         if (data.url) {
             throw redirect(303, data.url)
@@ -54,10 +58,10 @@ export const actions = {
             },
         })
 
-        if (error) {
-            console.error(error)
-            return { error: 'Could not authenticate with Apple' }
-        }
+	        if (error) {
+	            console.error('[login] Apple OAuth sign-in failed')
+	            return { error: 'Could not authenticate with Apple' }
+	        }
 
         if (data.url) {
             throw redirect(303, data.url)

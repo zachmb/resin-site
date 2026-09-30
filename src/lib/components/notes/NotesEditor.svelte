@@ -3,7 +3,7 @@
     import { parseCommands } from "$lib/utils/commandParser";
     import CommandPalette from "$lib/components/ui/CommandPalette.svelte";
     import ConfirmDeleteModal from "$lib/components/ui/ConfirmDeleteModal.svelte";
-    import { onDestroy, untrack } from "svelte";
+    import { onDestroy, onMount, untrack } from "svelte";
     import { invalidateAll, goto } from "$app/navigation";
     import { setCache, invalidateCache, clearCache } from "$lib/utils/cache";
 
@@ -14,6 +14,7 @@
         activeNote,
         notes = [],
         profile = null,
+        userId = null,
         friends = [],
         connections = {},
         showToast,
@@ -27,6 +28,7 @@
         activeNote: any;
         notes: any[];
         profile?: any;
+        userId?: string | null;
         friends?: any[];
         connections?: Record<string, any>;
         showToast: (msg: string) => void;
@@ -56,8 +58,13 @@
     let deleteScheduledFormRef = $state<HTMLFormElement | null>(null);
     let deleteDraftFormRef = $state<HTMLFormElement | null>(null);
     let today = new Date().toISOString();
+    let browserTimezone = $state('UTC');
     let now = $state(new Date()); // For updating relative times
     let timeUpdateInterval: ReturnType<typeof setInterval>;
+
+    onMount(() => {
+        browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    });
 
     // Update relative time display every 30 seconds
     $effect(() => {
@@ -131,9 +138,9 @@
     );
 
     const persistDraft = (noteId: string, content: string) => {
-        if (noteId.startsWith('temp_')) return;
+        if (noteId.startsWith('temp_') || !userId) return;
         try {
-            localStorage.setItem(`resin:draft:${noteId}`, JSON.stringify({
+            localStorage.setItem(`resin:draft:${userId}:${noteId}`, JSON.stringify({
                 content,
                 timestamp: Date.now()
             }));
@@ -143,9 +150,9 @@
     };
 
     const loadDraft = (noteId: string): string | null => {
-        if (noteId.startsWith('temp_')) return null;
+        if (noteId.startsWith('temp_') || !userId) return null;
         try {
-            const raw = localStorage.getItem(`resin:draft:${noteId}`);
+            const raw = localStorage.getItem(`resin:draft:${userId}:${noteId}`);
             return raw ? JSON.parse(raw).content : null;
         } catch (e) {
             console.warn('Failed to load draft:', e);
@@ -154,8 +161,9 @@
     };
 
     const clearDraft = (noteId: string) => {
+        if (!userId) return;
         try {
-            localStorage.removeItem(`resin:draft:${noteId}`);
+            localStorage.removeItem(`resin:draft:${userId}:${noteId}`);
         } catch (e) {
             console.warn('Failed to clear draft:', e);
         }
@@ -209,7 +217,7 @@
                     body: formData,
                 });
                 if (!response.ok) {
-                    console.error(`Failed to save note: ${response.statusText}`);
+                    console.error("Failed to save note");
                     isSaving = false;
                     return;
                 }
@@ -222,8 +230,8 @@
                 // Cache the updated note with title
                 const finalNote = { ...activeNote, content, title: extractedTitle };
                 setCache(`note-${activeNote.id}`, finalNote, 60000);
-            } catch (error) {
-                console.error("Auto-save failed:", error);
+            } catch {
+                console.error("Auto-save failed");
                 isSaving = false;
             }
         }, 300);
@@ -565,14 +573,6 @@
                                 class="contents"
                                 use:enhance={() => {
                                     return async ({ formData, result }) => {
-                                        // Log what's being sent
-                                        console.log('[NotesEditor] Save form data:', {
-                                            id: formData.get('id'),
-                                            content: formData.get('content')?.toString().substring(0, 100),
-                                            title: formData.get('title')
-                                        });
-                                        console.log('[NotesEditor] Server response:', result);
-
                                         if (result.type === "success" && result.data?.success) {
                                             // Clear all notes-related caches to ensure fresh data on next load
                                             invalidateCache('notes');
@@ -661,6 +661,7 @@
                                 <input type="hidden" name="id" value={activeNote?.id} />
                                 <input type="hidden" name="noteContent" value={activeNote?.content} />
                                 <input type="hidden" name="title" value={activeTitle} />
+                                <input type="hidden" name="timezone" value={browserTimezone} />
                                 <button
                                     type="submit"
                                     class="px-3 py-1.5 rounded-lg font-semibold text-xs sm:text-sm bg-[#2B4634] text-white hover:opacity-90 transition-all disabled:opacity-45 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-1"
@@ -794,6 +795,7 @@
                         }}>
                             <input type="hidden" name="id" value={activeNote?.id} />
                             <input type="hidden" name="noteContent" value={activeNote?.content} />
+                            <input type="hidden" name="timezone" value={browserTimezone} />
                             <button
                                 type="submit"
                                 disabled={isRetryingActivation}

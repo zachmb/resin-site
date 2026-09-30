@@ -65,13 +65,13 @@
             const response = await fetch(`/api/calendar/activity?start=${startDate}&end=${endDate}`);
 
             if (!response.ok) {
-                throw new Error(`API error: ${response.statusText}`);
+                throw new Error('Failed to load calendar data');
             }
 
             const result = await response.json();
 
             if (result.error) {
-                throw new Error(result.error);
+                throw new Error('Failed to load calendar data');
             }
 
             activities = result.activities || [];
@@ -83,9 +83,9 @@
             const productiveDays = activities.filter(a => getActivityLevel(a) >= 5).length;
 
             monthStats = { totalFocus, totalPlans, totalStones, productiveDays };
-        } catch (err) {
-            error = err instanceof Error ? err.message : 'Failed to load calendar data';
-            console.error('[Calendar] Error loading data:', err);
+        } catch {
+            error = 'Failed to load calendar data';
+            console.error('[Calendar] Error loading data');
             activities = [];
             monthStats = {};
         } finally {

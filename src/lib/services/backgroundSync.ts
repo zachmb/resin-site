@@ -11,6 +11,8 @@ export interface SyncStatus {
     lastSyncTime: number | null;
 }
 
+const GENERIC_SYNC_ERROR = 'Sync failed';
+
 interface SyncTask<T> {
     key: string;
     fetchFn: () => Promise<T>;
@@ -75,19 +77,17 @@ class BackgroundSyncManager {
                 }
 
                 return freshData;
-            } catch (error) {
-                const err = error instanceof Error ? error : new Error(String(error));
-
+            } catch {
                 // Update status
                 this.syncStatus.set(key, {
                     syncing: false,
-                    error: err.message,
+                    error: GENERIC_SYNC_ERROR,
                     lastSyncTime: Date.now()
                 });
 
                 // Call error callback
                 if (options?.onError) {
-                    options.onError(err);
+                    options.onError(new Error(GENERIC_SYNC_ERROR));
                 }
 
                 // Return cached data as fallback, or null if no cache

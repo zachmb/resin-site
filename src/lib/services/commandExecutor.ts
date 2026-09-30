@@ -4,6 +4,18 @@
  */
 
 import { parseCommands } from '$lib/utils/commandParser';
+import { lookup } from 'node:dns/promises';
+
+const MAX_COMMAND_CONTENT_LENGTH = 6000;
+const OUTBOUND_FETCH_TIMEOUT_MS = 8000;
+const CONTROL_CHAR_RE = /[\u0000-\u001F\u007F]/g;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,254}$/i;
+const TELEGRAM_BOT_TOKEN_RE = /^\d{6,16}:[A-Za-z0-9_-]{24,96}$/;
+const TELEGRAM_CHAT_ID_RE = /^-?\d{1,20}$|^@[A-Za-z0-9_]{5,64}$/;
+const NOTION_TOKEN_RE = /^[A-Za-z0-9_=-]{32,256}$/;
+const NOTION_DATABASE_ID_RE = /^[0-9a-f]{32}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const BLOCKED_IPV4_RE = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0)/;
+const BLOCKED_IPV6_RE = /^(::1$|::$|fc|fd|fe80:)/i;
 
 export interface ExecutionResult {
   success: boolean;
@@ -17,6 +29,79 @@ interface CommandConfig {
   enabled: boolean;
 }
 
+function cleanCommandContent(value: string): string {
+  return value.replace(CONTROL_CHAR_RE, ' ').trim().slice(0, MAX_COMMAND_CONTENT_LENGTH);
+}
+
+function commandLabel(command: any): string {
+  return typeof command?.type === 'string' ? command.type : 'unknown';
+}
+
+function safeResult(success: boolean, message: string, command: any): ExecutionResult {
+  return { success, message, command: commandLabel(command) };
+}
+
+function isBlockedOutboundHostname(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase();
+  return host === 'localhost' || BLOCKED_IPV4_RE.test(host) || BLOCKED_IPV6_RE.test(host) || host.startsWith('::ffff:');
+}
+
+function isPublicResolvedAddress(address: string): boolean {
+  const normalized = address.toLowerCase();
+  if (normalized.includes(':')) {
+    return !(
+      normalized === '::' ||
+      normalized === '::1' ||
+      normalized.startsWith('fc') ||
+      normalized.startsWith('fd') ||
+      /^fe[89ab]/.test(normalized) ||
+      normalized.startsWith('::ffff:') ||
+      normalized.startsWith('2001:db8:')
+    );
+  }
+
+  const octets = normalized.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) return false;
+  const [first, second] = octets;
+  return !(
+    first === 0 ||
+    first === 10 ||
+    first === 127 ||
+    (first === 100 && second >= 64 && second <= 127) ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && (second === 0 || second === 168)) ||
+    (first === 198 && (second === 18 || second === 19)) ||
+    first >= 224
+  );
+}
+
+async function requireSafeOutboundUrl(rawUrl: string | undefined, serviceName: string): Promise<string> {
+  if (!rawUrl) throw new Error(`${serviceName} URL not configured`);
+
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error(`${serviceName} URL is invalid`);
+  }
+
+  if (url.protocol !== 'https:' || isBlockedOutboundHostname(url.hostname)) {
+    throw new Error(`${serviceName} URL is not allowed`);
+  }
+
+  const addresses = await lookup(url.hostname, { all: true, verbatim: true });
+  if (addresses.length === 0 || addresses.some(({ address }) => !isPublicResolvedAddress(address))) {
+    throw new Error(`${serviceName} URL is not allowed`);
+  }
+
+  return url.toString();
+}
+
+function outboundSignal(): AbortSignal {
+  return AbortSignal.timeout(OUTBOUND_FETCH_TIMEOUT_MS);
+}
+
 /**
  * Execute all commands found in note content
  */
@@ -25,7 +110,7 @@ export async function executeNoteCommands(
   configs: CommandConfig[]
 ): Promise<ExecutionResult[]> {
   const results: ExecutionResult[] = [];
-  const parsed = parseCommands(noteContent);
+  const parsed = parseCommands(cleanCommandContent(noteContent));
 
   if (!parsed.hasCommands) {
     return results;
@@ -40,11 +125,7 @@ export async function executeNoteCommands(
     const config = enabledConfigs[command.type];
 
     if (!config || !config.enabled) {
-      results.push({
-        success: false,
-        message: `Command "${command.type}" is not configured`,
-        command: command.fullCommand
-      });
+      results.push(safeResult(false, `Command "${command.type}" is not configured`, command));
       continue;
     }
 
@@ -78,19 +159,11 @@ async function executeCommand(
       case 'notion':
         return await executeNotion(command, config, noteContent);
       default:
-        return {
-          success: false,
-          message: `Unknown command type: ${command.type}`,
-          command: command.fullCommand
-        };
+        return safeResult(false, `Unknown command type: ${command.type}`, command);
     }
-  } catch (error) {
-    console.error(`Error executing command ${command.type}:`, error);
-    return {
-      success: false,
-      message: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      command: command.fullCommand
-    };
+  } catch {
+    console.warn(`[commands] Command failed: ${commandLabel(command)}`);
+    return safeResult(false, 'Command failed. Check the integration settings and try again.', command);
   }
 }
 
@@ -100,52 +173,15 @@ async function executeCommand(
 async function executeSendEmail(
   command: any,
   config: CommandConfig,
-  noteContent: string
+  _noteContent: string
 ): Promise<ExecutionResult> {
-  const email = config.config.email_address || command.args[0];
+  const email = config.config.email_address;
 
-  if (!email) {
-    return {
-      success: false,
-      message: 'No email address specified',
-      command: command.fullCommand
-    };
+  if (!email || !EMAIL_RE.test(email)) {
+    return safeResult(false, 'Email command is not fully configured', command);
   }
 
-  try {
-    const response = await fetch('/api/commands/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: email,
-        content: noteContent,
-        subject: 'Note from Resin'
-      })
-    });
-
-    if (!response.ok) {
-      let message = 'Email service is not available';
-      try {
-        const data = await response.json();
-        message = data.message || data.error || message;
-      } catch {
-        message = await response.text();
-      }
-      return {
-        success: false,
-        message,
-        command: command.fullCommand
-      };
-    }
-
-    return {
-      success: true,
-      message: `Email sent to ${email}`,
-      command: command.fullCommand
-    };
-  } catch (error) {
-    throw error;
-  }
+  return safeResult(false, 'Email commands are not enabled yet. Your note was saved, but no email was sent.', command);
 }
 
 /**
@@ -156,20 +192,14 @@ async function executeWebhook(
   config: CommandConfig,
   noteContent: string
 ): Promise<ExecutionResult> {
-  const url = config.config.url || command.args[0];
-
-  if (!url) {
-    return {
-      success: false,
-      message: 'No webhook URL specified',
-      command: command.fullCommand
-    };
-  }
+  const url = await requireSafeOutboundUrl(config.config.url, 'Webhook');
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      redirect: 'error',
+      signal: outboundSignal(),
       body: JSON.stringify({
         content: noteContent,
         timestamp: new Date().toISOString(),
@@ -178,14 +208,10 @@ async function executeWebhook(
     });
 
     if (!response.ok) {
-      throw new Error(`Webhook returned ${response.status}`);
+      throw new Error('Webhook request failed');
     }
 
-    return {
-      success: true,
-      message: `Posted to webhook: ${url}`,
-      command: command.fullCommand
-    };
+    return safeResult(true, 'Posted to webhook', command);
   } catch (error) {
     throw error;
   }
@@ -199,20 +225,14 @@ async function executeSlack(
   config: CommandConfig,
   noteContent: string
 ): Promise<ExecutionResult> {
-  const webhookUrl = config.config.webhook_url;
-
-  if (!webhookUrl) {
-    return {
-      success: false,
-      message: 'Slack webhook URL not configured',
-      command: command.fullCommand
-    };
-  }
+  const webhookUrl = await requireSafeOutboundUrl(config.config.webhook_url, 'Slack webhook');
 
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      redirect: 'error',
+      signal: outboundSignal(),
       body: JSON.stringify({
         text: noteContent,
         channel: config.config.channel
@@ -220,14 +240,10 @@ async function executeSlack(
     });
 
     if (!response.ok) {
-      throw new Error(`Slack returned ${response.status}`);
+      throw new Error('Slack request failed');
     }
 
-    return {
-      success: true,
-      message: `Posted to Slack${config.config.channel ? ` in ${config.config.channel}` : ''}`,
-      command: command.fullCommand
-    };
+    return safeResult(true, 'Posted to Slack', command);
   } catch (error) {
     throw error;
   }
@@ -244,34 +260,27 @@ async function executeTelegram(
   const botToken = config.config.bot_token;
   const chatId = config.config.chat_id;
 
-  if (!botToken || !chatId) {
-    return {
-      success: false,
-      message: 'Telegram bot token or chat ID not configured',
-      command: command.fullCommand
-    };
+  if (!botToken || !chatId || !TELEGRAM_BOT_TOKEN_RE.test(botToken) || !TELEGRAM_CHAT_ID_RE.test(chatId)) {
+    return safeResult(false, 'Telegram bot token or chat ID not configured', command);
   }
 
   try {
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      redirect: 'error',
+      signal: outboundSignal(),
       body: JSON.stringify({
         chat_id: chatId,
-        text: noteContent,
-        parse_mode: 'HTML'
+        text: noteContent
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Telegram API returned ${response.status}`);
+      throw new Error('Telegram request failed');
     }
 
-    return {
-      success: true,
-      message: 'Message sent to Telegram',
-      command: command.fullCommand
-    };
+    return safeResult(true, 'Message sent to Telegram', command);
   } catch (error) {
     throw error;
   }
@@ -285,20 +294,14 @@ async function executeDiscord(
   config: CommandConfig,
   noteContent: string
 ): Promise<ExecutionResult> {
-  const webhookUrl = config.config.webhook_url;
-
-  if (!webhookUrl) {
-    return {
-      success: false,
-      message: 'Discord webhook URL not configured',
-      command: command.fullCommand
-    };
-  }
+  const webhookUrl = await requireSafeOutboundUrl(config.config.webhook_url, 'Discord webhook');
 
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      redirect: 'error',
+      signal: outboundSignal(),
       body: JSON.stringify({
         content: noteContent,
         username: 'Resin'
@@ -306,14 +309,10 @@ async function executeDiscord(
     });
 
     if (!response.ok) {
-      throw new Error(`Discord returned ${response.status}`);
+      throw new Error('Discord request failed');
     }
 
-    return {
-      success: true,
-      message: 'Posted to Discord',
-      command: command.fullCommand
-    };
+    return safeResult(true, 'Posted to Discord', command);
   } catch (error) {
     throw error;
   }
@@ -330,12 +329,8 @@ async function executeNotion(
   const apiKey = config.config.api_key;
   const databaseId = config.config.database_id;
 
-  if (!apiKey || !databaseId) {
-    return {
-      success: false,
-      message: 'Notion API key or database ID not configured',
-      command: command.fullCommand
-    };
+  if (!apiKey || !databaseId || !NOTION_TOKEN_RE.test(apiKey) || !NOTION_DATABASE_ID_RE.test(databaseId)) {
+    return safeResult(false, 'Notion API key or database ID not configured', command);
   }
 
   try {
@@ -346,6 +341,8 @@ async function executeNotion(
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28'
       },
+      redirect: 'error',
+      signal: outboundSignal(),
       body: JSON.stringify({
         parent: { database_id: databaseId },
         properties: {
@@ -360,15 +357,10 @@ async function executeNotion(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || `Notion returned ${response.status}`);
+      throw new Error('Notion request failed');
     }
 
-    return {
-      success: true,
-      message: 'Saved to Notion database',
-      command: command.fullCommand
-    };
+    return safeResult(true, 'Saved to Notion database', command);
   } catch (error) {
     throw error;
   }

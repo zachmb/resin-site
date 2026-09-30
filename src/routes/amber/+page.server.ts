@@ -1,6 +1,24 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { userHasProAccess } from '$lib/server/auth';
+import { adminClient, userHasProAccess } from '$lib/server/auth';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_BULK_DELETE_SESSION_IDS_BYTES = 4_000;
+const MAX_AMBER_SESSION_TASKS = 200;
+
+function logAmberActionIssue(scope: string, error: unknown) {
+    const issue = error as { code?: unknown; name?: unknown; message?: unknown; status?: unknown };
+    console.error(`[amber/action] ${scope}`, {
+        code: typeof issue?.code === 'string' ? issue.code : undefined,
+        name: typeof issue?.name === 'string' ? issue.name : undefined,
+        status: typeof issue?.status === 'number' || typeof issue?.status === 'string' ? issue.status : undefined,
+        hasMessage: typeof issue?.message === 'string' && issue.message.length > 0
+    });
+}
+
+function isValidUuid(value: unknown): value is string {
+    return typeof value === 'string' && UUID_RE.test(value);
+}
 
 export const load: PageServerLoad = async ({ locals: { getUser } }) => {
     const user = await getUser();
@@ -38,30 +56,17 @@ export const actions: Actions = {
         const sessionId = data.get('sessionId')?.toString();
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
+        if (!UUID_RE.test(sessionId)) return { success: false, error: 'Invalid session ID' };
 
-        // Check if user has Google credentials connected
-        // Use service role to bypass any RLS issues
-        const { createClient } = await import('@supabase/supabase-js');
-        const { PUBLIC_SUPABASE_URL } = await import('$env/static/public');
-        const { SUPABASE_SERVICE_ROLE_KEY } = await import('$env/static/private');
-
-        const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-            auth: { persistSession: false }
-        });
-
-        const { data: creds, error: credsError } = await admin
+        // Check if user has Google credentials connected.
+        const { data: creds, error: credsError } = await adminClient
             .from('user_credentials')
             .select('google_refresh_token')
             .eq('id', user.id)
             .single();
 
         if (credsError || !creds?.google_refresh_token) {
-            console.error('[Activate] Credentials check failed:', {
-                error: credsError,
-                has_creds: !!creds,
-                has_token: !!creds?.google_refresh_token,
-                userId: user.id
-            });
+            logAmberActionIssue('activate_credentials_missing', credsError);
             return {
                 success: false,
                 error: 'Google Calendar not connected',
@@ -69,13 +74,25 @@ export const actions: Actions = {
             };
         }
 
+        const { data: sessionCheck, error: sessionCheckError } = await supabase
+            .from('amber_sessions')
+            .select('id, user_id')
+            .eq('id', sessionId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (sessionCheckError || !sessionCheck) {
+            return { success: false, error: 'Session not found or unauthorized' };
+        }
+
         // FIX: Fetch tasks FIRST to get their times, THEN update session status
         // This prevents iOS from receiving a "scheduled" notification before tasks have valid times
         const { data: tasks } = await supabase
             .from('amber_tasks')
-            .select('*')
+            .select('id, session_id, title, estimated_minutes, start_time, end_time')
             .eq('session_id', sessionId)
-            .order('created_at', { ascending: true });
+            .order('created_at', { ascending: true })
+            .limit(MAX_AMBER_SESSION_TASKS);
 
         if (!tasks || tasks.length === 0) {
             return { success: false, error: 'No tasks found for session' };
@@ -123,7 +140,7 @@ export const actions: Actions = {
                 .eq('session_id', sessionId);  // Verify session ownership
 
             if (updateError) {
-                console.error('Error updating task:', updateError);
+                logAmberActionIssue('activate_task_update_failed', updateError);
                 return { success: false, error: 'Failed to update task times' };
             }
         }
@@ -137,7 +154,7 @@ export const actions: Actions = {
             .eq('user_id', user.id);
 
         if (sessionError) {
-            console.error('Error activating plan:', sessionError);
+            logAmberActionIssue('activate_session_update_failed', sessionError);
             return { success: false, error: 'Failed to update session' };
         }
 
@@ -188,7 +205,7 @@ export const actions: Actions = {
             }
         } catch (blockingErr) {
             // Non-critical: blocking session creation failure doesn't fail the activation
-            console.warn('[Activate] Warning: blocking session creation failed', blockingErr);
+            logAmberActionIssue('activate_blocking_create_warning', blockingErr);
         }
 
         return { success: true };
@@ -204,6 +221,7 @@ export const actions: Actions = {
         const sessionId = data.get('sessionId')?.toString();
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
+        if (!UUID_RE.test(sessionId)) return { success: false, error: 'Invalid session ID' };
 
         // Verify ownership and fetch session details
         const { data: sessionCheck } = await supabase
@@ -214,7 +232,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized session access attempt');
             return { success: false, error: 'Session not found or unauthorized' };
         }
 
@@ -231,7 +248,7 @@ export const actions: Actions = {
             .eq('user_id', user.id);
 
         if (error) {
-            console.error('Error completing plan:', error);
+            logAmberActionIssue('complete_session_update_failed', error);
             return { success: false, error: 'Failed to complete plan' };
         }
 
@@ -265,7 +282,7 @@ export const actions: Actions = {
                 .eq('session_id', sessionId)
                 .is('cancelled_by_user_at', null);
         } catch (blockingErr) {
-            console.warn('[Complete] Warning: blocking session update failed', blockingErr);
+            logAmberActionIssue('complete_blocking_cleanup_warning', blockingErr);
         }
 
         // Apply gamification rewards (variable stones, forest health, streak)
@@ -291,7 +308,7 @@ export const actions: Actions = {
 
             return { success: true, reward, suggestRecovery };
         } catch (rewardError) {
-            console.error('Error applying rewards:', rewardError);
+            logAmberActionIssue('complete_reward_warning', rewardError);
             // Still mark as completed even if rewards fail
             return { success: true, reward: null, suggestRecovery: false };
         }
@@ -307,6 +324,7 @@ export const actions: Actions = {
         const sessionId = data.get('sessionId')?.toString();
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
+        if (!UUID_RE.test(sessionId)) return { success: false, error: 'Invalid session ID' };
 
         // Verify ownership before updating
         const { data: sessionCheck } = await supabase
@@ -317,7 +335,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized session access attempt');
             return { success: false, error: 'Session not found or unauthorized' };
         }
 
@@ -329,7 +346,7 @@ export const actions: Actions = {
             .eq('user_id', user.id);
 
         if (error) {
-            console.error('Error canceling plan:', error);
+            logAmberActionIssue('cancel_session_update_failed', error);
             return { success: false, error: 'Failed to cancel plan' };
         }
 
@@ -362,7 +379,7 @@ export const actions: Actions = {
                 .eq('session_id', sessionId)
                 .is('cancelled_by_user_at', null);
         } catch (blockingErr) {
-            console.warn('[Cancel] Warning: blocking session cleanup failed', blockingErr);
+            logAmberActionIssue('cancel_blocking_cleanup_warning', blockingErr);
         }
 
         // Apply forest decay for breaking focus (loss aversion mechanic)
@@ -370,7 +387,7 @@ export const actions: Actions = {
             const { applyForestDecay } = await import('$lib/services/gamification');
             await applyForestDecay(user.id, sessionId, 0);
         } catch (decayError) {
-            console.error('Error applying forest decay:', decayError);
+            logAmberActionIssue('cancel_forest_decay_warning', decayError);
             // Continue even if decay fails
         }
 
@@ -381,32 +398,45 @@ export const actions: Actions = {
         const supabase = await getAuthenticatedSupabase();
         const user = await getUser();
         if (!user) {
-            console.error('[Delete] Auth error: User not authenticated');
             return { success: false, error: "Unauthorized" };
         }
 
 
         const data = await request.formData();
         const sessionId = data.get('sessionId')?.toString();
-        console.log('[Delete] Attempting to delete session:', sessionId, 'for user:', user.id);
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
+        if (!UUID_RE.test(sessionId)) return { success: false, error: 'Invalid session ID' };
 
         // Try to find in amber_sessions first
-        const { data: amberSession, error: fetchError } = await supabase
+        const { data: amberSession } = await supabase
             .from('amber_sessions')
             .select('id, amber_tasks(calendar_event_id)')
             .eq('id', sessionId)
             .eq('user_id', user.id)
             .single();
 
-        console.log('[Delete] Fetch result - session found:', !!amberSession, 'error:', fetchError);
-
         if (amberSession) {
             // It's an amber session - clean up calendar events and delete
             const calendarEventIds = (amberSession.amber_tasks || [])
                 .map((t: any) => t.calendar_event_id)
                 .filter(Boolean);
+
+            const { count, error: deleteError } = await supabase
+                .from('amber_sessions')
+                .delete({ count: 'exact' })
+                .eq('id', sessionId)
+                .eq('user_id', user.id);
+
+            if (deleteError) {
+                logAmberActionIssue('delete_amber_failed', deleteError);
+                return { success: false, error: 'Failed to delete from database', code: 'DB_ERROR' };
+            }
+
+            // RLS SILENT FAILURE DETECTION
+            if (!count || count === 0) {
+                return { success: false, error: 'Could not delete session. Check your permissions.', code: 'RLS_SILENT_FAILURE' };
+            }
 
             if (calendarEventIds.length > 0) {
                 try {
@@ -416,40 +446,18 @@ export const actions: Actions = {
                         await deleteCalendarEvent(gToken, eventId);
                     }
                 } catch (calErr) {
-                    console.warn('[Action: delete] Calendar cleanup warning:', calErr);
+                    logAmberActionIssue('delete_calendar_cleanup_warning', calErr);
                 }
             }
-
-            const { count, error: deleteError } = await supabase
-                .from('amber_sessions')
-                .delete({ count: 'exact' })
-                .eq('id', sessionId)
-                .eq('user_id', user.id);
-
-            console.log('[Delete] Delete result - count:', count, 'error:', deleteError);
-
-            if (deleteError) {
-                console.error('[Delete] Database delete error:', deleteError);
-                return { success: false, error: 'Failed to delete from database', code: 'DB_ERROR' };
-            }
-
-            // RLS SILENT FAILURE DETECTION
-            if (!count || count === 0) {
-                console.error('[Delete] RLS silent failure - no rows affected');
-                return { success: false, error: 'Could not delete session. Check your permissions.', code: 'RLS_SILENT_FAILURE' };
-            }
-
-            console.log('[Delete] Successfully deleted session from database');
 
             // Recalculate stones
             try {
                 const { syncStonesFromNotes } = await import('$lib/services/gamification');
                 await syncStonesFromNotes(user.id, { force: true });
             } catch (syncError) {
-                console.error('[Delete] Stone sync error:', syncError);
+                logAmberActionIssue('delete_stone_sync_warning', syncError);
             }
 
-            console.log('[Delete] Action completed successfully');
             return { success: true };
         }
 
@@ -469,25 +477,20 @@ export const actions: Actions = {
                 .eq('id', sessionId)
                 .eq('user_id', user.id);
 
-            console.log('[Delete] Focus session delete - count:', count, 'error:', deleteError);
-
             if (deleteError) {
-                console.error('[Delete] Database delete error:', deleteError);
+                logAmberActionIssue('delete_focus_failed', deleteError);
                 return { success: false, error: 'Failed to delete session', code: 'DB_ERROR' };
             }
 
             // RLS SILENT FAILURE DETECTION
             if (!count || count === 0) {
-                console.error('[Delete] RLS silent failure on focus session - no rows affected');
                 return { success: false, error: 'Could not delete focus session. Check your permissions.', code: 'RLS_SILENT_FAILURE' };
             }
 
-            console.log('[Delete] Focus session deleted successfully');
             return { success: true };
         }
 
         // Session not found in either table
-        console.warn('[Delete] Session not found in either table');
         return { success: false, error: 'Session not found or unauthorized', code: 'NOT_FOUND' };
     },
 
@@ -500,6 +503,7 @@ export const actions: Actions = {
         const planId = data.get('plan_id') as string;
 
         if (!planId) return fail(400, { error: 'Missing plan ID' });
+        if (!isValidUuid(planId)) return fail(400, { error: 'Invalid plan ID' });
 
         const { error } = await supabase
             .from('joint_amber_plans')
@@ -508,7 +512,7 @@ export const actions: Actions = {
             .eq('collaborator_id', user.id);
 
         if (error) {
-            console.error('Error accepting plan:', error);
+            logAmberActionIssue('joint_accept_failed', error);
             return fail(500, { error: 'Failed to accept plan' });
         }
 
@@ -524,6 +528,7 @@ export const actions: Actions = {
         const planId = data.get('plan_id') as string;
 
         if (!planId) return fail(400, { error: 'Missing plan ID' });
+        if (!isValidUuid(planId)) return fail(400, { error: 'Invalid plan ID' });
 
         const { error } = await supabase
             .from('joint_amber_plans')
@@ -532,7 +537,7 @@ export const actions: Actions = {
             .eq('collaborator_id', user.id);
 
         if (error) {
-            console.error('Error declining plan:', error);
+            logAmberActionIssue('joint_decline_failed', error);
             return fail(500, { error: 'Failed to decline plan' });
         }
 
@@ -548,11 +553,12 @@ export const actions: Actions = {
         const planId = data.get('plan_id') as string;
 
         if (!planId) return fail(400, { error: 'Missing plan ID' });
+        if (!isValidUuid(planId)) return fail(400, { error: 'Invalid plan ID' });
 
         // Verify user is initiator
         const { data: plan, error: planError } = await supabase
             .from('joint_amber_plans')
-            .select('*')
+            .select('id, status, initiator_id')
             .eq('id', planId)
             .eq('initiator_id', user.id)
             .single();
@@ -579,7 +585,7 @@ export const actions: Actions = {
             .eq('id', planId);
 
         if (error) {
-            console.error('Error activating joint plan:', error);
+            logAmberActionIssue('joint_activate_failed', error);
             return fail(500, { error: 'Failed to activate plan' });
         }
 
@@ -595,6 +601,7 @@ export const actions: Actions = {
         const planId = data.get('plan_id') as string;
 
         if (!planId) return fail(400, { error: 'Missing plan ID' });
+        if (!isValidUuid(planId)) return fail(400, { error: 'Invalid plan ID' });
 
         const { error } = await supabase
             .from('joint_amber_plans')
@@ -603,7 +610,7 @@ export const actions: Actions = {
             .or(`initiator_id.eq.${user.id},collaborator_id.eq.${user.id}`);
 
         if (error) {
-            console.error('Error canceling joint plan:', error);
+            logAmberActionIssue('joint_cancel_failed', error);
             return fail(500, { error: 'Failed to cancel plan' });
         }
 
@@ -625,6 +632,12 @@ export const actions: Actions = {
         if (!sessionId || !taskId || !title) {
             return fail(400, { error: 'Missing required fields' });
         }
+        if (!isValidUuid(sessionId) || !isValidUuid(taskId)) {
+            return fail(400, { error: 'Invalid task or session ID' });
+        }
+        if (!Number.isFinite(estimatedMinutes) || estimatedMinutes < 1 || estimatedMinutes > 24 * 60) {
+            return fail(400, { error: 'Invalid task duration' });
+        }
 
         // FIX: Verify user ownership of the session before updating task
         const { data: sessionCheck } = await supabase
@@ -635,7 +648,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized task update attempt');
             return fail(401, { error: 'Unauthorized' });
         }
 
@@ -652,7 +664,7 @@ export const actions: Actions = {
 	            .eq('session_id', sessionId);
 
         if (error) {
-            console.error('Error updating task:', error);
+            logAmberActionIssue('task_update_failed', error);
             return fail(500, { error: 'Failed to update task' });
         }
 
@@ -670,6 +682,8 @@ export const actions: Actions = {
         const offsetMinutes = parseInt(data.get('offsetMinutes')?.toString() || '0', 10);
 
         if (!sessionId || !taskId) return fail(400, { error: 'Missing fields' });
+        if (!isValidUuid(sessionId) || !isValidUuid(taskId)) return fail(400, { error: 'Invalid task or session ID' });
+        if (!Number.isFinite(offsetMinutes) || Math.abs(offsetMinutes) > 24 * 60) return fail(400, { error: 'Invalid time shift' });
 
         // Verify ownership
         const { data: check } = await supabase
@@ -682,22 +696,31 @@ export const actions: Actions = {
         if (!check) return fail(401, { error: 'Unauthorized' });
 
         // Fetch current task times
-	        const { data: task } = await supabase
-	            .from('amber_tasks')
+		        const { data: task, error: taskError } = await supabase
+		            .from('amber_tasks')
 	            .select('start_time, end_time')
 	            .eq('id', taskId)
-	            .eq('session_id', sessionId)
-	            .single();
+		            .eq('session_id', sessionId)
+		            .single();
 
-        if (!task?.start_time) return { success: true }; // no-op if no times
+        if (taskError || !task) return fail(404, { error: 'Task not found' });
+        if (!task.start_time) return fail(400, { error: 'Task has no scheduled time' });
 
         const newStart = new Date(new Date(task.start_time).getTime() + offsetMinutes * 60000).toISOString();
         const newEnd = task.end_time ? new Date(new Date(task.end_time).getTime() + offsetMinutes * 60000).toISOString() : null;
 
-        await supabase
+        const { data: updatedTask, error: updateError } = await supabase
             .from('amber_tasks')
             .update({ start_time: newStart, end_time: newEnd, updated_at: new Date().toISOString() })
-            .eq('id', taskId);
+            .eq('id', taskId)
+            .eq('session_id', sessionId)
+            .select('id')
+            .maybeSingle();
+
+        if (updateError || !updatedTask) {
+            logAmberActionIssue('shift_single_task_update_failed', updateError);
+            return fail(updateError ? 500 : 404, { error: 'Could not update that task time' });
+        }
 
         return { success: true };
     },
@@ -712,37 +735,39 @@ export const actions: Actions = {
         const intensity = parseFloat(data.get('intensity')?.toString() || '0.5');
 
         if (!sessionId) return fail(400, { error: 'Missing session ID' });
+        if (!isValidUuid(sessionId)) return fail(400, { error: 'Invalid session ID' });
+        if (!Number.isFinite(intensity) || intensity < 0 || intensity > 1) return fail(400, { error: 'Invalid intensity' });
 
         // Update session intensity
-        const { error } = await supabase
+        const { data: updatedSession, error } = await supabase
             .from('amber_sessions')
             .update({ intensity })
             .eq('id', sessionId)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .maybeSingle();
 
-        if (error) {
-            console.error('Error updating intensity:', error);
-            return fail(500, { error: 'Failed to update intensity' });
+        if (error || !updatedSession) {
+            logAmberActionIssue('intensity_update_failed', error);
+            return fail(error ? 500 : 404, { error: error ? 'Failed to update intensity' : 'Session not found' });
         }
 
         // Calculate tier and apply tier-based rules to all tasks
         const tier = intensity < 0.25 ? 0 : intensity < 0.5 ? 1 : intensity < 0.75 ? 2 : 3;
-	        const { data: tasks } = await supabase
-	            .from('amber_tasks')
-	            .select('id')
-	            .eq('session_id', sessionId);
+        const updates: Record<string, boolean | string> = { updated_at: new Date().toISOString() };
+        if (tier === 0) { updates.requires_focus = false; updates.requires_camera_verification = false; }
+        else if (tier === 1) { updates.requires_focus = true; updates.requires_camera_verification = false; }
+        else if (tier === 2) { updates.requires_focus = true; }
+        else { updates.requires_focus = true; updates.requires_camera_verification = true; }
 
-        for (const task of tasks || []) {
-            const updates: any = { updated_at: new Date().toISOString() };
-            if (tier === 0) { updates.requires_focus = false; updates.requires_camera_verification = false; }
-            else if (tier === 1) { updates.requires_focus = true; updates.requires_camera_verification = false; }
-            else if (tier === 2) { updates.requires_focus = true; /* keep existing camera */ }
-            else { updates.requires_focus = true; updates.requires_camera_verification = true; }
+        const { error: taskUpdateError } = await supabase
+            .from('amber_tasks')
+            .update(updates)
+            .eq('session_id', sessionId);
 
-            await supabase
-                .from('amber_tasks')
-                .update(updates)
-                .eq('id', task.id);
+        if (taskUpdateError) {
+            logAmberActionIssue('intensity_task_update_failed', taskUpdateError);
+            return fail(500, { error: 'Intensity changed, but task protection could not be updated' });
         }
 
         return { success: true };
@@ -758,6 +783,8 @@ export const actions: Actions = {
         const newTotal = parseInt(data.get('newTotal')?.toString() || '0', 10);
 
         if (!sessionId || newTotal === 0) return fail(400, { error: 'Missing or invalid parameters' });
+        if (!isValidUuid(sessionId)) return fail(400, { error: 'Invalid session ID' });
+        if (!Number.isFinite(newTotal) || newTotal < 5 || newTotal > 24 * 60) return fail(400, { error: 'Invalid duration' });
 
         // FIX: Verify user ownership of the session first
         const { data: sessionCheck } = await supabase
@@ -768,7 +795,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized duration scaling attempt');
             return fail(401, { error: 'Unauthorized' });
         }
 
@@ -793,7 +819,8 @@ export const actions: Actions = {
             await supabase
                 .from('amber_tasks')
                 .update({ estimated_minutes: newMins, updated_at: new Date().toISOString() })
-                .eq('id', task.id);
+                .eq('id', task.id)
+                .eq('session_id', sessionId);
         }
 
         return { success: true };
@@ -810,6 +837,8 @@ export const actions: Actions = {
         const offsetMinutes = parseInt(data.get('offsetMinutes')?.toString() || '0', 10);
 
         if (!sessionId) return fail(400, { error: 'Missing session ID' });
+        if (!isValidUuid(sessionId)) return fail(400, { error: 'Invalid session ID' });
+        if (!Number.isFinite(offsetMinutes) || Math.abs(offsetMinutes) > 24 * 60) return fail(400, { error: 'Invalid time shift' });
 
         // FIX: Verify user ownership of the session first
         const { data: sessionCheck } = await supabase
@@ -820,7 +849,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized time shift attempt');
             return fail(401, { error: 'Unauthorized' });
         }
 
@@ -829,7 +857,8 @@ export const actions: Actions = {
 	            .from('amber_tasks')
 	            .select('id, start_time, end_time, estimated_minutes')
 	            .eq('session_id', sessionId)
-	            .order('sequence_order, created_at', { ascending: true });
+	            .order('sequence_order, created_at', { ascending: true })
+	            .limit(MAX_AMBER_SESSION_TASKS);
 
         if (fetchError || !tasks) {
             return fail(500, { error: 'Failed to fetch tasks' });
@@ -840,6 +869,7 @@ export const actions: Actions = {
         if (startTime) {
             // User set explicit start time
             newStartTime = new Date(startTime);
+            if (!Number.isFinite(newStartTime.getTime())) return fail(400, { error: 'Invalid start time' });
         } else if (tasks.length > 0 && tasks[0].start_time && offsetMinutes !== 0) {
             // Apply offset to existing start time
             newStartTime = new Date(tasks[0].start_time);
@@ -854,14 +884,20 @@ export const actions: Actions = {
             const estMins = task.estimated_minutes || 30;
             const endTime = new Date(currentTime.getTime() + estMins * 60000);
 
-            await supabase
+            const { error: updateError } = await supabase
                 .from('amber_tasks')
                 .update({
                     start_time: currentTime.toISOString(),
                     end_time: endTime.toISOString(),
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', task.id);
+                .eq('id', task.id)
+                .eq('session_id', sessionId);
+
+            if (updateError) {
+                logAmberActionIssue('shift_start_times_task_update_failed', updateError);
+                return fail(500, { error: 'Could not update every task time' });
+            }
 
             currentTime = endTime;
         }
@@ -878,6 +914,7 @@ export const actions: Actions = {
         const sessionId = data.get('sessionId')?.toString();
 
         if (!sessionId) return { success: false, error: 'Missing session ID' };
+        if (!isValidUuid(sessionId)) return { success: false, error: 'Invalid session ID' };
 
         // Verify ownership before updating
         const { data: sessionCheck } = await supabase
@@ -888,7 +925,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized session access attempt');
             return { success: false, error: 'Session not found or unauthorized' };
         }
 
@@ -900,7 +936,7 @@ export const actions: Actions = {
             .eq('user_id', user.id);
 
         if (error) {
-            console.error('Error marking plan as failed:', error);
+            logAmberActionIssue('mark_failed_update_failed', error);
             return { success: false, error: 'Failed to update plan' };
         }
 
@@ -919,9 +955,10 @@ export const actions: Actions = {
         if (!sessionId || !extraMinutesStr) {
             return { success: false, error: 'Missing session ID or duration' };
         }
+        if (!isValidUuid(sessionId)) return { success: false, error: 'Invalid session ID' };
 
         const extraMinutes = parseInt(extraMinutesStr, 10);
-        if (isNaN(extraMinutes) || extraMinutes <= 0) {
+        if (!Number.isFinite(extraMinutes) || extraMinutes <= 0 || extraMinutes > 24 * 60) {
             return { success: false, error: 'Invalid duration' };
         }
 
@@ -934,7 +971,6 @@ export const actions: Actions = {
             .single();
 
         if (!sessionCheck) {
-            console.error('Unauthorized session access attempt');
             return { success: false, error: 'Session not found or unauthorized' };
         }
 
@@ -943,7 +979,8 @@ export const actions: Actions = {
 	            .from('amber_tasks')
 	            .select('id, end_time')
 	            .eq('session_id', sessionId)
-	            .order('sequence_order, created_at', { ascending: true });
+	            .order('sequence_order, created_at', { ascending: true })
+	            .limit(MAX_AMBER_SESSION_TASKS);
 
         if (fetchError || !tasks || tasks.length === 0) {
             return { success: false, error: 'Failed to fetch tasks' };
@@ -962,7 +999,8 @@ export const actions: Actions = {
                         end_time: newEndTime.toISOString(),
                         updated_at: new Date().toISOString()
                     })
-                    .eq('id', task.id);
+                    .eq('id', task.id)
+                    .eq('session_id', sessionId);
             }
         }
 
@@ -975,7 +1013,19 @@ export const actions: Actions = {
         if (authError || !user) return { success: false, error: "Unauthorized" };
 
         const data = await request.formData();
-        const sessionIds = JSON.parse(data.get('sessionIds')?.toString() || '[]');
+        let sessionIds: string[];
+        try {
+            const rawSessionIds = data.get('sessionIds')?.toString() || '[]';
+            if (rawSessionIds.length > MAX_BULK_DELETE_SESSION_IDS_BYTES) {
+                return { success: false, error: 'Too many sessions selected' };
+            }
+            const parsed = JSON.parse(rawSessionIds);
+            sessionIds = Array.isArray(parsed)
+                ? Array.from(new Set(parsed.filter(isValidUuid))).slice(0, 100)
+                : [];
+        } catch {
+            sessionIds = [];
+        }
 
         if (!sessionIds.length) return { success: false, error: 'No sessions selected' };
 
@@ -989,12 +1039,31 @@ export const actions: Actions = {
         if (fetchError || !sessionsData) {
             return { success: false, error: 'Sessions not found or unauthorized' };
         }
+        if (sessionsData.length !== sessionIds.length) {
+            return { success: false, error: 'One or more sessions were not found or unauthorized' };
+        }
 
-        // 1. Clean up Calendar events
+        // 1. Capture Calendar events before deleting the sessions
         const calendarEventIds = sessionsData.flatMap((s: any) =>
             (s.amber_tasks || []).map((t: any) => t.calendar_event_id)
         ).filter(Boolean);
 
+        // 2. Delete from database
+        const { count, error: deleteError } = await supabase
+            .from('amber_sessions')
+            .delete({ count: 'exact' })
+            .in('id', sessionIds)
+            .eq('user_id', user.id);
+
+        if (deleteError) {
+            logAmberActionIssue('bulk_delete_failed', deleteError);
+            return { success: false, error: 'Failed to delete from database' };
+        }
+        if (count !== sessionsData.length) {
+            return { success: false, error: 'Not all sessions could be deleted' };
+        }
+
+        // 3. Clean up external Calendar events only after database deletion succeeds
         if (calendarEventIds.length > 0) {
             try {
                 const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/services/amber');
@@ -1003,20 +1072,8 @@ export const actions: Actions = {
                     await deleteCalendarEvent(gToken, eventId);
                 }
             } catch (calErr) {
-                console.warn('[Action: bulkDelete] Calendar cleanup warning:', calErr);
+                logAmberActionIssue('bulk_delete_calendar_cleanup_warning', calErr);
             }
-        }
-
-        // 2. Delete from database
-        const { error: deleteError } = await supabase
-            .from('amber_sessions')
-            .delete()
-            .in('id', sessionIds)
-            .eq('user_id', user.id);
-
-        if (deleteError) {
-            console.error('[Action: bulkDelete] Database delete error:', deleteError);
-            return { success: false, error: 'Failed to delete from database' };
         }
 
         return { success: true };
@@ -1033,15 +1090,20 @@ export const actions: Actions = {
         if (!dateStr) return { success: false, error: 'Missing date' };
 
         const startOfDay = new Date(dateStr);
+        if (!Number.isFinite(startOfDay.getTime())) return { success: false, error: 'Invalid date' };
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(dateStr);
         endOfDay.setHours(23, 59, 59, 999);
 
         // Fetch sessions for that day
-        const { data: sessionsData } = await supabase
+        const { data: sessionsData, error: sessionsError } = await supabase
             .from('amber_sessions')
             .select('id, created_at, amber_tasks(start_time, end_time, calendar_event_id)')
             .eq('user_id', user.id);
+
+        if (sessionsError || !sessionsData) {
+            return { success: false, error: 'Failed to load sessions for that day' };
+        }
 
         const sessionIdsToDelete = (sessionsData || []).filter((s: any) => {
             const tasks = s.amber_tasks || [];
@@ -1055,12 +1117,28 @@ export const actions: Actions = {
 
         if (sessionIdsToDelete.length === 0) return { success: true };
 
-        // 1. Clean up Calendar events
-        const calendarEventIds = (sessionsData || [])
+        // 1. Capture Calendar events before deleting the sessions
+        const calendarEventIds = sessionsData
             .filter((s: any) => sessionIdsToDelete.includes(s.id))
             .flatMap((s: any) => (s.amber_tasks || []).map((t: any) => t.calendar_event_id))
             .filter(Boolean);
 
+        // 2. Delete from database
+        const { count, error: deleteError } = await supabase
+            .from('amber_sessions')
+            .delete({ count: 'exact' })
+            .in('id', sessionIdsToDelete)
+            .eq('user_id', user.id);
+
+        if (deleteError) {
+            logAmberActionIssue('clear_day_delete_failed', deleteError);
+            return { success: false, error: 'Failed to delete from database' };
+        }
+        if (count !== sessionIdsToDelete.length) {
+            return { success: false, error: 'Not all sessions for that day could be deleted' };
+        }
+
+        // 3. Clean up external Calendar events only after database deletion succeeds
         if (calendarEventIds.length > 0) {
             try {
                 const { getGoogleAccessToken, deleteCalendarEvent } = await import('$lib/services/amber');
@@ -1069,20 +1147,8 @@ export const actions: Actions = {
                     await deleteCalendarEvent(gToken, eventId);
                 }
             } catch (calErr) {
-                console.warn('[Action: clearDay] Calendar cleanup warning:', calErr);
+                logAmberActionIssue('clear_day_calendar_cleanup_warning', calErr);
             }
-        }
-
-        // 2. Delete from database
-        const { error: deleteError } = await supabase
-            .from('amber_sessions')
-            .delete()
-            .in('id', sessionIdsToDelete)
-            .eq('user_id', user.id);
-
-        if (deleteError) {
-            console.error('[Action: clearDay] Database delete error:', deleteError);
-            return { success: false, error: 'Failed to delete from database' };
         }
 
         return { success: true };

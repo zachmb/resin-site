@@ -65,6 +65,9 @@ const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const jwtSecret = Deno.env.get('JWT_SECRET')!
 
 const supabase = createClient(supabaseUrl, supabaseKey)
+const MAX_REQUEST_BODY_BYTES = 16_000
+const ALLOWED_PLATFORMS = new Set(['ios', 'extension', 'web'])
+const SAFE_DEVICE_ID_RE = /^[a-zA-Z0-9._:-]{1,160}$/
 
 async function handler(req: Request): Promise<Response> {
   // Handle CORS preflight
@@ -74,15 +77,14 @@ async function handler(req: Request): Promise<Response> {
 
   try {
     // 1. Verify request is authenticated
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const token = parseBearerToken(authHeader)
+    if (!token) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: missing Authorization header' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
-
-    const token = authHeader.replace('Bearer ', '')
 
     // Verify JWT using jose
     const secret = new TextEncoder().encode(jwtSecret)
@@ -91,8 +93,8 @@ async function handler(req: Request): Promise<Response> {
       verified = await jwtVerify(token, secret)
     } catch (e) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized: invalid token', details: e.message }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unauthorized: invalid token' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -100,17 +102,41 @@ async function handler(req: Request): Promise<Response> {
     if (!userId) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: no user ID in token' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
     // 2. Parse request body
-    const body = await req.json()
+    let body: Record<string, unknown>
+    try {
+      body = await readBoundedJsonBody(req, MAX_REQUEST_BODY_BYTES)
+    } catch (error) {
+      const status = error instanceof Error && error.message === 'request_body_too_large' ? 413 : 400
+      return new Response(
+        JSON.stringify({ error: status === 413 ? 'Request body too large' : 'Invalid JSON body' }),
+        { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
     const { categories_requested, platform, device_id } = body as {
       categories_requested?: string[]
       platform?: string
       device_id?: string
     }
+    const safePlatform = typeof platform === 'string' && ALLOWED_PLATFORMS.has(platform)
+      ? platform
+      : 'unknown'
+    const safeDeviceId = typeof device_id === 'string' && SAFE_DEVICE_ID_RE.test(device_id)
+      ? device_id
+      : undefined
+    const requestedCategories = Array.isArray(categories_requested)
+      ? new Set(
+          categories_requested
+            .filter((category): category is string => typeof category === 'string')
+            .map((category) => category.trim().toLowerCase())
+            .filter((category) => /^[a-z0-9_-]{1,64}$/.test(category))
+            .slice(0, 50)
+        )
+      : null
 
     // 3. Query active_blocks for this user
     const now = new Date()
@@ -124,7 +150,11 @@ async function handler(req: Request): Promise<Response> {
       .gt('server_end_time', now.toISOString())
 
     if (blocksError) {
-      console.error('[get-block-policy] active_blocks error:', blocksError)
+      console.error('[get-block-policy] active_blocks error')
+      return new Response(
+        JSON.stringify({ error: 'Failed to load active protection state' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
     }
 
     // 4. Query blocking_sessions for this user (Focus sessions)
@@ -137,7 +167,11 @@ async function handler(req: Request): Promise<Response> {
       .gt('end_time', now.toISOString())
 
     if (sessionsError) {
-      console.error('[get-block-policy] blocking_sessions error:', sessionsError)
+      console.error('[get-block-policy] blocking_sessions error')
+      return new Response(
+        JSON.stringify({ error: 'Failed to load focus session state' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
     }
 
     // 5. Combine and compute active blocks
@@ -147,14 +181,16 @@ async function handler(req: Request): Promise<Response> {
     if (blocks) {
       for (const block of blocks) {
         const endTime = new Date(block.server_end_time)
-        results.push({
-          id: block.id,
-          category_id: block.category_id,
-          is_active: true,
-          server_start_time: block.server_start_time,
-          server_end_time: block.server_end_time,
-          seconds_remaining: Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000))
-        })
+        if (!requestedCategories || requestedCategories.has(block.category_id)) {
+          results.push({
+            id: block.id,
+            category_id: block.category_id,
+            is_active: true,
+            server_start_time: block.server_start_time,
+            server_end_time: block.server_end_time,
+            seconds_remaining: Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000))
+          })
+        }
       }
     }
 
@@ -168,7 +204,7 @@ async function handler(req: Request): Promise<Response> {
 
         for (const cat of defaultCategories) {
           // Avoid duplicates if already in active_blocks
-          if (!results.some(r => r.category_id === cat)) {
+          if ((!requestedCategories || requestedCategories.has(cat)) && !results.some(r => r.category_id === cat)) {
             results.push({
               id: `session-${session.id}-${cat}`,
               category_id: cat,
@@ -187,8 +223,8 @@ async function handler(req: Request): Promise<Response> {
     const auditEvent = {
       user_id: userId,
       event_type: 'policy_requested',
-      platform,
-      device_id,
+      platform: safePlatform,
+      device_id: safeDeviceId,
       num_blocks_returned: results.length,
       timestamp: now.toISOString()
     }
@@ -200,10 +236,10 @@ async function handler(req: Request): Promise<Response> {
         user_id: userId,
         event_type: 'policy_requested',
         event_details: auditEvent,
-        platform: platform || 'unknown'
+        platform: safePlatform
       })
       .then(() => console.log('[get-block-policy] Audit logged'))
-      .catch((err: any) => console.error('[get-block-policy] Audit log error:', err))
+      .catch(() => console.error('[get-block-policy] Audit log error'))
 
     // 7. Build response with server timestamp (never client-controlled)
     const response: PolicyResponse = {
@@ -213,29 +249,66 @@ async function handler(req: Request): Promise<Response> {
       signature: ''  // Computed below
     }
 
-    // 8. Sign the response to prevent tampering
-    // Client cannot forge this signature without the secret
-    const signatureData = JSON.stringify(results) + now.toISOString() + jwtSecret
-    const encoder = new TextEncoder()
-    const data = encoder.encode(signatureData)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    response.signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    // 8. Sign the response to prevent tampering.
+    response.signature = await signPolicy(results, response.timestamp, jwtSecret)
 
-    console.log('[get-block-policy] Returning policy for user', userId, 'with', results.length, 'active blocks')
+    console.log('[get-block-policy] Returning policy with', results.length, 'active blocks')
 
     return new Response(JSON.stringify(response), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     })
 
-  } catch (err: any) {
-    console.error('[get-block-policy] Unexpected error:', err)
+  } catch {
+    console.error('[get-block-policy] Unexpected error')
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(err) }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   }
 }
 
 Deno.serve(handler)
+
+function parseBearerToken(authHeader: string): string | null {
+  const match = authHeader.match(/^Bearer\s+([A-Za-z0-9._-]+)$/)
+  return match?.[1] ?? null
+}
+
+async function readBoundedJsonBody(req: Request, maxBytes: number): Promise<Record<string, unknown>> {
+  const contentLength = Number(req.headers.get('content-length') ?? 0)
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new Error('request_body_too_large')
+  }
+
+  const rawBody = await req.text()
+  if (rawBody.length > maxBytes) {
+    throw new Error('request_body_too_large')
+  }
+
+  const parsed = JSON.parse(rawBody) as unknown
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('invalid_json_body')
+  }
+
+  return parsed as Record<string, unknown>
+}
+
+async function signPolicy(blocks: BlockPolicy[], timestamp: string, secretValue: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secretValue),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(`${JSON.stringify(blocks)}.${timestamp}`)
+  )
+  return Array.from(new Uint8Array(signature))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+}

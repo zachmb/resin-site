@@ -32,7 +32,7 @@
         try {
             const { data } = await supabase
                 .from("group_focus_sessions")
-                .select("*")
+                .select("id, title, start_time, duration_minutes, status")
                 .eq("group_id", groupId)
                 .gte("start_time", new Date().toISOString())
                 .order("start_time", { ascending: true })
@@ -43,7 +43,7 @@
                 await loadParticipants();
             }
         } catch (error) {
-            console.error("Error loading sessions:", error);
+            console.error("Error loading sessions");
         }
     }
 
@@ -52,7 +52,7 @@
             try {
                 const { data } = await supabase
                     .from("group_session_participants")
-                    .select("user_id, profiles(email)")
+                    .select("user_id")
                     .eq("session_id", session.id)
                     .is("left_at", null);
 
@@ -64,7 +64,7 @@
                         && data.some((p: { user_id: string }) => p.user_id === currentUserId);
                 }
             } catch (error) {
-                console.error("Error loading participants:", error);
+            console.error("Error loading participants");
             }
         }
     }
@@ -83,7 +83,7 @@
                     duration_minutes: parseInt(sessionDuration),
                     status: "scheduled"
                 })
-                .select()
+                .select("id, title, start_time, duration_minutes, status")
                 .single();
 
             if (session) {
@@ -94,7 +94,7 @@
                 await loadSessions();
             }
         } catch (error) {
-            console.error("Error creating session:", error);
+            console.error("Error creating session");
         } finally {
             loading = false;
         }
@@ -129,7 +129,7 @@
             userSessions[sessionId] = true;
             await loadParticipants();
         } catch (error) {
-            console.error("Error joining session:", error);
+            console.error("Error joining session");
         }
     }
 
@@ -147,7 +147,7 @@
             userSessions[sessionId] = false;
             await loadParticipants();
         } catch (error) {
-            console.error("Error leaving session:", error);
+            console.error("Error leaving session");
         }
     }
 

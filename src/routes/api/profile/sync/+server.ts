@@ -1,14 +1,35 @@
 import { json } from '@sveltejs/kit';
-import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { syncStonesFromNotes } from '$lib/services/gamification';
 import { recordDailyActivity } from '$lib/services/gamification';
 import type { RequestEvent } from '@sveltejs/kit';
+import { readOptionalBoundedJsonBody, RequestBodyError } from '$lib/server/requestBody';
+import { adminClient } from '$lib/server/auth';
 
-const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false }
-});
+const MAX_JWT_LENGTH = 8192;
+const MAX_REQUEST_BODY_LENGTH = 4_000;
+const JWT_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const NO_STORE_HEADERS = {
+    'Cache-Control': 'no-store, max-age=0',
+    Pragma: 'no-cache'
+};
+const ALLOWED_BROWSER_ORIGINS = new Set([
+    'https://noteresin.com',
+    'https://www.noteresin.com',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+]);
+
+function responseHeaders(request: Request): HeadersInit {
+    const origin = request.headers.get('origin') ?? '';
+    const headers: Record<string, string> = {
+        ...NO_STORE_HEADERS,
+        Vary: 'Origin, Authorization'
+    };
+    if (ALLOWED_BROWSER_ORIGINS.has(origin)) {
+        headers['Access-Control-Allow-Origin'] = origin;
+    }
+    return headers;
+}
 
 /**
  * POST /api/profile/sync
@@ -17,16 +38,17 @@ const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
  * Called by iOS/Web to ensure cloud consistency.
  */
 export const POST = async ({ request }: RequestEvent) => {
+    const headers = responseHeaders(request);
     const authHeader = request.headers.get('authorization') ?? '';
     let jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-    if (!jwt) {
-        return json({ error: 'Unauthorized' }, { status: 401 });
+    if (!jwt || jwt.length > MAX_JWT_LENGTH || !JWT_RE.test(jwt)) {
+        return json({ error: 'Missing or invalid Authorization header' }, { status: 401, headers });
     }
 
-    const { data: { user }, error: userError } = await admin.auth.getUser(jwt);
+    const { data: { user }, error: userError } = await adminClient.auth.getUser(jwt);
     if (userError || !user) {
-        return json({ error: 'Invalid token' }, { status: 401 });
+        return json({ error: 'Invalid or expired token' }, { status: 401, headers });
     }
 
     try {
@@ -34,10 +56,13 @@ export const POST = async ({ request }: RequestEvent) => {
         // (i.e. allow decreasing total_stones). Default is protective.
         let force = false;
         try {
-            const body = await request.json();
+            const body = await readOptionalBoundedJsonBody<{ force?: boolean }>(request, MAX_REQUEST_BODY_LENGTH);
             force = body?.force === true;
-        } catch {
-            // No JSON body (or invalid) is fine.
+        } catch (error) {
+            const status = error instanceof RequestBodyError ? error.status : 400;
+            return json({
+                error: status === 413 ? 'Request body too large' : 'Invalid JSON body'
+            }, { status, headers });
         }
 
         // 1. Recalculate stones (1 note = 1 stone)
@@ -47,10 +72,15 @@ export const POST = async ({ request }: RequestEvent) => {
         const { currentStreak, longestStreak, longestStreakAt } = await recordDailyActivity(user.id);
 
         // 3. Fetch forest health and other profile data
-        const { data: profile } = await admin.from('profiles')
+        const { data: profile, error: profileError } = await adminClient.from('profiles')
             .select('forest_health, widget_enabled, unlocked_tree_ids, hardened_mode_enabled, account_type')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
+
+        if (profileError) {
+            console.error('[api/profile/sync] Profile lookup failed');
+            return json({ error: 'Failed to sync profile' }, { status: 500, headers });
+        }
 
         // 4. Return latest profile stats
         return json({
@@ -64,16 +94,16 @@ export const POST = async ({ request }: RequestEvent) => {
             unlocked_tree_ids: profile?.unlocked_tree_ids ?? [],
             hardened_mode_enabled: profile?.hardened_mode_enabled ?? false,
             account_type: profile?.account_type ?? 'free'
-        });
-    } catch (err) {
-        console.error('[api/profile/sync] Error:', err);
-        return json({ error: 'Failed to sync profile' }, { status: 500 });
+        }, { headers });
+    } catch {
+        console.error('[api/profile/sync] Error');
+        return json({ error: 'Failed to sync profile' }, { status: 500, headers });
     }
 }
 
-export const OPTIONS = async () => new Response(null, {
+export const OPTIONS = async ({ request }: RequestEvent) => new Response(null, {
     headers: {
-        'Access-Control-Allow-Origin': '*',
+        ...responseHeaders(request),
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
     }

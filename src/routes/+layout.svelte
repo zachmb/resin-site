@@ -5,7 +5,8 @@
 	import { page } from "$app/stores";
 	import { onMount, untrack } from "svelte";
 	import type { Session } from "@supabase/supabase-js";
-	import { flushQueue } from "$lib/services/offlineQueue";
+	import { clearAllCache } from "$lib/services/localCache";
+	import { clearCache } from "$lib/utils/cache";
 	import { rewardTriggered } from "$lib/state/rewards";
 	import { registerServiceWorker } from "$lib/services/offline";
 	import { createNotesDataManager, createAmberDataManager } from "$lib/services/DataManager";
@@ -21,12 +22,47 @@
 	const debugLog = (...args: unknown[]) => {
 		if (dev) console.log(...args);
 	};
-	const reportClientIssue = (message: string, error?: unknown) => {
-		if (dev && error) {
-			console.error(message, error);
-			return;
-		}
+	const reportClientIssue = (message: string) => {
 		console.error(message);
+	};
+	const LOCAL_STATE_OWNER_KEY = 'resin_local_state_owner';
+	const USER_SCOPED_LOCAL_STORAGE_KEYS = [
+		'resin_profile',
+		'resin_focus_data',
+		'resin_offline_queue',
+		'selectedNoteId',
+		'weeklyFocusGoal',
+		'resin_onboarded'
+	];
+	const USER_SCOPED_LOCAL_STORAGE_PREFIXES = ['resin:draft:', 'selectedNoteId:'];
+	const clearUserLocalState = () => {
+		clearAllCache();
+		clearCache();
+		for (const key of USER_SCOPED_LOCAL_STORAGE_KEYS) {
+			localStorage.removeItem(key);
+		}
+		for (const key of Object.keys(localStorage)) {
+			if (USER_SCOPED_LOCAL_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+				localStorage.removeItem(key);
+			}
+		}
+	};
+	const reconcileLocalStateOwner = (userId: string | null | undefined) => {
+		try {
+			if (!userId) {
+				clearUserLocalState();
+				localStorage.removeItem(LOCAL_STATE_OWNER_KEY);
+				return;
+			}
+
+			const previousUserId = localStorage.getItem(LOCAL_STATE_OWNER_KEY);
+			if (previousUserId !== userId) {
+				clearUserLocalState();
+			}
+			localStorage.setItem(LOCAL_STATE_OWNER_KEY, userId);
+		} catch {
+			clearUserLocalState();
+		}
 	};
 
 	// Compute page title based on current route
@@ -69,7 +105,7 @@
 		const newProfile = data.profile; // reactive: re-runs when data changes
 		if (!newProfile) return;
 		const current = untrack(() => profileData);
-		if (!current) {
+		if (!current || current.id !== newProfile.id) {
 			profileData = newProfile;
 		} else {
 			// Merge ensuring we never downgrade stones/streak due to stale SvelteKit navigation cache
@@ -101,9 +137,10 @@
 						count: Array.isArray(data) ? data.length : undefined
 					});
 				},
-				(error: Error) => {
-					reportClientIssue('[DataManager] Notes sync error', error);
-				}
+				() => {
+					reportClientIssue('[DataManager] Notes sync error');
+				},
+				session.user.id
 			);
 
 			const amberManager = createAmberDataManager(
@@ -112,9 +149,10 @@
 						count: Array.isArray(data) ? data.length : undefined
 					});
 				},
-				(error: Error) => {
-					reportClientIssue('[DataManager] Amber sync error', error);
-				}
+				() => {
+					reportClientIssue('[DataManager] Amber sync error');
+				},
+				session.user.id
 			);
 
 			setContext('dataManager', {
@@ -134,23 +172,21 @@
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange(
-			(_event: string, _session: Session | null) => {
+			(event: string, _session: Session | null) => {
+				if (event === 'SIGNED_OUT') {
+					reconcileLocalStateOwner(null);
+				} else {
+					reconcileLocalStateOwner(_session?.user?.id);
+				}
 				if (_session?.expires_at !== session?.expires_at) {
 					invalidate("supabase:auth");
 				}
 			},
 		);
 
-		// Offline queue - flush on reconnect
-		const handleOnline = () => {
-			flushQueue();
-		};
-		window.addEventListener('online', handleOnline);
-
-		// Flush queue on load if we're online
-		if (navigator.onLine) {
-			flushQueue();
-		}
+		reconcileLocalStateOwner(session?.user?.id);
+		localStorage.removeItem('resin_offline_queue');
+		localStorage.removeItem('resin_focus_data');
 
 		// Show daily ritual prompt if user hasn't had a session recently
 		if (profileData?.last_session_date && daysWithoutSession >= 1) {
@@ -176,7 +212,7 @@
 					},
 					(payload: { new: any }) => {
 						// Update profile data when iOS syncs
-						if (payload.new) {
+						if (payload.new?.id === session?.user?.id) {
 							debugLog('[Layout] Real-time profile update received:', {
 								stones: payload.new.total_stones,
 								streak: payload.new.current_streak,
@@ -233,16 +269,15 @@
 								data.profile = profileData;
 							}
 						}
-					} catch (err) {
+					} catch {
 						// Silent error - polling is fallback
-						reportClientIssue('[Layout] Profile polling error; will retry', err);
+						reportClientIssue('[Layout] Profile polling error; will retry');
 					}
 				}
 			}, 10000); // Poll every 10 seconds - faster on free plan
 
 			return () => {
 				debugLog('[Layout] Cleaning up subscriptions and polling');
-				window.removeEventListener('online', handleOnline);
 				subscription.unsubscribe();
 				supabase.removeChannel(profileSubscription);
 				clearInterval(pollInterval);
@@ -250,7 +285,6 @@
 		}
 
 		return () => {
-			window.removeEventListener('online', handleOnline);
 			subscription.unsubscribe();
 		};
 	});

@@ -1,8 +1,27 @@
 import { redirect } from '@sveltejs/kit'
+import { adminClient } from '$lib/server/auth'
 
 const IOS_CALLBACK_SCHEME = 'com.resin.app:'
 const IOS_AUTH_CALLBACK_HOSTS = new Set(['auth', 'auth-callback', 'callback', 'login-callback', 'oauth'])
 const isDev = process.env.NODE_ENV === 'development'
+const FALLBACK_REDIRECT_PATH = '/'
+
+function safeWebRedirectPath(next: string, origin: string): string {
+    try {
+        if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\')) {
+            return next
+        }
+
+        const nextUrl = new URL(next, origin)
+        if (nextUrl.origin === origin) {
+            return nextUrl.pathname + nextUrl.search
+        }
+    } catch {
+        console.warn('[Auth Callback] Invalid next parameter')
+    }
+
+    return FALLBACK_REDIRECT_PATH
+}
 
 function safeIOSAuthCallback(next: string, code: string | null): string | null {
     try {
@@ -40,68 +59,46 @@ export const GET = async ({ url, locals: { supabase } }) => {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error && data.session) {
             const { session } = data;
+            const provider = typeof session.user.app_metadata?.provider === 'string'
+                ? session.user.app_metadata.provider
+                : '';
 
             // Capture and store the refresh_token separately in user_credentials
             // This is critical for background token refresh.
             if (isDev) {
                 console.log('[Auth Callback] Session established:', {
                     has_provider_refresh_token: !!session.provider_refresh_token,
-                    provider: session.user.app_metadata?.provider
+                    provider
                 });
             }
 
-            if (session.provider_refresh_token) {
+            if (provider === 'google' && session.provider_refresh_token) {
                 if (isDev) console.log('[Auth Callback] OAuth refresh capability received');
-                try {
-                    const { createClient } = await import('@supabase/supabase-js')
-                    const { PUBLIC_SUPABASE_URL } = await import('$env/static/public')
-                    const { SUPABASE_SERVICE_ROLE_KEY } = await import('$env/static/private')
-
-                    const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-                        auth: { persistSession: false }
-                    })
-
-                    const updateData: any = {
-                        id: session.user.id,
-                        updated_at: new Date().toISOString()
+	                try {
+	                    const updateData: any = {
+	                        id: session.user.id,
+	                        updated_at: new Date().toISOString()
                     };
 
                     updateData.google_refresh_token = session.provider_refresh_token;
 
-                    const { error: upsertError } = await admin.from('user_credentials').upsert(updateData)
+                    const { error: upsertError } = await adminClient.from('user_credentials').upsert(updateData)
 
                     if (upsertError) {
-                        console.error('[Auth Callback] Error storing OAuth refresh capability:', upsertError.message);
+	                        console.error('[Auth Callback] Error storing OAuth refresh capability');
                     } else {
                         if (isDev) console.log('[Auth Callback] OAuth refresh capability stored successfully');
                     }
                 } catch (err) {
                     console.error('[Auth Callback] Unexpected error during token storage');
                 }
-            } else {
+            } else if (provider === 'google') {
                 console.warn('[Auth Callback] No provider refresh token found in session. Ensure offline_access and prompt=consent were used.');
             }
 
-            // Safer redirect logic
-            // 1. Ensure 'next' is a valid path starting with /
-            // 2. If it's a full URL, ensure it's on the same origin
-            let redirectPath = '/';
-            try {
-                // Reject protocol-relative (`//evil.com`) and backslash
-                // (`/\evil.com`) forms — browsers treat both as cross-origin.
-                if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\')) {
-                    redirectPath = next;
-                } else {
-                    const nextUrl = new URL(next, url.origin);
-                    if (nextUrl.origin === url.origin) {
-                        redirectPath = nextUrl.pathname + nextUrl.search;
-                    }
-                }
-            } catch (e) {
-                console.warn('[Auth Callback] Invalid next parameter');
-            }
+            const redirectPath = safeWebRedirectPath(next, url.origin)
 
-            if (isDev) console.log('[Auth Callback] Redirecting to:', redirectPath);
+            if (isDev) console.log('[Auth Callback] Redirecting to authenticated app path')
             throw redirect(303, redirectPath)
         }
     }

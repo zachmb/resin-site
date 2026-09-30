@@ -14,14 +14,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerContainer['c
             scope: '/'
         });
 
-        console.log('Service Worker registered:', registration);
-
         // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
 
         return registration.active || registration.installing;
-    } catch (error) {
-        console.error('Service Worker registration failed:', error);
+    } catch {
+        console.error('Service Worker registration failed');
         return null;
     }
 }
@@ -84,23 +82,6 @@ export function onConnectivityChange(callback: (isOnline: boolean) => void): () 
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('offline', handleOffline);
     };
-}
-
-/**
- * Request background sync from service worker
- */
-export async function requestBackgroundSync(): Promise<void> {
-    if (!('serviceWorker' in navigator) || !('SyncManager' in window)) {
-        return;
-    }
-
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        await (registration as any).sync.register('resin-sync-notes');
-        console.log('Background sync registered');
-    } catch (error) {
-        console.error('Background sync registration failed:', error);
-    }
 }
 
 /**

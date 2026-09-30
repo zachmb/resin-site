@@ -24,16 +24,13 @@
  * Response (200):
  * {
  *   synced:  number   — count of notes upserted
- *   user_id: string   — Supabase user ID
  *   skipped: number   — notes that already existed and were not overwritten
  * }
  */
 
 import { json } from '@sveltejs/kit'
-import { createClient } from '@supabase/supabase-js'
-import { PUBLIC_SUPABASE_URL } from '$env/static/public'
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private'
-import { isValidResinSyncKey } from '$lib/server/auth'
+import { adminClient, isValidResinSyncKey, normalizeEmail, resolveExistingUserIdByEmail } from '$lib/server/auth'
+import { readBoundedJsonBody, RequestBodyError } from '$lib/server/requestBody'
 import type { RequestEvent } from '@sveltejs/kit'
 
 const MAX_SYNC_NOTES = 250
@@ -41,12 +38,31 @@ const MAX_NOTE_TEXT_CHARS = 20_000
 const MAX_RICH_TEXT_HTML_CHARS = 100_000
 const MAX_STORED_URLS = 25
 const MAX_URL_CHARS = 2_000
+const MAX_REQUEST_BODY_LENGTH = 8_000_000
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const DANGEROUS_HTML_RE = /<\s*script\b|on[a-z]+\s*=|javascript:/i
+const NO_STORE_HEADERS = {
+    'Cache-Control': 'no-store, max-age=0',
+    Pragma: 'no-cache'
+}
+const ALLOWED_BROWSER_ORIGINS = new Set([
+    'https://noteresin.com',
+    'https://www.noteresin.com',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+])
 
-// Admin client — bypasses RLS so we can upsert on behalf of any user
-const admin = createClient(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false }
-})
+function corsPreflightHeaders(request: Request): HeadersInit {
+    const origin = request.headers.get('origin') ?? ''
+    const headers: Record<string, string> = {
+        ...NO_STORE_HEADERS,
+        Vary: 'Origin'
+    }
+    if (ALLOWED_BROWSER_ORIGINS.has(origin)) {
+        headers['Access-Control-Allow-Origin'] = origin
+    }
+    return headers
+}
 
 interface NotePayload {
     id: string
@@ -62,6 +78,16 @@ interface SyncRequestBody {
     email: string
     api_key: string
     notes: NotePayload[]
+}
+
+function logSyncIssue(scope: string, error: unknown) {
+    const issue = error as { code?: unknown; name?: unknown; message?: unknown; status?: unknown }
+    console.error(`[notes/sync] ${scope}`, {
+        code: typeof issue?.code === 'string' ? issue.code : undefined,
+        name: typeof issue?.name === 'string' ? issue.name : undefined,
+        status: typeof issue?.status === 'number' || typeof issue?.status === 'string' ? issue.status : undefined,
+        hasMessage: typeof issue?.message === 'string' && issue.message.length > 0
+    })
 }
 
 /** Extract first non-empty line, strip markdown heading markers, cap at 60 chars. */
@@ -84,8 +110,20 @@ function normalizeStoredUrls(value: unknown): string[] {
     if (!Array.isArray(value)) return []
     return value
         .filter((url): url is string => typeof url === 'string')
-        .map((url) => url.trim())
-        .filter((url) => url.length > 0 && url.length <= MAX_URL_CHARS)
+        .map((url) => {
+            const trimmed = url.trim()
+            if (trimmed.length === 0 || trimmed.length > MAX_URL_CHARS) return null
+            try {
+                const parsed = new URL(trimmed)
+                if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
+                parsed.username = ''
+                parsed.password = ''
+                return parsed.toString()
+            } catch {
+                return null
+            }
+        })
+        .filter((url): url is string => Boolean(url))
         .slice(0, MAX_STORED_URLS)
 }
 
@@ -102,7 +140,7 @@ function normalizeNotePayload(note: NotePayload): NotePayload | null {
     const title = typeof note.title === 'string' && note.title.trim()
         ? note.title.trim().slice(0, 120)
         : undefined
-    const richTextHtml = typeof note.rich_text_html === 'string'
+    const richTextHtml = typeof note.rich_text_html === 'string' && !DANGEROUS_HTML_RE.test(note.rich_text_html)
         ? note.rich_text_html.slice(0, MAX_RICH_TEXT_HTML_CHARS)
         : undefined
     const groupId = typeof note.group_id === 'string' && UUID_RE.test(note.group_id)
@@ -120,74 +158,50 @@ function normalizeNotePayload(note: NotePayload): NotePayload | null {
     }
 }
 
-export const POST = async ({ request }: RequestEvent) => {
+export const POST = async ({ request, setHeaders }: RequestEvent) => {
+    setHeaders({
+        'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'pragma': 'no-cache',
+        'expires': '0'
+    })
+
     // ── 1. Parse body ──────────────────────────────────────────────────────────
     let body: SyncRequestBody
     try {
-        body = await request.json()
-    } catch {
-        return json({ error: 'Invalid JSON body' }, { status: 400 })
+        body = await readBoundedJsonBody<SyncRequestBody>(request, MAX_REQUEST_BODY_LENGTH)
+    } catch (error) {
+        const status = error instanceof RequestBodyError ? error.status : 400
+        return json({
+            error: status === 413 ? 'Request body too large' : 'Invalid JSON body'
+        }, { status, headers: NO_STORE_HEADERS })
     }
 
     const { email, api_key, notes } = body
 
     // ── 2. Validate API key ────────────────────────────────────────────────────
     if (!isValidResinSyncKey(api_key)) {
-        return json({ error: 'Invalid API key' }, { status: 401 })
+        return json({ error: 'Invalid API key' }, { status: 401, headers: NO_STORE_HEADERS })
     }
 
-    if (!email || !email.includes('@')) {
-        return json({ error: 'Valid email required' }, { status: 400 })
+    const normalizedEmail = normalizeEmail(email)
+    if (!normalizedEmail) {
+        return json({ error: 'Valid email required' }, { status: 400, headers: NO_STORE_HEADERS })
     }
-    const normalizedEmail = email.trim().toLowerCase()
 
     if (!Array.isArray(notes) || notes.length === 0) {
-        return json({ synced: 0, user_id: null, skipped: 0 })
+        return json({ synced: 0, skipped: 0 }, { headers: NO_STORE_HEADERS })
     }
     if (notes.length > MAX_SYNC_NOTES) {
-        return json({ error: `Too many notes. Max ${MAX_SYNC_NOTES} per sync.` }, { status: 413 })
+        return json({ error: `Too many notes. Max ${MAX_SYNC_NOTES} per sync.` }, { status: 413, headers: NO_STORE_HEADERS })
     }
 
-    // ── 3. Find or create the Supabase user by email ───────────────────────────
-    let userId: string
-
-    // First, try to find the user in the profiles table (avoids auth admin list call)
-    const { data: existingProfile } = await admin
-        .from('profiles')
-        .select('id')
-        .eq('email', normalizedEmail)
-        .maybeSingle()
-
-    if (existingProfile?.id) {
-        userId = existingProfile.id
-    } else {
-        // Fall back to auth.admin to find by email
-        const { data: listData, error: listError } = await admin.auth.admin.listUsers()
-        if (listError) {
-            console.error('[notes/sync] Could not list users:', listError.message)
-            return json({ error: 'Server error looking up user' }, { status: 500 })
-        }
-
-        const authUser = listData.users.find(u => u.email?.toLowerCase() === normalizedEmail)
-
-        if (authUser) {
-            userId = authUser.id
-        } else {
-            // Create a new account for this email — they'll receive a magic link when
-            // they visit the web app for the first time.
-            const { data: newUser, error: createError } = await admin.auth.admin.createUser({
-                email: normalizedEmail,
-                email_confirm: true,   // mark email as verified so they can log in
-            })
-            if (createError || !newUser?.user) {
-                console.error('[notes/sync] Could not create user:', createError?.message)
-                return json({ error: 'Could not create account' }, { status: 500 })
-            }
-            userId = newUser.user.id
-        }
+    // ── 3. Resolve the existing Supabase user by email ─────────────────────────
+    const userId = await resolveExistingUserIdByEmail(normalizedEmail)
+    if (!userId) {
+        return json({ synced: 0, skipped: notes.length }, { headers: NO_STORE_HEADERS })
     }
 
-    const { data: entitlementProfile, error: entitlementError } = await admin
+    const { data: entitlementProfile, error: entitlementError } = await adminClient
         .from('profiles')
         .select('account_type')
         .eq('id', userId)
@@ -201,7 +215,7 @@ export const POST = async ({ request }: RequestEvent) => {
             error: 'Pro required',
             code: 'PRO_REQUIRED',
             message: 'Web note sync requires Resin Pro.'
-        }, { status: 402 })
+        }, { status: 402, headers: NO_STORE_HEADERS })
     }
 
     // ── 4. Upsert notes into amber_sessions ────────────────────────────────────
@@ -213,10 +227,66 @@ export const POST = async ({ request }: RequestEvent) => {
         .filter((note): note is NotePayload => note !== null)
 
     if (validNotes.length === 0) {
-        return json({ synced: 0, user_id: userId, skipped: notes.length })
+        return json({ synced: 0, skipped: notes.length }, { headers: NO_STORE_HEADERS })
     }
 
-    const rows = validNotes.map((note) => ({
+    const uniqueNotes = Array.from(new Map(validNotes.map((note) => [note.id, note])).values())
+    const noteIds = uniqueNotes.map((note) => note.id)
+
+    const { data: existingNotes, error: ownershipError } = await adminClient
+        .from('amber_sessions')
+        .select('id, user_id')
+        .in('id', noteIds)
+
+    if (ownershipError) {
+        logSyncIssue('ownership_check_failed', ownershipError)
+        return json({ error: 'Failed to verify note ownership' }, { status: 500, headers: NO_STORE_HEADERS })
+    }
+
+    const hasForeignNote = (existingNotes ?? []).some((note) => note.user_id !== userId)
+    if (hasForeignNote) {
+        return json({
+            error: 'Note ownership conflict',
+            code: 'NOTE_OWNERSHIP_CONFLICT'
+        }, { status: 409, headers: NO_STORE_HEADERS })
+    }
+
+    const existingNoteIds = new Set((existingNotes ?? []).map((note) => note.id))
+    const { data: iosOwnedNotes, error: sourceLookupError } = existingNoteIds.size > 0
+        ? await adminClient
+            .from('amber_sessions')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('sync_source', 'ios')
+            .in('id', [...existingNoteIds])
+        : { data: [], error: null }
+    if (sourceLookupError) {
+        logSyncIssue('source_check_failed', sourceLookupError)
+    }
+    const iosOwnedNoteIds = new Set((iosOwnedNotes ?? []).map((note) => note.id))
+
+    const groupIds = Array.from(new Set(
+        uniqueNotes
+            .map((note) => note.group_id)
+            .filter((id): id is string => Boolean(id))
+    ))
+    let ownedGroupIds = new Set<string>()
+
+    if (groupIds.length > 0) {
+        const { data: ownedGroups, error: groupLookupError } = await adminClient
+            .from('note_groups')
+            .select('id')
+            .eq('user_id', userId)
+            .in('id', groupIds)
+
+        if (groupLookupError) {
+            logSyncIssue('group_lookup_failed', groupLookupError)
+        } else {
+            ownedGroupIds = new Set((ownedGroups ?? []).map((group) => group.id))
+        }
+    }
+
+    const rows = uniqueNotes.map((note) => ({
         id: note.id,
         user_id: userId,
         raw_text: note.text,
@@ -225,57 +295,78 @@ export const POST = async ({ request }: RequestEvent) => {
         status: 'draft' as const,
         rich_text_html: note.rich_text_html ?? null,
         stored_urls: note.stored_urls ?? [],
-        group_id: note.group_id ?? null,
+        group_id: note.group_id && ownedGroupIds.has(note.group_id) ? note.group_id : null,
         created_at: note.created_at,
         updated_at: now,
         // Indicate this row was synced from the iOS app
         sync_source: 'ios',
-    }))
+    })).filter((row) => !existingNoteIds.has(row.id) || iosOwnedNoteIds.has(row.id))
 
-    // Upsert: insert new, update existing only if the web hasn't modified it
-    // (onConflict on `id` — if the row exists and sync_source='ios', overwrite; if web-modified, skip)
-    const { data: upserted, error: upsertError } = await admin
-        .from('amber_sessions')
-        .upsert(rows, {
-            onConflict: 'id',
-            ignoreDuplicates: false,
-        })
-        .select('id')
+    if (rows.length === 0) {
+        return json({ synced: 0, skipped: notes.length }, { headers: NO_STORE_HEADERS })
+    }
 
-    if (upsertError) {
-        console.error('[notes/sync] Upsert failed:', upsertError.message)
-        // Gracefully handle missing columns (sync_source, group_id) — retry without extras
-        const fallbackRows = rows.map(({ sync_source: _s, group_id: _g, rich_text_html: _r, stored_urls: _u, ...rest }) => rest)
-        const { data: fallback, error: fallbackError } = await admin
+    // Never use an admin upsert for both new and existing rows: a conflicting
+    // UUID created after the ownership check could otherwise be reassigned.
+    const newRows = rows.filter((row) => !existingNoteIds.has(row.id))
+    const existingRows = rows.filter((row) => existingNoteIds.has(row.id))
+    let synced = 0
+
+    if (newRows.length > 0) {
+        const { data: inserted, error: insertError } = await adminClient
             .from('amber_sessions')
-            .upsert(fallbackRows, { onConflict: 'id', ignoreDuplicates: false })
+            .insert(newRows)
             .select('id')
 
-        if (fallbackError) {
-            console.error('[notes/sync] Fallback upsert failed:', fallbackError.message)
-            return json({ error: 'Failed to save notes' }, { status: 500 })
-        }
+        if (insertError) {
+            logSyncIssue('insert_failed', insertError)
+            // Gracefully handle older schemas without optional sync columns.
+            const fallbackRows = newRows.map(({ sync_source: _s, group_id: _g, rich_text_html: _r, stored_urls: _u, ...rest }) => rest)
+            const { data: fallback, error: fallbackError } = await adminClient
+                .from('amber_sessions')
+                .insert(fallbackRows)
+                .select('id')
 
-        return json({
-            synced: fallback?.length ?? 0,
-            user_id: userId,
-            skipped: notes.length - (fallback?.length ?? 0),
-        })
+            if (fallbackError) {
+                logSyncIssue('fallback_insert_failed', fallbackError)
+                return json({ error: 'Failed to save notes' }, { status: 500, headers: NO_STORE_HEADERS })
+            }
+            synced += fallback?.length ?? 0
+        } else {
+            synced += inserted?.length ?? newRows.length
+        }
+    }
+
+    for (const row of existingRows) {
+        const { id, user_id: _userId, ...updates } = row
+        const { data: updated, error: updateError } = await adminClient
+            .from('amber_sessions')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .eq('sync_source', 'ios')
+            .select('id')
+            .maybeSingle()
+
+        if (updateError) {
+            logSyncIssue('update_failed', updateError)
+            return json({ error: 'Failed to save notes' }, { status: 500, headers: NO_STORE_HEADERS })
+        }
+        if (updated) synced += 1
     }
 
     return json({
-        synced: upserted?.length ?? rows.length,
-        user_id: userId,
-        skipped: notes.length - (upserted?.length ?? rows.length),
-    })
+        synced,
+        skipped: notes.length - synced,
+    }, { headers: NO_STORE_HEADERS })
 }
 
 // Allow preflight CORS for the iOS URLSession requests
-export const OPTIONS = async () => {
+export const OPTIONS = async ({ request }: RequestEvent) => {
     return new Response(null, {
         status: 204,
         headers: {
-            'Access-Control-Allow-Origin': '*',
+            ...corsPreflightHeaders(request),
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type',
         },

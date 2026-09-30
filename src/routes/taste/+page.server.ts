@@ -1,6 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
+const MAX_TASTE_FEEDBACK = 1000;
+
 export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase, getSession } }) => {
     const supabase = await getAuthenticatedSupabase();
     const session = await getSession();
@@ -11,15 +13,16 @@ export const load: PageServerLoad = async ({ locals: { getAuthenticatedSupabase,
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('total_stones, current_streak')
         .eq('id', session.user.id)
         .single();
 
     const { data: feedback } = await supabase
         .from('amber_task_feedback')
-        .select('*')
+        .select('rating, comments, created_at')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(MAX_TASTE_FEEDBACK);
 
     // Process feedback
     const feelingCounts: Record<string, number> = {};

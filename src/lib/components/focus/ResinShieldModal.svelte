@@ -103,7 +103,7 @@
                     <a
                         href={CHROME_STORE_URL}
                         target="_blank"
-                        rel="noopener"
+            rel="noopener noreferrer"
                         class="flex w-full items-center justify-center gap-2 rounded-xl bg-resin-charcoal px-5 py-4 text-base font-bold text-white shadow-lg transition-all hover:bg-resin-forest active:scale-[0.99]"
                     >
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0110 10 10 10 0 01-10 10A10 10 0 012 12 10 10 0 0112 2zm0 6a4 4 0 100 8 4 4 0 000-8z"/></svg>

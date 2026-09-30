@@ -1,3 +1,4 @@
+import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 
 /**
@@ -13,8 +14,35 @@ import type { RequestEvent } from '@sveltejs/kit';
  * - Maintains authentication and headers
  */
 
+const MAX_PROXY_PATH_LENGTH = 512;
+const SAFE_PROXY_PATH_RE = /^[A-Za-z0-9/_-]+$/;
+const NO_STORE_HEADERS = {
+	'Cache-Control': 'no-store, max-age=0',
+	Pragma: 'no-cache'
+};
+
+function safeProxyPath(path: string | undefined): string | null {
+	const normalized = (path ?? '').replace(/^\/+/, '');
+	if (
+		!normalized ||
+		normalized.length > MAX_PROXY_PATH_LENGTH ||
+		normalized === 'v1' ||
+		normalized.startsWith('v1/') ||
+		normalized.includes('..') ||
+		normalized.includes('//') ||
+		!SAFE_PROXY_PATH_RE.test(normalized)
+	) {
+		return null;
+	}
+	return normalized;
+}
+
 const forward = async (event: RequestEvent): Promise<Response> => {
-	const path = event.params.path;
+	const path = safeProxyPath(event.params.path);
+	if (!path) {
+		return json({ error: 'Invalid API path' }, { status: 400, headers: NO_STORE_HEADERS });
+	}
+
 	const qs = event.url.search;
 	const target = `/api/${path}${qs}`;
 

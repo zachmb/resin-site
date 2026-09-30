@@ -14,6 +14,27 @@ export interface MutationResult<T = null> {
     };
 }
 
+function isPolicyError(error: { code?: string; message?: string }): boolean {
+    return error.code === 'PGRST116' || Boolean(error.message?.includes('policy'));
+}
+
+function toSafeError(error: { code?: string; message?: string; details?: string }) {
+    return {
+        code: 'DATABASE_ERROR',
+        message: 'Database mutation failed',
+        details: error.details ? 'Details available' : undefined,
+        isRLSFailure: isPolicyError(error)
+    };
+}
+
+function toUnexpectedError() {
+    return {
+        code: 'UNEXPECTED_ERROR',
+        message: 'Unexpected mutation error',
+        isRLSFailure: false
+    };
+}
+
 /**
  * Safe Delete Operation with RLS Detection
  * Checks if the row was actually deleted (count > 0)
@@ -25,9 +46,7 @@ export async function safeDelete(
     filters: { [key: string]: any }
 ): Promise<MutationResult> {
     try {
-        console.log(`[SafeDelete] Deleting from ${table}:`, filters);
-
-        const query = supabase.from(table).delete();
+        const query = supabase.from(table).delete({ count: 'exact' });
 
         // Apply filters
         let filteredQuery = query;
@@ -38,15 +57,10 @@ export async function safeDelete(
         const { count, error } = await filteredQuery;
 
         if (error) {
-            console.error(`[SafeDelete] Error:`, error);
+            console.error('[SafeDelete] Error');
             return {
                 success: false,
-                error: {
-                    code: error.code || 'UNKNOWN',
-                    message: error.message,
-                    details: error.details,
-                    isRLSFailure: error.code === 'PGRST116' || error.message.includes('policy')
-                }
+                error: toSafeError(error)
             };
         }
 
@@ -63,17 +77,12 @@ export async function safeDelete(
             };
         }
 
-        console.log(`[SafeDelete] Success - ${count} row(s) deleted`);
         return { success: true };
-    } catch (err) {
-        console.error(`[SafeDelete] Unexpected error:`, err);
+    } catch {
+        console.error('[SafeDelete] Unexpected error');
         return {
             success: false,
-            error: {
-                code: 'UNEXPECTED_ERROR',
-                message: err instanceof Error ? err.message : 'Unknown error',
-                isRLSFailure: false
-            }
+            error: toUnexpectedError()
         };
     }
 }
@@ -88,8 +97,6 @@ export async function safeUpdate(
     filters: { [key: string]: any }
 ): Promise<MutationResult<any>> {
     try {
-        console.log(`[SafeUpdate] Updating ${table}:`, { updates, filters });
-
         let query = supabase.from(table).update(updates);
 
         // Apply filters
@@ -97,22 +104,18 @@ export async function safeUpdate(
             query = query.eq(key, value);
         }
 
-        const { data, count, error } = await query.select();
+        const { data, error } = await query.select();
 
         if (error) {
-            console.error(`[SafeUpdate] Error:`, error);
+            console.error('[SafeUpdate] Error');
             return {
                 success: false,
-                error: {
-                    code: error.code || 'UNKNOWN',
-                    message: error.message,
-                    isRLSFailure: error.code === 'PGRST116' || error.message.includes('policy')
-                }
+                error: toSafeError(error)
             };
         }
 
         // Check if RLS silently prevented update
-        if (!count || count === 0) {
+        if (!data || data.length === 0) {
             console.warn(`[SafeUpdate] No rows affected - possible RLS failure`);
             return {
                 success: false,
@@ -124,17 +127,12 @@ export async function safeUpdate(
             };
         }
 
-        console.log(`[SafeUpdate] Success - ${count} row(s) updated`);
         return { success: true, data };
-    } catch (err) {
-        console.error(`[SafeUpdate] Unexpected error:`, err);
+    } catch {
+        console.error('[SafeUpdate] Unexpected error');
         return {
             success: false,
-            error: {
-                code: 'UNEXPECTED_ERROR',
-                message: err instanceof Error ? err.message : 'Unknown error',
-                isRLSFailure: false
-            }
+            error: toUnexpectedError()
         };
     }
 }
@@ -148,22 +146,16 @@ export async function safeInsert(
     record: { [key: string]: any }
 ): Promise<MutationResult<any>> {
     try {
-        console.log(`[SafeInsert] Inserting into ${table}:`, record);
-
-        const { data, error, count } = await supabase
+        const { data, error } = await supabase
             .from(table)
             .insert([record])
             .select();
 
         if (error) {
-            console.error(`[SafeInsert] Error:`, error);
+            console.error('[SafeInsert] Error');
             return {
                 success: false,
-                error: {
-                    code: error.code || 'UNKNOWN',
-                    message: error.message,
-                    isRLSFailure: error.code === 'PGRST116' || error.message.includes('policy')
-                }
+                error: toSafeError(error)
             };
         }
 
@@ -180,17 +172,12 @@ export async function safeInsert(
             };
         }
 
-        console.log(`[SafeInsert] Success - record inserted`);
         return { success: true, data: data[0] };
-    } catch (err) {
-        console.error(`[SafeInsert] Unexpected error:`, err);
+    } catch {
+        console.error('[SafeInsert] Unexpected error');
         return {
             success: false,
-            error: {
-                code: 'UNEXPECTED_ERROR',
-                message: err instanceof Error ? err.message : 'Unknown error',
-                isRLSFailure: false
-            }
+            error: toUnexpectedError()
         };
     }
 }
@@ -209,23 +196,17 @@ export async function safeBatchDelete(
     }
 
     try {
-        console.log(`[SafeBatchDelete] Deleting ${ids.length} records from ${table}`);
-
         const { count, error } = await supabase
             .from(table)
-            .delete()
+            .delete({ count: 'exact' })
             .in('id', ids)
             .eq('user_id', userId);
 
         if (error) {
-            console.error(`[SafeBatchDelete] Error:`, error);
+            console.error('[SafeBatchDelete] Error');
             return {
                 success: false,
-                error: {
-                    code: error.code || 'UNKNOWN',
-                    message: error.message,
-                    isRLSFailure: error.code === 'PGRST116' || error.message.includes('policy')
-                }
+                error: toSafeError(error)
             };
         }
 
@@ -235,27 +216,22 @@ export async function safeBatchDelete(
                 success: false,
                 error: {
                     code: 'RLS_SILENT_FAILURE',
-                    message: `None of the ${ids.length} records could be deleted. Check your permissions.`,
+                    message: 'Records could not be deleted. Check your permissions.',
                     isRLSFailure: true
                 }
             };
         }
 
         if (count < ids.length) {
-            console.warn(`[SafeBatchDelete] Partial delete: ${count}/${ids.length} rows affected`);
+            console.warn('[SafeBatchDelete] Partial delete');
         }
 
-        console.log(`[SafeBatchDelete] Success - ${count} row(s) deleted`);
         return { success: true };
-    } catch (err) {
-        console.error(`[SafeBatchDelete] Unexpected error:`, err);
+    } catch {
+        console.error('[SafeBatchDelete] Unexpected error');
         return {
             success: false,
-            error: {
-                code: 'UNEXPECTED_ERROR',
-                message: err instanceof Error ? err.message : 'Unknown error',
-                isRLSFailure: false
-            }
+            error: toUnexpectedError()
         };
     }
 }

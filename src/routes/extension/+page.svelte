@@ -50,7 +50,7 @@
 				<div class="text-4xl mb-4">⚡</div>
 				<h3 class="text-lg font-bold text-resin-charcoal mb-2">Instant Sync</h3>
 				<p class="text-sm text-resin-earth/70">
-					Start a session in Resin and the extension activates automatically. No extra steps. Complete harmony.
+					Start a session in Resin and the extension syncs protection automatically after one-time Chrome site access.
 				</p>
 			</div>
 
@@ -111,7 +111,7 @@
 					<div class="flex-1">
 						<h3 class="text-xl font-bold text-resin-charcoal mb-2">Start a Focus Session</h3>
 						<p class="text-resin-earth/70">
-							Create an Amber plan or blocking session in Resin. The extension automatically activates and blocks your configured sites. You're locked in.
+							Create an Amber plan or blocking session in Resin. The extension activates your configured rules and clearly shows if Chrome needs setup.
 						</p>
 					</div>
 				</div>
@@ -207,7 +207,7 @@
 						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
 					</summary>
 					<p class="text-resin-earth/70 mt-4">
-						No, and that's the point. Disabling requires the extension PIN that only you (or you in a calm state) should know. This prevents impulsive decisions during moments of distraction.
+						Chrome always lets you disable extensions or revoke site access. Resin makes drift visible instead: the popup shows Needs setup or Recovering, removes stale rules when possible, and lets you retry sync without shame.
 					</p>
 				</details>
 
@@ -237,7 +237,7 @@
 						<span class="text-xl group-open:rotate-180 transition-transform">›</span>
 					</summary>
 					<p class="text-resin-earth/70 mt-4">
-						Yes. For example, block youtube.com but whitelist youtube.com/watch?v=tutorial. This gives flexibility for necessary access while protecting against browsing rabbit holes.
+						Not yet. Today Resin blocks at the domain level, which is safer and easier to understand during focus. If you need a site for work, remove that domain from your block list before the session.
 					</p>
 				</details>
 
@@ -268,11 +268,11 @@
 				<!-- TODO(launch): once the Chrome Web Store listing is approved, set the
 				     real store URL (https://chromewebstore.google.com/detail/<EXTENSION_ID>)
 				     and change the label back to "Add to Chrome". -->
-				<a
-					href="/support"
-					class="px-10 py-4 bg-resin-charcoal text-white rounded-lg font-bold text-lg hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
-				>
-					<span>Chrome Web Store — in review. Get notified</span>
+					<a
+						href="mailto:support@noteresin.com?subject=Notify%20me%20when%20Resin%20Web%20Shield%20is%20live"
+						class="px-10 py-4 bg-resin-charcoal text-white rounded-lg font-bold text-lg hover:bg-resin-forest transition-all shadow-xl active:scale-95 inline-flex items-center justify-center gap-3"
+					>
+						<span>Chrome Web Store — in review. Notify me</span>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 					</svg>

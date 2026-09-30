@@ -173,8 +173,8 @@
                             <div class="member-streaks-list">
                                 {#each group.members.slice(0, 4) as member (member.userId)}
                                     <div class="member-streak-item">
-                                        <p class="member-name-short">{member.email.split('@')[0]}</p>
-                                        <span class="streak-badge">{member.current_streak || 0}🔥</span>
+                                        <p class="member-name-short">{member.displayName}</p>
+                                        <span class="streak-badge">{member.currentStreak || 0}🔥</span>
                                     </div>
                                 {/each}
                                 {#if group.members.length > 4}

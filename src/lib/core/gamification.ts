@@ -340,7 +340,7 @@ export interface DatabaseAdapter {
   fetchSessionCount(userId: string): Promise<number>;
   fetchSessionDates(userId: string): Promise<string[]>;
   updateProfile(userId: string, updates: Partial<UserGameState>): Promise<void>;
-  updateSession(sessionId: string, updates: any): Promise<void>;
+  updateSession(userId: string, sessionId: string, updates: any): Promise<void>;
   insertAchievement(userId: string, achievementId: string): Promise<void>;
   insertForestEvent(userId: string, eventType: string, amount: number, sessionId?: string): Promise<void>;
 }
@@ -382,7 +382,7 @@ export async function applySessionRewardWithDatabase(
   });
 
   // Update session with reward
-  await db.updateSession(sessionId, {
+  await db.updateSession(userId, sessionId, {
     bonus_stones_awarded: reward.bonusStones,
     was_celebrated: true
   });

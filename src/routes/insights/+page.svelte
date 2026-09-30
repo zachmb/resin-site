@@ -29,8 +29,8 @@
                 </div>
                 {#if profile?.current_streak > 0}
                     <div class="text-right">
-                        <div class="text-4xl mb-1">{getStreakEmoji(profile.current_streak)}</div>
-                        <p class="text-sm font-semibold text-resin-earth/60">{profile.current_streak} day streak</p>
+                        <div class="text-4xl mb-1">{getStreakEmoji(profile?.current_streak ?? 0)}</div>
+                        <p class="text-sm font-semibold text-resin-earth/60">{profile?.current_streak ?? 0} day streak</p>
                     </div>
                 {/if}
             </div>

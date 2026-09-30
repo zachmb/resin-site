@@ -34,11 +34,11 @@
         try {
             const response = await fetch("/map?/removeFromMap", { method: "POST", body: formData });
             if (!response.ok) {
-                throw new Error(`Failed: ${response.statusText}`);
+                throw new Error("Failed to remove node");
             }
             if (onNoteDropped) onNoteDropped();
-        } catch (err) {
-            console.error("Failed to remove node:", err);
+        } catch {
+            console.error("Failed to remove node");
             // Rollback on failure
             nodes = originalNodes;
         }
@@ -135,8 +135,8 @@
                     method: "POST",
                     body: formData,
                 });
-            } catch (error) {
-                console.error("Failed to save node position:", error);
+            } catch {
+                console.error("Failed to save node position");
             }
         }, 500);
     };
@@ -238,7 +238,7 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Failed: ${response.statusText}`);
+                throw new Error("Failed to update node position");
             }
 
             // Also add connected notes to map
@@ -255,7 +255,7 @@
                         body: formData2,
                     });
                     if (!response2.ok) {
-                        throw new Error(`Failed to add connected note: ${response2.statusText}`);
+                        throw new Error("Failed to add connected note");
                     }
                 }
             }
@@ -263,8 +263,8 @@
             if (onNoteDropped) {
                 onNoteDropped();
             }
-        } catch (error) {
-            console.error("Failed to add note to map:", error);
+        } catch {
+            console.error("Failed to add note to map");
             // Revert optimistic updates on failure
             nodes = originalNodes;
             edges = originalEdges;
@@ -297,7 +297,7 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to create edge: ${response.statusText}`);
+                throw new Error("Failed to create edge");
             }
 
             const json = await response.json();
@@ -307,8 +307,8 @@
             } else {
                 console.warn("Edge created but no ID returned, keeping temp ID");
             }
-        } catch (error) {
-            console.error("Failed to save edge:", error);
+        } catch {
+            console.error("Failed to save edge");
             // Revert on failure
             edges = edges.filter((e: any) => e.id !== tempId);
         }
@@ -328,10 +328,10 @@
                     body: formData,
                 });
                 if (!response.ok) {
-                    console.error(`Failed to delete edge: ${response.statusText}`);
+                    console.error("Failed to delete edge");
                 }
-            } catch (error) {
-                console.error("Failed to delete edge:", error);
+            } catch {
+                console.error("Failed to delete edge");
             }
         }
 
@@ -345,10 +345,10 @@
                     body: formData,
                 });
                 if (!response.ok) {
-                    console.error(`Failed to remove node from map: ${response.statusText}`);
+                    console.error("Failed to remove node from map");
                 }
-            } catch (error) {
-                console.error("Failed to remove node from map:", error);
+            } catch {
+                console.error("Failed to remove node from map");
             }
         }
 

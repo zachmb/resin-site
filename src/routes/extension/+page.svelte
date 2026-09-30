@@ -148,8 +148,8 @@
 </main>
 
 <style>
-	.ext-page :global(h1),.ext-page :global(h2),.ext-page :global(h3),.ext-page :global(h4) {
-		font-family:'Manrope','Inter',system-ui,sans-serif; font-weight:800; letter-spacing:-.03em;
+	.ext-page h1,.ext-page h2,.ext-page h3,.ext-page h4 {
+		font-family:'Manrope','Inter',system-ui,sans-serif!important; font-weight:800!important; letter-spacing:-.03em;
 	}
 	:global(.ext-page details summary::-webkit-details-marker) { display:none; }
 </style>

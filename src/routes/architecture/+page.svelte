@@ -1,414 +1,97 @@
 <script lang="ts">
-    import { fade, fly, scale } from "svelte/transition";
+    import { fly } from "svelte/transition";
     import { onMount } from "svelte";
-    import {
-        Layout,
-        Network,
-        Zap,
-        Brain,
-        Calendar,
-        Cloud,
-        FileText,
-        Binary,
-        CalendarCheck,
-        RefreshCw,
-        ShieldCheck,
-    } from "lucide-svelte";
+    import { Layout, Smartphone, RefreshCw, Brain, Calendar, Cloud, FileText, ListChecks, CalendarCheck, LockKeyhole, ShieldCheck } from "lucide-svelte";
 
     let visible = false;
-    onMount(() => {
-        visible = true;
-    });
-
-    const techStack = [
-        {
-            name: "SvelteKit",
-            icon: Layout,
-            description:
-                "Fast, calm web UI — the pro dashboard counterpart to the iOS app.",
-        },
-        {
-            name: "SwiftUI",
-            icon: Network,
-            description:
-                "Native iOS experience with OS-level Screen Time blocking integrations.",
-        },
-        {
-            name: "Supabase",
-            icon: Zap,
-            description:
-                "Auth, database, and realtime sync across iOS, web, and extension.",
-        },
-        {
-            name: "AI Planning",
-            icon: Brain,
-            description:
-                "Hybrid: on-device planning on iOS, and a secure server pipeline for web/Chrome activation.",
-        },
-        {
-            name: "Calendar Sync",
-            icon: Calendar,
-            description:
-                "Schedules sessions into your real calendar (Google Calendar + EventKit where applicable).",
-        },
-        {
-            name: "Local-first Web",
-            icon: Cloud,
-            description:
-                "Cache + background sync so the web app stays responsive (even with spotty connectivity).",
-        },
-    ];
-
-    const components = [
-        {
-            title: "Activation Pipeline",
-            code: "POST /api/activate",
-            description:
-                "Turns a note into a scheduled plan: auth → calendar availability → planning → calendar block → persisted session + tasks.",
-            color: "bg-resin-amber/20",
-        },
-        {
-            title: "Local-first Sync",
-            code: "DataManager + OfflineQueue",
-            description:
-                "Instant UI from cache, then background refresh + retry so your dashboard stays snappy and consistent.",
-            color: "bg-resin-forest/20",
-        },
-        {
-            title: "Blocking Surfaces",
-            code: "FamilyControls + Chrome Extension",
-            description:
-                "OS-level app blocking on iOS/macOS and domain blocking on Chrome — both synced to focus sessions.",
-            color: "bg-resin-earth/20",
-        },
-    ];
+    onMount(() => { visible = true; });
 
     const steps = [
-        {
-            id: 1,
-            title: "Input",
-            label: "Unstructured Draft",
-            desc: "Capturing raw intention",
-            icon: FileText,
-        },
-        {
-            id: 2,
-            title: "Analysis",
-            label: "AI Chief of Staff",
-            desc: "Strategic context mapping",
-            icon: Binary,
-        },
-        {
-            id: 3,
-            title: "Resolution",
-            label: "Commitment",
-            desc: "Concrete action secured",
-            icon: CalendarCheck,
-        },
-        {
-            id: 4,
-            title: "Insight",
-            label: "Continuous Alignment",
-            desc: "Learning your operating rhythm",
-            icon: RefreshCw,
-        },
+        { icon: FileText, title: 'You write it down', desc: 'Type the thing on your mind. No structure needed.' },
+        { icon: Brain, title: 'Resin makes a plan', desc: 'It breaks your note into a few small steps and guesses how long each one takes.' },
+        { icon: CalendarCheck, title: 'It finds time', desc: 'The steps get added to your day, around what is already there.' },
+        { icon: ShieldCheck, title: 'You focus', desc: 'Start a session and distracting apps and sites get blocked until you are done.' }
+    ];
+
+    const stack = [
+        { icon: Smartphone, name: 'iPhone app', desc: 'Built with SwiftUI. Uses Apple Screen Time to block apps.' },
+        { icon: Layout, name: 'Web app', desc: 'Fast and calm. The same plans and focus as your phone.' },
+        { icon: RefreshCw, name: 'Sync', desc: 'Your notes, plans, and focus stay the same on every device.' },
+        { icon: Brain, name: 'AI planning', desc: 'Turns your note into steps — on your phone, or on a secure server for web and Chrome.' },
+        { icon: Calendar, name: 'Calendar', desc: 'Adds your steps to Google Calendar and Apple Calendar.' },
+        { icon: Cloud, name: 'Works offline', desc: 'Loads right away from a local copy, then syncs in the background.' }
     ];
 </script>
 
-<svelte:head>
-    <title>Architecture | Resin</title>
-</svelte:head>
+<svelte:head><title>How Resin works | Resin</title></svelte:head>
 
-<main
-    class="min-h-screen pt-32 pb-32 px-6 bg-[#FDFBF7] text-[#1A2E1A] selection:bg-orange-900/20 overflow-hidden relative font-sans"
->
-    <!-- Background elements: Minimal and calming -->
-    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <!-- Subtle earthy glow -->
-        <div
-            class="absolute top-[-10%] left-[20%] w-[70%] h-[70%] bg-[#b2c2b2]/10 blur-[120px] rounded-full"
-        ></div>
-
-        <!-- Blurred Shapes for soft depth -->
-        <div
-            class="absolute top-[15%] left-[10%] w-[400px] h-[300px] bg-[#1A2E1A]/5 blur-[80px] -rotate-12"
-            style="clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);"
-        ></div>
-
-        <div
-            class="absolute top-[50%] right-[5%] w-[500px] h-[400px] bg-[#1A2E1A]/5 blur-[100px] rotate-45"
-            style="clip-path: ellipse(40% 50% at 50% 50%);"
-        ></div>
-
-        <div
-            class="absolute bottom-[10%] left-[15%] w-[350px] h-[350px] bg-orange-900/5 blur-[90px]"
-            style="clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);"
-        ></div>
-    </div>
-
-    <div class="max-w-5xl mx-auto space-y-40">
-        <!-- Hero Section -->
-        <section class="text-center space-y-8">
+<main class="arch-page">
+    <div class="max-w-5xl mx-auto space-y-32">
+        <section class="text-center">
             {#if visible}
-                <div in:fly={{ y: 30, duration: 1200, opacity: 0 }}>
-                    <span
-                        class="px-5 py-2 rounded-full border border-[#1A2E1A]/10 text-xs font-semibold tracking-widest uppercase text-[#1A2E1A]/60 mb-8 inline-block"
-                    >
-                        System Architecture
-                    </span>
-                    <h1
-                        class="text-5xl md:text-7xl font-bold font-serif tracking-tight leading-tight text-[#1A2E1A]"
-                    >
-                        The Engine of <span class="italic text-orange-800"
-                            >Execution</span
-                        >
-                    </h1>
-                    <p
-                        class="max-w-2xl mx-auto text-xl text-[#1A2E1A]/70 leading-relaxed mt-8 font-serif"
-                    >
-                        Explore the technical foundation of Resin. A calm,
-                        privacy-first infrastructure designed to automatically
-                        convert your thoughts into forward motion.
-                    </p>
+                <div in:fly={{ y: 24, duration: 700 }}>
+                    <h1>What's under the hood.</h1>
+                    <p class="lede">A quick look at how Resin turns a messy thought into a plan you actually start — and how we keep your stuff private.</p>
                 </div>
             {/if}
         </section>
 
-        <!-- Core Flow Infographic -->
-        <section class="space-y-16 relative">
-            <div class="text-center space-y-4">
-                <h2 class="text-3xl font-semibold font-serif text-[#1A2E1A]">
-                    The Process of Completion
-                </h2>
-                <p class="text-lg text-[#1A2E1A]/60 font-serif">
-                    How drafts become commitments
-                </p>
-            </div>
-
-            <div class="relative grid grid-cols-1 md:grid-cols-4 gap-8">
-                <!-- Connecting lines for desktop -->
-                <div
-                    class="hidden md:block absolute top-[40%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#1A2E1A]/10 to-transparent -translate-y-1/2 -z-10"
-                ></div>
-
+        <section class="space-y-12">
+            <div class="text-center"><h2>How a note becomes done</h2><p class="sub">Four simple steps.</p></div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {#each steps as step, i}
+                    {@const Icon = step.icon}
                     {#if visible}
-                        <div
-                            in:fly={{
-                                y: 40,
-                                delay: 300 + i * 200,
-                                duration: 1200,
-                                opacity: 0,
-                            }}
-                            class="bg-white/40 backdrop-blur-md p-10 rounded-lg flex flex-col items-center text-center space-y-6 border border-[#1A2E1A]/5 shadow-sm hover:shadow-md transition-all duration-700"
-                        >
-                            <div
-                                class="w-16 h-16 rounded-full bg-[#1A2E1A]/5 flex items-center justify-center text-[#1A2E1A] transition-transform duration-700 hover:scale-105"
-                            >
-                                <svelte:component
-                                    this={step.icon}
-                                    size={28}
-                                    strokeWidth={1.5}
-                                />
-                            </div>
-                            <div>
-                                <span
-                                    class="text-[10px] uppercase tracking-widest text-[#1A2E1A]/50 font-semibold mb-2 block"
-                                >
-                                    {step.title}
-                                </span>
-                                <h3
-                                    class="text-xl font-medium text-[#1A2E1A] font-serif"
-                                >
-                                    {step.label}
-                                </h3>
-                                <p
-                                    class="text-sm text-[#1A2E1A]/70 mt-3 leading-relaxed"
-                                >
-                                    {step.desc}
-                                </p>
-                            </div>
+                        <div in:fly={{ y: 24, delay: 150 + i * 120, duration: 700 }} class="arch-card text-center">
+                            <div class="arch-ico"><Icon size={24} /></div>
+                            <div class="step-num">Step {i + 1}</div>
+                            <h3>{step.title}</h3>
+                            <p>{step.desc}</p>
                         </div>
                     {/if}
                 {/each}
             </div>
         </section>
 
-        <!-- Key Components (Deep Dive) -->
-        <section class="space-y-20">
-            <div class="text-center space-y-4">
-                <h2 class="text-3xl font-semibold font-serif text-[#1A2E1A]">
-                    Executive Systems
-                </h2>
-                <p class="text-lg text-[#1A2E1A]/60 font-serif">
-                    The silent operators working on your behalf
-                </p>
-            </div>
-
-            <div class="space-y-12">
-                {#each components as component, i}
+        <section class="space-y-12">
+            <div class="text-center"><h2>What Resin is built with</h2><p class="sub">Simple, steady pieces that work together.</p></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {#each stack as tech, i}
+                    {@const Icon = tech.icon}
                     {#if visible}
-                        <div
-                            in:fly={{
-                                y: 40,
-                                delay: 600 + i * 200,
-                                duration: 1200,
-                                opacity: 0,
-                            }}
-                            class="grid md:grid-cols-2 gap-12 items-center bg-white/40 backdrop-blur-md border border-[#1A2E1A]/5 rounded-xl p-10 md:p-16 shadow-sm"
-                        >
-                            <div
-                                class="space-y-6 {i % 2 !== 0
-                                    ? 'md:order-2'
-                                    : ''}"
-                            >
-                                <div
-                                    class="text-sm font-semibold tracking-widest text-orange-800/80"
-                                >
-                                    0{i + 1}
-                                </div>
-                                <h3
-                                    class="text-3xl font-medium font-serif text-[#1A2E1A]"
-                                >
-                                    {component.title}
-                                </h3>
-                                <p
-                                    class="text-[#1A2E1A]/70 text-lg leading-relaxed font-serif"
-                                >
-                                    {component.description}
-                                </p>
-                                <div
-                                    class="inline-flex items-center gap-2 px-4 py-2 bg-[#1A2E1A]/5 rounded-md border border-[#1A2E1A]/10 mt-4"
-                                >
-                                    <code
-                                        class="text-xs text-[#1A2E1A]/60 font-medium"
-                                        >{component.code}</code
-                                    >
-                                </div>
-                            </div>
-                            <!-- Abstract, calm representation of code/logic -->
-                            <div
-                                class="aspect-[4/3] rounded-lg bg-gradient-to-br from-[#1A2E1A]/5 to-transparent border border-[#1A2E1A]/5 overflow-hidden flex items-center justify-center p-8"
-                            >
-                                <div
-                                    class="w-full h-full bg-white/50 backdrop-blur-sm rounded-xl border border-[#1A2E1A]/5 p-6 overflow-hidden relative shadow-sm"
-                                >
-                                    <div class="space-y-3 opacity-20">
-                                        {#each Array(6) as _}
-                                            <div class="flex gap-2">
-                                                <div
-                                                    class="h-1 bg-[#1A2E1A]/40 rounded w-12"
-                                                ></div>
-                                                <div
-                                                    class="h-1 bg-[#1A2E1A]/40 rounded w-full"
-                                                ></div>
-                                            </div>
-                                            <div
-                                                class="h-1 bg-[#1A2E1A]/40 rounded w-[70%] ml-14"
-                                            ></div>
-                                            <div
-                                                class="h-1 bg-[#1A2E1A]/40 rounded w-[40%] ml-14 mb-4"
-                                            ></div>
-                                        {/each}
-                                    </div>
-                                    <div
-                                        class="absolute inset-0 flex items-center justify-center"
-                                    >
-                                        <div
-                                            class="w-32 h-32 rounded-full bg-orange-900/10 blur-3xl"
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div in:fly={{ y: 20, delay: 150 + i * 100, duration: 700 }} class="arch-card">
+                            <div class="arch-ico"><Icon size={22} /></div>
+                            <h3>{tech.name}</h3>
+                            <p>{tech.desc}</p>
                         </div>
                     {/if}
                 {/each}
             </div>
         </section>
 
-        <!-- Technical Stack -->
-        <section class="space-y-16">
-            <div class="text-center space-y-4">
-                <h2 class="text-3xl font-semibold font-serif text-[#1A2E1A]">
-                    Infrastructure of Calm
-                </h2>
-                <p class="text-lg text-[#1A2E1A]/60 font-serif">
-                    Built with deliberate, resilient technologies
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {#each techStack as tech, i}
-                    {#if visible}
-                        <div
-                            in:fly={{
-                                y: 30,
-                                delay: 800 + i * 150,
-                                duration: 1000,
-                                opacity: 0,
-                            }}
-                            class="p-8 rounded-lg bg-white/30 border border-[#1A2E1A]/5 hover:bg-white/60 transition-colors duration-500 shadow-sm"
-                        >
-                            <div class="mb-6 text-[#1A2E1A]/40">
-                                <svelte:component
-                                    this={tech.icon}
-                                    size={28}
-                                    strokeWidth={1.5}
-                                />
-                            </div>
-                            <h3
-                                class="font-medium mb-3 text-[#1A2E1A] font-serif text-xl"
-                            >
-                                {tech.name}
-                            </h3>
-                            <p
-                                class="text-sm text-[#1A2E1A]/70 leading-relaxed"
-                            >
-                                {tech.description}
-                            </p>
-                        </div>
-                    {/if}
-                {/each}
-            </div>
-        </section>
-
-        <!-- Privacy & Philosophy -->
-        <section
-            class="py-24 text-center relative overflow-hidden rounded-xl bg-white/40 border border-[#1A2E1A]/5 shadow-sm"
-        >
-            <!-- Distinctive Blurred Charcoal Background for Privacy -->
-            <div
-                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#1A2E1A]/5 blur-[120px] -z-10 rotate-12"
-            ></div>
-
-            <div class="max-w-3xl mx-auto space-y-8 p-8 relative z-10">
-                <div
-                    class="w-20 h-20 bg-white/80 backdrop-blur-md shadow-sm border border-[#1A2E1A]/5 rounded-full mx-auto flex items-center justify-center text-[#1A2E1A] mb-8"
-                >
-                    <ShieldCheck size={36} strokeWidth={1.5} />
-                </div>
-                <h2 class="text-4xl font-semibold font-serif text-[#1A2E1A]">
-                    The Privacy Promise
-                </h2>
-                <p class="text-xl text-[#1A2E1A]/70 leading-relaxed font-serif">
-                    True peace of mind requires absolute privacy. Resin uses
-                    end-to-end encryption for all data transfers and secure,
-                    on-device storage for your schedule. We act as your private
-                    Chief of Staff—what is shared with Resin stays with Resin.
-                </p>
-                <div class="pt-10">
-                    <a
-                        href="/privacy"
-                        class="text-orange-800 font-medium hover:text-orange-900 transition-colors inline-flex items-center justify-center gap-3 group px-6 py-3 border border-orange-800/20 rounded-full hover:bg-orange-800/5"
-                    >
-                        <span>Read our detailed Privacy Promise</span>
-                        <span
-                            class="group-hover:translate-x-1 transition-transform"
-                            >&rarr;</span
-                        >
-                    </a>
-                </div>
-            </div>
+        <section class="privacy-block text-center">
+            <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center"><LockKeyhole size={28} /></div>
+            <h2>Your privacy comes first</h2>
+            <p>The apps and sites you block stay on your device. Resin never reads your notes, the pages you visit, your passwords, or your history. What you share with Resin stays with Resin.</p>
+            <a href="/privacy">Read the privacy policy →</a>
         </section>
     </div>
 </main>
+
+<style>
+    .arch-page{min-height:100vh;padding:150px 24px 120px;background:#f3eee6;color:#25231f;font-family:'Inter','DM Sans',system-ui,sans-serif}
+    .arch-page h1,.arch-page h2,.arch-page h3{font-family:'Manrope','Inter',system-ui,sans-serif!important;font-weight:800!important;letter-spacing:-.035em}
+    .arch-page h1{font-size:clamp(48px,6.5vw,84px);line-height:.98}
+    .arch-page .lede{max-width:640px;margin:22px auto 0;color:#6f665d;font-size:clamp(16px,1.6vw,19px);line-height:1.65}
+    .arch-page h2{font-size:clamp(32px,3.8vw,48px)}.arch-page .sub{margin-top:12px;color:#817568;font-size:15px}
+    .arch-card{padding:30px;border:1px solid rgba(37,35,31,.1);border-radius:20px;background:rgba(255,253,248,.72);box-shadow:0 12px 30px rgba(61,46,31,.06)}
+    .arch-ico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#365744;background:rgba(54,87,68,.1);margin-bottom:18px}
+    .text-center .arch-ico{margin-left:auto;margin-right:auto}
+    .step-num{color:#c98042;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+    .arch-card h3{margin-top:8px;font-size:20px}.arch-card p{margin-top:10px;color:#6f665d;font-size:13px;line-height:1.65}
+    .privacy-block{max-width:760px;margin:0 auto;padding:64px 40px;border-radius:26px;color:#fff;background:#2d493a}
+    .privacy-block .w-16{background:rgba(255,255,255,.1);color:#e4aa69}
+    .privacy-block h2{margin-top:22px;color:#fff}.privacy-block p{max-width:560px;margin:16px auto 0;color:rgba(255,255,255,.72);font-size:15px;line-height:1.7}
+    .privacy-block a{display:inline-block;margin-top:26px;color:#f0b773;text-decoration:none;font-size:14px;font-weight:800}
+    @media(max-width:520px){.arch-page{padding:120px 18px 80px}.privacy-block{padding:44px 24px}}
+</style>

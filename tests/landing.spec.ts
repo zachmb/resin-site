@@ -9,9 +9,9 @@ test.describe('Landing funnel', () => {
         await expect(page.getByRole('link', { name: 'Join the iPhone beta' }).first()).toHaveAttribute('href', /testflight\.apple\.com/);
         await expect(page.getByText('Unlimited local planning on iPhone').first()).toBeVisible();
 
-        // The core loop renders as real content, and the closing CTA is a real link.
-        await expect(page.getByRole('heading', { name: 'Catch the thought before it runs.' })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Do more with Resin.' })).toBeVisible();
+        // The core loop renders as real content.
+        await expect(page.getByRole('heading', { name: 'Write it down fast.' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'A few more things Resin does.' })).toBeVisible();
 
         const manifestResponse = await page.request.get('/manifest.json');
         expect(manifestResponse.ok()).toBeTruthy();

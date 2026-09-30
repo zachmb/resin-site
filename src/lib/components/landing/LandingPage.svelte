@@ -19,48 +19,45 @@
         {
             key: 'capture',
             tone: 'forest',
-            label: 'Capture',
-            title: 'Catch the thought before it runs.',
-            copy: 'No folders, no setup. Write the messy, half-formed thing from iPhone, web, or the Chrome extension — Resin keeps it safe until you are ready.',
+            title: 'Write it down fast.',
+            copy: 'No folders. No setup. Just type what is on your mind — from your phone, the web, or Chrome. Resin keeps it safe until you are ready.',
             img: '/img/landing/capture.jpg',
-            alt: 'Sunlight falling through a quiet forest',
-            chips: ['A launch I keep avoiding', 'Reply to Maya', 'Finally start the essay']
+            alt: 'A stream running through a mountain forest',
+            chips: ['A project I keep avoiding', 'Text Maya back', 'Finally start the essay']
         },
         {
             key: 'plan',
             tone: 'clay',
-            label: 'Plan',
-            title: 'Turn the knot into a first move.',
-            copy: 'Resin breaks the thought into a short, realistic sequence, estimates honest effort, and finds room for it around the meetings already in your day.',
+            title: 'Break it into small steps.',
+            copy: 'Resin turns your note into a few easy steps, guesses how long each one takes, and fits them around the stuff already on your calendar.',
             img: '/img/landing/plan.jpg',
-            alt: 'A path winding through tall trees',
-            chips: ['Review the copy · 12m', 'Polish mobile · 25m', 'Final checks · 15m']
+            alt: 'A mountain stream over rocks',
+            chips: ['Read the notes · 12m', 'Write the intro · 25m', 'Check it over · 15m']
         },
         {
             key: 'focus',
             tone: 'deep',
-            label: 'Focus',
-            title: 'Protect the time to begin.',
-            copy: 'Start in seconds. Your current step stays visible while chosen apps and sites step out of reach — on iPhone and in the browser. When focus ends, protection ends with it.',
+            title: 'Block distractions and start.',
+            copy: 'Start in one tap. The step you are on stays on screen while the apps and sites that pull you away get blocked — on your phone and in your browser. When you are done, they come back.',
             img: '/img/landing/focus.jpg',
-            alt: 'Calm green light deep in a forest',
+            alt: 'Pine trees with a mountain peak behind them',
             chips: ['Instagram · blocked', 'Reddit · blocked', 'YouTube · blocked']
         }
     ];
 
     // Secondary "do more" feature cards with imagery.
     const showcase = [
-        { img: '/img/landing/misty.jpg', alt: 'Mist drifting between pine trees', label: 'EVERYWHERE', title: 'One current step, any device.', copy: 'Notes, plans, and active focus stay in sync across iPhone, web, and Chrome.' },
-        { img: '/img/landing/canopy.jpg', alt: 'A canopy of trees seen from below', label: 'CALENDAR-AWARE', title: 'Plans that fit your real day.', copy: 'Resin schedules around the meetings you already have — not an empty calendar.' },
-        { img: '/img/landing/follow.jpg', alt: 'Tall trees reaching upward', label: 'PROTECTED', title: 'Attention, actually defended.', copy: 'Apple Screen Time plus synced website blocking during every focus session.' },
-        { img: '/img/landing/hero-alt.jpg', alt: 'A bright forest clearing', label: 'A RECORD', title: 'See what you finished.', copy: 'Small starts compound. Resin keeps a quiet record of the work you followed through on.' }
+        { img: '/img/landing/misty.jpg', alt: 'A misty mountain valley', title: 'Works on all your devices.', copy: 'Your notes, plans, and focus stay the same on your phone, the web, and Chrome.' },
+        { img: '/img/landing/canopy.jpg', alt: 'A mountain lake at sunrise', title: 'Plans that fit your day.', copy: 'Resin adds your steps around the meetings you already have.' },
+        { img: '/img/landing/follow.jpg', alt: 'A stream in a green mountain valley', title: 'Real focus, not willpower.', copy: 'Resin blocks distracting apps and sites while you work, using Apple Screen Time.' },
+        { img: '/img/landing/hero-alt.jpg', alt: 'A calm mountain river', title: 'See what you got done.', copy: 'Small starts add up. Resin keeps track of the work you finished.' }
     ];
 
     const faqs = [
-        ['Is Resin another to-do list?', 'No. Resin is designed for the moment before a task belongs on a list: when the idea is still vague, emotionally heavy, or easy to postpone. It helps you define the next move and protect time to begin it.'],
-        ['What does Resin block?', 'On iPhone, Resin uses Apple’s Screen Time APIs to shield the apps you choose. The Chrome extension blocks selected websites during an active focus session.'],
-        ['Can I use Resin without AI?', 'Yes. Notes, calendars, manual focus sessions, and blocking all work without generated plans. AI-assisted planning is an optional step, not the product’s front door.'],
-        ['Do my devices stay in sync?', 'Your notes, plans, schedules, and active protection stay coordinated across the web app, iPhone app, and Chrome extension.']
+        ['Is Resin just another to-do list?', 'No. Most to-do lists want a clear task. Resin helps with the fuzzy stuff you keep putting off. It helps you pick the first small step and make time to do it.'],
+        ['What does Resin block?', 'On iPhone, Resin uses Apple Screen Time to block the apps you pick. The Chrome add-on blocks the websites you pick while you are focusing.'],
+        ['Can I use Resin without AI?', 'Yes. Notes, calendars, focus timers, and blocking all work without AI. The AI plan is just an extra option if you want it.'],
+        ['Do my devices stay in sync?', 'Yes. Your notes, plans, and focus stay the same across your phone, the web, and Chrome.']
     ];
 </script>
 
@@ -81,7 +78,7 @@
         <div class="hero-scrim"></div>
         <div class="hero-inner">
             <h1>You know what matters.<br /><span>Now start it.</span></h1>
-            <p class="hero-lede">Resin turns the thought you keep carrying into a realistic next action, finds room for it in your day, and protects your attention long enough to begin.</p>
+            <p class="hero-lede">Got something you keep meaning to do? Resin turns it into small steps, finds time for it in your day, and blocks distractions so you can start.</p>
             <div class="hero-actions">
                 <a class="btn btn-primary" href="/login?mode=start&next=/">Make my first plan <ArrowRight size={18} /></a>
                 <a class="btn btn-ghost" href="https://testflight.apple.com/join/yV53qa1z" target="_blank" rel="noopener noreferrer"><Apple size={18} /> Join the iPhone beta</a>
@@ -93,8 +90,8 @@
     <!-- CAPABILITIES: three big colored core-loop cards -->
     <section class="cap-section">
         <div class="cap-head">
-            <h2>From “I should” to “I started.”</h2>
-            <p class="cap-sub">A short loop designed for overloaded days, not ideal ones — capture, plan, and protect the start.</p>
+            <h2>Stop putting it off. Start it.</h2>
+            <p class="cap-sub">Three easy steps for busy, messy days: write it down, break it into steps, and block distractions so you can begin.</p>
         </div>
         <div class="cap-stack">
             {#each capabilities as cap, i}
@@ -113,8 +110,8 @@
     <!-- SHOWCASE: four "do more" image cards -->
     <section class="showcase-section">
         <div class="showcase-head">
-            <h2>Do more with Resin.</h2>
-            <p>Stay ahead, plan, and protect your focus — with help from a tool built for how overloaded days actually feel.</p>
+            <h2>A few more things Resin does.</h2>
+            <p>Simple help to make it easier to start and finish what matters.</p>
         </div>
         <div class="showcase-grid">
             {#each showcase as card}

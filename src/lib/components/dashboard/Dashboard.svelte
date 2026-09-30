@@ -29,6 +29,74 @@
     }>();
 
     let composeText = $state("");
+    // Compose focus mode: once the user starts typing a thought, the composer
+    // rises to the top and the surrounding dashboard clears out for more room.
+    let composeActive = $derived(composeText.trim().length > 0);
+    let mainEl = $state<HTMLElement>();
+    let prevComposeActive = false;
+    const COLLAPSE_TRANSITION =
+        "max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.4s ease, transform 0.4s ease";
+
+    // Animate the surrounding dashboard (tasks, timeline, banners) out of the way
+    // as the user starts composing, then smoothly restore it if they clear the box.
+    // Measures each block's real height so the collapse/expand is smooth and the
+    // normal (non-composing) render is left completely untouched.
+    $effect(() => {
+        const active = composeActive;
+        const root = mainEl;
+        if (!root) return;
+        if (active === prevComposeActive) return;
+        prevComposeActive = active;
+
+        const reduceMotion =
+            typeof window !== "undefined" &&
+            window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+        const items = Array.from(
+            root.querySelectorAll<HTMLElement>(".compose-collapse"),
+        );
+        for (const item of items) {
+            const el = item as HTMLElement & { __restoreTimer?: number };
+            // Cancel any pending restore so a re-collapse can't be undone mid-flight.
+            if (el.__restoreTimer) {
+                clearTimeout(el.__restoreTimer);
+                el.__restoreTimer = undefined;
+            }
+            item.style.transition = reduceMotion ? "none" : COLLAPSE_TRANSITION;
+            if (active) {
+                item.style.overflow = "hidden";
+                item.style.maxHeight = item.scrollHeight + "px";
+                void item.offsetHeight; // lock current height before collapsing
+                item.style.maxHeight = "0px";
+                item.style.opacity = "0";
+                item.style.marginTop = "0px";
+                item.style.marginBottom = "0px";
+                item.style.transform = "translateY(-6px)";
+                item.style.pointerEvents = "none";
+            } else {
+                item.style.opacity = "";
+                item.style.marginTop = "";
+                item.style.marginBottom = "";
+                item.style.transform = "";
+                item.style.pointerEvents = "";
+                // Drop all inline overrides so natural layout returns. Use a timed
+                // clear (not transitionend) so it fires even when the block's height
+                // didn't change and no transition event is emitted.
+                const clear = () => {
+                    item.style.maxHeight = "";
+                    item.style.overflow = "";
+                    item.style.transition = "";
+                    el.__restoreTimer = undefined;
+                };
+                if (reduceMotion) {
+                    clear();
+                } else {
+                    item.style.maxHeight = item.scrollHeight + "px";
+                    el.__restoreTimer = window.setTimeout(clear, 520);
+                }
+            }
+        }
+    });
     let showAddAutomation = $state(false);
     let autoTitle = $state("");
     let autoTime = $state("");
@@ -318,7 +386,9 @@
 </script>
 
 <main
+    bind:this={mainEl}
     class="w-full h-full min-h-screen pt-28 pb-32 px-4 sm:px-6 relative z-10 flex flex-col max-w-6xl mx-auto"
+    class:is-composing={composeActive}
 >
     <!-- AI Status Notification Overlay -->
     {#if aiStatus !== 'idle'}
@@ -365,7 +435,7 @@
 
     <!-- Header -->
     <div
-        class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
+        class="compose-collapse flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
     >
         <div>
             {#if !session}
@@ -473,7 +543,7 @@
     </div>
 
     {#if showBanner}
-        <section transition:fade class="mb-8 overflow-hidden rounded-2xl border border-resin-amber/30 bg-[#fffaf1] shadow-premium">
+        <section transition:fade class="compose-collapse mb-8 overflow-hidden rounded-2xl border border-resin-amber/30 bg-[#fffaf1] shadow-premium">
             <div class="grid lg:grid-cols-[1.15fr_.85fr]">
                 <div class="p-7 md:p-9">
                     <div class="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-resin-amber">
@@ -507,13 +577,14 @@
     {/if}
 
     <!-- Quick Compose Card -->
-    <section class="mb-8">
+    <section class="compose-shell mb-8">
         <div
             class="glass-card rounded-xl p-8 border border-white/20 shadow-premium bg-gradient-to-br from-white/40 to-transparent"
         >
             <textarea
                 id="first-thought-composer"
                 bind:value={composeText}
+                class:compose-tall={composeActive}
                 placeholder="What's on your mind? Start a note, a plan, anything..."
                 class="w-full bg-white/50 border border-white/30 rounded-lg p-6 text-resin-charcoal placeholder-resin-earth/40 focus:outline-none focus:border-resin-forest/50 focus:ring-2 focus:ring-resin-forest/20 resize-none"
                 rows="3"
@@ -736,7 +807,7 @@
 
     <!-- Weekly Activity Heatmap -->
     {#if weeklyStats}
-        <section class="mb-8">
+        <section class="compose-collapse mb-8">
             <div
                 class="glass-card rounded-xl p-8 md:p-10 border border-white/20 shadow-premium relative bg-gradient-to-br from-white/40 to-transparent"
             >
@@ -864,7 +935,7 @@
     <!-- Burnout Risk Banner -->
     {#if burnoutRisk}
         <section
-            class="rounded-lg p-6 bg-gradient-to-r from-resin-amber/10 to-orange-50/20 border border-resin-amber/30 shadow-sm"
+            class="compose-collapse rounded-lg p-6 bg-gradient-to-r from-resin-amber/10 to-orange-50/20 border border-resin-amber/30 shadow-sm"
             transition:fade={{ duration: 300 }}
         >
             <div class="flex items-center gap-4">
@@ -881,7 +952,7 @@
         </section>
     {/if}
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="compose-collapse grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Left: Focus, Taste, Timeline -->
         <div class="lg:col-span-7 space-y-8">
             <ResinShieldCard extensionInstalled={profile?.extension_enabled === true} />
@@ -1552,6 +1623,20 @@
 
         .animate-bounce {
             animation: bounce 0.6s ease-in-out;
+        }
+    }
+
+    /* Composer grows to fill the space freed up when focus mode engages. */
+    #first-thought-composer {
+        transition: min-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #first-thought-composer.compose-tall {
+        min-height: min(62vh, 640px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        #first-thought-composer {
+            transition: none;
         }
     }
 </style>

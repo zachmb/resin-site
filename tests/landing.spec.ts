@@ -9,31 +9,21 @@ test.describe('Landing funnel', () => {
         await expect(page.getByRole('link', { name: 'Join the iPhone beta' }).first()).toHaveAttribute('href', /testflight\.apple\.com/);
         await expect(page.getByText('Unlimited local planning on iPhone').first()).toBeVisible();
 
-        const preview = page.getByRole('img', { name: /captured thought.*protected iPhone focus session/i });
-        await expect(preview).toBeVisible();
-        await expect(preview.getByRole('button')).toHaveCount(0);
+        // The core loop renders as real content, and the closing CTA is a real link.
+        await expect(page.getByRole('heading', { name: 'Catch the thought before it runs.' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Do more with Resin.' })).toBeVisible();
 
         const manifestResponse = await page.request.get('/manifest.json');
         expect(manifestResponse.ok()).toBeTruthy();
         await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f3eee6');
     });
 
-    test('supports keyboard navigation through the workflow', async ({ page }) => {
+    test('decorative hero imagery is not announced as a control', async ({ page }) => {
         await page.goto('/');
-
-        const captureTab = page.getByRole('tab', { name: 'Capture' });
-        const planTab = page.getByRole('tab', { name: 'Make a plan' });
-        const followThroughTab = page.getByRole('tab', { name: 'Follow through' });
-
-        await captureTab.focus();
-        await page.keyboard.press('ArrowRight');
-        await expect(planTab).toBeFocused();
-        await expect(planTab).toHaveAttribute('aria-selected', 'true');
-
-        await page.keyboard.press('End');
-        await expect(followThroughTab).toBeFocused();
-        await expect(followThroughTab).toHaveAttribute('aria-selected', 'true');
-        await expect(page.getByRole('tabpanel')).toContainText('Give the work a protected start.');
+        // The full-bleed hero photo is decorative (aria-hidden), not a fake button/link.
+        const heroImg = page.locator('.hero-bg');
+        await expect(heroImg).toHaveAttribute('aria-hidden', 'true');
+        await expect(heroImg.getByRole('button')).toHaveCount(0);
     });
 
     test('keeps the mobile funnel inside the viewport', async ({ page }) => {
@@ -47,7 +37,6 @@ test.describe('Landing funnel', () => {
 
         expect(widths.content).toBe(widths.viewport);
         await expect(page.getByRole('link', { name: 'Make my first plan' }).first()).toBeVisible();
-        await expect(page.getByRole('tab', { name: 'Follow through' })).toBeVisible();
     });
 
     test('publishes the canonical API host for extension requests', async ({ request }) => {
